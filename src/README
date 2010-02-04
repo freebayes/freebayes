@@ -1,0 +1,189 @@
+GigaBayes package
+-----------------
+
+Executables of most interest are:
+
+bamDup:	    Inspects a BAM format alignment file, marks duplicate reads 
+	    (reads likely from a single sequencing library fragment).
+	    Works both for single-end (SE) and paired-end sequencing.
+	    Creates a new BAM file with duplicate fragments marked with
+	    the appropriate flag.
+
+bamDump:    Writes out a BAM binary file in human-readable format.
+
+bamStat:    Inspects a BAM format alignment file and creates various
+	    read coverage statistics
+
+bamBayes:   Analyzes a BAM format alignment file for SNPs. Currently produces
+	    a very detailed coverage and SNP report
+
+Help:	    type ProgramName --help e.g. bamBayes --help
+-----
+
+To run:	    
+-------
+   	    
+bamDup:	    bamDup --bamin <BAM input file> --bamout <dup removed BAM file>
+	    --dupMode <se|pe> {--keepOne]
+	    
+	    --keepOne enables one to keep one read from each cluster of
+	    duplicates
+
+bamBayes:   bamBayes --bam NA19184.454.dup.bam --fasta h.sapiens.fasta
+	    --samples Samples_NA19184.txt 
+	    --targets Pilot3_BCM_targets_1.bed --dbsnps snp129_1.bed
+	    --hmsnps NA19184.hapmap.genos.bed --rpt NA19184.454.dup.bam.rpt
+	    --sampleDel "SRR" --ploidy diploid --I 10000 
+	    --useRefAllele --forceRefAllele --MRU 3 --QRL 3 --debug
+
+	    --fasta: the fasta file of the reference sequences (e.g. 
+	    the human genome sequence)
+	    
+	    --samples: a file containing the names of each sample individual,
+	    one sample name per line, at the very beginning of the line e.g.
+
+	    NA00012
+	    NA23034
+	    NA16723
+
+	    --targets: a BED format file of regions to analyze.
+	    if not specified the full length of all reference sequences
+	    present in the BAM file are analyzed
+
+	    --hmsnps: a BED format file containing locations of HapMap SNPs
+	    (1-based coordinates)
+	    
+	    --dbsnps: a BED format file containing locations of dbSNP SNPs
+	    
+	    --rpt: the output file contaiing very verbose information about
+	    all target regioins (read coverage) and every positon within
+	    these targets, including SNP discovery information
+
+	    --sampleDel: the delimiter string that separates the sample
+	    individual name from the rest of the read name. E.g.
+	    read name: NA12005-SRR12309.54 sample name: NA12005 
+	    --> --sampleDel "-"
+	    read name: NA12005SRR12309.54 sample name: NA12005
+	    --> --sampleDel "SRR"
+
+	    --ploidy: diploid or haploid
+
+	    --useRefAllele: causes the SNP caller consider the allele
+	    in the reference sequence
+
+	    --forceRefAllele: causes the SNP caller to force the allele
+	    in the reference sequence to be one of the two alleles that
+	    gets considered in SNP calling (otherwise the two alleles are
+	    those with the highest number of aligned based at the given
+	    position)
+
+	    --MRU: the highest number of high-quality mismatches between
+	    read and ref seq before read gets filtered out. The quality
+	    threshold is set by --QMU.
+
+	    --QRL: minimum base quality value before a base gets considered
+
+The bamBayes output format:
+---------------------------
+
+This is a tagged, and tab-separated output format. The four tags are currently:
+
+#    	  	  comment
+TARGET		  stats for a target region
+GLOBAL	      	  summary stats for all target regions
+POSITION	  stats for a given position within a target region
+		  potentially non-unique (if target regions overlap)
+
+
+Format for tagged lines:
+
+TARGET tag:
+
+Column Description
+1      TARGET
+2      ref seq name
+3      target left coordinate
+4      target right coordinate
+5      target name
+6      target length
+7      number of aligned reads counting all reads (incl. dups and read that will be filtered)
+8      number of aligned reads after dup reads are discounted
+9      number of aligned reads after dup removed, reads that are filtered out removed
+10     number of aligned bases counting all reads (incl. dups and read that will be filtered, and low qual bases)
+11     number of aligned bases after dup reads are discounted
+12     number of aligned bases after dup removed, reads that are filtered out removed, and low qual bases removed
+
+GLOBAL tag:
+Column Description
+1      GLOBAL
+2      number of target regions
+3      total aggregate length of target regions
+4      total number of aligned reads in targets
+5      total number of non-dup reads in targets
+6      total number of non-dup, non-filtered reads in targets
+7      total number of aligned bases in all targets
+8      total number of aligned bases in non-dup reads
+9      total number of aligned bases in non-dup, non-filtered reads, and not counting low-qual bases
+
+POSITION tag:
+
+Column	 Desctipton
+1	 POSITION
+2	 ref seq name
+3	 position
+4	 #aligned bases counting all reads and all bases
+5	 #aligned bases after discounting dup reads
+6	 #aligned bases after dups and filtered reads are removed, low qual bases removed
+7	 #aligned bases on Plus strand
+8	 #aligned bases on Minus strand
+9	 #As
+10	 sum quality value for As
+11	 #As on Plus strand
+12	 sum quality value for As on Minus strand
+13	 #As on Plus strand
+14	 sum quality value for As on Minus strand
+15	 #Cs
+16	 sum quality value for Cs
+17	 #Cs on Plus strand
+18	 sum quality value for Cs on Minus strand
+19	 #Cs on Plus strand
+20	 sum quality value for Cs on Minus strand
+21	 #Gs
+22	 sum quality value for Gs
+23	 #Gs on Plus strand
+24	 sum quality value for Gs on Minus strand
+25	 #Gs on Plus strand
+26	 sum quality value for Gs on Minus strand
+27	 #Gs
+28	 sum quality value for Gs
+29	 #Gs on Plus strand
+30	 sum quality value for Gs on Minus strand
+31	 #Gs on Plus strand
+32	 sum quality value for Gs on Minus strand
+33	 reference allele at this position
+34	 base quality value assigned to reference allele
+35	 ref allele at position-1
+36	 ref allele at position+1
+37	 most frequent allele at this position
+38	 second most frequent allele at this position
+39	 P(SNP)
+40	 Y/N: is there a SNP at this position in dbSNP
+41	 Y/N: is there a SNP at this position in HapMap
+42	 #samples contributing data to this alignment
+43	 sample 1: sample name
+44	 sample 1: hom genotype 1
+45	 sample 1: P(hom genotype 1)
+46	 sample 1: het genotype
+47	 sample 1: P(het genotype)
+48	 sample 1: hom genotype 2
+49	 sample 1: P(hom genotype 2)
+
+This reporting should allow one to filter SNP according to various criteria e.g.
+     	 P(SNP) value
+     	 Minimum and maximum read coverage, possibly on each strand
+	 Minimum number of alleles for a given variant
+	 Sequence context
+	 Proximity (distance between neighboring SNPs)
+
+A script that parses and uses this info is included:
+snpFilter.pl
