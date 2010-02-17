@@ -367,8 +367,8 @@ int main (int argc, char *argv[]) {
   ValueArg<string> cmd_rpt(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
   // output file: VCF (variant call format) file
-  ArgStruct argRpt;
-  arg = argRpt; 
+  ArgStruct argVcf;
+  arg = argVcf; 
   arg.shortId = ""; 
   arg.longId = "vcf"; 
   arg.description = "Output file: VCF (variant call format) file";
@@ -977,12 +977,12 @@ int main (int argc, char *argv[]) {
   if (debug) {cerr << "opening report output file for writing: " << rpt << "...";}
 
   // open output streams
-  ostream rptFile, vcfFile;
+  ofstream rptFile, vcfFile;
   bool outputRPT, outputVCF; // for legibility
 
   if (rpt != "") {
       outputRPT = true;
-      rptFile(rpt.c_str(), ios::out);
+      rptFile.open(rpt.c_str());
       if (!rptFile) {
         if (record) {logFile << " unable to open file: " << rpt << endl;}
         cerr << " unable to open file: " << rpt << endl;
@@ -992,7 +992,7 @@ int main (int argc, char *argv[]) {
 
   if (vcf != "") {
       outputVCF = true;
-      vcfFile(vcf.c_str(), ios::out);
+      vcfFile.open(vcf.c_str());
       if (!vcfFile) {
         if (record) {logFile << " unable to open file: " << vcf << endl;}
         cerr << " unable to open file: " << vcf << endl;
@@ -1094,7 +1094,6 @@ int main (int argc, char *argv[]) {
 
       vcfFile << "##format=VCFv3.3" << endl
               << "##fileDate=" << datestr << endl
-              << 
               << "##source=gigabayes" << endl
               << "##reference=1000GenomesPilot-NCBI36" << endl
               << "##phasing=none" << endl
@@ -1172,9 +1171,15 @@ int main (int argc, char *argv[]) {
   // retrieve header information
   string bamHeader = bReader.GetHeaderText();
 
-  // XXX optionally get sample names from header data instead of from the sequence file
-  // if (no sequence file)
-  //     sample names = read 'em
+  // TODO XXX optionally get sample names from header data instead of from the sequence file
+  // if (no sequence file given)
+  //     sample names = read 'em from bam header
+  //     get the header via
+  //
+  //     BamReader reader;
+  //     reader.Open(filename);
+  //     cout << reader.GetHeaderText() << endl;
+  //
   
   // store the names of all the reference sequences in the BAM file
   RefVector refDatas = bReader.GetReferenceData();
@@ -1196,8 +1201,6 @@ int main (int argc, char *argv[]) {
     cerr << "Number of ref seqs: " << bReader.GetReferenceCount() << endl;
   }
 
-  // XXX get the number of alignments in the bam file
-  
   //--------------------------------------------------------------------------
   // process input fasta file
   //--------------------------------------------------------------------------
@@ -1216,7 +1219,7 @@ int main (int argc, char *argv[]) {
 
     FastaIndexEntry entry = it->second;
 
-    cerr << entry << endl;
+    if (debug) cerr << "reading sequence... " << entry << endl;
 
     // we split out the first word of the full sequence name for keying our sequences
     vector<string> sequenceNameParts;
@@ -1375,6 +1378,8 @@ int main (int argc, char *argv[]) {
       
       // collect targets for which there is no read data
       bool badTarget = false;
+      int numReadsInTarget = 0;    
+      BamAlignment ba;
 
       // skip target if invalid reference
       if (!(refId < bReader.GetReferenceCount())) {
@@ -1412,10 +1417,10 @@ int main (int argc, char *argv[]) {
     //     we do this so that we can properly step through the positions at the
     //     end of the region that do not have reads following them without
     //     having to loop through them one by one
-        int numReadsInTarget = 0;    
         while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
             ++numReadsInTarget;
         }
+        if (debug) cerr << "numReadsInTarget " << numReadsInTarget << endl;
         bReader.Jump(refId, target.left); // jump back
       }
 
@@ -1438,7 +1443,6 @@ int main (int argc, char *argv[]) {
       
     int processedReadsInTarget = 0;
 	int refPosLast = target.left - 1;
-	BamAlignment ba;
 	while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
         ++processedReadsInTarget;
 	  
@@ -1675,10 +1679,12 @@ int main (int argc, char *argv[]) {
 	  //----------------------------------------------------------------
 	  int refPosLeft = refPosLast + 1;
 	  if (refPosLeft < target.left) {refPosLeft = target.left;}
+
+      if (debug) {
+          if (processedReadsInTarget >= numReadsInTarget) { cerr << "at last read in target region" << endl; }
+      }
       // check if we are at the last read
       // if so set the refPosRight to the target right
-      // XXX remove the following sanity check when you have sorted this out
-      if (processedReadsInTarget < numReadsInTarget) { cerr << "at last read in target region" << endl; }
 	  int refPosRight = (processedReadsInTarget < numReadsInTarget) ? min((int)ba.Position, target.right) : target.right;
 	  for (int p = refPosLeft; p <= refPosRight; p++) {
 	    
@@ -1927,8 +1933,8 @@ int main (int argc, char *argv[]) {
 	    // if ref allele is to be used make sure that is one of the alleles
 	    if (useRefAllele && forceRefAllele) {
 	      if (sb != allele1 && sb != allele2) {
-		allele2 = allele1;
-		allele1 = sb;
+            allele2 = allele1;
+            allele1 = sb;
 	      }
 	    }
 	    
@@ -2013,47 +2019,70 @@ int main (int argc, char *argv[]) {
               rptFile << endl;
             }
 
-        //  XXX insert VCF output here
             if (outputVCF) {
 
                 vcfFile << refName << "\t" 
-                    <<  p  << "\t"  // XXX I think we have to add one to the position here per the vcf spec
+                    <<  p + 1 << "\t"
                     << "." << "\t"  // . is the default signifier for "no id"
-                    << sb << "\t" // reference base at this position
-                    << (allele1 == allele2) ? allele1 : allele1 + "," + allele2 << "\t" // alternate allele or alleles
-                    << var.pSnp << "\t" // quality of the snp call
-                    << "0" << "\t" // filters, 0 means "no filters"
-                    << "NS=" + sampleList.size() + ";" // number of samples
-                    << "ND=" + ntBNondup + ";" // 
-                    << "DP=" + tDAll
+                    << sb << "\t"; // reference base at this position
+                vcfFile << allele1 << "," << allele2 << "\t";
+                // the VCF spec suggests that these shouldn't be the reference; but when we use forceRefAllele they can be
+                /*
+                if (allele1 == sb)
+                    vcfFile << allele2 << "\t";
+                else
+                    vcfFile << allele1 << "," << allele2 << "\t";
+                    */
+
+                vcfFile << phred(var.pSnp) << "\t" // quality of the snp call
+                    << "." << "\t" // filters, . means "no data"
+                    << "NS=" << sampleList.size() << ";" // number of samples
+                    << "ND=" << ntBNondup << ";" // 
+                    << "DP=" << tDAll
                     << "\t"
                     // format string
                     << "NiBAll:NiBNondup:NiB:QiB:NiBp:NiBm:NiA:QiA:NiAp:NiAm:NiC:QiC:NiCp:NiCm:NiG:QiG:NiGp:NiGm:NiT:QiT:NiTp:NiTm:GiP"
                     << "\t";
                 // samples
+                bool firstSampleEntry = true; // flag to help with tab insertion between fields
                 for (vector<string>::const_iterator sampleIter = sampleList.begin();
                  sampleIter != sampleList.end(); sampleIter++) {
                   string ind = *sampleIter;
                 
+                  if (firstSampleEntry)
+                      firstSampleEntry = false;
+                  else
+                      vcfFile << "\t";  // join fields on tab
+
                   // print coverage values
                   vcfFile << NiBAll[ind] << ":" << NiBNondup[ind]
                        << ":" << NiB[ind] << ":" << QiB[ind] << ":" << NiBp[ind] << ":" << NiBm[ind]
                        << ":" << NiA[ind] << ":" << QiA[ind] << ":" << NiAp[ind] << ":" << NiAm[ind] 
                        << ":" << NiC[ind] << ":" << QiC[ind] << ":" << NiCp[ind] << ":" << NiCm[ind] 
                        << ":" << NiG[ind] << ":" << QiG[ind] << ":" << NiGp[ind] << ":" << NiGm[ind]
-                       << ":" << NiT[ind] << ":" << QiT[ind] << ":" << NiTp[ind] << ":" << NiTm[ind];
+                       << ":" << NiT[ind] << ":" << QiT[ind] << ":" << NiTp[ind] << ":" << NiTm[ind] << ":";
                 
-                  vector <string>genoProbs;
+                  /*
+                   * output a string of genotype probabilities, the GiP
+                   * these are of the format genotype=phred, or N/N=phred, e.g. 0/1=56
+                   * and are comma-delimited for all analyzed genotypes
+                   */
+                  bool firstGiProb = true;
                   for (map<string, long double, less<string> >::const_iterator 
                          gIter = var.individualGenotypeProbability[ind].begin();
                        gIter != var.individualGenotypeProbability[ind].end();
                        gIter++) {
                     string g = gIter->first;
                     long double p = gIter->second;
-                    genoProbs.push_back(g + "|" + p);
+                    if (firstGiProb)
+                        firstGiProb = false;
+                    else
+                        vcfFile << ",";  // join genome probability fields on ,
+                    // format is genotype=phred, or N/N=phred, e.g. 0/1=56
+                    vcfFile << g << "+" << ((g.at(0) == sb.at(0)) ? "0" : "1")
+                        << "/" << ((g.at(1) == sb.at(0)) ? "0" : "1")
+                        << "=" << phred(p);
                   }
-                  vcfFile << boost::algorithm::join(genoProbs, ",");
-                  vcfFile << "\t";  // XXX leaves trailing tab
                 }
                 vcfFile << endl;
             }
@@ -2071,347 +2100,6 @@ int main (int argc, char *argv[]) {
 	  refPosLast = refPosRight;
 	}
 	
-	//------------------------------------------------------------------
-	// analyze remaining positions
-	//------------------------------------------------------------------
-	int refPosLeft = refPosLast + 1; 
-	if (refPosLeft < target.left) {refPosLeft = target.left;}
-	int refPosRight = target.right;
-	for (int p = refPosLeft; p <= refPosRight; p++) {
-	  
-	  // report progress if necessary
-	  if (record && (p % I == 0)) {
-	    logFile << "    Processing refseq:" << refName << " position: " << p << endl;
-	  }
-	  if (debug && (p % I == 0)) {
-	    cerr << "    Processing ref seq:" << refName << " position: " << p << endl;
-	  }
-	  
-	  //----------------------------------------------------------------
-	  // calculate coverage and determine if allele coverage condition
-	  //   is met for each allele
-	  //----------------------------------------------------------------
-
-	  // allele coverage condition
-	  bool okA = false;
-	  bool okC = false;
-	  bool okG = false;
-	  bool okT = false;
-
-	  // multi-individual coverage data
-	  int ntBAll = 0, ntBNondup = 0;
-	  int ntB = 0, qtB = 0, ntBp = 0, ntBm = 0;
-	  int ntA = 0, qtA = 0, ntAp = 0, ntAm = 0; 
-	  int ntC = 0, qtC = 0, ntCp = 0, ntCm = 0; 
-	  int ntG = 0, qtG = 0, ntGp = 0, ntGm = 0; 
-	  int ntT = 0, qtT = 0, ntTp = 0, ntTm = 0;
-	    
-	  // single-individual coverage maps
-	  map<string, int, less<string> > NiBAll, NiBNondup;
-	  map<string, int, less<string> > NiB, QiB, NiBp, NiBm;
-	  map<string, int, less<string> > NiA, QiA, NiAp, NiAm;
-	  map<string, int, less<string> > NiC, QiC, NiCp, NiCm;
-	  map<string, int, less<string> > NiG, QiG, NiGp, NiGm;
-	  map<string, int, less<string> > NiT, QiT, NiTp, NiTm;
-	    
-	  for (vector<string>::const_iterator sampleIter = sampleList.begin();
-	       sampleIter != sampleList.end(); sampleIter++) {
-	    string ind = *sampleIter;
-	      
-	    // sampleIter coverage data
-	    int niBAll = 0, niBNondup = 0;
-	    int niB = 0, qiB = 0, niBp = 0, niBm = 0;
-	    int niA = 0, qiA = 0, niAp = 0, niAm = 0; 
-	    int niC = 0, qiC = 0, niCp = 0, niCm = 0; 
-	    int niG = 0, qiG = 0, niGp = 0, niGm = 0; 
-	    int niT = 0, qiT = 0, niTp = 0, niTm = 0;
-	    
-	    // read coverage by ALL reads
-	    vector<Basecall> basecallsAll = individualBasecallsAll[p][ind];
-	    niBAll += basecallsAll.size();
-	    
-	    // read coverage by non-dup reads
-	    vector<Basecall> basecallsNondup = individualBasecallsNondup[p][ind];
-	    niBNondup += basecallsNondup.size();
-	    
-	    // read coverage by non-dup, non-filtered reads
-	    vector<Basecall> basecalls = individualBasecalls[p][ind];
-	    for (vector<Basecall>::const_iterator bcIter = basecalls.begin();
-		 bcIter != basecalls.end(); bcIter++) {
-	      Basecall bc = *bcIter;
-	      short m = bc.map;
-	      string b = bc.base;
-	      short q = bc.qual;
-	      string s = bc.strand;
-	      
-	      // allele coverage condition check
-	      if (m >= MQL1 && q >= BQL1) {
-		if (b == "A") {
-		  okA = true;
-		}
-		else if (b == "C") {
-		  okC = true;
-		}
-		else if (b == "G") {
-		  okG = true;
-		}
-		else if (b == "T") {
-		  okT = true;
-		}
-	      }
-
-	      niB++;
-	      qiB += q;
-	      if (s == "+") {
-		niBp++;
-		if (b == "A") {
-		  niA++; qiA += q; niAp++;
-		}
-		else if (b == "C") {
-		  niC++; qiC += q; niCp++;
-		}
-		else if (b == "G") {
-		  niG++; qiG += q; niGp++;
-		}
-		else if (b == "T") {
-		  niT++; qiT += q; niTp++;
-		}
-	      }
-	      else if (s == "-") {
-		niBm++;
-		if (b == "A") {
-		  niA++; qiA += q; niAm++;
-		}
-		else if (b == "C") {
-		  niC++; qiC += q; niCm++;
-		}
-		else if (b == "G") {
-		  niG++; qiG += q; niGm++;
-		}
-		else if (b == "T") {
-		  niT++; qiT += q; niTm++;
-		}
-	      }
-	    }
-	    
-	    //-------------------------------------------------------------
-	    // register individual coverage at this position
-	    //-------------------------------------------------------------
-	    NiBAll[ind] = niBAll; NiBNondup[ind] = niBNondup;
-	    NiB[ind] = niB; QiB[ind] = qiB; NiBp[ind] = niBp; NiBm[ind] = niBm;
-	    NiA[ind] = niA; QiA[ind] = qiA; NiAp[ind] = niAp; NiAm[ind] = niAm; 
-	    NiC[ind] = niC; QiC[ind] = qiC; NiCp[ind] = niCp; NiCm[ind] = niCm; 
-	    NiG[ind] = niG; QiG[ind] = qiG; NiGp[ind] = niGp; NiGm[ind] = niGm; 
-	    NiT[ind] = niT; QiT[ind] = qiT; NiTp[ind] = niTp; NiTm[ind] = niTm;
-	    
-	    
-	    //-------------------------------------------------------------
-	    // update total sample coverage at this position
-	    //-------------------------------------------------------------
-	    ntBAll += niBAll; ntBNondup += niBNondup;
-	    ntB += niB; qtB += qiB; ntBp += niBp; ntBm += niBm;
-	    ntA += niA; qtA += qiA; ntAp += niAp; ntAm += niAm; 
-	    ntC += niC; qtC += qiC; ntCp += niCp; ntCm += niCm; 
-	    ntG += niG; qtG += qiG; ntGp += niGp; ntGm += niGm; 
-	    ntT += niT; qtT += qiT; ntTp += niTp; ntTm += niTm;
-	    
-	  }
-	  
-	  //---------------------------------------------------------------
-	  // update target base coverage stats
-	  //---------------------------------------------------------------
-	  tDAll += ntBAll;
-	  tDNondup += ntBNondup;
-	  tD += ntB;
-	  
-	  //---------------------------------------------------------------
-	  // add reference allele if needed
-	  //---------------------------------------------------------------
-	  
-	  // set defaults
-	  string sb = "?";
-	  short sm = MQR;
-	  short sq = BQR;
-	  string sbPrev = "?";
-	  string sbNext = "?";
-	  
-	  vector<string> sampleListPlusRef = sampleList;
-	  
-	  if (useRefAllele) {
-	    
-	    // fill real values
-	    sb = refseqDna[refName].substr(p-1, 1);	      
-	    //	      sb = RefFastaData[refName].sequence.substr(p-1, 1);	      
-	    if (p > 1 ) {
-	      sbPrev = refseqDna[refName].substr(p-2, 1);	      
-	      //		sbPrev = RefFastaData[refName].sequence.substr(p-2, 1);
-	    }
-	    if (p < refLength) {
-	      //		sbNext = RefFastaData[refName].sequence.substr(p, 1);
-	      sbNext = refseqDna[refName].substr(p, 1);	      
-	    }
-	    
-	    // only use ref allele if real base
-	    if (sb == "A" || sb == "C" || sb == "G" || sb == "T") {
-
-	      // make reference base call
-	      Basecall bc;
-	      bc.seqName = target.seq;
-	      bc.map = sm;
-	      bc.base = sb;
-	      bc.qual = sq;
-	      bc.strand = "?";
-	      
-	      sampleListPlusRef.push_back(target.seq);
-	      vector<Basecall> basecalls;
-	      basecalls.push_back(bc);
-	      individualBasecalls[p][target.seq] = basecalls;
-	    }
-	  }
-
-	  //---------------------------------------------------------------
-	  // calculate genotype data likelihoods and data sufficiency
-	  //---------------------------------------------------------------
-	  
-	  // define per-sample genotype data likelihood
-	  map<string, map<string, long double, less<string> >, less<string> > 
-	    LnProbBiGivenGi;			
-	  
-	  // define per-sample data sufficiency indicator
-	  map<string, bool, less<string> > DataSufficientGi;
-	  
-	  // calculate genotype data likelihoods and data sufficiency
-	  for (vector<string>::const_iterator sampleIter = sampleListPlusRef.begin();
-	       sampleIter != sampleListPlusRef.end(); sampleIter++) {
-	    string ind = *sampleIter;
-	    vector<Basecall> basecalls = individualBasecalls[p][ind];
-	    
-	    // calculate genotype log likelihoods
-	    map<string, long double, less<string> > logGl 
-	      = logGenotypeLikelihoods(
-				       basecalls,
-				       diploid,
-				       RDF,
-				       debug2
-				       );
-	    
-	    // assign genotype log likelihoods in multi-individual data structure
-	    LnProbBiGivenGi[ind] = logGl;
-	    
-	    // determine data sufficiency
-	    DataSufficientGi[ind] = false;
-	    if (basecalls.size() > 0) {
-	      DataSufficientGi[ind] = true;
-	    }
-	  }	      
-	    
-	  //---------------------------------------------------------------
-	  // find best two alleles
-	  //---------------------------------------------------------------
-	  
-	  // load sorting hash
-	  map<string, int, less<string> > AQ;
-	  AQ["A"] = qtA; AQ["C"] = qtC; AQ["G"] = qtG; AQ["T"] = qtT;
-	  
-	  // sort eligible alleles according to descending allele quality
-	  vector<string> sortedAlleles = sortKeysByValue(AQ, true);
-	  
-	  // find best alleles
-	  string allele1 = sortedAlleles[0];
-	  string allele2 = sortedAlleles[1];
-	  
-	  // if ref allele is to be used make sure that is one of the alleles
-	  if (useRefAllele && forceRefAllele) {
-	    if (sb != allele1 && sb != allele2) {
-	      allele2 = allele1;
-	      allele1 = sb;
-	    }
-	  }
-	  
-	  //---------------------------------------------------------------
-	  // run posterior calculation for two best alleles
-	  //---------------------------------------------------------------
-	  Variation var = posteriorProb2(
-					LnProbBiGivenGi,
-					DataSufficientGi,
-					sampleListPlusRef,
-					diploid,
-					TH,
-					banded,
-					WB,
-					TB,
-					includeMonoB,
-					TR,
-					allele1,
-					allele2,
-					debug2
-					);
-	  
-	  //---------------------------------------------------------------
-	  // report if warranted
-	  //---------------------------------------------------------------
-	  if (var.pSnp >= PVL) {
-	    rptFile << "POSITION" << "\t" << refName << "\t" <<  p  
-		    << "\t" << ntBAll << "\t" << ntBNondup
-		    << "\t" << ntB << "\t" << qtB << "\t" << ntBp << "\t" << ntBm
-		    << "\t" << ntA << "\t" << qtA << "\t" << ntAp << "\t" << ntAm 
-		    << "\t" << ntC << "\t" << qtC << "\t" << ntCp << "\t" << ntCm 
-		    << "\t" << ntG << "\t" << qtG << "\t" << ntGp << "\t" << ntGm 
-		    << "\t" << ntT << "\t" << qtT << "\t" << ntTp << "\t" << ntTm;
-	    rptFile << "\t" << sb << "\t" << sq << "\t" << sbPrev << "\t" << sbNext;
-	  
-	    //-------------------------------------------------------------
-	    // print two best alleles and P(SNP) value
-	    //-------------------------------------------------------------
-	    rptFile << "\t" << allele1 << "\t" << allele2 << "\t" << var.pSnp;
-	  
-	    //-------------------------------------------------------------
-	    // print whether allele coverage conditions are met for each allele
-	    //-------------------------------------------------------------
-	    rptFile << "\t" << okA << "\t" << okC << "\t" << okG << "\t" << okT;
-
-	    //-------------------------------------------------------------
-	    // print number of individuals
-	    //-------------------------------------------------------------
-	    rptFile << "\t" << sampleList.size();
-	  
-	    //-------------------------------------------------------------
-	    // print individual coverage & posterior genotype probabilities
-	    //-------------------------------------------------------------
-	    for (vector<string>::const_iterator sampleIter = sampleList.begin();
-		 sampleIter != sampleList.end(); sampleIter++) {
-	      string ind = *sampleIter;
-	      
-	      // print individual id
-	      rptFile << "\t" << ind;
-	      
-	      // print coverage values
-	      rptFile  << "\t" << NiBAll[ind] << "\t" << NiBNondup[ind]
-		       << "\t" << NiB[ind] << "\t" << QiB[ind] << "\t" << NiBp[ind] << "\t" << NiBm[ind]
-		       << "\t" << NiA[ind] << "\t" << QiA[ind] << "\t" << NiAp[ind] << "\t" << NiAm[ind] 
-		       << "\t" << NiC[ind] << "\t" << QiC[ind] << "\t" << NiCp[ind] << "\t" << NiCm[ind] 
-		       << "\t" << NiG[ind] << "\t" << QiG[ind] << "\t" << NiGp[ind] << "\t" << NiGm[ind]
-		       << "\t" << NiT[ind] << "\t" << QiT[ind] << "\t" << NiTp[ind] << "\t" << NiTm[ind];
-	      
-	      for (map<string, long double, less<string> >::const_iterator 
-		     gIter = var.individualGenotypeProbability[ind].begin();
-		   gIter != var.individualGenotypeProbability[ind].end();
-		   gIter++) {
-		string g = gIter->first;
-		long double p = gIter->second;
-		rptFile << "\t" << g << "\t" << p;
-	      }
-	    }
-	    rptFile << endl;
-	  }
-
-	  //----------------------------------------------------------------
-	  // erase allele data for this position
-	  //----------------------------------------------------------------
-	  individualBasecallsAll.erase(p);
-	  individualBasecallsNondup.erase(p);
-	  individualBasecalls.erase(p);
-	}
       }
 
       //----------------------------------------------------------------
@@ -2425,8 +2113,8 @@ int main (int argc, char *argv[]) {
       gD += tD;
       gT++;
       gL += tL;
-    }
-  }
+    } // end bed targets loop
+  } // end reference targets loop
 
   //--------------------------------------------------------------------
   // report global stats
@@ -2453,7 +2141,8 @@ int main (int argc, char *argv[]) {
   bReader.Close();
 	
   // close rpt file
-  rptFile.close();
+  if (outputRPT) rptFile.close();
+  if (outputVCF) vcfFile.close();
   
   // report
   if (record) {

@@ -1802,6 +1802,7 @@ Variation posteriorProb2(
 	  if (DataSufficientGi[ind]) {
 	    
 	    // get individual genotype
+
 	    string Gi = Go.substr(indIndex, 1);
 	    
 	    // get individual log genotype probability
@@ -3663,6 +3664,10 @@ long double childGivenParentsGenotypeProbability(string GC, string GM, string GF
 
   // return
   return p;
+}
+
+int phred(double prob) {
+        return min(-10 * log10(1 - prob), (double) 99);
 }
 
 #endif

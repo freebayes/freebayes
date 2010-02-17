@@ -212,4 +212,10 @@ Variation varBayesProb(
 //------------------------------------------------------------------------------
 long double childGivenParentsGenotypeProbability(string, string, string, long double);
 
+//------------------------------------------------------------------------------
+// phred
+//------------------------------------------------------------------------------
+// converts probabilities in (0,1) to phred scores
+int phred(double prob);
+
 #endif
