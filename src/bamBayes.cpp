@@ -23,12 +23,16 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
+#include <time.h>
 
 // "tclap" commandline parsing library
 #include <tclap/CmdLine.h>
 
 // "boost" regular expression library
 #include <boost/regex.hpp>
+
+// "boost" string manipulation
+#include <boost/algorithm/string/join.hpp>
 
 // "hash_map" true hashes
 #include <ext/hash_map>
@@ -42,6 +46,7 @@
 #include "Class-FastaReader.h"
 #include "BamReader.h"
 #include "ReferenceSequenceReader.h"
+#include "Fasta.h"
 
 // uses
 using namespace std; 
@@ -289,7 +294,26 @@ int main (int argc, char *argv[]) {
   ArgList.push_back(arg);
   ValueArg<string> cmd_bam(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
+  //  TODO change this to fasta input
+  //  ... try to find a .fai file corresponding to the fasta file
+  //  unless one is supplied via another command line option
+  //  if one doesn't exist, raise an error and say 'hey, convert it using samtools'
+
   // input file: MOSAIK binary reference sequence archive
+  ArgStruct argMbr;
+  arg = argMbr; 
+  arg.shortId = ""; 
+  arg.longId = "fasta"; 
+  arg.description = "Reference sequence fasta file";
+  arg.required = true; 
+  arg.defaultValueString = ""; 
+  arg.type = "string"; 
+  arg.multi = false; 
+  ArgList.push_back(arg);
+  ValueArg<string> cmd_fasta(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+
+  // input file: MOSAIK binary reference sequence archive
+  /*
   ArgStruct argMbr;
   arg = argMbr; 
   arg.shortId = ""; 
@@ -301,6 +325,7 @@ int main (int argc, char *argv[]) {
   arg.multi = false; 
   ArgList.push_back(arg);
   ValueArg<string> cmd_mbr(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+  */
 
   // input file: target regions 
   ArgStruct argTargets;
@@ -334,12 +359,25 @@ int main (int argc, char *argv[]) {
   arg.shortId = ""; 
   arg.longId = "rpt"; 
   arg.description = "Output file: tab-delimited alignment and SNP report text file";
-  arg.required = true; 
+  arg.required = false; 
   arg.defaultValueString = ""; 
   arg.type = "string"; 
   arg.multi = false;
   ArgList.push_back(arg);
   ValueArg<string> cmd_rpt(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+
+  // output file: VCF (variant call format) file
+  ArgStruct argRpt;
+  arg = argRpt; 
+  arg.shortId = ""; 
+  arg.longId = "vcf"; 
+  arg.description = "Output file: VCF (variant call format) file";
+  arg.required = true; 
+  arg.defaultValueString = ""; 
+  arg.type = "string"; 
+  arg.multi = false;
+  ArgList.push_back(arg);
+  ValueArg<string> cmd_vcf(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
   // log file
   ArgStruct argLog;
@@ -746,10 +784,12 @@ int main (int argc, char *argv[]) {
   //----------------------------------------------------------------------------
 
   string bam = cmd_bam.getValue();
-  string mbr = cmd_mbr.getValue();
+  //string mbr = cmd_mbr.getValue();
+  string fasta = cmd_fasta.getValue();
   string targets = cmd_targets.getValue();
   string samples = cmd_samples.getValue();
   string rpt = cmd_rpt.getValue();
+  string vcf = cmd_vcf.getValue();
   string log = cmd_log.getValue();
 
   bool useRefAllele = cmd_useRefAllele.getValue();
@@ -783,6 +823,13 @@ int main (int argc, char *argv[]) {
   // check and fix command line options
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
+
+  
+  // check that we have one output file specified
+  if (rpt == "" && vcf == "") {
+      cerr << "You must specify at least one output file (via --rpt or --vcf)" << endl;
+      exit(1);
+  }
 
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
@@ -841,7 +888,7 @@ int main (int argc, char *argv[]) {
     logFile << endl;
     logFile << "Complete list of parameter values:" << endl;
     logFile << "  --bam = " << bam << endl;
-    logFile << "  --mbr = " << mbr << endl;
+    logFile << "  --fasta = " << fasta << endl;
     logFile << "  --targets = " << targets << endl;
     logFile << "  --samples = " << samples << endl;
     logFile << "  --rpt = " << rpt << endl;
@@ -882,7 +929,7 @@ int main (int argc, char *argv[]) {
     cerr << endl;
     cerr << "Complete list of parameter values:" << endl;
     cerr << "  --bam = " << bam << endl;
-    cerr << "  --mbr = " << mbr << endl;
+    cerr << "  --fasta = " << fasta << endl;
     cerr << "  --targets = " << targets << endl;
     cerr << "  --samples = " << samples << endl;
     cerr << "  --rpt = " << rpt << endl;
@@ -929,58 +976,31 @@ int main (int argc, char *argv[]) {
   if (record) {logFile << "opening report output file for writing: " << rpt << "...";}
   if (debug) {cerr << "opening report output file for writing: " << rpt << "...";}
 
-  // open
-  ofstream rptFile(rpt.c_str(), ios::out);
-  if (!rptFile) {
-    if (record) {logFile << " unable to open file: " << rpt << endl;}
-    cerr << " unable to open file: " << rpt << endl;
-    exit(1);
-  }
+  // open output streams
+  ostream rptFile, vcfFile;
+  bool outputRPT, outputVCF; // for legibility
+
+  if (rpt != "") {
+      outputRPT = true;
+      rptFile(rpt.c_str(), ios::out);
+      if (!rptFile) {
+        if (record) {logFile << " unable to open file: " << rpt << endl;}
+        cerr << " unable to open file: " << rpt << endl;
+        exit(1);
+      }
+  } else { outputRPT = false; }
+
+  if (vcf != "") {
+      outputVCF = true;
+      vcfFile(vcf.c_str(), ios::out);
+      if (!vcfFile) {
+        if (record) {logFile << " unable to open file: " << vcf << endl;}
+        cerr << " unable to open file: " << vcf << endl;
+        exit(1);
+      }
+  } else { outputVCF = false; }
   if (record) {logFile << " done." << endl;}
   if (debug) {cerr << " done." << endl;}
-
-  //----------------------------------------------------------------------------
-  // write header information
-  //----------------------------------------------------------------------------
-  rptFile << "# Command line that generated this output:";
-  for (int i=0; i<argc; i++) {
-    rptFile << " " << argv[i];
-  }
-  rptFile << endl;
-  rptFile << "#" << endl;
-  rptFile << "# Complete list of parameter values:" << endl;
-  rptFile << "#   --bam = " << bam << endl;
-  rptFile << "#   --mbr = " << mbr << endl;
-  rptFile << "#   --targets = " << targets << endl;
-  rptFile << "#   --samples = " << samples << endl;
-  rptFile << "#   --rpt = " << rpt << endl;
-  rptFile << "#   --log = " << log << endl;
-  rptFile << "#   --useRefAllele = " <<  bool2String[useRefAllele] << endl;
-  rptFile << "#   --forceRefAllele = " <<  bool2String[forceRefAllele] << endl;
-  rptFile << "#   --MQR = " << MQR << endl;
-  rptFile << "#   --BQR = " << BQR << endl;
-  rptFile << "#   --ploidy = " << ploidy << endl;
-  rptFile << "#   --sampleNaming = " << sampleNaming << endl;
-  rptFile << "#   --sampleDel = " << sampleDel << endl;
-  rptFile << "#   --BQL0 = " << BQL0 << endl;
-  rptFile << "#   --MQL0 = " << MQL0 << endl;
-  rptFile << "#   --BQL1 = " << BQL1 << endl;
-  rptFile << "#   --MQL1 = " << MQL1 << endl;
-  rptFile << "#   --BQL2 = " << BQL2 << endl;
-  rptFile << "#   --RMU = " << RMU << endl;
-  rptFile << "#   --IDW = " << IDW << endl;
-  rptFile << "#   --TH = " << TH << endl;
-  rptFile << "#   --PVL = " << PVL << endl;
-  rptFile << "#   --algorithm = " << algorithm << endl;
-  rptFile << "#   --RDF = " << RDF << endl;
-  rptFile << "#   --WB = " << WB << endl;
-  rptFile << "#   --TB = " << TB << endl;
-  rptFile << "#   --includeMonoB = " <<  bool2String[includeMonoB] << endl;
-  rptFile << "#   --TR = " << TR << endl;
-  rptFile << "#   --I = " << I << endl;
-  rptFile << "#   --debug = " <<  bool2String[debug] << endl;
-  rptFile << "#   --debug2 = " <<  bool2String[debug2] << endl;
-  rptFile << "#" << endl;
 
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
@@ -1016,6 +1036,114 @@ int main (int argc, char *argv[]) {
   // get number of samples
   int numberSamples = sampleList.size();
 
+  //----------------------------------------------------------------------------
+  // write header information
+  //----------------------------------------------------------------------------
+  if (outputRPT) {
+      rptFile << "# Command line that generated this output:";
+      for (int i=0; i<argc; i++) {
+        rptFile << " " << argv[i];
+      }
+      rptFile << endl;
+      rptFile << "#" << endl;
+      rptFile << "# Complete list of parameter values:" << endl;
+      rptFile << "#   --bam = " << bam << endl;
+      rptFile << "#   --fasta = " << fasta << endl;
+      rptFile << "#   --targets = " << targets << endl;
+      rptFile << "#   --samples = " << samples << endl;
+      rptFile << "#   --rpt = " << rpt << endl;
+      rptFile << "#   --log = " << log << endl;
+      rptFile << "#   --useRefAllele = " <<  bool2String[useRefAllele] << endl;
+      rptFile << "#   --forceRefAllele = " <<  bool2String[forceRefAllele] << endl;
+      rptFile << "#   --MQR = " << MQR << endl;
+      rptFile << "#   --BQR = " << BQR << endl;
+      rptFile << "#   --ploidy = " << ploidy << endl;
+      rptFile << "#   --sampleNaming = " << sampleNaming << endl;
+      rptFile << "#   --sampleDel = " << sampleDel << endl;
+      rptFile << "#   --BQL0 = " << BQL0 << endl;
+      rptFile << "#   --MQL0 = " << MQL0 << endl;
+      rptFile << "#   --BQL1 = " << BQL1 << endl;
+      rptFile << "#   --MQL1 = " << MQL1 << endl;
+      rptFile << "#   --BQL2 = " << BQL2 << endl;
+      rptFile << "#   --RMU = " << RMU << endl;
+      rptFile << "#   --IDW = " << IDW << endl;
+      rptFile << "#   --TH = " << TH << endl;
+      rptFile << "#   --PVL = " << PVL << endl;
+      rptFile << "#   --algorithm = " << algorithm << endl;
+      rptFile << "#   --RDF = " << RDF << endl;
+      rptFile << "#   --WB = " << WB << endl;
+      rptFile << "#   --TB = " << TB << endl;
+      rptFile << "#   --includeMonoB = " <<  bool2String[includeMonoB] << endl;
+      rptFile << "#   --TR = " << TR << endl;
+      rptFile << "#   --I = " << I << endl;
+      rptFile << "#   --debug = " <<  bool2String[debug] << endl;
+      rptFile << "#   --debug2 = " <<  bool2String[debug2] << endl;
+      rptFile << "#" << endl;
+  }
+
+  
+  if (outputVCF) {
+      time_t rawtime;
+      struct tm * timeinfo;
+      char datestr [80];
+
+      time(&rawtime);
+      timeinfo = localtime(&rawtime);
+
+      strftime(datestr, 80, "%Y%m%d %X", timeinfo);
+
+      vcfFile << "##format=VCFv3.3" << endl
+              << "##fileDate=" << datestr << endl
+              << 
+              << "##source=gigabayes" << endl
+              << "##reference=1000GenomesPilot-NCBI36" << endl
+              << "##phasing=none" << endl
+              << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
+             
+              << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
+              << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
+              << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
+              << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
+              //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
+
+              /*
+              << "##FORMAT=GT,1,String,\"Genotype\"" << endl
+              << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl
+              << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl
+              << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
+              */
+              
+              << "##FORMAT=NiBAll,1,Integer,\"Single-individual total base coverage\"" << endl
+              << "##FORMAT=NiBNondup,1,Integer,\"Single-individual non-duplicate base coverage\"" << endl
+              << "##FORMAT=NiB,1,Integer,\"Number of bases after MRU\"" << endl // XXX what does MRU mean?
+              << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
+              << "##FORMAT=NiBp,1,Integer,\"Number of bases forward strand\"" << endl
+              << "##FORMAT=NiBm,1,Integer,\"Number of bases reverse strand\"" << endl
+              << "##FORMAT=NiA,1,Integer,\"Number of A's\"" << endl
+              << "##FORMAT=QiA,1,Integer,\"Total quality of A's\"" << endl
+              << "##FORMAT=NiAp,1,Integer,\"Number of A's on forward strand\"" << endl
+              << "##FORMAT=NiAm,1,Integer,\"Number of A's on reverse strand\"" << endl
+              << "##FORMCT=NiC,1,Integer,\"Number of C's\"" << endl
+              << "##FORMCT=QiC,1,Integer,\"Total quality of C's\"" << endl
+              << "##FORMCT=NiCp,1,Integer,\"Number of C's on forward strand\"" << endl
+              << "##FORMCT=NiCm,1,Integer,\"Number of C's on reverse strand\"" << endl
+              << "##FORMGT=NiG,1,Integer,\"Number of G's\"" << endl
+              << "##FORMGT=QiG,1,Integer,\"Total quality of G's\"" << endl
+              << "##FORMGT=NiGp,1,Integer,\"Number of G's on forward strand\"" << endl
+              << "##FORMGT=NiGm,1,Integer,\"Number of G's on reverse strand\"" << endl
+              << "##FORMTT=NiT,1,Integer,\"Number of T's\"" << endl
+              << "##FORMTT=QiT,1,Integer,\"Total quality of T's\"" << endl
+              << "##FORMTT=NiTp,1,Integer,\"Number of T's on forward strand\"" << endl
+              << "##FORMTT=NiTm,1,Integer,\"Number of T's on reverse strand\"" << endl
+              << "##FORMTT=GiP,-1,String,\"Genotype probabilities for individual\"" << endl
+
+              << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" 
+              << boost::algorithm::join(sampleList, "\t")
+              << endl;
+
+  }
+
+
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
   // open BAM input file
@@ -1043,6 +1171,10 @@ int main (int argc, char *argv[]) {
   
   // retrieve header information
   string bamHeader = bReader.GetHeaderText();
+
+  // XXX optionally get sample names from header data instead of from the sequence file
+  // if (no sequence file)
+  //     sample names = read 'em
   
   // store the names of all the reference sequences in the BAM file
   RefVector refDatas = bReader.GetReferenceData();
@@ -1063,60 +1195,42 @@ int main (int argc, char *argv[]) {
   if (debug) {
     cerr << "Number of ref seqs: " << bReader.GetReferenceCount() << endl;
   }
-  
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  // process MBR input file
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  
-  //--------------------------------------------------------------------------
-  // report
-  //--------------------------------------------------------------------------
-  if (record) {logFile << "Opening MOSAIK binary format reference sequence archive input file: " << mbr << " ...";}
-  if (debug) {cerr << "Opening MOSAIK binary format reference sequence archive input file: " << mbr << " ...";}
-  
-  //--------------------------------------------------------------------------
-  // if this is not a valid MOSAIK reference file, complain and bomb
-  //--------------------------------------------------------------------------
-  if (! Mosaik::CReferenceSequenceReader::CheckFile(mbr, false)) {
-    cerr << "ERROR: MOSAIK reference file not valid: " << mbr << ". Exiting..." << endl;
-    exit(1);
-  }
 
+  // XXX get the number of alignments in the bam file
+  
   //--------------------------------------------------------------------------
-  // open the MOSAIK alignments file
+  // process input fasta file
   //--------------------------------------------------------------------------
-  Mosaik::CReferenceSequenceReader rsr;
-  rsr.Open(mbr);
-
-  //--------------------------------------------------------------------------
-  // retrieve all of the reference sequence metadata
-  //--------------------------------------------------------------------------
-  vector<Mosaik::ReferenceSequence> referenceSequences;
-  rsr.GetReferenceSequences(referenceSequences);
+  // This call loads the reference and reads any index file it can find.
+  // If it can't find an index file for the reference, it will attempt to
+  // generate one alongside it.
+  FastaReference* fastaReference = new FastaReference(fasta);
+  map<string, unsigned int, less<string> > refseqLength;
+  map<string, string, less<string> > refseqDna;
 
   //--------------------------------------------------------------------------
   // load ref seq names into hash
   //--------------------------------------------------------------------------
-  map<string, unsigned int, less<string> > refseqLength;
-  map<string, string, less<string> > refseqDna;
-  for (vector<Mosaik::ReferenceSequence>::const_iterator rsIter = referenceSequences.begin();
-       rsIter != referenceSequences.end(); ++rsIter) {
-    Mosaik::ReferenceSequence rs = *rsIter;
-    string ref = rs.Name;
-    refseqLength[ref] = rs.NumBases;
-    
-    // get the reference base sequence
-    string bases;
-    rsr.GetReferenceSequence(ref, bases);
+  for(map<string, FastaIndexEntry>::const_iterator it = fastaReference->index->begin(); 
+          it != fastaReference->index->end(); ++it) {
 
-    refseqDna[ref] = bases;
+    FastaIndexEntry entry = it->second;
+
+    cerr << entry << endl;
+
+    // we split out the first word of the full sequence name for keying our sequences
+    vector<string> sequenceNameParts;
+    boost::split(sequenceNameParts, entry.name, boost::is_any_of(" "));
+    string name = sequenceNameParts.front();
+
+    refseqLength[name] = entry.length;
+    // get the reference base sequence
+    refseqDna[name] = fastaReference->getSequence(entry.name);
+
   }
 
-
   // close the reference sequence reader
-  rsr.Close();
+  delete fastaReference;
   
   // report success
   if (record) {logFile << " done." << endl;}
@@ -1294,43 +1408,27 @@ int main (int argc, char *argv[]) {
       else {
 	if (record) {logFile << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
 	if (debug) {cerr << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
+    // XXX get the number of alignments in this target space, and jump back
+    //     we do this so that we can properly step through the positions at the
+    //     end of the region that do not have reads following them without
+    //     having to loop through them one by one
+        int numReadsInTarget = 0;    
+        while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
+            ++numReadsInTarget;
+        }
+        bReader.Jump(refId, target.left); // jump back
       }
 
       //------------------------------------------------------------------
-      // if target is bad, print empty stats for TARGET and for all POSITIONS within
+      // if target is bad, warn
       //------------------------------------------------------------------
       if (badTarget) {
-	if (record) {logFile << "    Target not OK... adding default stats" << endl;}
-	if (debug) {cerr << "    Target not OK... adding default stats" << endl;}
-      
-	for (int p = target.left; p <= target.right; p++) {
-	  
-	  // report progress if necessary
-	  if (record && (p % I == 0)) {
-	    logFile << "    Processing refseq:" << target.seq << " position: " << p << endl;
-	  }
-	  if (debug && (p % I == 0)) {
-	    cerr << "    Processing ref seq:" << target.seq << " position: " << p << endl;
-	  }
+        if (record) {logFile << "    Target not OK... adding default stats" << endl;}
+        if (debug) {cerr << "    Target not OK... adding default stats" << endl;}
 
-	  // only report if PVL parameter is not greater than 0
+        // XXX warn about bad targets by default ?
+        cerr << "    Warning: Bad target starting at position " << target.left << endl;
 
-	  if (PVL <= 0) {
-	    // print position stats
-	    rptFile << "POSITION" << "\t" << target.seq << "\t" <<  p  
-		    << "\t" << 0 << "\t" << 0
-		    << "\t" << 0 << "\t" << 0 << "\t" << 0
-		    << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 
-		    << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 
-		    << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 
-		    << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0;
-	    rptFile << "\t" << "?" << "\t" << 0 << "\t" << "?" << "\t" << "?";
-	    rptFile << "\t" << "?" << "\t" << "?" << "\t" << 0;
-	    rptFile << "\t" << "?" << "\t" << "?";
-	    rptFile << "\t" << 0;
-	    rptFile << "\t" << "??" << "\t" << 0 << "\t" << "??" << "\t" << 0 << "\t" << "??" << "\t" << 0 << endl;
-	  }
-	}
       }
  
       // otherwise analyze target
@@ -1338,9 +1436,11 @@ int main (int argc, char *argv[]) {
 	if (record) {logFile << "    Target OK... processing..." << endl;}
 	if (debug) {cerr << "    Target OK... processing..." << endl;}
       
+    int processedReadsInTarget = 0;
 	int refPosLast = target.left - 1;
 	BamAlignment ba;
 	while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
+        ++processedReadsInTarget;
 	  
 	  // only process if mapped
 	  if (! ba.IsMapped()) {
@@ -1571,10 +1671,15 @@ int main (int argc, char *argv[]) {
 	  
 	  //----------------------------------------------------------------
 	  // analyze positions up to the position before the beginning of this alignment
+      // including positions after the alignment if it is the last one in the target region
 	  //----------------------------------------------------------------
 	  int refPosLeft = refPosLast + 1;
 	  if (refPosLeft < target.left) {refPosLeft = target.left;}
-	  int refPosRight = min((int)ba.Position, target.right);
+      // check if we are at the last read
+      // if so set the refPosRight to the target right
+      // XXX remove the following sanity check when you have sorted this out
+      if (processedReadsInTarget < numReadsInTarget) { cerr << "at last read in target region" << endl; }
+	  int refPosRight = (processedReadsInTarget < numReadsInTarget) ? min((int)ba.Position, target.right) : target.right;
 	  for (int p = refPosLeft; p <= refPosRight; p++) {
 	    
 	    // report progress if necessary
@@ -1739,6 +1844,7 @@ int main (int argc, char *argv[]) {
 	      
 	      // fill real values
 	      sb = refseqDna[refName].substr(p-1, 1);	      
+
 	      //	      sb = RefFastaData[refName].sequence.substr(p-1, 1);	      
 	      if (p > 1 ) {
 		sbPrev = refseqDna[refName].substr(p-2, 1);	      
@@ -1826,6 +1932,7 @@ int main (int argc, char *argv[]) {
 	      }
 	    }
 	    
+
 	    //---------------------------------------------------------------
 	    // run posterior calculation for two best alleles
 	    //---------------------------------------------------------------
@@ -1844,64 +1951,112 @@ int main (int argc, char *argv[]) {
 					  allele2,
 					  debug2
 					  );
+
 	    
 	    //---------------------------------------------------------------
 	    // report if required
 	    //---------------------------------------------------------------
 	    if (var.pSnp >= PVL) {
 
-	      rptFile << "POSITION" << "\t" << refName << "\t" <<  p  
-		      << "\t" << ntBAll << "\t" << ntBNondup
-		      << "\t" << ntB << "\t" << qtB << "\t" << ntBp << "\t" << ntBm
-		      << "\t" << ntA << "\t" << qtA << "\t" << ntAp << "\t" << ntAm 
-		      << "\t" << ntC << "\t" << qtC << "\t" << ntCp << "\t" << ntCm 
-		      << "\t" << ntG << "\t" << qtG << "\t" << ntGp << "\t" << ntGm 
-		      << "\t" << ntT << "\t" << qtT << "\t" << ntTp << "\t" << ntTm;	    
-	      rptFile << "\t" << sb << "\t" << sq << "\t" << sbPrev << "\t" << sbNext;
-	    
-	      //-------------------------------------------------------------
-	      // print two best alleles and P(SNP) value
-	      //-------------------------------------------------------------
-	      rptFile << "\t" << allele1 << "\t" << allele2 << "\t" << var.pSnp;
-	      
-	      //-------------------------------------------------------------
-	      // print whether allele coverage conditions are met for each allele
-	      //-------------------------------------------------------------
-	      rptFile << "\t" << okA << "\t" << okC << "\t" << okG << "\t" << okT;
+            if (outputRPT) {
+              rptFile << "POSITION" << "\t" << refName << "\t" <<  p  
+                  << "\t" << ntBAll << "\t" << ntBNondup
+                  << "\t" << ntB << "\t" << qtB << "\t" << ntBp << "\t" << ntBm
+                  << "\t" << ntA << "\t" << qtA << "\t" << ntAp << "\t" << ntAm 
+                  << "\t" << ntC << "\t" << qtC << "\t" << ntCp << "\t" << ntCm 
+                  << "\t" << ntG << "\t" << qtG << "\t" << ntGp << "\t" << ntGm 
+                  << "\t" << ntT << "\t" << qtT << "\t" << ntTp << "\t" << ntTm;	    
+              rptFile << "\t" << sb << "\t" << sq << "\t" << sbPrev << "\t" << sbNext;
+            
+              //-------------------------------------------------------------
+              // print two best alleles and P(SNP) value
+              //-------------------------------------------------------------
+              rptFile << "\t" << allele1 << "\t" << allele2 << "\t" << var.pSnp;
+              
+              //-------------------------------------------------------------
+              // print whether allele coverage conditions are met for each allele
+              //-------------------------------------------------------------
+              rptFile << "\t" << okA << "\t" << okC << "\t" << okG << "\t" << okT;
 
-	      //-------------------------------------------------------------
-	      // print number of individuals
-	      //-------------------------------------------------------------
-	      rptFile << "\t" << sampleList.size();
-	    
-	      //-------------------------------------------------------------
-	      // print individual coverage & posterior genotype probabilities
-	      //-------------------------------------------------------------
-	      for (vector<string>::const_iterator sampleIter = sampleList.begin();
-		   sampleIter != sampleList.end(); sampleIter++) {
-		string ind = *sampleIter;
-		
-		// print individual id
-		rptFile << "\t" << ind;
-		
-		// print coverage values
-		rptFile  << "\t" << NiBAll[ind] << "\t" << NiBNondup[ind]
-			 << "\t" << NiB[ind] << "\t" << QiB[ind] << "\t" << NiBp[ind] << "\t" << NiBm[ind]
-			 << "\t" << NiA[ind] << "\t" << QiA[ind] << "\t" << NiAp[ind] << "\t" << NiAm[ind] 
-			 << "\t" << NiC[ind] << "\t" << QiC[ind] << "\t" << NiCp[ind] << "\t" << NiCm[ind] 
-			 << "\t" << NiG[ind] << "\t" << QiG[ind] << "\t" << NiGp[ind] << "\t" << NiGm[ind]
-			 << "\t" << NiT[ind] << "\t" << QiT[ind] << "\t" << NiTp[ind] << "\t" << NiTm[ind];
-		
-		for (map<string, long double, less<string> >::const_iterator 
-		       gIter = var.individualGenotypeProbability[ind].begin();
-		     gIter != var.individualGenotypeProbability[ind].end();
-		     gIter++) {
-		  string g = gIter->first;
-		  long double p = gIter->second;
-		  rptFile << "\t" << g << "\t" << p;
-		}
-	      }
-	      rptFile << endl;
+              //-------------------------------------------------------------
+              // print number of individuals
+              //-------------------------------------------------------------
+              rptFile << "\t" << sampleList.size();
+            
+              //-------------------------------------------------------------
+              // print individual coverage & posterior genotype probabilities
+              //-------------------------------------------------------------
+              for (vector<string>::const_iterator sampleIter = sampleList.begin();
+               sampleIter != sampleList.end(); sampleIter++) {
+                string ind = *sampleIter;
+            
+                // print individual id
+                rptFile << "\t" << ind;
+                
+                // print coverage values
+                rptFile  << "\t" << NiBAll[ind] << "\t" << NiBNondup[ind]
+                     << "\t" << NiB[ind] << "\t" << QiB[ind] << "\t" << NiBp[ind] << "\t" << NiBm[ind]
+                     << "\t" << NiA[ind] << "\t" << QiA[ind] << "\t" << NiAp[ind] << "\t" << NiAm[ind] 
+                     << "\t" << NiC[ind] << "\t" << QiC[ind] << "\t" << NiCp[ind] << "\t" << NiCm[ind] 
+                     << "\t" << NiG[ind] << "\t" << QiG[ind] << "\t" << NiGp[ind] << "\t" << NiGm[ind]
+                     << "\t" << NiT[ind] << "\t" << QiT[ind] << "\t" << NiTp[ind] << "\t" << NiTm[ind];
+            
+                for (map<string, long double, less<string> >::const_iterator 
+                       gIter = var.individualGenotypeProbability[ind].begin();
+                     gIter != var.individualGenotypeProbability[ind].end();
+                     gIter++) {
+                  string g = gIter->first;
+                  long double p = gIter->second;
+                  rptFile << "\t" << g << "\t" << p;
+                }
+              }
+              rptFile << endl;
+            }
+
+        //  XXX insert VCF output here
+            if (outputVCF) {
+
+                vcfFile << refName << "\t" 
+                    <<  p  << "\t"  // XXX I think we have to add one to the position here per the vcf spec
+                    << "." << "\t"  // . is the default signifier for "no id"
+                    << sb << "\t" // reference base at this position
+                    << (allele1 == allele2) ? allele1 : allele1 + "," + allele2 << "\t" // alternate allele or alleles
+                    << var.pSnp << "\t" // quality of the snp call
+                    << "0" << "\t" // filters, 0 means "no filters"
+                    << "NS=" + sampleList.size() + ";" // number of samples
+                    << "ND=" + ntBNondup + ";" // 
+                    << "DP=" + tDAll
+                    << "\t"
+                    // format string
+                    << "NiBAll:NiBNondup:NiB:QiB:NiBp:NiBm:NiA:QiA:NiAp:NiAm:NiC:QiC:NiCp:NiCm:NiG:QiG:NiGp:NiGm:NiT:QiT:NiTp:NiTm:GiP"
+                    << "\t";
+                // samples
+                for (vector<string>::const_iterator sampleIter = sampleList.begin();
+                 sampleIter != sampleList.end(); sampleIter++) {
+                  string ind = *sampleIter;
+                
+                  // print coverage values
+                  vcfFile << NiBAll[ind] << ":" << NiBNondup[ind]
+                       << ":" << NiB[ind] << ":" << QiB[ind] << ":" << NiBp[ind] << ":" << NiBm[ind]
+                       << ":" << NiA[ind] << ":" << QiA[ind] << ":" << NiAp[ind] << ":" << NiAm[ind] 
+                       << ":" << NiC[ind] << ":" << QiC[ind] << ":" << NiCp[ind] << ":" << NiCm[ind] 
+                       << ":" << NiG[ind] << ":" << QiG[ind] << ":" << NiGp[ind] << ":" << NiGm[ind]
+                       << ":" << NiT[ind] << ":" << QiT[ind] << ":" << NiTp[ind] << ":" << NiTm[ind];
+                
+                  vector <string>genoProbs;
+                  for (map<string, long double, less<string> >::const_iterator 
+                         gIter = var.individualGenotypeProbability[ind].begin();
+                       gIter != var.individualGenotypeProbability[ind].end();
+                       gIter++) {
+                    string g = gIter->first;
+                    long double p = gIter->second;
+                    genoProbs.push_back(g + "|" + p);
+                  }
+                  vcfFile << boost::algorithm::join(genoProbs, ",");
+                  vcfFile << "\t";  // XXX leaves trailing tab
+                }
+                vcfFile << endl;
+            }
 	    }
 
 	    //--------------------------------------------------------------

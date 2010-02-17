@@ -33,8 +33,8 @@ all: testMath bamBayes bamIndel bamDup bamDump bamSlice bamStat rptSum aggregate
 testMath: testMath.o Function-Sequence.o Function-Math.o
 	$(CC) $(CFLAGS) testMath.o Function-Math.o Function-Sequence.o -o testMath -lboost_regex -lpthread -Wno-deprecated
 
-bamBayes: bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o
-	$(CC) $(CFLAGS) bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o -o bamBayes -lz -lboost_regex -lpthread -Wno-deprecated
+bamBayes: bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o
+	$(CC) $(CFLAGS) bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o Fasta.o -o bamBayes -lz -lboost_regex -lpthread -Wno-deprecated
 
 bamIndel: bamIndel.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o
 	$(CC) $(CFLAGS) bamIndel.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o -o bamIndel -lz -lboost_regex -lpthread -Wno-deprecated
@@ -64,6 +64,9 @@ aggregateHapmap: aggregateHapmap.o ReferenceSequenceReader.o Function-Generic.o 
 # Main program compilations
 testMath.o: testMath.cpp
 	$(CC) $(CFLAGS) -c testMath.cpp -Wno-deprecated
+
+Fasta.o: Fasta.cpp
+	$(CC) $(CFLAGS) -c Fasta.cpp -Wno-deprecated
 
 bamBayes.o: bamBayes.cpp
 	$(CC) $(CFLAGS) -c bamBayes.cpp -Wno-deprecated
