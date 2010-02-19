@@ -286,7 +286,7 @@ int main (int argc, char *argv[]) {
   arg = argBam; 
   arg.shortId = ""; 
   arg.longId = "bam"; 
-  arg.description = "Read alignment input file (indexed BAM format)";
+  arg.description = "Read alignment input file (indexed and sorted BAM format)";
   arg.required = false; 
   arg.defaultValueString = ""; 
   arg.type = "string"; 
@@ -962,186 +962,6 @@ int main (int argc, char *argv[]) {
     cerr << endl;
   }
 
-  //----------------------------------------------------------------------------
-  //----------------------------------------------------------------------------
-  // open output file(s)
-  //----------------------------------------------------------------------------
-  //----------------------------------------------------------------------------
-
-  //----------------------------------------------------------------------------
-  // open report output file
-  //----------------------------------------------------------------------------
-
-  // report
-  if (record) {logFile << "opening report output file for writing: " << rpt << "...";}
-  if (debug) {cerr << "opening report output file for writing: " << rpt << "...";}
-
-  // open output streams
-  ofstream rptFile, vcfFile;
-  bool outputRPT, outputVCF; // for legibility
-
-  if (rpt != "") {
-      outputRPT = true;
-      rptFile.open(rpt.c_str());
-      if (!rptFile) {
-        if (record) {logFile << " unable to open file: " << rpt << endl;}
-        cerr << " unable to open file: " << rpt << endl;
-        exit(1);
-      }
-  } else { outputRPT = false; }
-
-  if (vcf != "") {
-      outputVCF = true;
-      vcfFile.open(vcf.c_str());
-      if (!vcfFile) {
-        if (record) {logFile << " unable to open file: " << vcf << endl;}
-        cerr << " unable to open file: " << vcf << endl;
-        exit(1);
-      }
-  } else { outputVCF = false; }
-  if (record) {logFile << " done." << endl;}
-  if (debug) {cerr << " done." << endl;}
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  // read sample list file
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  map<string, bool, less<string> > samplePresent;
-  vector<string> sampleList;
-  if (samples != "") {
-    ifstream sampleFile(samples.c_str(), ios::in);
-    if (! sampleFile) {
-      cerr << "unable to open file: " << samples << endl;
-      exit(1);
-    }
-    boost::regex patternSample("^(\\S+)\\s*(.*)$");
-    boost::regex re("\\s+");
-    boost::regex pr("^(\\S+):(\\S+)$");
-    boost::smatch match;
-    string line;
-    while (getline(sampleFile, line)) {
-      
-      // if proper line
-      if (boost::regex_search(line, match, patternSample)) {
-	
-	// assign content
-	string s = match[1];
-	samplePresent[s] = true;
-	sampleList.push_back(s);
-      }
-    }
-  }
-
-  // get number of samples
-  int numberSamples = sampleList.size();
-
-  //----------------------------------------------------------------------------
-  // write header information
-  //----------------------------------------------------------------------------
-  if (outputRPT) {
-      rptFile << "# Command line that generated this output:";
-      for (int i=0; i<argc; i++) {
-        rptFile << " " << argv[i];
-      }
-      rptFile << endl;
-      rptFile << "#" << endl;
-      rptFile << "# Complete list of parameter values:" << endl;
-      rptFile << "#   --bam = " << bam << endl;
-      rptFile << "#   --fasta = " << fasta << endl;
-      rptFile << "#   --targets = " << targets << endl;
-      rptFile << "#   --samples = " << samples << endl;
-      rptFile << "#   --rpt = " << rpt << endl;
-      rptFile << "#   --log = " << log << endl;
-      rptFile << "#   --useRefAllele = " <<  bool2String[useRefAllele] << endl;
-      rptFile << "#   --forceRefAllele = " <<  bool2String[forceRefAllele] << endl;
-      rptFile << "#   --MQR = " << MQR << endl;
-      rptFile << "#   --BQR = " << BQR << endl;
-      rptFile << "#   --ploidy = " << ploidy << endl;
-      rptFile << "#   --sampleNaming = " << sampleNaming << endl;
-      rptFile << "#   --sampleDel = " << sampleDel << endl;
-      rptFile << "#   --BQL0 = " << BQL0 << endl;
-      rptFile << "#   --MQL0 = " << MQL0 << endl;
-      rptFile << "#   --BQL1 = " << BQL1 << endl;
-      rptFile << "#   --MQL1 = " << MQL1 << endl;
-      rptFile << "#   --BQL2 = " << BQL2 << endl;
-      rptFile << "#   --RMU = " << RMU << endl;
-      rptFile << "#   --IDW = " << IDW << endl;
-      rptFile << "#   --TH = " << TH << endl;
-      rptFile << "#   --PVL = " << PVL << endl;
-      rptFile << "#   --algorithm = " << algorithm << endl;
-      rptFile << "#   --RDF = " << RDF << endl;
-      rptFile << "#   --WB = " << WB << endl;
-      rptFile << "#   --TB = " << TB << endl;
-      rptFile << "#   --includeMonoB = " <<  bool2String[includeMonoB] << endl;
-      rptFile << "#   --TR = " << TR << endl;
-      rptFile << "#   --I = " << I << endl;
-      rptFile << "#   --debug = " <<  bool2String[debug] << endl;
-      rptFile << "#   --debug2 = " <<  bool2String[debug2] << endl;
-      rptFile << "#" << endl;
-  }
-
-  
-  if (outputVCF) {
-      time_t rawtime;
-      struct tm * timeinfo;
-      char datestr [80];
-
-      time(&rawtime);
-      timeinfo = localtime(&rawtime);
-
-      strftime(datestr, 80, "%Y%m%d %X", timeinfo);
-
-      vcfFile << "##format=VCFv3.3" << endl
-              << "##fileDate=" << datestr << endl
-              << "##source=gigabayes" << endl
-              << "##reference=1000GenomesPilot-NCBI36" << endl
-              << "##phasing=none" << endl
-              << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
-             
-              << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
-              << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
-              << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
-              << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
-              //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
-
-              /*
-              << "##FORMAT=GT,1,String,\"Genotype\"" << endl
-              << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl
-              << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl
-              << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
-              */
-              
-              << "##FORMAT=NiBAll,1,Integer,\"Single-individual total base coverage\"" << endl
-              << "##FORMAT=NiBNondup,1,Integer,\"Single-individual non-duplicate base coverage\"" << endl
-              << "##FORMAT=NiB,1,Integer,\"Number of bases after MRU\"" << endl // XXX what does MRU mean?
-              << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
-              << "##FORMAT=NiBp,1,Integer,\"Number of bases forward strand\"" << endl
-              << "##FORMAT=NiBm,1,Integer,\"Number of bases reverse strand\"" << endl
-              << "##FORMAT=NiA,1,Integer,\"Number of A's\"" << endl
-              << "##FORMAT=QiA,1,Integer,\"Total quality of A's\"" << endl
-              << "##FORMAT=NiAp,1,Integer,\"Number of A's on forward strand\"" << endl
-              << "##FORMAT=NiAm,1,Integer,\"Number of A's on reverse strand\"" << endl
-              << "##FORMCT=NiC,1,Integer,\"Number of C's\"" << endl
-              << "##FORMCT=QiC,1,Integer,\"Total quality of C's\"" << endl
-              << "##FORMCT=NiCp,1,Integer,\"Number of C's on forward strand\"" << endl
-              << "##FORMCT=NiCm,1,Integer,\"Number of C's on reverse strand\"" << endl
-              << "##FORMGT=NiG,1,Integer,\"Number of G's\"" << endl
-              << "##FORMGT=QiG,1,Integer,\"Total quality of G's\"" << endl
-              << "##FORMGT=NiGp,1,Integer,\"Number of G's on forward strand\"" << endl
-              << "##FORMGT=NiGm,1,Integer,\"Number of G's on reverse strand\"" << endl
-              << "##FORMTT=NiT,1,Integer,\"Number of T's\"" << endl
-              << "##FORMTT=QiT,1,Integer,\"Total quality of T's\"" << endl
-              << "##FORMTT=NiTp,1,Integer,\"Number of T's on forward strand\"" << endl
-              << "##FORMTT=NiTm,1,Integer,\"Number of T's on reverse strand\"" << endl
-              << "##FORMTT=GiP,-1,String,\"Genotype probabilities for individual\"" << endl
-
-              << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" 
-              << boost::algorithm::join(sampleList, "\t")
-              << endl;
-
-  }
-
 
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
@@ -1165,21 +985,73 @@ int main (int argc, char *argv[]) {
   if (debug) {cerr << " done." << endl;}
   
   //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  // read sample list file or get sample names from bam file header
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  //
+  // If a sample file is given, use it.  But otherwise process the bam file
+  // header to get the sample names.
+  //
+    // XXX this variable seems to be unused
+  map<string, bool, less<string> > samplePresent;
+  vector<string> sampleList;
+  if (samples != "") {
+    ifstream sampleFile(samples.c_str(), ios::in);
+    if (! sampleFile) {
+      cerr << "unable to open file: " << samples << endl;
+      exit(1);
+    }
+    boost::regex patternSample("^(\\S+)\\s*(.*)$");
+    boost::regex re("\\s+");
+    boost::regex pr("^(\\S+):(\\S+)$");
+    boost::smatch match;
+    string line;
+    while (getline(sampleFile, line)) {
+      
+      // if proper line
+      if (boost::regex_search(line, match, patternSample)) {
+	
+	// assign content
+	string s = match[1];
+    if (debug) cerr << "found sample " << s << endl;
+	samplePresent[s] = true;
+	sampleList.push_back(s);
+      }
+    }
+  } else { // no samples file given, read from BAM file header for sample names
+      // retrieve header information
+      if (debug) cerr << "no sample list file given, attempting to read sample names from bam file" << endl;
+      string bamHeader = bReader.GetHeaderText();
+
+      vector<string> headerLines;
+      boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
+
+      for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
+
+          // get next line from header, skip if empty
+          string headerLine = *it;
+          if ( headerLine.empty() ) { continue; }
+
+          // lines of the header look like:
+          // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
+          //                     ^^^^^^^\ is our sample name
+          if ( headerLine.find("@RG") == 0 ) {
+              vector<string> readGroupParts;
+              boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
+              vector<string> nameParts;
+              boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
+              string name = nameParts.back();
+              //mergedHeader.append(1, '\n');
+              if (debug) cerr << "found sample " << name << endl;
+              sampleList.push_back(name);
+          }
+      }
+  }
+  
+  //--------------------------------------------------------------------------
   // read reference sequences from input file
   //--------------------------------------------------------------------------
-  
-  // retrieve header information
-  string bamHeader = bReader.GetHeaderText();
-
-  // TODO XXX optionally get sample names from header data instead of from the sequence file
-  // if (no sequence file given)
-  //     sample names = read 'em from bam header
-  //     get the header via
-  //
-  //     BamReader reader;
-  //     reader.Open(filename);
-  //     cout << reader.GetHeaderText() << endl;
-  //
   
   // store the names of all the reference sequences in the BAM file
   RefVector refDatas = bReader.GetReferenceData();
@@ -1315,6 +1187,157 @@ int main (int argc, char *argv[]) {
   if (debug) {cerr << "Number of target regions: " << tc << endl;}
   if (record) {logFile << "Number of target regions: " << tc << endl;}
   
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  // open output file(s)
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+
+  //----------------------------------------------------------------------------
+  // open report output file
+  //----------------------------------------------------------------------------
+
+  // report
+  if (record) {logFile << "opening report output file for writing: " << rpt << "...";}
+  if (debug) {cerr << "opening report output file for writing: " << rpt << "...";}
+
+  // open output streams
+  ofstream rptFile, vcfFile;
+  bool outputRPT, outputVCF; // for legibility
+
+  if (rpt != "") {
+      outputRPT = true;
+      rptFile.open(rpt.c_str());
+      if (!rptFile) {
+        if (record) {logFile << " unable to open file: " << rpt << endl;}
+        cerr << " unable to open file: " << rpt << endl;
+        exit(1);
+      }
+  } else { outputRPT = false; }
+
+  if (vcf != "") {
+      outputVCF = true;
+      vcfFile.open(vcf.c_str());
+      if (!vcfFile) {
+        if (record) {logFile << " unable to open file: " << vcf << endl;}
+        cerr << " unable to open file: " << vcf << endl;
+        exit(1);
+      }
+  } else { outputVCF = false; }
+  if (record) {logFile << " done." << endl;}
+  if (debug) {cerr << " done." << endl;}
+
+  //----------------------------------------------------------------------------
+  // write header information
+  //----------------------------------------------------------------------------
+  if (outputRPT) {
+      rptFile << "# Command line that generated this output:";
+      for (int i=0; i<argc; i++) {
+        rptFile << " " << argv[i];
+      }
+      rptFile << endl;
+      rptFile << "#" << endl;
+      rptFile << "# Complete list of parameter values:" << endl;
+      rptFile << "#   --bam = " << bam << endl;
+      rptFile << "#   --fasta = " << fasta << endl;
+      rptFile << "#   --targets = " << targets << endl;
+      rptFile << "#   --samples = " << samples << endl;
+      rptFile << "#   --rpt = " << rpt << endl;
+      rptFile << "#   --log = " << log << endl;
+      rptFile << "#   --useRefAllele = " <<  bool2String[useRefAllele] << endl;
+      rptFile << "#   --forceRefAllele = " <<  bool2String[forceRefAllele] << endl;
+      rptFile << "#   --MQR = " << MQR << endl;
+      rptFile << "#   --BQR = " << BQR << endl;
+      rptFile << "#   --ploidy = " << ploidy << endl;
+      rptFile << "#   --sampleNaming = " << sampleNaming << endl;
+      rptFile << "#   --sampleDel = " << sampleDel << endl;
+      rptFile << "#   --BQL0 = " << BQL0 << endl;
+      rptFile << "#   --MQL0 = " << MQL0 << endl;
+      rptFile << "#   --BQL1 = " << BQL1 << endl;
+      rptFile << "#   --MQL1 = " << MQL1 << endl;
+      rptFile << "#   --BQL2 = " << BQL2 << endl;
+      rptFile << "#   --RMU = " << RMU << endl;
+      rptFile << "#   --IDW = " << IDW << endl;
+      rptFile << "#   --TH = " << TH << endl;
+      rptFile << "#   --PVL = " << PVL << endl;
+      rptFile << "#   --algorithm = " << algorithm << endl;
+      rptFile << "#   --RDF = " << RDF << endl;
+      rptFile << "#   --WB = " << WB << endl;
+      rptFile << "#   --TB = " << TB << endl;
+      rptFile << "#   --includeMonoB = " <<  bool2String[includeMonoB] << endl;
+      rptFile << "#   --TR = " << TR << endl;
+      rptFile << "#   --I = " << I << endl;
+      rptFile << "#   --debug = " <<  bool2String[debug] << endl;
+      rptFile << "#   --debug2 = " <<  bool2String[debug2] << endl;
+      rptFile << "#" << endl;
+  }
+
+  
+  if (outputVCF) {
+      time_t rawtime;
+      struct tm * timeinfo;
+      char datestr [80];
+
+      time(&rawtime);
+      timeinfo = localtime(&rawtime);
+
+      strftime(datestr, 80, "%Y%m%d %X", timeinfo);
+
+      vcfFile << "##format=VCFv3.3" << endl
+              << "##fileDate=" << datestr << endl
+              << "##source=gigabayes" << endl
+              << "##reference=1000GenomesPilot-NCBI36" << endl
+              << "##phasing=none" << endl
+              << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
+             
+              << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
+              << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
+              << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
+              << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
+              //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
+
+              // these are req'd
+              // FIXME, not handled properly now
+              << "##FORMAT=GT,1,String,\"Genotype\"" << endl // g
+              << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl // phred prob of genotype
+              << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl // NiBAll[ind]
+              << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
+              << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
+              
+              // NiBAll,
+              // these are probably unnecessary
+              /*
+              << "##FORMAT=NiBAll,1,Integer,\"Single-individual total base coverage\"" << endl
+              << "##FORMAT=NiBNondup,1,Integer,\"Single-individual non-duplicate base coverage\"" << endl
+              << "##FORMAT=NiB,1,Integer,\"Number of bases after MRU\"" << endl // XXX what does MRU mean?
+              << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
+              << "##FORMAT=NiBp,1,Integer,\"Number of bases forward strand\"" << endl
+              << "##FORMAT=NiBm,1,Integer,\"Number of bases reverse strand\"" << endl
+              << "##FORMAT=NiA,1,Integer,\"Number of A's\"" << endl
+              << "##FORMAT=QiA,1,Integer,\"Total quality of A's\"" << endl
+              << "##FORMAT=NiAp,1,Integer,\"Number of A's on forward strand\"" << endl
+              << "##FORMAT=NiAm,1,Integer,\"Number of A's on reverse strand\"" << endl
+              << "##FORMCT=NiC,1,Integer,\"Number of C's\"" << endl
+              << "##FORMCT=QiC,1,Integer,\"Total quality of C's\"" << endl
+              << "##FORMCT=NiCp,1,Integer,\"Number of C's on forward strand\"" << endl
+              << "##FORMCT=NiCm,1,Integer,\"Number of C's on reverse strand\"" << endl
+              << "##FORMGT=NiG,1,Integer,\"Number of G's\"" << endl
+              << "##FORMGT=QiG,1,Integer,\"Total quality of G's\"" << endl
+              << "##FORMGT=NiGp,1,Integer,\"Number of G's on forward strand\"" << endl
+              << "##FORMGT=NiGm,1,Integer,\"Number of G's on reverse strand\"" << endl
+              << "##FORMTT=NiT,1,Integer,\"Number of T's\"" << endl
+              << "##FORMTT=QiT,1,Integer,\"Total quality of T's\"" << endl
+              << "##FORMTT=NiTp,1,Integer,\"Number of T's on forward strand\"" << endl
+              << "##FORMTT=NiTm,1,Integer,\"Number of T's on reverse strand\"" << endl
+              << "##FORMTT=GiP,-1,String,\"Genotype probabilities for individual\"" << endl
+              */
+
+              << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" 
+              << boost::algorithm::join(sampleList, "\t")
+              << endl;
+
+  }
   //-------------------------------------------------------------------------
   //-------------------------------------------------------------------------
   // process target regions
@@ -1373,8 +1396,10 @@ int main (int argc, char *argv[]) {
       map<int, map_string_longDouble, less<int> > alleleQual, alleleQualPlus, alleleQualMinus;
       
       // contig-position and individual specific coverage quantities
-      map<int, map<string, vector<Basecall>, less<string> >, less<int> > 
-	individualBasecalls, individualBasecallsAll, individualBasecallsNondup;
+      map<int, map<string, vector<Basecall>, less<string> >, less<int> >
+          individualBasecalls, 
+          individualBasecallsAll,
+          individualBasecallsNondup;
       
       // collect targets for which there is no read data
       bool badTarget = false;
@@ -1383,40 +1408,43 @@ int main (int argc, char *argv[]) {
 
       // skip target if invalid reference
       if (!(refId < bReader.GetReferenceCount())) {
-	badTarget = true;
-	if (record) {logFile << "      WARNING: Target ref ID invalid: " << refId << endl;}
-	if (debug) {cerr << "      WARNING: Target ref ID invalid: " << refId << endl;}	
+        badTarget = true;
+        if (record) {logFile << "      WARNING: Target ref ID invalid: " << refId << endl;}
+        if (debug) {cerr << "      WARNING: Target ref ID invalid: " << refId << endl;}	
       }
       else {
- 	if (record) {logFile << "      Target ref ID OK: " << refId << endl;}
-	if (debug) {cerr << "      Target ref ID OK: " << refId << endl;}	
+        if (record) {logFile << "      Target ref ID OK: " << refId << endl;}
+        if (debug) {cerr << "      Target ref ID OK: " << refId << endl;}	
       }
       
       // skip target if ref seq does not have any alignments
       if (! refData.RefHasAlignments) {
-	badTarget = true;
-	if (record) {logFile << "      WARNING: Target has no alignments..." << endl;}
-	if (debug) {cerr << "      WARNING: Target has no alignments..." << endl;}	
+        badTarget = true;
+        if (record) {logFile << "      WARNING: Target has no alignments..." << endl;}
+        if (debug) {cerr << "      WARNING: Target has no alignments..." << endl;}	
       }
       else {
-	if (record) {logFile << "      Target has alignments..." << endl;}
-	if (debug) {cerr << "      Target has alignments..." << endl;}	
+        if (record) {logFile << "      Target has alignments..." << endl;}
+        if (debug) {cerr << "      Target has alignments..." << endl;}	
       }
       
       if (record) {logFile << "      Jumping to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
       if (debug) {cerr << "      Jumping to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
       if (! bReader.Jump(refId, target.left)) {
-	badTarget = true;
-	if (record) {logFile << "      WARNING: Cannot jump to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
-	if (debug) {cerr << "      WARNING: Cannot jump to target start in BAM file. REfId: " << refId << " pos: " << target.left << endl;}	
+        badTarget = true;
+        if (record) {logFile << "      WARNING: Cannot jump to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
+        if (debug) {cerr << "      WARNING: Cannot jump to target start in BAM file. REfId: " << refId << " pos: " << target.left << endl;}	
       }
       else {
-	if (record) {logFile << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
-	if (debug) {cerr << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
-    // XXX get the number of alignments in this target space, and jump back
-    //     we do this so that we can properly step through the positions at the
-    //     end of the region that do not have reads following them without
-    //     having to loop through them one by one
+        if (record) {logFile << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
+        if (debug) {cerr << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
+
+        /* 
+         * Get the number of alignments in this target space, and jump back to
+         * the start.  We do this so that we can properly step through the
+         * positions at the end of the region that do not have reads following
+         * them without having to loop through them one by one.
+         */
         while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
             ++numReadsInTarget;
         }
@@ -2025,14 +2053,15 @@ int main (int argc, char *argv[]) {
                     <<  p + 1 << "\t"
                     << "." << "\t"  // . is the default signifier for "no id"
                     << sb << "\t"; // reference base at this position
-                vcfFile << allele1 << "," << allele2 << "\t";
+                //vcfFile << allele1 << "," << allele2 << "\t";
                 // the VCF spec suggests that these shouldn't be the reference; but when we use forceRefAllele they can be
-                /*
-                if (allele1 == sb)
+                if (allele1 == sb) {
                     vcfFile << allele2 << "\t";
-                else
+                } else if (allele2 == sb) {
+                    vcfFile << allele1 << "\t";
+                } else {
                     vcfFile << allele1 << "," << allele2 << "\t";
-                    */
+                }
 
                 vcfFile << phred(var.pSnp) << "\t" // quality of the snp call
                     << "." << "\t" // filters, . means "no data"
@@ -2041,7 +2070,8 @@ int main (int argc, char *argv[]) {
                     << "DP=" << tDAll
                     << "\t"
                     // format string
-                    << "NiBAll:NiBNondup:NiB:QiB:NiBp:NiBm:NiA:QiA:NiAp:NiAm:NiC:QiC:NiCp:NiCm:NiG:QiG:NiGp:NiGm:NiT:QiT:NiTp:NiTm:GiP"
+                    //<< "NiBAll:NiBNondup:NiB:QiB:NiBp:NiBm:NiA:QiA:NiAp:NiAm:NiC:QiC:NiCp:NiCm:NiG:QiG:NiGp:NiGm:NiT:QiT:NiTp:NiTm:GiP"
+                    << "GT:GQ:DP" // FIXME this is incomplete
                     << "\t";
                 // samples
                 bool firstSampleEntry = true; // flag to help with tab insertion between fields
@@ -2054,19 +2084,16 @@ int main (int argc, char *argv[]) {
                   else
                       vcfFile << "\t";  // join fields on tab
 
-                  // print coverage values
+                  // exhaustively print coverage values
+                  /*
                   vcfFile << NiBAll[ind] << ":" << NiBNondup[ind]
                        << ":" << NiB[ind] << ":" << QiB[ind] << ":" << NiBp[ind] << ":" << NiBm[ind]
                        << ":" << NiA[ind] << ":" << QiA[ind] << ":" << NiAp[ind] << ":" << NiAm[ind] 
                        << ":" << NiC[ind] << ":" << QiC[ind] << ":" << NiCp[ind] << ":" << NiCm[ind] 
                        << ":" << NiG[ind] << ":" << QiG[ind] << ":" << NiGp[ind] << ":" << NiGm[ind]
                        << ":" << NiT[ind] << ":" << QiT[ind] << ":" << NiTp[ind] << ":" << NiTm[ind] << ":";
+                       */
                 
-                  /*
-                   * output a string of genotype probabilities, the GiP
-                   * these are of the format genotype=phred, or N/N=phred, e.g. 0/1=56
-                   * and are comma-delimited for all analyzed genotypes
-                   */
                   bool firstGiProb = true;
                   for (map<string, long double, less<string> >::const_iterator 
                          gIter = var.individualGenotypeProbability[ind].begin();
@@ -2078,11 +2105,13 @@ int main (int argc, char *argv[]) {
                         firstGiProb = false;
                     else
                         vcfFile << ",";  // join genome probability fields on ,
-                    // format is genotype=phred, or N/N=phred, e.g. 0/1=56
-                    vcfFile << g << "+" << ((g.at(0) == sb.at(0)) ? "0" : "1")
+                    // format is diploid genotype=phred, or N/N=phred, e.g. 0/1=56
+                    vcfFile << ((g.at(0) == sb.at(0)) ? "0" : "1")
                         << "/" << ((g.at(1) == sb.at(0)) ? "0" : "1")
-                        << "=" << phred(p);
+                        << ":" << phred(p);
                   }
+
+                        vcfFile << ";" << NiBAll[ind]; 
                 }
                 vcfFile << endl;
             }
