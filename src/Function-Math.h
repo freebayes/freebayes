@@ -40,7 +40,8 @@ using std::less;
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-typedef map<string, string, less<string> > GenotypeCombo;
+// maps individual to genotype
+typedef map<string, string, less<string> > GenotypeCombo; // XXX fixme, offensive under recursion
 typedef map<map<string, string, less<string> >, 
 	      long double, 
 	      less< map<string, string, less<string> > > > GenotypeComboProbability;

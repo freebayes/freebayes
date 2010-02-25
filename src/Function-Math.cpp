@@ -20,19 +20,11 @@
 #include <algorithm>
 #include <cmath>
 
-using std::cin;
-using std::cout;
-using std::clog;
-using std::cerr;
-using std::endl;
-using std::string;
-using std::vector;
-using std::map;
-using std::multimap;
-using std::min;
+using namespace std;
 
 #include "Type-Hash.h"
 #include "Function-Math.h"
+#include "TryCatch.h"
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -315,8 +307,9 @@ map<string, long double, less<string> > logGenotypeLikelihoods(
       //------------------------------------------------------------------------
       // get variant alleles
       //------------------------------------------------------------------------
-      string a1 = genotype.substr(0, 1);
-      string a2 = genotype.substr(1, 1);
+      string a1, a2;
+      TRY { a1 = genotype.substr(0, 1); } CATCH;
+      TRY { a2 = genotype.substr(1, 1); } CATCH;
     
       //------------------------------------------------------------------------
       // define and initialize individual data likelihoods
@@ -1563,6 +1556,8 @@ Variation varBayesProb(
 // posteriorProb2 -- genotype probs based always on at least 3 values
 //------------------------------------------------------------------------------
 Variation posteriorProb2(
+        ///                   vvv this could become a class, as there are only so many genotypes (3 different 0/0, 0/1, 1/1)
+        //       and the individuals could vector
 			map<string, map<string, long double, less<string> >, less<string> > LnProbBiGivenGi,
 			map<string, bool, less<string> > DataSufficientGi,
 			vector<string> individuals,
@@ -1803,7 +1798,8 @@ Variation posteriorProb2(
 	    
 	    // get individual genotype
 
-	    string Gi = Go.substr(indIndex, 1);
+        string Gi;
+	    TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 	    
 	    // get individual log genotype probability
 	    long double lnProbGi = LnProbBiGivenGi[ind][Gi];
@@ -2009,6 +2005,7 @@ Variation posteriorProb2(
     // retreive genotype
     string Go = GoIter->first;
     
+    // XXX factor out for legibility?
     //--------------------------------------------------------------------------
     // calculate prior
     //--------------------------------------------------------------------------
@@ -2024,7 +2021,8 @@ Variation posteriorProb2(
       if (DataSufficientGi[ind]) {
 	    
 	// get individual genotype
-	string Gi = Go.substr(indIndex, 1);
+    string Gi;
+	TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 	
 	// update sample size, allele frequency, and number of hets
 	if (diploid) {
@@ -2240,7 +2238,8 @@ Variation posteriorProb2(
       //------------------------------------------------------------------------
 
       // get individual genotype
-      string Gi = Go.substr(indIndex, 1);
+      string Gi;
+      TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 
       // get individual log genotype probability
       long double lnProbGi = 0;
@@ -2349,7 +2348,8 @@ Variation posteriorProb2(
 	  // if data suffient, count it
 	  if (DataSufficientGi[ind]) {
 	    // get individual genotype
-	    string Gi = Go.substr(indIndex, 1);
+        string Gi;
+	    TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 	    
 	    // get individual log genotype probability
 	    long double lnProbGi = LnProbBiGivenGi[ind][Gi];
@@ -2442,7 +2442,8 @@ Variation posteriorProb2(
       //----------------------------------------------------------------------
 
       // get individual genotype
-      string Gi = Go.substr(indIndex, 1);
+      string Gi;
+      TRY { Gi = Go.substr(indIndex, 1); } CATCH;
       
       if (diploid) {
 	if (Gi == Gi11) {
@@ -2782,7 +2783,8 @@ Variation posteriorProb(
 	  string ind = individuals[indIndex];
 	  
 	  // get individual genotype
-	  string Gi = Go.substr(indIndex, 1);
+      string Gi;
+	  TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 
 	  // get individual log genotype probability
 	  long double lnProbGi = LnProbBiGivenGi[ind][Gi];
@@ -2998,7 +3000,8 @@ Variation posteriorProb(
       string ind = individuals[indIndex];
       
       // get individual genotype
-      string Gi = Go.substr(indIndex, 1);
+      string Gi;
+      TRY { Gi = Go.substr(indIndex, 1); } CATCH;
       
       // get individual log genotype probability
       long double lnProbGi = LnProbBiGivenGi[ind][Gi];
@@ -3216,7 +3219,8 @@ Variation posteriorProb(
       //------------------------------------------------------------------------
 
       // get individual genotype
-      string Gi = Go.substr(indIndex, 1);
+      string Gi;
+      TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 
       // get individual log genotype probability
       long double lnProbGi = LnProbBiGivenGi[ind][Gi];
@@ -3318,7 +3322,8 @@ Variation posteriorProb(
 	  string ind = individuals[indIndex];
       
 	  // get individual genotype
-	  string Gi = Go.substr(indIndex, 1);
+      string Gi;
+	  TRY { Gi = Go.substr(indIndex, 1); } CATCH;
 	  
 	  // get individual log genotype probability
 	  long double lnProbGi = LnProbBiGivenGi[ind][Gi];
@@ -3410,7 +3415,8 @@ Variation posteriorProb(
       //----------------------------------------------------------------------
 
       // get individual genotype
-      string Gi = Go.substr(indIndex, 1);
+      string Gi;
+      TRY { Gi = Go.substr(indIndex, 1); } CATCH;
       
       if (diploid) {
 	if (Gi == Gi11) {

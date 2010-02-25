@@ -23,7 +23,7 @@ CC=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=
+CFLAGS=-pg # for gprof
 
 ################################################################################
 # Program builds
@@ -68,7 +68,7 @@ testMath.o: testMath.cpp
 Fasta.o: Fasta.cpp
 	$(CC) $(CFLAGS) -c Fasta.cpp -Wno-deprecated
 
-bamBayes.o: bamBayes.cpp
+bamBayes.o: bamBayes.cpp TryCatch.h
 	$(CC) $(CFLAGS) -c bamBayes.cpp -Wno-deprecated
 
 bamIndel.o: bamIndel.cpp

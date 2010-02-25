@@ -6,6 +6,58 @@
 // All rights reserved.
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+//
+//
+//  Overview:  (man page)
+//
+//  --- this a snp caller
+//  --- it operates on (an) alignment file, a reference, and a target file (bed
+//  file) and a set of samples (optionally defined external file)
+//
+//  operation:
+//
+//  for every position in the target file that corresponds to regions of the
+//  reference sequence,
+//
+//  take the set of observed bases from the alignment and estimate the
+//  probability that the set of observations represents a snp,
+//
+//  specifically we estimate the probability that there are at least two or
+//  more reference alleles present at a specific location (more general
+//  solution would look at more than 2)
+//
+//  reads are filtered from analysis on a variety of parameters:
+//
+//  - mapping quality value (if low, the read may not map to the region on the
+//  ref genome)  --- output by mosaik
+//
+//  - number of differences between the read and the reference.
+//
+//  base (in read) level filters:
+//
+//  - if the quality value is too low, we might not want to use that base in
+//  that read at all.
+//
+//
+//
+//  algorithmic outline:
+//
+//  question is, is the number of true alleles > 2 (psnp)
+//
+//  .... 
+//
+//  ( write in details from photograph of board )
+//  
+//
+//  caveats:
+//
+//  the algorithmic complexity is 10^n for n individuals.
+//  to resolve this issue we estimate the most likely data likelihood.
+//  guess which are the highest terms (the dominant terms)
+//  
+//  keep the term which gives the highest data likelihood, but then vary the
+//  genotype by some bandwidth (say 1 or 2).
+//
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -47,6 +99,7 @@
 #include "BamReader.h"
 #include "ReferenceSequenceReader.h"
 #include "Fasta.h"
+#include "TryCatch.h"
 
 // uses
 using namespace std; 
@@ -1538,14 +1591,16 @@ int main (int argc, char *argv[]) {
 	      for (int i=1; i<=l; i++) {
 		
 		// extract aligned base
-		string b = rDna.substr(rp-1, 1);
+        string b;
+		TRY { b = rDna.substr(rp-1, 1); } CATCH;
 		char Q = rQual[rp-1];
 		
 		// convert base quality value into short int
 		short q = static_cast<short>(Q) - 33;
 		
 		// get reference allele
-		string sb = refseqDna[refName].substr(sp-1, 1);	      
+        string sb;
+		TRY { sb = refseqDna[refName].substr(sp-1, 1); } CATCH;
 
 		// register mismatch
 		if (b != sb && q >= BQL2) {mru++;}
@@ -1600,7 +1655,7 @@ int main (int argc, char *argv[]) {
 		rp += 1;
 	      }	    
 	    }
-	  }
+	  } // end cigar iter loop
 	  
 	  //----------------------------------------------------------------
 	  // mark read if too many mismatches
@@ -1660,7 +1715,8 @@ int main (int argc, char *argv[]) {
 	      for (int i=1; i<=l; i++) {
 		
 		// extract aligned base
-		string b = rDna.substr(rp-1, 1);
+        string b;
+		TRY { b = rDna.substr(rp-1, 1); } CATCH;
 		char Q = rQual[rp-1];
 		
 		// convert base quality value into short int
@@ -1699,7 +1755,7 @@ int main (int argc, char *argv[]) {
 	      // update read position
 	      rp += l;	    
 	    }
-	  }
+	  } // end read alignment registration loop
 	  
 	  //----------------------------------------------------------------
 	  // analyze positions up to the position before the beginning of this alignment
@@ -1877,16 +1933,16 @@ int main (int argc, char *argv[]) {
 	    if (useRefAllele) {
 	      
 	      // fill real values
-	      sb = refseqDna[refName].substr(p-1, 1);	      
+	      TRY { sb = refseqDna[refName].substr(p-1, 1); } CATCH;
 
 	      //	      sb = RefFastaData[refName].sequence.substr(p-1, 1);	      
 	      if (p > 1 ) {
-		sbPrev = refseqDna[refName].substr(p-2, 1);	      
+            TRY { sbPrev = refseqDna[refName].substr(p-2, 1); } CATCH;
 		//		sbPrev = RefFastaData[refName].sequence.substr(p-2, 1);
 	      }
 	      if (p < refLength) {
 		//		sbNext = RefFastaData[refName].sequence.substr(p, 1);
-		sbNext = refseqDna[refName].substr(p, 1);	      
+            TRY { sbNext = refseqDna[refName].substr(p, 1); } CATCH;
 	      }
 	      
 	      // only use ref allele if real base
@@ -1924,9 +1980,10 @@ int main (int argc, char *argv[]) {
 	      string ind = *sampleIter;
 	      vector<Basecall> basecalls = individualBasecalls[p][ind];
 	      
+          // XXX DATA LIKELIHOOD function
 	      // calculate genotype log likelihoods
 	      map<string, long double, less<string> > logGl 
-		= logGenotypeLikelihoods(
+		= logGenotypeLikelihoods(  // this gets loaded into another map, indexed by individual
 					 basecalls,
 					 diploid,
 					 RDF,
@@ -2670,8 +2727,9 @@ bool registerAlignment(
 	
 	if (sp >= leftBound && sp <= rightBound) {
 	  // extract aligned base
-	  string b = rDna.substr(rp-1, 1);
-	  string q = rQual.substr(rp-1, 1);
+      string b, q;
+	  TRY { b = rDna.substr(rp-1, 1); } CATCH;
+	  TRY { q = rQual.substr(rp-1, 1); } CATCH;
 	
 	  // add aligned base to pile
 	  pileDna[sp] += b;
