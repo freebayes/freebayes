@@ -146,6 +146,8 @@ long double gammaln(
   //----------------------------------------------------------------------------
   // constants
   //----------------------------------------------------------------------------
+  // XXX TODO these cofactors are drawn from population genetics, but their
+  // genesis is not noted anywhere in this source.
   vector<long double> cofactors;
   cofactors.push_back(76.18009173);
   cofactors.push_back(-86.50532033);
@@ -572,6 +574,8 @@ Variation varBayesProb(
   vector<string> individuals;
 
   // Define ln Prob(R|G) for each individual
+  //
+  // XXX turn this into an unordered map from sample name to a struct holding Gi -> prob mapping
   map<string, map<string, long double, less<string> >, less<string> > LnProbBiGivenGi;
 
   //----------------------------------------------------------------------------
@@ -1557,7 +1561,7 @@ Variation varBayesProb(
 //------------------------------------------------------------------------------
 Variation posteriorProb2(
         ///                   vvv this could become a class, as there are only so many genotypes (3 different 0/0, 0/1, 1/1)
-        //       and the individuals could vector
+        //       and the individuals could be a vector
 			map<string, map<string, long double, less<string> >, less<string> > LnProbBiGivenGi,
 			map<string, bool, less<string> > DataSufficientGi,
 			vector<string> individuals,

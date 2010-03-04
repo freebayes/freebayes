@@ -19,14 +19,14 @@
 //  for every position in the target file that corresponds to regions of the
 //  reference sequence,
 //
-//  take the set of observed bases from the alignment and estimate the
+//  take the set of observed bases from the alignments and estimate the
 //  probability that the set of observations represents a snp,
 //
 //  specifically we estimate the probability that there are at least two or
 //  more reference alleles present at a specific location (more general
-//  solution would look at more than 2)
+//  solution would look at more than 2, but we use only two).
 //
-//  reads are filtered from analysis on a variety of parameters:
+//  input reads are filtered from analysis on a variety of parameters:
 //
 //  - mapping quality value (if low, the read may not map to the region on the
 //  ref genome)  --- output by mosaik
@@ -39,14 +39,17 @@
 //  that read at all.
 //
 //
-//
 //  algorithmic outline:
 //
 //  question is, is the number of true alleles > 2 (psnp)
 //
-//  .... 
+//  we evaluate this question using bayes theorem.  in the context of this
+//  problem the theorem states that the probability of a snp event in our data
+//  given the reference should approximate the 'data likelihood' (the
+//  probability that our data reflects an event if one has occurred) multiplied
+//  by the probability of the event occurring (our prior probability a
+//  probability we estimate using data from population genetics).
 //
-//  ( write in details from photograph of board )
 //  
 //
 //  caveats:
@@ -365,6 +368,7 @@ int main (int argc, char *argv[]) {
   ArgList.push_back(arg);
   ValueArg<string> cmd_fasta(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
+  // TODO verify that Gabor is ok with this removal prior to release
   // input file: MOSAIK binary reference sequence archive
   /*
   ArgStruct argMbr;
@@ -1351,7 +1355,6 @@ int main (int argc, char *argv[]) {
               //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
 
               // these are req'd
-              // FIXME, not handled properly now
               << "##FORMAT=GT,1,String,\"Genotype\"" << endl // g
               << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl // phred prob of genotype
               << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl // NiBAll[ind]
@@ -1980,7 +1983,7 @@ int main (int argc, char *argv[]) {
 	      string ind = *sampleIter;
 	      vector<Basecall> basecalls = individualBasecalls[p][ind];
 	      
-          // XXX DATA LIKELIHOOD function
+          // DATA LIKELIHOOD function
 	      // calculate genotype log likelihoods
 	      map<string, long double, less<string> > logGl 
 		= logGenotypeLikelihoods(  // this gets loaded into another map, indexed by individual
@@ -2141,34 +2144,27 @@ int main (int argc, char *argv[]) {
                   else
                       vcfFile << "\t";  // join fields on tab
 
-                  // exhaustively print coverage values
-                  /*
-                  vcfFile << NiBAll[ind] << ":" << NiBNondup[ind]
-                       << ":" << NiB[ind] << ":" << QiB[ind] << ":" << NiBp[ind] << ":" << NiBm[ind]
-                       << ":" << NiA[ind] << ":" << QiA[ind] << ":" << NiAp[ind] << ":" << NiAm[ind] 
-                       << ":" << NiC[ind] << ":" << QiC[ind] << ":" << NiCp[ind] << ":" << NiCm[ind] 
-                       << ":" << NiG[ind] << ":" << QiG[ind] << ":" << NiGp[ind] << ":" << NiGm[ind]
-                       << ":" << NiT[ind] << ":" << QiT[ind] << ":" << NiTp[ind] << ":" << NiTm[ind] << ":";
-                       */
-                
-                  bool firstGiProb = true;
+                  // find the most likely genotype for this individual
+                  long double max = 0;
+                  string bestGt = "";
                   for (map<string, long double, less<string> >::const_iterator 
                          gIter = var.individualGenotypeProbability[ind].begin();
                        gIter != var.individualGenotypeProbability[ind].end();
                        gIter++) {
                     string g = gIter->first;
                     long double p = gIter->second;
-                    if (firstGiProb)
-                        firstGiProb = false;
-                    else
-                        vcfFile << ",";  // join genome probability fields on ,
-                    // format is diploid genotype=phred, or N/N=phred, e.g. 0/1=56
-                    vcfFile << ((g.at(0) == sb.at(0)) ? "0" : "1")
-                        << "/" << ((g.at(1) == sb.at(0)) ? "0" : "1")
-                        << ":" << phred(p);
+                    if (p > max) {
+                        max = p;
+                        bestGt = gIter->first;
+                    }
                   }
-
-                        vcfFile << ";" << NiBAll[ind]; 
+                  // then print the best genotype score and coverage info
+                  long double p = var.individualGenotypeProbability[ind][bestGt];
+                  // format is diploid genotype=phred, or N/N=phred, e.g. 0/1=56
+                  vcfFile << ((bestGt.at(0) == sb.at(0)) ? "0" : "1")
+                      << "/" << ((bestGt.at(1) == sb.at(0)) ? "0" : "1")
+                      << ":" << phred(p)
+                      << ":" << NiBAll[ind];
                 }
                 vcfFile << endl;
             }
