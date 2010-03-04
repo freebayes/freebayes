@@ -23,7 +23,7 @@ CC=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=-pg # for gprof
+CFLAGS=#-pg # for gprof
 
 ################################################################################
 # Program builds

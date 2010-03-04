@@ -182,7 +182,7 @@ bool printVar2Gff(
 		  int posBegin,
 		  int posEnd,
 		  Variation & var,
-		  map<int, map<string, vector<Basecall>, less<string> >, less<int> > & individualBasecalls
+		  map<int, map<string, vector<Basecall> > > & individualBasecalls
 		  );
 
 bool printVar(
@@ -195,7 +195,7 @@ bool printVar(
 	      int posBegin,
 	      int posEnd,
 	      Variation & var,
-	      map<int, map<string, vector<Basecall>, less<string> >, less<int> > & individualBasecalls
+	      map<int, map<string, vector<Basecall> > > & individualBasecalls
 	      );
 
 //------------------------------------------------------------------------------
@@ -203,8 +203,8 @@ bool printVar(
 //------------------------------------------------------------------------------
 bool registerAlignment(
 		       BamAlignment, 
-		       map<int, string, less<int> > &, 
-		       map<int, string, less<int> > &,
+		       map<int, string > &, 
+		       map<int, string > &,
 		       const int leftBound,
 		       const int rightBound
 		       );
@@ -1051,7 +1051,7 @@ int main (int argc, char *argv[]) {
   // header to get the sample names.
   //
     // XXX this variable seems to be unused
-  map<string, bool, less<string> > samplePresent;
+  map<string, bool > samplePresent;
   vector<string> sampleList;
   if (samples != "") {
     ifstream sampleFile(samples.c_str(), ios::in);
@@ -1114,7 +1114,7 @@ int main (int argc, char *argv[]) {
   RefVector refDatas = bReader.GetReferenceData();
   
   // data structs
-  map<string, int, less<string> > RefLength, RefId;
+  map<string, int > RefLength, RefId;
   for (RefVector::const_iterator refIter = refDatas.begin();
        refIter != refDatas.end(); refIter++) {
     RefData refData = *refIter;
@@ -1137,8 +1137,8 @@ int main (int argc, char *argv[]) {
   // If it can't find an index file for the reference, it will attempt to
   // generate one alongside it.
   FastaReference* fastaReference = new FastaReference(fasta);
-  map<string, unsigned int, less<string> > refseqLength;
-  map<string, string, less<string> > refseqDna;
+  map<string, unsigned int > refseqLength;
+  map<string, string > refseqDna;
 
   //--------------------------------------------------------------------------
   // load ref seq names into hash
@@ -1175,7 +1175,7 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   
   // reference-specific target lists
-  map<string, vector<BedData>, less<string> > RefTargetList;
+  map<string, vector<BedData> > RefTargetList;
   
   // if target file specified use targets from file
   int tc = 0;
@@ -1412,7 +1412,7 @@ int main (int argc, char *argv[]) {
   long int gDNondup = 0;
   long int gD = 0;
 
-  for (map<string, vector<BedData>, less<string> >::const_iterator refIter = RefTargetList.begin(); 
+  for (map<string, vector<BedData> >::const_iterator refIter = RefTargetList.begin(); 
        refIter != RefTargetList.end(); refIter++) {
     string refName = refIter->first;
     vector<BedData> targetRegions = refIter->second;
@@ -1447,12 +1447,12 @@ int main (int argc, char *argv[]) {
       //----------------------------------------------------------------------
       
       // contig-position specific coverage quantities
-      map<int, int, less<int> > readCount, readCountPlus, readCountMinus;
-      map<int, map_string_int, less<int> > alleleCount, alleleCountPlus, alleleCountMinus;
-      map<int, map_string_longDouble, less<int> > alleleQual, alleleQualPlus, alleleQualMinus;
+      map<int, int > readCount, readCountPlus, readCountMinus;
+      map<int, map_string_int > alleleCount, alleleCountPlus, alleleCountMinus;
+      map<int, map_string_longDouble > alleleQual, alleleQualPlus, alleleQualMinus;
       
       // contig-position and individual specific coverage quantities
-      map<int, map<string, vector<Basecall>, less<string> >, less<int> >
+      map<int, map<string, vector<Basecall> > >
           individualBasecalls, 
           individualBasecallsAll,
           individualBasecallsNondup;
@@ -1576,7 +1576,7 @@ int main (int argc, char *argv[]) {
 	  
 	  // indicator function of ref seq positions where this read
 	  //   has an INDEL
-	  map<int, bool, less<int> > readINDEL;
+	  map<int, bool > readINDEL;
 
 	  // initialize reference sequence position and read position
 	  int sp = ba.Position + 1;
@@ -1674,10 +1674,10 @@ int main (int argc, char *argv[]) {
 	  //----------------------------------------------------------------
 	  
 	  // mask data structure
-	  map<int, bool, less<int> > readMask;
+	  map<int, bool > readMask;
 
 	  // !!! too simplistic! Replace with more sophisticated method!
-	  for (map<int, bool, less<int> >::const_iterator posIter = readINDEL.begin();
+	  for (map<int, bool >::const_iterator posIter = readINDEL.begin();
 	       posIter != readINDEL.end(); ++posIter) {
 	    int pos = posIter->first;
 	    for(int i=pos-IDW; i<=pos+IDW; i++) {
@@ -1803,12 +1803,12 @@ int main (int argc, char *argv[]) {
 	    int ntT = 0, qtT = 0, ntTp = 0, ntTm = 0;
 	    
 	    // single-individual coverage maps
-	    map<string, int, less<string> > NiBAll, NiBNondup;
-	    map<string, int, less<string> > NiB, QiB, NiBp, NiBm;
-	    map<string, int, less<string> > NiA, QiA, NiAp, NiAm;
-	    map<string, int, less<string> > NiC, QiC, NiCp, NiCm;
-	    map<string, int, less<string> > NiG, QiG, NiGp, NiGm;
-	    map<string, int, less<string> > NiT, QiT, NiTp, NiTm;
+	    map<string, int > NiBAll, NiBNondup;
+	    map<string, int > NiB, QiB, NiBp, NiBm;
+	    map<string, int > NiA, QiA, NiAp, NiAm;
+	    map<string, int > NiC, QiC, NiCp, NiCm;
+	    map<string, int > NiG, QiG, NiGp, NiGm;
+	    map<string, int > NiT, QiT, NiTp, NiTm;
 	    
 	    for (vector<string>::const_iterator sampleIter = sampleList.begin();
 		 sampleIter != sampleList.end(); sampleIter++) {
@@ -1971,11 +1971,11 @@ int main (int argc, char *argv[]) {
 	    //---------------------------------------------------------------
 
 	    // define per-sample genotype data likelihood
-	    map<string, map<string, long double, less<string> >, less<string> > 
+	    map<string, map<string, long double > > 
 	      LnProbBiGivenGi;			
 
 	    // define per-sample data sufficiency indicator
-	    map<string, bool, less<string> > DataSufficientGi;
+	    map<string, bool > DataSufficientGi;
 	    
 	    // calculate genotype data likelihoods and data sufficiency
 	    for (vector<string>::const_iterator sampleIter = sampleListPlusRef.begin();
@@ -1985,7 +1985,7 @@ int main (int argc, char *argv[]) {
 	      
           // DATA LIKELIHOOD function
 	      // calculate genotype log likelihoods
-	      map<string, long double, less<string> > logGl 
+	      map<string, long double > logGl 
 		= logGenotypeLikelihoods(  // this gets loaded into another map, indexed by individual
 					 basecalls,
 					 diploid,
@@ -2008,7 +2008,7 @@ int main (int argc, char *argv[]) {
 	    //---------------------------------------------------------------
 	    
 	    // load sorting hash
-	    map<string, int, less<string> > AQ;
+	    map<string, int > AQ;
 	    AQ["A"] = qtA; AQ["C"] = qtC; AQ["G"] = qtG; AQ["T"] = qtT;
 	    
 	    // sort eligible alleles according to descending allele quality
@@ -2095,7 +2095,7 @@ int main (int argc, char *argv[]) {
                      << "\t" << NiG[ind] << "\t" << QiG[ind] << "\t" << NiGp[ind] << "\t" << NiGm[ind]
                      << "\t" << NiT[ind] << "\t" << QiT[ind] << "\t" << NiTp[ind] << "\t" << NiTm[ind];
             
-                for (map<string, long double, less<string> >::const_iterator 
+                for (map<string, long double >::const_iterator 
                        gIter = var.individualGenotypeProbability[ind].begin();
                      gIter != var.individualGenotypeProbability[ind].end();
                      gIter++) {
@@ -2147,7 +2147,7 @@ int main (int argc, char *argv[]) {
                   // find the most likely genotype for this individual
                   long double max = 0;
                   string bestGt = "";
-                  for (map<string, long double, less<string> >::const_iterator 
+                  for (map<string, long double >::const_iterator 
                          gIter = var.individualGenotypeProbability[ind].begin();
                        gIter != var.individualGenotypeProbability[ind].end();
                        gIter++) {
@@ -2307,18 +2307,18 @@ bool printVar2Glt(
 	  << "\t" << posEnd;
 
 
-  for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+  for (map<string, map<string, long double > >::const_iterator 
 	 indIter = var.individualGenotypeLogDataLikelihood.begin(); 
        indIter != var.individualGenotypeLogDataLikelihood.end();
        indIter++) {
       
       string ind = indIter->first;
-      map<string, long double, less<string> > gl = indIter->second;
+      map<string, long double > gl = indIter->second;
 
       gltFile << "\t" << ind << ":";
       
       bool first = true;
-      for (map<string, long double, less<string> >::const_iterator 
+      for (map<string, long double >::const_iterator 
 	     glIter = gl.begin();
 	   glIter != gl.end();
 	   glIter++) {
@@ -2350,7 +2350,7 @@ bool printVar2Gff(
 		  int posBegin,
 		  int posEnd,
 		  Variation & var,
-		  map<int, map<string, vector<Basecall>, less<string> >, less<int> > & individualBasecalls
+		  map<int, map<string, vector<Basecall> > > & individualBasecalls
 		  ) {
 
   // write variation entry in output file
@@ -2371,7 +2371,7 @@ bool printVar2Gff(
   if (O >= 1) {
     gffFile << ";individualGenotypes=";
     bool firstInd = true;
-    for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+    for (map<string, map<string, long double > >::const_iterator 
 	   indIter = var.individualGenotypeProbability.begin(); 
 	 indIter != var.individualGenotypeProbability.end();
 	 indIter++) {
@@ -2390,7 +2390,7 @@ bool printVar2Gff(
   if (O >= 2) {
     gffFile << ";individualGenotypeProbabilities=";
     bool firstInd = true;
-    for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+    for (map<string, map<string, long double > >::const_iterator 
 	   indIter = var.individualGenotypeProbability.begin(); 
 	 indIter != var.individualGenotypeProbability.end();
 	 indIter++) {
@@ -2402,7 +2402,7 @@ bool printVar2Gff(
       firstInd = false;
       gffFile << ind << ":";
       bool firstG = true;
-      for (map<string, long double, less<string> >::const_iterator 
+      for (map<string, long double >::const_iterator 
 	     gIter = var.individualGenotypeProbability[ind].begin();
 	   gIter != var.individualGenotypeProbability[ind].end();
 	   gIter++) {
@@ -2419,7 +2419,7 @@ bool printVar2Gff(
   if (O >= 3) {
     gffFile << ";individualAlleleCounts=";
     bool firstInd = true;
-    for (map<string, vector<Basecall>, less<string> >::const_iterator 
+    for (map<string, vector<Basecall> >::const_iterator 
 	   indIter = individualBasecalls[posPadded].begin();
 	 indIter != individualBasecalls[posPadded].end(); indIter++) {
       
@@ -2475,7 +2475,7 @@ bool printVar2Gff(
   if (O >= 4) {
     gffFile << ";individualReadAlleles=";
     bool firstInd = true;
-    for (map<string, vector<Basecall>, less<string> >::const_iterator 
+    for (map<string, vector<Basecall> >::const_iterator 
 	   indIter = individualBasecalls[posPadded].begin();
 	 indIter != individualBasecalls[posPadded].end(); indIter++) {
       
@@ -2525,7 +2525,7 @@ bool printVar(
 		  int posBegin,
 		  int posEnd,
 		  Variation & var,
-		  map<int, map<string, vector<Basecall>, less<string> >, less<int> > & individualBasecalls
+		  map<int, map<string, vector<Basecall> > > & individualBasecalls
 		  ) {
 
   // write variation entry in output file
@@ -2546,7 +2546,7 @@ bool printVar(
   if (O >= 1) {
     cout << ";individualGenotypes=";
     bool firstInd = true;
-    for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+    for (map<string, map<string, long double > >::const_iterator 
 	   indIter = var.individualGenotypeProbability.begin(); 
 	 indIter != var.individualGenotypeProbability.end();
 	 indIter++) {
@@ -2565,7 +2565,7 @@ bool printVar(
   if (O >= 2) {
     cout << ";individualGenotypeProbabilities=";
     bool firstInd = true;
-    for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+    for (map<string, map<string, long double > >::const_iterator 
 	   indIter = var.individualGenotypeProbability.begin(); 
 	 indIter != var.individualGenotypeProbability.end();
 	 indIter++) {
@@ -2577,7 +2577,7 @@ bool printVar(
       firstInd = false;
       cout << ind << ":";
       bool firstG = true;
-      for (map<string, long double, less<string> >::const_iterator 
+      for (map<string, long double >::const_iterator 
 	     gIter = var.individualGenotypeProbability[ind].begin();
 	   gIter != var.individualGenotypeProbability[ind].end();
 	   gIter++) {
@@ -2594,7 +2594,7 @@ bool printVar(
   if (O >= 3) {
     cout << ";individualAlleleCounts=";
     bool firstInd = true;
-    for (map<string, vector<Basecall>, less<string> >::const_iterator 
+    for (map<string, vector<Basecall> >::const_iterator 
 	   indIter = individualBasecalls[posPadded].begin();
 	 indIter != individualBasecalls[posPadded].end(); indIter++) {
       
@@ -2650,7 +2650,7 @@ bool printVar(
   if (O >= 4) {
     cout << ";individualReadAlleles=";
     bool firstInd = true;
-    for (map<string, vector<Basecall>, less<string> >::const_iterator 
+    for (map<string, vector<Basecall> >::const_iterator 
 	   indIter = individualBasecalls[posPadded].begin();
 	 indIter != individualBasecalls[posPadded].end(); indIter++) {
       
@@ -2692,8 +2692,8 @@ bool printVar(
 //------------------------------------------------------------------------------
 bool registerAlignment(
 		       BamAlignment a, 
-		       map<int, string, less<int> > & pileDna, 
-		       map<int, string, less<int> > & pileQual,
+		       map<int, string > & pileDna, 
+		       map<int, string > & pileQual,
 		       const int leftBound,
 		       const int rightBound
 		       ) {
