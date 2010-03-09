@@ -32,9 +32,9 @@ using namespace std;
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-map<string, string, less<string> > InitIUPAC(void) {
+map<string, string > InitIUPAC(void) {
 
-  map<string, string, less<string> > IUPAC;
+  map<string, string > IUPAC;
 
   IUPAC["A"] = "A"; 
   IUPAC["C"] = "C"; 
@@ -61,7 +61,7 @@ map<string, string, less<string> > InitIUPAC(void) {
 }
 
 // IUPAC ambiguity coding
-static map<string, string, less<string> > IUPAC = InitIUPAC();  
+static map<string, string > IUPAC = InitIUPAC();
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -246,7 +246,7 @@ long double cofactorln(
 //------------------------------------------------------------------------------
 // logGenotypeLikelihoods (IUPAC genotype code output)
 //------------------------------------------------------------------------------
-map<string, long double, less<string> > logGenotypeLikelihoods(
+map<string, long double > logGenotypeLikelihoods(
 							       vector<Basecall> basecalls,
 							       bool diploid,
 							       long double dependenceFactor,
@@ -271,7 +271,7 @@ map<string, long double, less<string> > logGenotypeLikelihoods(
   //----------------------------------------------------------------------------
   // output
   //----------------------------------------------------------------------------
-  map<string, long double, less<string> > gl;
+  map<string, long double > gl;
 
   //----------------------------------------------------------------------------
   // constants
@@ -517,8 +517,8 @@ map<string, long double, less<string> > logGenotypeLikelihoods(
 // varBayesProb
 //------------------------------------------------------------------------------
 Variation varBayesProb(
-		       map<string, vector<Basecall>, less<string> > indBasecalls,
-		       map<string, SampleInfo, less<string> > indSampleInfo,
+		       map<string, vector<Basecall> > indBasecalls,
+		       map<string, SampleInfo > indSampleInfo,
 		       bool diploid,
 		       long double THETA,
 		       long double MU,
@@ -576,7 +576,7 @@ Variation varBayesProb(
   // Define ln Prob(R|G) for each individual
   //
   // XXX turn this into an unordered map from sample name to a struct holding Gi -> prob mapping
-  map<string, map<string, long double, less<string> >, less<string> > LnProbBiGivenGi;
+  map<string, map<string, long double > > LnProbBiGivenGi;
 
   //----------------------------------------------------------------------------
   // Process through each individual with base calls.
@@ -585,7 +585,7 @@ Variation varBayesProb(
     clog << "Individual genotype likelihoods P(Bi|Ai), P(Ai|Gi), and P(Bi|Gi):"<< endl;    
   }
 
-  for (map<string, vector<Basecall>, less<string> >::const_iterator indIter = indBasecalls.begin();
+  for (map<string, vector<Basecall> >::const_iterator indIter = indBasecalls.begin();
        indIter != indBasecalls.end(); indIter++) {
 
     // Retreive individual.
@@ -784,10 +784,10 @@ Variation varBayesProb(
   //----------------------------------------------------------------------------
   // assign pedigree status: child, mother, father, unrelated
   //----------------------------------------------------------------------------
-  map<string, string, less<string> > pedigreeStatus, fatherId, motherId;
+  map<string, string > pedigreeStatus, fatherId, motherId;
 
   // assign initial pedigree status based on SampleInfo
-  for (map<string, SampleInfo, less<string> >::const_iterator indIter = indSampleInfo.begin();
+  for (map<string, SampleInfo >::const_iterator indIter = indSampleInfo.begin();
        indIter != indSampleInfo.end(); indIter++) {
 
     // retreive individual and samle info
@@ -809,8 +809,8 @@ Variation varBayesProb(
   // if not, reassign child as an unrelated
   // if there is only one parent present, make list of dummy parents to add to 
   //   individual list
-  map<string, bool, less<string> > isDummyParent;
-  for (map<string, string, less<string> >::const_iterator indIter = pedigreeStatus.begin();
+  map<string, bool > isDummyParent;
+  for (map<string, string >::const_iterator indIter = pedigreeStatus.begin();
        indIter != pedigreeStatus.end(); indIter++) {
     string ind = indIter->first;
     string ps = indIter->second;
@@ -846,7 +846,7 @@ Variation varBayesProb(
   }
 
   // add dummy parents to individual list, and add P(Bi|Gi) values
-  for (map<string, bool, less<string> >::const_iterator indIter = isDummyParent.begin();
+  for (map<string, bool >::const_iterator indIter = isDummyParent.begin();
        indIter != isDummyParent.end(); indIter++) {
     string ind = indIter->first;
 
@@ -1049,7 +1049,7 @@ Variation varBayesProb(
 	    LnProbBoGivenGoNew[GoReplaceWithGi22] = probGo - probGi + LnProbBiGivenGi[ind][Gi22];
 	    
 	    // Make new combo with Gi12 at GiIndex and add to list if new.
-	    map<string, string, less<string> > GoReplaceWithGi12 = Go;
+	    map<string, string > GoReplaceWithGi12 = Go;
 	    GoReplaceWithGi12[ind] = Gi12;
 	    LnProbBoGivenGoNew[GoReplaceWithGi12] = probGo - probGi + LnProbBiGivenGi[ind][Gi12];
 	  }
@@ -1140,7 +1140,7 @@ Variation varBayesProb(
       GenotypeComboProbability LnProbBoGivenGoNew;
 
       // iterate through all possible genotypes for this invididual
-      for (map<string, long double, less<string> >::const_iterator GiIter = LnProbBiGivenGi[ind].begin();
+      for (map<string, long double >::const_iterator GiIter = LnProbBiGivenGi[ind].begin();
 	   GiIter !=  LnProbBiGivenGi[ind].end(); GiIter++) {
 	
 	// retreive genotype and probability
@@ -1355,7 +1355,7 @@ Variation varBayesProb(
   GenotypeComboProbability ProbGoGivenBo;
 
   // define individual genotype probability distribution hash
-  map<string, map<string, long double, less<string> >, less<string> > ProbGiGivenBo;
+  map<string, map<string, long double > > ProbGiGivenBo;
 
   // 1. initialize individual genotype probability hash
   // 2. generate monomorphic genotype combinations
@@ -1469,7 +1469,7 @@ Variation varBayesProb(
 	 indIter != individuals.end(); indIter++) {
       string ind = *indIter;
       clog << "  ind=" << ind;
-      for (map<string, long double, less<string> >::const_iterator GiIter = ProbGiGivenBo[ind].begin();
+      for (map<string, long double >::const_iterator GiIter = ProbGiGivenBo[ind].begin();
 	   GiIter !=  ProbGiGivenBo[ind].end(); GiIter++) {
 	string Gi = GiIter->first;
 	long double probGiGivenBo = GiIter->second;
@@ -1518,8 +1518,8 @@ Variation varBayesProb(
   //----------------------------------------------------------------------------
   // assign invidual genotype probabilities
   //----------------------------------------------------------------------------
-  map<string, map<string, long double, less<string> >, less<string> > individualGenotypeProbability;
-  for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+  map<string, map<string, long double > > individualGenotypeProbability;
+  for (map<string, map<string, long double > >::const_iterator 
 	 indIter = ProbGiGivenBo.begin(); indIter != ProbGiGivenBo.end(); indIter++) {
     string ind = indIter->first;
 
@@ -1528,8 +1528,8 @@ Variation varBayesProb(
       continue;
     }
 
-    map<string, long double, less<string> > genotypeProb = indIter->second;
-    for (map<string, long double, less<string> >::const_iterator 
+    map<string, long double > genotypeProb = indIter->second;
+    for (map<string, long double >::const_iterator 
 	   GiIter = genotypeProb.begin(); GiIter != genotypeProb.end(); GiIter++) {
       string Gi = GiIter->first;
       long double p = GiIter->second;
@@ -1562,8 +1562,8 @@ Variation varBayesProb(
 Variation posteriorProb2(
         ///                   vvv this could become a class, as there are only so many genotypes (3 different 0/0, 0/1, 1/1)
         //       and the individuals could be a vector
-			map<string, map<string, long double, less<string> >, less<string> > LnProbBiGivenGi,
-			map<string, bool, less<string> > DataSufficientGi,
+			map<string, map<string, long double > > LnProbBiGivenGi,
+			map<string, bool > DataSufficientGi,
 			vector<string> individuals,
 			bool diploid,
 			long double THETA,
@@ -1741,7 +1741,7 @@ Variation posteriorProb2(
   //----------------------------------------------------------------------------
   // Define ln P(Bo|Go) for all genotype combinations.
   //----------------------------------------------------------------------------
-  map<string, long double, less<string> > LnProbBoGivenGo;
+  map<string, long double > LnProbBoGivenGo;
 
   //----------------------------------------------------------------------------
   // banded approximation
@@ -1776,10 +1776,10 @@ Variation posteriorProb2(
     for (unsigned int w=1; w<=min(WB, (int)individuals.size()); w++) {
       
       // make new LnProbBoGivenGo
-      map<string, long double, less<string> > LnProbBoGivenGoNew;
+      map<string, long double > LnProbBoGivenGoNew;
 
       // Iterate through every element of current list
-      for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGo.begin();
+      for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGo.begin();
 	   GoIter != LnProbBoGivenGo.end(); GoIter++) {
 	
 	// Retreive genotype.and probability
@@ -1910,10 +1910,10 @@ Variation posteriorProb2(
       string ind = *indIter;
 
       // new hash containing values updated for this individual
-      map<string, long double, less<string> > LnProbBoGivenGoNew;
+      map<string, long double > LnProbBoGivenGoNew;
 
       // iterate through all possible genotypes for this invididual
-      for (map<string, long double, less<string> >::const_iterator GiIter = LnProbBiGivenGi[ind].begin();
+      for (map<string, long double >::const_iterator GiIter = LnProbBiGivenGi[ind].begin();
 	   GiIter !=  LnProbBiGivenGi[ind].end(); GiIter++) {
 	
 	// retreive genotype and probability
@@ -1921,7 +1921,7 @@ Variation posteriorProb2(
 	long double lnProb = GiIter->second;
 	
 	// iterate through all current genotype combinations
-	for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGo.begin();
+	for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGo.begin();
 	     GoIter != LnProbBoGivenGo.end(); GoIter++) {
 
 	  // retreive genotype combination and corresponding prob ln value
@@ -2000,10 +2000,10 @@ Variation posteriorProb2(
   //----------------------------------------------------------------------------
   // define ln P(G|B) and ln Prior(G) for all genotype combinations
   //----------------------------------------------------------------------------
-  map<string, long double, less<string> > LnProbGoGivenBo, LnProbGo;
+  map<string, long double > LnProbGoGivenBo, LnProbGo;
 
   // iterate through every genotype combination considered
-  for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGo.begin();
+  for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGo.begin();
        GoIter != LnProbBoGivenGo.end(); GoIter++) {
     
     // retreive genotype
@@ -2103,7 +2103,7 @@ Variation posteriorProb2(
   // 1. bring up log quantities to the largest probLn value (to avoid all 0 probs)
   // 2. calculate probability normalization factor
   long double sumProb = 0;
-  for(map<string, long double, less<string> >::const_iterator GoIter = LnProbGoGivenBo.begin();
+  for(map<string, long double >::const_iterator GoIter = LnProbGoGivenBo.begin();
       GoIter != LnProbGoGivenBo.end(); GoIter++) {
 
     // retreive genotype combination and corresponding log probability
@@ -2123,10 +2123,10 @@ Variation posteriorProb2(
   //----------------------------------------------------------------------------
 
   // define final P(Go|Bo) hash
-  map<string, long double, less<string> > ProbGoGivenBo;
+  map<string, long double > ProbGoGivenBo;
 
   // process every genotype combination for which probability was calculated
-  for(map<string, long double, less<string> >::const_iterator GoIter = LnProbGoGivenBo.begin();
+  for(map<string, long double >::const_iterator GoIter = LnProbGoGivenBo.begin();
       GoIter != LnProbGoGivenBo.end(); GoIter++) {
 
     // retrieve genotype combination and its log probability
@@ -2189,7 +2189,7 @@ Variation posteriorProb2(
   //----------------------------------------------------------------------------
   // Define individual genotype probability distribution hash
   //----------------------------------------------------------------------------
-  map<string, map<string, long double, less<string> >, less<string> > ProbGiGivenBo;
+  map<string, map<string, long double > > ProbGiGivenBo;
 
   //----------------------------------------------------------------------------
   // Estimate genotype probabilities for each individual
@@ -2204,7 +2204,7 @@ Variation posteriorProb2(
     */
 
     // Make new map of log genotype likelihoods for genotype probabilty estimation
-    map<string, long double, less<string> > LnProbBoGivenGoGenotype;
+    map<string, long double > LnProbBoGivenGoGenotype;
 
     // Register best posterior probability genotype combination in initial list
     LnProbBoGivenGoGenotype[GoKing] = lnProbBoGivenGoKing;
@@ -2226,10 +2226,10 @@ Variation posteriorProb2(
     //--------------------------------------------------------------------------
 
     // Temp log genotype likelihood map
-    map<string, long double, less<string> > LnProbBoGivenGoGenotypeNew;
+    map<string, long double > LnProbBoGivenGoGenotypeNew;
 
     // Iterate through every element of current list
-    for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
+    for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
 	 GoIter != LnProbBoGivenGoGenotype.end(); GoIter++) {
       
       // Retreive genotype.and probability
@@ -2288,7 +2288,7 @@ Variation posteriorProb2(
     //--------------------------------------------------------------------------
     // Make new map of log genotype likelihoods for genotype probabilty estimation
     //--------------------------------------------------------------------------
-    map<string, long double, less<string> > LnProbGoGivenBoGenotype;
+    map<string, long double > LnProbGoGivenBoGenotype;
 
     //--------------------------------------------------------------------------
     // Estimate genotype likelihoods
@@ -2313,7 +2313,7 @@ Variation posteriorProb2(
     long double sumProbGi12GivenBo = 0;
 
     // iterate through every genotype combination considered
-    for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
+    for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
 	 GoIter != LnProbBoGivenGoGenotype.end(); GoIter++) {
     
       // retreive genotype
@@ -2434,7 +2434,7 @@ Variation posteriorProb2(
     //------------------------------------------------------------------------
     // calculate final posterior genotype probabilities
     //------------------------------------------------------------------------
-    for (map<string, long double, less<string> >::const_iterator GoIter = LnProbGoGivenBoGenotype.begin();
+    for (map<string, long double >::const_iterator GoIter = LnProbGoGivenBoGenotype.begin();
 	 GoIter != LnProbGoGivenBoGenotype.end(); GoIter++) {
     
       // retreive genotype and probability
@@ -2529,12 +2529,12 @@ Variation posteriorProb2(
   //----------------------------------------------------------------------------
   // assign invidual genotype probabilities
   //----------------------------------------------------------------------------
-  map<string, map<string, long double, less<string> >, less<string> > individualGenotypeProbability;
-  for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+  map<string, map<string, long double > > individualGenotypeProbability;
+  for (map<string, map<string, long double > >::const_iterator 
 	 indIter = ProbGiGivenBo.begin(); indIter != ProbGiGivenBo.end(); indIter++) {
     string ind = indIter->first;
-    map<string, long double, less<string> > genotypeProb = indIter->second;
-    for (map<string, long double, less<string> >::const_iterator 
+    map<string, long double > genotypeProb = indIter->second;
+    for (map<string, long double >::const_iterator 
 	   GiIter = genotypeProb.begin(); GiIter != genotypeProb.end(); GiIter++) {
       string Gi = GiIter->first;
       long double p = GiIter->second;
@@ -2569,7 +2569,7 @@ Variation posteriorProb2(
 // posteriorProb -- genotype probs based always on at least 3 values
 //------------------------------------------------------------------------------
 Variation posteriorProb(
-			map<string, map<string, long double, less<string> >, less<string> > LnProbBiGivenGi,
+			map<string, map<string, long double > > LnProbBiGivenGi,
 			vector<string> individuals,
 			bool diploid,
 			long double THETA,
@@ -2731,7 +2731,7 @@ Variation posteriorProb(
   //----------------------------------------------------------------------------
   // Define ln P(Bo|Go) for all genotype combinations.
   //----------------------------------------------------------------------------
-  map<string, long double, less<string> > LnProbBoGivenGo;
+  map<string, long double > LnProbBoGivenGo;
 
   //----------------------------------------------------------------------------
   // banded approximation
@@ -2766,10 +2766,10 @@ Variation posteriorProb(
     for (unsigned int w=1; w<=min(WB, (int)individuals.size()); w++) {
       
       // make new LnProbBoGivenGo map
-      map<string, long double, less<string> > LnProbBoGivenGoNew;
+      map<string, long double > LnProbBoGivenGoNew;
 
       // Iterate through every element of current list
-      for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGo.begin();
+      for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGo.begin();
 	   GoIter != LnProbBoGivenGo.end(); GoIter++) {
 	
 	// Retreive genotype.and probability
@@ -2893,10 +2893,10 @@ Variation posteriorProb(
       string ind = *indIter;
 
       // new hash containing values updated for this individual
-      map<string, long double, less<string> > LnProbBoGivenGoNew;
+      map<string, long double > LnProbBoGivenGoNew;
 
       // iterate through all possible genotypes for this invididual
-      for (map<string, long double, less<string> >::const_iterator GiIter = LnProbBiGivenGi[ind].begin();
+      for (map<string, long double >::const_iterator GiIter = LnProbBiGivenGi[ind].begin();
 	   GiIter !=  LnProbBiGivenGi[ind].end(); GiIter++) {
 	
 	// retreive genotype and probability
@@ -2904,7 +2904,7 @@ Variation posteriorProb(
 	long double lnProb = GiIter->second;
 	
 	// iterate through all current genotype combinations
-	for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGo.begin();
+	for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGo.begin();
 	     GoIter != LnProbBoGivenGo.end(); GoIter++) {
 
 	  // retreive genotype combination and corresponding prob ln value
@@ -2983,10 +2983,10 @@ Variation posteriorProb(
   //----------------------------------------------------------------------------
   // define ln P(G|B) and ln Prior(G) for all genotype combinations
   //----------------------------------------------------------------------------
-  map<string, long double, less<string> > LnProbGoGivenBo, LnProbGo;
+  map<string, long double > LnProbGoGivenBo, LnProbGo;
 
   // iterate through every genotype combination considered
-  for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGo.begin();
+  for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGo.begin();
        GoIter != LnProbBoGivenGo.end(); GoIter++) {
     
     // retreive genotype
@@ -3084,7 +3084,7 @@ Variation posteriorProb(
   // 1. bring up log quantities to the largest probLn value (to avoid all 0 probs)
   // 2. calculate probability normalization factor
   long double sumProb = 0;
-  for(map<string, long double, less<string> >::const_iterator GoIter = LnProbGoGivenBo.begin();
+  for(map<string, long double >::const_iterator GoIter = LnProbGoGivenBo.begin();
       GoIter != LnProbGoGivenBo.end(); GoIter++) {
 
     // retreive genotype combination and corresponding log probability
@@ -3104,10 +3104,10 @@ Variation posteriorProb(
   //----------------------------------------------------------------------------
 
   // define final P(Go|Bo) hash
-  map<string, long double, less<string> > ProbGoGivenBo;
+  map<string, long double > ProbGoGivenBo;
 
   // process every genotype combination for which probability was calculated
-  for(map<string, long double, less<string> >::const_iterator GoIter = LnProbGoGivenBo.begin();
+  for(map<string, long double >::const_iterator GoIter = LnProbGoGivenBo.begin();
       GoIter != LnProbGoGivenBo.end(); GoIter++) {
 
     // retrieve genotype combination and its log probability
@@ -3170,7 +3170,7 @@ Variation posteriorProb(
   //----------------------------------------------------------------------------
   // Define individual genotype probability distribution hash
   //----------------------------------------------------------------------------
-  map<string, map<string, long double, less<string> >, less<string> > ProbGiGivenBo;
+  map<string, map<string, long double > > ProbGiGivenBo;
 
   //----------------------------------------------------------------------------
   // Estimate genotype probabilities for each individual
@@ -3185,7 +3185,7 @@ Variation posteriorProb(
     */
 
     // Make new map of log genotype likelihoods for genotype probabilty estimation
-    map<string, long double, less<string> > LnProbBoGivenGoGenotype;
+    map<string, long double > LnProbBoGivenGoGenotype;
 
     // Register best posterior probability genotype combination in initial list
     LnProbBoGivenGoGenotype[GoKing] = lnProbBoGivenGoKing;
@@ -3207,10 +3207,10 @@ Variation posteriorProb(
     //--------------------------------------------------------------------------
 
     // Temp log genotype likelihood map
-    map<string, long double, less<string> > LnProbBoGivenGoGenotypeNew;
+    map<string, long double > LnProbBoGivenGoGenotypeNew;
 
     // Iterate through every element of current list
-    for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
+    for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
 	 GoIter != LnProbBoGivenGoGenotype.end(); GoIter++) {
       
       // Retreive genotype.and probability
@@ -3264,7 +3264,7 @@ Variation posteriorProb(
     //--------------------------------------------------------------------------
     // Make new map of log genotype likelihoods for genotype probabilty estimation
     //--------------------------------------------------------------------------
-    map<string, long double, less<string> > LnProbGoGivenBoGenotype;
+    map<string, long double > LnProbGoGivenBoGenotype;
 
     //--------------------------------------------------------------------------
     // Estimate genotype likelihoods
@@ -3289,7 +3289,7 @@ Variation posteriorProb(
     long double sumProbGi12GivenBo = 0;
 
     // iterate through every genotype combination considered
-    for (map<string, long double, less<string> >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
+    for (map<string, long double >::const_iterator GoIter = LnProbBoGivenGoGenotype.begin();
 	 GoIter != LnProbBoGivenGoGenotype.end(); GoIter++) {
     
       // retreive genotype
@@ -3407,7 +3407,7 @@ Variation posteriorProb(
     //------------------------------------------------------------------------
     // calculate final posterior genotype probabilities
     //------------------------------------------------------------------------
-    for (map<string, long double, less<string> >::const_iterator GoIter = LnProbGoGivenBoGenotype.begin();
+    for (map<string, long double >::const_iterator GoIter = LnProbGoGivenBoGenotype.begin();
 	 GoIter != LnProbGoGivenBoGenotype.end(); GoIter++) {
     
       // retreive genotype and probability
@@ -3502,12 +3502,12 @@ Variation posteriorProb(
   //----------------------------------------------------------------------------
   // assign invidual genotype probabilities
   //----------------------------------------------------------------------------
-  map<string, map<string, long double, less<string> >, less<string> > individualGenotypeProbability;
-  for (map<string, map<string, long double, less<string> >, less<string> >::const_iterator 
+  map<string, map<string, long double > > individualGenotypeProbability;
+  for (map<string, map<string, long double > >::const_iterator 
 	 indIter = ProbGiGivenBo.begin(); indIter != ProbGiGivenBo.end(); indIter++) {
     string ind = indIter->first;
-    map<string, long double, less<string> > genotypeProb = indIter->second;
-    for (map<string, long double, less<string> >::const_iterator 
+    map<string, long double > genotypeProb = indIter->second;
+    for (map<string, long double >::const_iterator 
 	   GiIter = genotypeProb.begin(); GiIter != genotypeProb.end(); GiIter++) {
       string Gi = GiIter->first;
       long double p = GiIter->second;
