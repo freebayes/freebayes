@@ -1050,8 +1050,6 @@ int main (int argc, char *argv[]) {
   // If a sample file is given, use it.  But otherwise process the bam file
   // header to get the sample names.
   //
-    // XXX this variable seems to be unused
-  map<string, bool > samplePresent;
   vector<string> sampleList;
   if (samples != "") {
     ifstream sampleFile(samples.c_str(), ios::in);
@@ -1072,7 +1070,6 @@ int main (int argc, char *argv[]) {
 	// assign content
 	string s = match[1];
     if (debug) cerr << "found sample " << s << endl;
-	samplePresent[s] = true;
 	sampleList.push_back(s);
       }
     }
@@ -1175,6 +1172,9 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   
   // reference-specific target lists
+  // XXX this need not be a map between a string and a vector; it could go
+  // vector to vector, as the reference sequences are referred to by number in
+  // BamTools anyway
   map<string, vector<BedData> > RefTargetList;
   
   // if target file specified use targets from file
@@ -1360,35 +1360,6 @@ int main (int argc, char *argv[]) {
               << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl // NiBAll[ind]
               << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
               << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
-              
-              // NiBAll,
-              // these are probably unnecessary
-              /*
-              << "##FORMAT=NiBAll,1,Integer,\"Single-individual total base coverage\"" << endl
-              << "##FORMAT=NiBNondup,1,Integer,\"Single-individual non-duplicate base coverage\"" << endl
-              << "##FORMAT=NiB,1,Integer,\"Number of bases after MRU\"" << endl // XXX what does MRU mean?
-              << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
-              << "##FORMAT=NiBp,1,Integer,\"Number of bases forward strand\"" << endl
-              << "##FORMAT=NiBm,1,Integer,\"Number of bases reverse strand\"" << endl
-              << "##FORMAT=NiA,1,Integer,\"Number of A's\"" << endl
-              << "##FORMAT=QiA,1,Integer,\"Total quality of A's\"" << endl
-              << "##FORMAT=NiAp,1,Integer,\"Number of A's on forward strand\"" << endl
-              << "##FORMAT=NiAm,1,Integer,\"Number of A's on reverse strand\"" << endl
-              << "##FORMCT=NiC,1,Integer,\"Number of C's\"" << endl
-              << "##FORMCT=QiC,1,Integer,\"Total quality of C's\"" << endl
-              << "##FORMCT=NiCp,1,Integer,\"Number of C's on forward strand\"" << endl
-              << "##FORMCT=NiCm,1,Integer,\"Number of C's on reverse strand\"" << endl
-              << "##FORMGT=NiG,1,Integer,\"Number of G's\"" << endl
-              << "##FORMGT=QiG,1,Integer,\"Total quality of G's\"" << endl
-              << "##FORMGT=NiGp,1,Integer,\"Number of G's on forward strand\"" << endl
-              << "##FORMGT=NiGm,1,Integer,\"Number of G's on reverse strand\"" << endl
-              << "##FORMTT=NiT,1,Integer,\"Number of T's\"" << endl
-              << "##FORMTT=QiT,1,Integer,\"Total quality of T's\"" << endl
-              << "##FORMTT=NiTp,1,Integer,\"Number of T's on forward strand\"" << endl
-              << "##FORMTT=NiTm,1,Integer,\"Number of T's on reverse strand\"" << endl
-              << "##FORMTT=GiP,-1,String,\"Genotype probabilities for individual\"" << endl
-              */
-
               << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" 
               << boost::algorithm::join(sampleList, "\t")
               << endl;
@@ -1412,6 +1383,7 @@ int main (int argc, char *argv[]) {
   long int gDNondup = 0;
   long int gD = 0;
 
+  // outer loop reference sequences in list
   for (map<string, vector<BedData> >::const_iterator refIter = RefTargetList.begin(); 
        refIter != RefTargetList.end(); refIter++) {
     string refName = refIter->first;
@@ -1447,15 +1419,24 @@ int main (int argc, char *argv[]) {
       //----------------------------------------------------------------------
       
       // contig-position specific coverage quantities
+      // XXX all these maps can be replaced by one data structure
+      //     mapping a range of ints into a vector of structures which hold these
+      // XXX these are unused??
       map<int, int > readCount, readCountPlus, readCountMinus;
       map<int, map_string_int > alleleCount, alleleCountPlus, alleleCountMinus;
       map<int, map_string_longDouble > alleleQual, alleleQualPlus, alleleQualMinus;
       
       // contig-position and individual specific coverage quantities
+      // XXX this map as well
       map<int, map<string, vector<Basecall> > >
           individualBasecalls, 
           individualBasecallsAll,
           individualBasecallsNondup;
+      // it should be like:
+      // Contig contig(reference, start_position, end_position);
+      // initialize it with our current position,
+      //  and access would be like:
+      // contig[position][individual]
       
       // collect targets for which there is no read data
       bool badTarget = false;
@@ -1515,7 +1496,6 @@ int main (int argc, char *argv[]) {
         if (record) {logFile << "    Target not OK... adding default stats" << endl;}
         if (debug) {cerr << "    Target not OK... adding default stats" << endl;}
 
-        // XXX warn about bad targets by default ?
         cerr << "    Warning: Bad target starting at position " << target.left << endl;
 
       }
@@ -1576,6 +1556,7 @@ int main (int argc, char *argv[]) {
 	  
 	  // indicator function of ref seq positions where this read
 	  //   has an INDEL
+      //   XXX this one can also get mapped into the above data structure
 	  map<int, bool > readINDEL;
 
 	  // initialize reference sequence position and read position
@@ -1674,6 +1655,7 @@ int main (int argc, char *argv[]) {
 	  //----------------------------------------------------------------
 	  
 	  // mask data structure
+      // XXX this can also be encapsulated
 	  map<int, bool > readMask;
 
 	  // !!! too simplistic! Replace with more sophisticated method!
@@ -1803,6 +1785,8 @@ int main (int argc, char *argv[]) {
 	    int ntT = 0, qtT = 0, ntTp = 0, ntTm = 0;
 	    
 	    // single-individual coverage maps
+        // XXX this should be a unified data structure
+        //   ... not 22 maps
 	    map<string, int > NiBAll, NiBNondup;
 	    map<string, int > NiB, QiB, NiBp, NiBm;
 	    map<string, int > NiA, QiA, NiAp, NiAm;
@@ -1931,6 +1915,7 @@ int main (int argc, char *argv[]) {
 	    string sbPrev = "?";
 	    string sbNext = "?";
 	    
+        // XXX very bad, why are we appending the ref seq to the end of this vector?
 	    vector<string> sampleListPlusRef = sampleList;
 	    
 	    if (useRefAllele) {
@@ -1959,6 +1944,7 @@ int main (int argc, char *argv[]) {
 		bc.qual = sq;
 		bc.strand = "?";
 	      
+        // XXX
 		sampleListPlusRef.push_back(target.seq);
 		vector<Basecall> basecalls;
 		basecalls.push_back(bc);
@@ -1985,6 +1971,8 @@ int main (int argc, char *argv[]) {
 	      
           // DATA LIKELIHOOD function
 	      // calculate genotype log likelihoods
+          //
+          // maps genotype to probability for this individual
 	      map<string, long double > logGl 
 		= logGenotypeLikelihoods(  // this gets loaded into another map, indexed by individual
 					 basecalls,
@@ -2008,7 +1996,6 @@ int main (int argc, char *argv[]) {
 	    //---------------------------------------------------------------
 	    
 	    // load sorting hash
-	    map<string, int > AQ;
 	    AQ["A"] = qtA; AQ["C"] = qtC; AQ["G"] = qtG; AQ["T"] = qtT;
 	    
 	    // sort eligible alleles according to descending allele quality
