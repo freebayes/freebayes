@@ -28,13 +28,16 @@ CFLAGS=#-pg # for gprof
 ################################################################################
 # Program builds
 ################################################################################
-all: testMath bamBayes bamIndel bamDup bamDump bamSlice bamStat rptSum aggregateHapmap
+all: testMath bayes bamBayes bamIndel bamDup bamDump bamSlice bamStat rptSum aggregateHapmap
 
 testMath: testMath.o Function-Sequence.o Function-Math.o
 	$(CC) $(CFLAGS) testMath.o Function-Math.o Function-Sequence.o -o testMath -lboost_regex -lpthread -Wno-deprecated
 
 bamBayes: bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o
 	$(CC) $(CFLAGS) bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o Fasta.o -o bamBayes -lz -lboost_regex -lpthread -Wno-deprecated
+
+bayes: bayes.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o Parameters.o
+	$(CC) $(CFLAGS) bayes.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Generic.o Function-Math.o Parameters.o fastlz.o Fasta.o -o bayes -lz -lboost_regex -lpthread -Wno-deprecated
 
 bamIndel: bamIndel.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o
 	$(CC) $(CFLAGS) bamIndel.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o -o bamIndel -lz -lboost_regex -lpthread -Wno-deprecated
@@ -70,6 +73,9 @@ Fasta.o: Fasta.cpp
 
 bamBayes.o: bamBayes.cpp TryCatch.h
 	$(CC) $(CFLAGS) -c bamBayes.cpp -Wno-deprecated
+
+bayes.o: bayes.cpp TryCatch.h
+	$(CC) $(CFLAGS) -c bayes.cpp -Wno-deprecated
 
 bamIndel.o: bamIndel.cpp
 	$(CC) $(CFLAGS) -c bamIndel.cpp -Wno-deprecated
@@ -123,6 +129,12 @@ Function-Generic.o: Function-Generic.cpp Function-Generic.h Type-Hash.h
 
 Function-Math.o: Function-Math.cpp Function-Math.h Type-Hash.h
 	$(CC) $(CFLAGS) -c Function-Math.cpp -Wno-deprecated
+
+Parameters.o: Parameters.cpp Parameters.h
+	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
+
+Allele.o: Allele.cpp Allele.h
+	$(CC) $(CFLAGS) -c Allele.cpp -Wno-deprecated
 
 ################################################################################
 # Archival

@@ -1996,6 +1996,7 @@ int main (int argc, char *argv[]) {
 	    //---------------------------------------------------------------
 	    
 	    // load sorting hash
+        map<string, int> AQ;
 	    AQ["A"] = qtA; AQ["C"] = qtC; AQ["G"] = qtG; AQ["T"] = qtT;
 	    
 	    // sort eligible alleles according to descending allele quality
