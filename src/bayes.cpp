@@ -1,6 +1,7 @@
 // 
-// bambayes
-// snp, short indel caller
+// BamBayes
+//
+// A bayesian genetic variant caller.
 // 
 
 // standard includes
@@ -24,6 +25,7 @@
 // "hash_map" true hashes
 #include <ext/hash_map>
 
+
 // private libraries
 #include "Class-GigReader.h"
 #include "Function-Sequence.h"
@@ -37,23 +39,16 @@
 #include "TryCatch.h"
 #include "Parameters.h"
 #include "Allele.h"
+//#include "Caller.h"
 
-// uses
 using namespace std; 
-//using namespace __gnu_cxx;
-using namespace BamTools;
-
 
 int main (int argc, char *argv[]) {
 
     // parse command line
-    
     Parameters params = Parameters(argc, argv);
 
-    // TODO initialize our bayesian caller obj
-    //        this will take care of IO stuff
-    //        and provide a consistent interface to functions that operate on it
-    //BayesCaller snpCaller = BayesCaller(params);
+    //BayesCaller caller = BayesCaller(params);
     vector<Allele> alleles;
 
     ///////////////////////////////////////////
@@ -62,7 +57,8 @@ int main (int argc, char *argv[]) {
     //         for each read overlapping position
     //             for each base in read
     //                 register base
-    //while (snpCaller.getNextAlleles(alleles)) {
+
+    //while (caller.updateAlleles(alleles)) {
     //         evaluate prob(variation | all bases)
     //         if prob(variation) >= reporting threshold
     //             report variation

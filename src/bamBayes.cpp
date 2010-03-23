@@ -1163,7 +1163,7 @@ int main (int argc, char *argv[]) {
   
   // report success
   if (record) {logFile << " done." << endl;}
-  if (debug) {cerr << " done." << endl;}
+  if (debug) {logFile << " done." << endl;}
   
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------

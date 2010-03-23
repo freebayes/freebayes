@@ -2,19 +2,21 @@
 
 
 Allele::Allele(AlleleType type, 
-           string referenceName, 
-           SequenceID sequenceid,
+           ReferenceID referenceID,
            Position position, 
+           int length,
            string alternate, 
-           Strand strand, 
-           SampleID sampleid)
+           SampleID sampleid,
+           Strand strand,
+           short quality);
     : type(type)
-    , referenceName(referenceName)
-    , sequenceID(sequenceid)
+    , referenceID(referenceID)
     , position(position)
+    , length(length)
     , alternate(alternate)
+    , sampleID(sampleID)
     , strand(strand)
-    , sampleID(sampleid)
+    , quality(quality)
 { }
 
 string Allele::Type(void) {

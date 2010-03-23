@@ -19,12 +19,12 @@ enum AlleleType {
 };
 
 enum Strand {
-    STRAND_PLUS,
-    STRAND_MINUS
+    STRAND_FORWARD,
+    STRAND_REVERSE
 };
 
 typedef unsigned int SampleID;
-typedef unsigned int SequenceID;
+typedef unsigned int ReferenceID;
 typedef long unsigned int Position;
 
 class Allele {
@@ -38,23 +38,29 @@ public:
     // reference
     string referenceName;
     // sequence / chromosome
-    SequenceID sequenceID;
+    SequenceID referenceID;
     // alternate sequence
     string alternate;
-    // position
+    // position 1-based against reference
     Position position;
+    // and event length (deletion implies 0, snp implies 1, insertion >1)
+    int length;
     // strand
     Strand strand;
     // representative sample ID
     SampleID sampleID;
+    // supporting reads
+    //vector<BamAlignment*> supportingAlignments;
+    short quality; // quality score associated with this allele
 
     Allele(AlleleType type, 
-           string referenceName, 
-           SequenceID sequenceid,
+           ReferenceID referenceID,
            Position position, 
+           int length,
            string alternate, 
-           Strand strand, 
-           SampleID sampleid);
+           SampleID sampleid,
+           Strand strand,
+           short quality);
 
     // return a string representation of the type, for output
     string Type(void);
