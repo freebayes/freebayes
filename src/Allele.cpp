@@ -1,14 +1,13 @@
 #include "Allele.h"
 
-
 Allele::Allele(AlleleType type, 
-           ReferenceID referenceID,
-           Position position, 
-           int length,
-           string alternate, 
-           SampleID sampleid,
-           Strand strand,
-           short quality);
+        ReferenceID referenceID, 
+        Position position, 
+        int length, 
+        string alternate, 
+        SampleID sampleid, 
+        Strand strand, 
+        short quality)
     : type(type)
     , referenceID(referenceID)
     , position(position)
@@ -53,9 +52,9 @@ ostream &operator<<(ostream &out, Allele &allele) {
     out << "type: " << allele.Type() << endl
         << "reference name: " << allele.referenceName << endl
         << "position: " << allele.position << endl
-        << "sequence id: " << allele.sequenceID << endl
+        << "sequence id: " << allele.referenceID << endl
         << "alternate sequence: " << allele.alternate << endl
-        << "strand: " << (allele.strand == STRAND_PLUS ? "plus" : "minus") << endl
+        << "strand: " << (allele.strand == STRAND_FORWARD ? "+" : "-") << endl
         << "sample id: " << allele.sampleID << endl;
 
     return out;

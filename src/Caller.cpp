@@ -2,8 +2,8 @@
 
 // local helper macro to improve code readability
 #define DEBUG_LOG(msg) \
-    if (parameters.record) { logFile << msg; } \
-    if (parameters.debug) { cerr << msg; }
+    if (parameters->record) { logFile << msg; } \
+    if (parameters->debug) { cerr << msg; }
 
 
 using namespace std;
@@ -12,54 +12,39 @@ using namespace std;
 // XXX TODO change these void functions to bool
 
 // open BAM input file
-void BayesCaller::openBam(void) {
+void Caller::openBam(void) {
 
-    DEBUG_LOG("Opening BAM fomat alignment input file: " << bam << " ...")
+    DEBUG_LOG("Opening BAM fomat alignment input file: " << parameters->bam << " ...")
   
-    bamReader.Open(parameters.bam.c_str());
+    bamReader.Open(parameters->bam.c_str());
 
     DEBUG_LOG(" done" << endl);
 }
 
-void BayesCaller::openLogFile(void) {
+void Caller::openLogFile(void) {
 
-    logFile.open(log.c_str(), ios::out);
-    if (parameters.record) {
-        if (parameters.debug) {cerr << "Opening log file: " << log << " ...";}
+    logFile.open(parameters->log.c_str(), ios::out);
+    if (parameters->record) {
+        if (parameters->debug) {cerr << "Opening log file: " << parameters->log << " ...";}
 
         if (!logFile) {
-            cerr << " unable to open file: " << log << endl;
+            cerr << " unable to open file: " << parameters->log << endl;
             exit(1);
         }
-        if (parameters.debug) {cerr << " done." << endl;}
+        if (parameters->debug) {cerr << " done." << endl;}
     }
-
-    if (parameters.record) {
-        logFile << "Command line:";
-        for (int i=0; i<argc; i++) {
-          logFile << " " << argv[i];
-        }
-        logFile << endl << *this;
-    }
-
-    if (parameters.debug) {
-        cerr << "Command line:";
-        for (int i=0; i<argc; i++) {
-          cerr << " " << argv[i];
-        }
-        cerr << endl << *this;
-    }
+    // previously we wrote the command to the logfile here
 }
 
 // read sample list file or get sample names from bam file header
-void BayesCaller::getSampleNames(void) {
+void Caller::getSampleNames(void) {
     // If a sample file is given, use it.  But otherwise process the bam file
     // header to get the sample names.
     //
-    if (parameters.samples != "") {
-        ifstream sampleFile(samples.c_str(), ios::in);
+    if (parameters->samples != "") {
+        ifstream sampleFile(parameters->samples.c_str(), ios::in);
         if (! sampleFile) {
-            cerr << "unable to open file: " << samples << endl;
+            cerr << "unable to open file: " << parameters->samples << endl;
             exit(1);
         }
         boost::regex patternSample("^(\\S+)\\s*(.*)$");
@@ -72,13 +57,13 @@ void BayesCaller::getSampleNames(void) {
             if (boost::regex_search(line, match, patternSample)) {
                 // assign content
                 string s = match[1];
-                if (parameters.debug) cerr << "found sample " << s << endl;
+                if (parameters->debug) cerr << "found sample " << s << endl;
                 sampleList.push_back(s);
             }
         }
     } else { // no samples file given, read from BAM file header for sample names
         // retrieve header information
-        if (parameters.debug) cerr << "no sample list file given, attempting to read sample names from bam file" << endl;
+        if (parameters->debug) cerr << "no sample list file given, attempting to read sample names from bam file" << endl;
 
         string bamHeader = bamReader.GetHeaderText();
 
@@ -101,14 +86,14 @@ void BayesCaller::getSampleNames(void) {
                 boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
                 string name = nameParts.back();
                 //mergedHeader.append(1, '\n');
-                if (parameters.debug) cerr << "found sample " << name << endl;
+                if (parameters->debug) cerr << "found sample " << name << endl;
                 sampleList.push_back(name);
             }
         }
     }
 }
 
-void BayesCaller::loadBamReferenceSequenceNames(void) {
+void Caller::loadBamReferenceSequenceNames(void) {
 
     //--------------------------------------------------------------------------
     // read reference sequences from input file
@@ -122,7 +107,7 @@ void BayesCaller::loadBamReferenceSequenceNames(void) {
 }
 
 
-void BayesCaller::loadFastaReference(void) {
+void Caller::loadFastaReference(void) {
 
     // XXX we don't technically need to load the whole thing into memory
     // the FastaReference class will let us grab individual sequences and subsequences 
@@ -134,7 +119,7 @@ void BayesCaller::loadFastaReference(void) {
     // 
     // this keeps our memory requirements low, and will allow us to operate unmodified on more systems
 
-    DEBUG_LOG("processing fasta reference " << parameters.fasta);
+    DEBUG_LOG("processing fasta reference " << parameters->fasta);
 
     //--------------------------------------------------------------------------
     // process input fasta file
@@ -143,7 +128,7 @@ void BayesCaller::loadFastaReference(void) {
     // If it can't find an index file for the reference, it will attempt to
     // generate one alongside it.
 
-    reference = FastaReference(parameters.fasta);
+    reference = new FastaReference(parameters->fasta);
 
     referenceSequenceCount = 0;
 
@@ -152,8 +137,8 @@ void BayesCaller::loadFastaReference(void) {
     //--------------------------------------------------------------------------
     // load ref seq names into hash
     //--------------------------------------------------------------------------
-    for(map<string, FastaIndexEntry>::const_iterator it = fastaReference->index->begin(); 
-          it != fastaReference->index->end(); ++it) {
+    for(map<string, FastaIndexEntry>::const_iterator it = reference->index->begin(); 
+          it != reference->index->end(); ++it) {
 
         FastaIndexEntry entry = it->second;
 
@@ -174,30 +159,30 @@ void BayesCaller::loadFastaReference(void) {
 
 }
 
-void BayesCaller::loadReferenceSequence(int seqID) {
-    currentSequence = reference.getSequence(referenceSequenceNameToID[seqID]);
+void Caller::loadReferenceSequence(int seqID) {
+    currentSequence = reference->getSequence(referenceSequenceNames[seqID]);
 }
 
-void BayesCaller::loadTargetRegions(void) {
+void Caller::loadTargetRegions(void) {
 
   // process target region input file
   
   // if target file specified use targets from file
   int targetCount = 0;
-  if (parameters.targets != "") {
+  if (parameters->targets != "") {
     
     //------------------------------------------------------------------------
     // open input BED file if required
     //------------------------------------------------------------------------
     
     // report
-    DEBUG_LOG("Making BedReader object for target file: " << parameters.targets << " ...");
+    DEBUG_LOG("Making BedReader object for target file: " << parameters->targets << " ...");
     
     // make
-    bedReader = BedReader(parameters.targets);
+    BedReader bedReader(parameters->targets);
     
     if (! bedReader.isOpen()) {
-      cerr << "Unable to open target file: " << parameters.targets << "... terminating." << endl;
+      cerr << "Unable to open target file: " << parameters->targets << "... terminating." << endl;
       exit(1);
     }
     
@@ -206,17 +191,21 @@ void BayesCaller::loadTargetRegions(void) {
     //------------------------------------------------------------------------
     BedData bd;
     while (bedReader.getNextEntry(bd)) {
-      if (parameters.debug2) {
-        cerr << bd.seq << "\t" << bd.left << "\t" << bd.right << "\t" << bd.desc << endl;
-      }
-      if (referenceTargetMap.count(bd.seq) > 0) {
+        if (parameters->debug2) {
+            cerr << bd.seq << "\t" << bd.left << "\t" << bd.right << "\t" << bd.desc << endl;
+        }
         if (bd.left < 1 || bd.right > referenceSequences[referenceSequenceNameToID[bd.seq]].RefLength) {
           cerr << "Target region coordinate outside of reference sequence bounds... terminating." << endl;
           exit(1);
         }
-        targetsByRefseq[bd.seq].push_back(bd);
+        if (targetsByRefseq.count(bd.seq) > 0) {
+            targetsByRefseq[bd.seq].push_back(bd);
+        } else {
+            vector<BedData> bv;
+            bv.push_back(bd);
+            targetsByRefseq[bd.seq] = bv;
+        }
         targetCount++;
-      }
     }
     
     //------------------------------------------------------------------------
@@ -239,7 +228,7 @@ void BayesCaller::loadTargetRegions(void) {
       bd.seq = refName;
       bd.left = 1;
       bd.right = refData.RefLength;
-      referenceTargetMap[bd.seq].push_back(bd);
+      targetsByRefseq[bd.seq].push_back(bd);
       targetCount++;
     }
   }
@@ -248,7 +237,7 @@ void BayesCaller::loadTargetRegions(void) {
 
 }
 
-void BayesCaller::initializeOutputFiles(void) {
+void Caller::initializeOutputFiles(void) {
 
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
@@ -261,25 +250,25 @@ void BayesCaller::initializeOutputFiles(void) {
   //----------------------------------------------------------------------------
 
   // report
-  DEBUG_LOG("opening report output file for writing: " << rpt << "...");
+  DEBUG_LOG("opening report output file for writing: " << parameters->rpt << "...");
 
   // open output streams
   bool outputRPT, outputVCF; // for legibility
 
-  if (parameters.rpt != "") {
+  if (parameters->rpt != "") {
       outputRPT = true;
-      rptFile.open(rpt.c_str());
+      rptFile.open(parameters->rpt.c_str());
       if (!rptFile) {
-        DEBUG_LOG(" unable to open file: " << rpt << endl);
+        DEBUG_LOG(" unable to open file: " << parameters->rpt << endl);
         exit(1);
       }
   } else { outputRPT = false; }
 
-  if (parameters.vcf != "") {
+  if (parameters->vcf != "") {
       outputVCF = true;
-      vcfFile.open(vcf.c_str());
+      vcfFile.open(parameters->vcf.c_str());
       if (!vcfFile) {
-        DEBUG_LOG(" unable to open file: " << rpt << endl);
+        DEBUG_LOG(" unable to open file: " << parameters->vcf << endl);
         exit(1);
       }
   } else { outputVCF = false; }
@@ -289,44 +278,38 @@ void BayesCaller::initializeOutputFiles(void) {
   // write header information
   //----------------------------------------------------------------------------
   if (outputRPT) {
-      rptFile << "# Command line that generated this output:";
-      for (int i=0; i<argc; i++) {
-        rptFile << " " << argv[i];
-      }
-      rptFile << endl;
-      rptFile << "#" << endl;
       rptFile << "# Complete list of parameter values:" << endl;
-      rptFile << "#   --bam = " << bam << endl;
-      rptFile << "#   --fasta = " << fasta << endl;
-      rptFile << "#   --targets = " << targets << endl;
-      rptFile << "#   --samples = " << samples << endl;
-      rptFile << "#   --rpt = " << rpt << endl;
-      rptFile << "#   --log = " << log << endl;
-      rptFile << "#   --useRefAllele = " <<  bool2String[useRefAllele] << endl;
-      rptFile << "#   --forceRefAllele = " <<  bool2String[forceRefAllele] << endl;
-      rptFile << "#   --MQR = " << MQR << endl;
-      rptFile << "#   --BQR = " << BQR << endl;
-      rptFile << "#   --ploidy = " << ploidy << endl;
-      rptFile << "#   --sampleNaming = " << sampleNaming << endl;
-      rptFile << "#   --sampleDel = " << sampleDel << endl;
-      rptFile << "#   --BQL0 = " << BQL0 << endl;
-      rptFile << "#   --MQL0 = " << MQL0 << endl;
-      rptFile << "#   --BQL1 = " << BQL1 << endl;
-      rptFile << "#   --MQL1 = " << MQL1 << endl;
-      rptFile << "#   --parameters.BQL2 = " << parameters.BQL2 << endl;
-      rptFile << "#   --RMU = " << RMU << endl;
-      rptFile << "#   --IDW = " << IDW << endl;
-      rptFile << "#   --TH = " << TH << endl;
-      rptFile << "#   --PVL = " << PVL << endl;
-      rptFile << "#   --algorithm = " << algorithm << endl;
-      rptFile << "#   --RDF = " << RDF << endl;
-      rptFile << "#   --WB = " << WB << endl;
-      rptFile << "#   --TB = " << TB << endl;
-      rptFile << "#   --includeMonoB = " <<  bool2String[includeMonoB] << endl;
-      rptFile << "#   --TR = " << TR << endl;
-      rptFile << "#   --I = " << I << endl;
-      rptFile << "#   --debug = " <<  bool2String[debug] << endl;
-      rptFile << "#   --debug2 = " <<  bool2String[debug2] << endl;
+      rptFile << "#   --bam = " << parameters->bam << endl;
+      rptFile << "#   --fasta = " << parameters->fasta << endl;
+      rptFile << "#   --targets = " << parameters->targets << endl;
+      rptFile << "#   --samples = " << parameters->samples << endl;
+      rptFile << "#   --rpt = " << parameters->rpt << endl;
+      rptFile << "#   --log = " << parameters->log << endl;
+      rptFile << "#   --useRefAllele = " <<  ( parameters->useRefAllele ? "true" : "false" ) << endl;
+      rptFile << "#   --forceRefAllele = " <<  ( parameters->forceRefAllele ? "true" : "false" ) << endl;
+      rptFile << "#   --MQR = " << parameters->MQR << endl;
+      rptFile << "#   --BQR = " << parameters->BQR << endl;
+      rptFile << "#   --ploidy = " << parameters->ploidy << endl;
+      rptFile << "#   --sampleNaming = " << parameters->sampleNaming << endl;
+      rptFile << "#   --sampleDel = " << parameters->sampleDel << endl;
+      rptFile << "#   --BQL0 = " << parameters->BQL0 << endl;
+      rptFile << "#   --MQL0 = " << parameters->MQL0 << endl;
+      rptFile << "#   --BQL1 = " << parameters->BQL1 << endl;
+      rptFile << "#   --MQL1 = " << parameters->MQL1 << endl;
+      rptFile << "#   --parameters->BQL2 = " << parameters->BQL2 << endl;
+      rptFile << "#   --RMU = " << parameters->RMU << endl;
+      rptFile << "#   --IDW = " << parameters->IDW << endl;
+      rptFile << "#   --TH = " << parameters->TH << endl;
+      rptFile << "#   --PVL = " << parameters->PVL << endl;
+      rptFile << "#   --algorithm = " << parameters->algorithm << endl;
+      rptFile << "#   --RDF = " << parameters->RDF << endl;
+      rptFile << "#   --WB = " << parameters->WB << endl;
+      rptFile << "#   --TB = " << parameters->TB << endl;
+      rptFile << "#   --includeMonoB = " <<  ( parameters->includeMonoB ? "true" : "false" ) << endl;
+      rptFile << "#   --TR = " << parameters->TR << endl;
+      rptFile << "#   --I = " << parameters->I << endl;
+      rptFile << "#   --debug = " <<  ( parameters->debug ? "true" : "false" ) << endl;
+      rptFile << "#   --debug2 = " <<  ( parameters->debug2 ? "true" : "false" ) << endl;
       rptFile << "#" << endl;
   }
 
@@ -369,13 +352,9 @@ void BayesCaller::initializeOutputFiles(void) {
 
 // initialization function
 // sets up environment so we can start registering alleles
-BayesCaller::BayesCaller(Parameters& params) {
-
-    // init program parameters
-    parameters = params;
-
-    // set up position tracking
-    currentTarget = NULL;  // hmmm
+Caller::Caller(int argc, char** argv)
+{
+    parameters = new Parameters(argc, argv);
 
     // initialization
     // NOTE: these void functions have side effects, and currently have to be called in this order
@@ -389,10 +368,13 @@ BayesCaller::BayesCaller(Parameters& params) {
     loadTargetRegions();
     initializeOutputFiles();
 
+    currentRefID = -1; // will get set properly via toNextRefID
+    toNextRefID(); // initializes currentRefID
+    toFirstTargetPosition(); // initializes currentTarget, currentAlignment
 }
 
 
-RegisteredAlignment& BayesCaller::registerAlignment(BamAlignment& alignment) {
+RegisteredAlignment& Caller::registerAlignment(BamAlignment& alignment) {
 
     RegisteredAlignment ra = RegisteredAlignment(alignment); // result
 
@@ -401,6 +383,11 @@ RegisteredAlignment& BayesCaller::registerAlignment(BamAlignment& alignment) {
     int rp = 1;  // read position
     int sp = alignment.Position + 1;  // sequence position
               //   ^^^ conversion between 0 and 1 based index
+
+    string sampleName;
+    if (!alignment.GetReadGroup(sampleName)) {
+        cerr << "ERROR: Couldn't find read group id for BAM Alignment " << alignment.Name << endl;
+    }
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
@@ -425,7 +412,7 @@ RegisteredAlignment& BayesCaller::registerAlignment(BamAlignment& alignment) {
                 TRY { sb = currentSequence.substr(sp-1, 1); } CATCH;
 
                 // register mismatch
-                if (b != sb && qual >= parameters.BQL2)
+                if (b != sb && qual >= parameters->BQL2)
                     ++ra.mismatches;
       
                 // update positions
@@ -441,9 +428,11 @@ RegisteredAlignment& BayesCaller::registerAlignment(BamAlignment& alignment) {
 
             // calculate maximum of the two qualities values
             short qual = min(qL, qR); // XXX was max, but min makes more sense, right ?
-            if (qual >= parameters.BQL2)
-                ra.alleles.push_back(Allele(ALLELE_DELETION, currentRefID, sp, l, '',
+            if (qual >= parameters->BQL2) {
+                //Allele::Allele(AlleleType, ReferenceID, Position, int, std::string, SampleID, Strand, short int)
+                ra.alleles.push_back(Allele(ALLELE_DELETION, currentRefID, sp, l, "", sampleName,
                       (!alignment.IsReverseStrand()) ? STRAND_FORWARD : STRAND_REVERSE, qual));
+            }
 
             sp += l;  // update sample position
 
@@ -461,23 +450,23 @@ RegisteredAlignment& BayesCaller::registerAlignment(BamAlignment& alignment) {
             // calculate joint quality, which is the probability that there are no errors in the observed bases
             short qual = jointQuality(quals);
             // register insertion + base quality with reference sequence
-            if (qual >= parameters.BQL2) // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the 'average' quality
-                ra.alleles.push_back(Allele(ALLELE_INSERTION, currentRefID, sp, l, rDna.substr(rp, l),
-                                        (!alignment.IsReverseStrand()) ? STRAND_FORWARD : STRAND_REVERSE));
+            if (qual >= parameters->BQL2) // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the 'average' quality
+                ra.alleles.push_back(Allele(ALLELE_INSERTION, currentRefID, sp, l, rDna.substr(rp, l), sampleName,
+                                        (!alignment.IsReverseStrand()) ? STRAND_FORWARD : STRAND_REVERSE, qual));
 
         } // not handled, skipped region 'N's
     } // end cigar iter loop
 }
 
-void BayesCaller::updateAlignmentQueue(void) {
+void Caller::updateAlignmentQueue(void) {
 
     // BamAlignments are 0-based ... does this jive?
-    BamAlignment* firstAlignment = registeredAlignmentQueue.front().alignment;
+    BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
     // pop from the back until we get to an alignment that overlaps our current position
-    while (!(currentTarget->left < front->Position <= currentTarget->right ||
-            currentTarget->left < front->Position + front->Length <= currentTarget->right)) {
-        registeredAlignmentQueue.pop();
-        firstAlignment = registeredAlignmentQueue.front().alignment;
+    while (!(currentTarget->left < alignment->Position <= currentTarget->right ||
+            currentTarget->left < alignment->Position + alignment->Length <= currentTarget->right)) {
+        registeredAlignmentQueue.pop_back();
+        alignment = &registeredAlignmentQueue.back().alignment;
     }
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
@@ -490,19 +479,49 @@ void BayesCaller::updateAlignmentQueue(void) {
             RegisteredAlignment& ra = registerAlignment(currentAlignment);
             // filters
             // 'read mask' --- this just means "don't consider snps right next to potential indels
+            //                 ... but it should be implemented
             // low mapping quality --- hmmm ... could calculate it with the jointQuality function?
-            // duplicates --- handled via BamAlignment
-            if (!(ra.mismatches > parameters.RMU))
-                registeredAlignmentQueue.push(ra);
+            // duplicates --- tracked via each BamAlignment
+            if (!(ra.mismatches > parameters->RMU))
+                registeredAlignmentQueue.push_front(ra);
             // TODO collect statistics here...
         }
         moreAlignments &= bamReader.GetNextAlignment(currentAlignment);
     }
 }
 
-vector<BedData>* BayesCaller::targetsInCurrentRefSeq(void) {
+vector<BedData> Caller::targetsInCurrentRefSeq(void) {
     return targetsByRefseq[referenceSequenceNames[currentRefID]];
 }
+
+bool Caller::toNextRefID(void) {
+    while (targetsInCurrentRefSeq().size() == 0 && currentRefID < referenceSequenceNames.size()) {
+        ++currentRefID;
+    }
+    if (currentRefID >= referenceSequenceNames.size())
+        return false;
+    else
+        return true;
+}
+
+// initialization function, should only be called via constructor
+bool Caller::toFirstTargetPosition(void) {
+    currentTarget = &targetsInCurrentRefSeq().front();
+    currentPosition = currentTarget->left;
+    bamReader.Jump(currentRefID, currentPosition);
+    if (!bamReader.GetNextAlignment(currentAlignment)) {
+        // probably indicates an error in the bam file, as this should be our first pass
+        cerr << "Bam file has no alignments??" << endl;
+        exit(1);
+    }
+    loadReferenceSequence(currentRefID);
+    updateAlignmentQueue();
+    DEBUG_LOG("  Processing target: " << currentTarget->seq << ":"
+            << currentTarget->left << "-" << currentTarget->right <<
+            endl);
+    return true;
+}
+
 
 // steps our position/beddata/reference pointers through all positions in all
 // targets, returns false when we are finished
@@ -517,30 +536,11 @@ vector<BedData>* BayesCaller::targetsInCurrentRefSeq(void) {
 //  3) failed jump to target start
 //  ...
 //  TODO might want to generalize this into a jump function and a step function
-bool BayesCaller::toNextTargetPosition(void) {
+bool Caller::toNextTargetPosition(void) {
 
-    // first pass
-    if (currentTarget == NULL) {
-        currentTarget = targetsInCurrentRefSeq().begin();
-        currentRefID = referenceSequenceNameToID[currentTarget->seq];
-        currentPosition = currentTarget->left;
-        bamReader.Jump(currentRefID, currentPosition);
-        if (!bamReader.GetNextAlignment(currentAlignment)) {
-            // probably indicates an error in the bam file, as this should be our first pass
-            cerr << "Bam file has no alignments ???" << endl;
-            exit(1);
-        }
-        loadReferenceSequence(currentRefID);
-        updateAlignmentQueue();
-        DEBUG_LOG("  Processing target: " << currentTarget.seq << ":"
-                << currentTarget.left << "-" << currentTarget.right <<
-                endl);
-        return true;
-    }
-
-    if (currentPosition + 1 > currentTarget.right) {  // time to move targets
+    if (currentPosition + 1 > currentTarget->right) {  // time to move targets
         // if we are at the end of the targets in the current refseq
-        if (currentTarget == targetsInCurrentRefSeq().end()) {  
+        if (currentTarget == &targetsInCurrentRefSeq().back()) {  
             // if there are more reference sequences to process
             if (currentRefID + 1 < referenceSequenceCount) {
                 do {
@@ -549,7 +549,7 @@ bool BayesCaller::toNextTargetPosition(void) {
                 if (currentRefID + 1 == referenceSequenceCount && targetsInCurrentRefSeq().size() == 0) {
                     return false; // ... done
                 } // otherwise we have remaining targets
-                currentTarget = targetsInCurrentRefSeq().begin();
+                currentTarget = &targetsInCurrentRefSeq().front();
                 currentPosition = currentTarget->left;
                 if (!bamReader.Jump(currentRefID, currentPosition)) {
                     cerr << "ERROR: cannot jump to refseq:" << currentRefID << ", position:" << currentPosition << " in bam file!" << endl;
@@ -559,8 +559,8 @@ bool BayesCaller::toNextTargetPosition(void) {
                     return false; // done
                 loadReferenceSequence(currentRefID);
                 updateAlignmentQueue();
-                DEBUG_LOG("  Processing target: " << currentTarget.seq << ":"
-                        << currentTarget.left << "-" << currentTarget.right <<
+                DEBUG_LOG("  Processing target: " << currentTarget->seq << ":"
+                        << currentTarget->left << "-" << currentTarget->right <<
                         endl);
                 return true;
             // if none, we are ...
@@ -574,55 +574,37 @@ bool BayesCaller::toNextTargetPosition(void) {
     }
 }
 
-bool BayesCaller::getNextAlleles(vector<Allele>& alleles) {
-    return (toNextTargetPosition() && getAlleles(alleles));
+bool Caller::getNextAlleles(vector<Allele>& alleles) {
+    bool more = toNextTargetPosition();
+    if (more) {
+        getAlleles(alleles);
+        return true;
+    } else {
+        return false;
+    }
 }
 
-/*
- *
- * plan:
- *
- * presently basecalls are stored in a big map->map->map thing
- * for the whole target region under consideration:
- *
- *      pos      sample        basecalls
- * map <int, map<string, vector<Basecall>>
- *
- * but this isn't really necessary because we only consider the putative
- * alleles at a single given position at a time.
- *
- * so alternatively:
- *
- * vector <int, vector<int, vector<Basecall>>
- *
- * indexed access...
- *
- * the outside int is probably unnecessary; as we're just reporting putative alleles
- * for each position we then get:
- *
- *         sample     alleles
- * vector <int, vector<Allele>>
- *
- */
-
 // updates the passed vector with the current alleles at the caller's target position
-bool BayesCaller::getAlleles(vector<Allele>& alleles) {
+void Caller::getAlleles(vector<Allele>& alleles) {
 
     // clear the allele vector
     alleles.clear();
 
     // get the alleles overlapping the current position
-    // what this means is unclear
-    // here are the problems
-    // with deletions, we have bases in the reference that correspond to the deletion
-    // but with insertions, we only have one reference base that corresponds
-    // ... i suppose this is OK
-    //
-
-    // loop over allele queue items
-    // find alleles that 
-
+    // 
+    // NB: if we ignore the differences between deletions and insertions, we
+    // will report them at a number of positions, as several positions in the
+    // reference can correspond to a deletion.  and we will report insertions
+    // only at one position.  for now this is fine; it can be fixed when the
+    // i/o systems are verified to be working.
+    
+    for (deque<RegisteredAlignment>::const_iterator it = registeredAlignmentQueue.begin(); it != registeredAlignmentQueue.end(); ++it) {
+        RegisteredAlignment ra = *it;
+        for (vector<Allele>::const_iterator ai = ra.alleles.begin(); ai != ra.alleles.end(); ++ai) {
+            Allele a = *ai;
+            // for now only record the allele if it is at exactly the current position
+            if (a.position == currentPosition)
+                alleles.push_back(a);
+        }
+    }
 }
-
-
-

@@ -8,6 +8,9 @@
 
 using namespace std;
 
+#ifndef _PARAMETERS_H
+#define _PARAMETERS_H
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 // typedefs
@@ -83,8 +86,11 @@ public:
     int I;
     bool debug;
     bool debug2;
+    bool record;
 
     // functions
     Parameters(int argc, char** argv);
 
 };
+
+#endif

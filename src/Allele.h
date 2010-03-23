@@ -5,6 +5,9 @@
 #include <vector>
 #include <map>
 
+#ifndef _ALLELE_H
+#define _ALLELE_H
+
 using namespace std;
 
 // a structure describing an allele
@@ -23,7 +26,7 @@ enum Strand {
     STRAND_REVERSE
 };
 
-typedef unsigned int SampleID;
+typedef string SampleID;
 typedef unsigned int ReferenceID;
 typedef long unsigned int Position;
 
@@ -38,7 +41,7 @@ public:
     // reference
     string referenceName;
     // sequence / chromosome
-    SequenceID referenceID;
+    ReferenceID referenceID;
     // alternate sequence
     string alternate;
     // position 1-based against reference
@@ -66,3 +69,5 @@ public:
     string Type(void);
 
 };
+
+#endif

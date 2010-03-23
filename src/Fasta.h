@@ -19,6 +19,9 @@
 #include <sys/stat.h>
 
 
+#ifndef _FASTA_H
+#define _FASTA_H
+
 using namespace std;
 using boost::lexical_cast;
 
@@ -62,3 +65,5 @@ class FastaReference {
         string getSubSequence(string seqname, int start, int length);
         string sequenceNameStartingWith(string seqnameStart);
 };
+
+#endif

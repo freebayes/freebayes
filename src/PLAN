@@ -91,5 +91,5 @@ sum over probability of all dominant variants
 (6) calculate individual sample genotype posterior marginals
 
 for each sample
-    for each genotype
+    for each genotypen
         sum of p(genotype | reads) for fixed genotype <-- (4)

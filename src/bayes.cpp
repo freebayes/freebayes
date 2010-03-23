@@ -5,7 +5,7 @@
 // 
 
 // standard includes
-#include <cstdio>
+//#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -39,16 +39,13 @@
 #include "TryCatch.h"
 #include "Parameters.h"
 #include "Allele.h"
-//#include "Caller.h"
+#include "Caller.h"
 
 using namespace std; 
 
 int main (int argc, char *argv[]) {
 
-    // parse command line
-    Parameters params = Parameters(argc, argv);
-
-    //BayesCaller caller = BayesCaller(params);
+    Caller* caller = new Caller(argc, argv);
     vector<Allele> alleles;
 
     ///////////////////////////////////////////
@@ -58,12 +55,12 @@ int main (int argc, char *argv[]) {
     //             for each base in read
     //                 register base
 
-    //while (caller.updateAlleles(alleles)) {
-    //         evaluate prob(variation | all bases)
-    //         if prob(variation) >= reporting threshold
-    //             report variation
-    // 
-    //}
+    while (caller->getNextAlleles(alleles)) {
+        for (vector<Allele>::const_iterator it = alleles.begin(); it != alleles.end(); ++it) {
+            Allele a = *it;
+            cout << &a << endl;
+        }
+    }
 
     return 0;
 

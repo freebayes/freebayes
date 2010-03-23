@@ -147,6 +147,7 @@ ostream &operator<<(ostream &out, const Parameters &p) {
          << "  --includeMonoB = " <<  (p.includeMonoB ? "true" : "false") << endl
          << "  --TR = " << p.TR << endl
          << "  --I = " << p.I << endl
+         << "  --record = " << (p.record ? "true" : "false" ) << endl
          << "  --debug = " <<  (p.debug ? "true" : "false") << endl
          << "  --debug2 = " <<  (p.debug2 ? "true" : "false") << endl
          << endl;
@@ -592,6 +593,19 @@ Parameters::Parameters (int argc, char** argv) {
     ValueArg<int> cmd_I(arg.shortId, arg.longId, arg.description, arg.required, 10000, arg.type, cmd);
 
     // debug
+    ArgStruct argRecord;
+    arg = argRecord;
+    arg.shortId = "";
+    arg.longId = "record";
+    arg.description = "Record messages to logfile?";
+    arg.required = false;
+    arg.defaultValueString = "false";
+    arg.type = "switch";
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    SwitchArg cmd_record(arg.shortId, arg.longId, arg.description, cmd, false);
+
+    // debug
     ArgStruct argDebug;
     arg = argDebug;
     arg.shortId = "";
@@ -691,6 +705,7 @@ Parameters::Parameters (int argc, char** argv) {
     includeMonoB = cmd_includeMonoB.getValue();
     TR = cmd_TR.getValue();
     I = cmd_I.getValue();
+    record = cmd_record.getValue();
     debug = cmd_debug.getValue();
     debug2 = cmd_debug2.getValue();
 
