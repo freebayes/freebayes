@@ -1,10 +1,10 @@
 // utility functions
 //
-#include <math.h>
-#include <vector>
-
 #ifndef _UTILITY_H
 #define _UTILITY_H
+
+#include <math.h>
+#include <vector>
 
 short qualityChar2ShortInt(char c);
 double phred2float(int qual);

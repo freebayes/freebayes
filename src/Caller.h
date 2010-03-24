@@ -1,3 +1,6 @@
+#ifndef _CALLER_H
+#define _CALLER_H
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -12,6 +15,7 @@
 #include "Allele.h"
 #include "Fasta.h"
 #include "TryCatch.h"
+#include "Function-Sequence.h"
 
 using namespace std;
 using namespace BamTools;
@@ -39,6 +43,7 @@ public:
     Parameters* parameters; // holds operational parameters passed at program invocation
     
     Caller(int argc, char** argv);
+    ~Caller(void); 
 
     vector<string> sampleList; // list of sample names, indexed by sample id
 
@@ -71,9 +76,9 @@ public:
     void loadReferenceSequence(int seqID);
     void loadTargetRegions(void);
     void initializeOutputFiles(void);
-    RegisteredAlignment& registerAlignment(BamAlignment& alignment);
+    RegisteredAlignment registerAlignment(BamAlignment& alignment);
     void updateAlignmentQueue(void);
-    vector<BedData> targetsInCurrentRefSeq(void);
+    vector<BedData>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
     bool toFirstTargetPosition(void);
     bool toNextTargetPosition(void);
@@ -94,3 +99,5 @@ private:
     BamAlignment currentAlignment;
 
 };
+
+#endif

@@ -28,3 +28,4 @@ short jointQuality(const std::vector<short>& quals) {
     // and then invert it again to get probability of an event
     return float2phred(1 - prod);
 }
+

@@ -58,7 +58,7 @@ int main (int argc, char *argv[]) {
     while (caller->getNextAlleles(alleles)) {
         for (vector<Allele>::const_iterator it = alleles.begin(); it != alleles.end(); ++it) {
             Allele a = *it;
-            cout << &a << endl;
+            cout << a << endl;
         }
     }
 

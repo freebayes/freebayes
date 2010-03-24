@@ -1,21 +1,21 @@
 #include "Allele.h"
 
-Allele::Allele(AlleleType type, 
-        ReferenceID referenceID, 
-        Position position, 
-        int length, 
-        string alternate, 
-        SampleID sampleid, 
-        Strand strand, 
-        short quality)
-    : type(type)
-    , referenceID(referenceID)
-    , position(position)
-    , length(length)
-    , alternate(alternate)
-    , sampleID(sampleID)
-    , strand(strand)
-    , quality(quality)
+Allele::Allele(AlleleType t, 
+        ReferenceID refID, 
+        Position pos, 
+        int len, 
+        string alt, 
+        SampleID sample, 
+        Strand strnd, 
+        short qual) 
+    : type(t)
+    , referenceID(refID)
+    , position(pos)
+    , length(len)
+    , alternate(alt)
+    , sampleID(sample)
+    , strand(strnd)
+    , quality(qual) 
 { }
 
 string Allele::Type(void) {

@@ -260,6 +260,7 @@ namespace BamTools {
 						
 					default:
 						printf("ERROR: Unknown tag storage class encountered: [%c]\n", *pTagData);
+						printf("ERROR: Unknown tag storage type encountered: [%c]\n", storageType);
 						exit(1);
 				}
 			}
