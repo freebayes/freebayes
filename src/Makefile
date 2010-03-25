@@ -74,7 +74,7 @@ Fasta.o: Fasta.cpp
 bamBayes.o: bamBayes.cpp TryCatch.h
 	$(CC) $(CFLAGS) -c bamBayes.cpp -Wno-deprecated
 
-bayes.o: bayes.cpp TryCatch.h
+bayes.o: bayes.cpp TryCatch.h Caller.o
 	$(CC) $(CFLAGS) -c bayes.cpp -Wno-deprecated
 
 bamIndel.o: bamIndel.cpp
@@ -126,7 +126,7 @@ Parameters.o: Parameters.cpp Parameters.h
 Allele.o: Allele.cpp Allele.h
 	$(CC) $(CFLAGS) -c Allele.cpp -Wno-deprecated
 
-Caller.o: Caller.cpp Caller.h
+Caller.o: Caller.cpp Caller.h Allele.o
 	$(CC) $(CFLAGS) -c Caller.cpp -Wno-deprecated
 
 Utility.o: Utility.cpp Utility.h

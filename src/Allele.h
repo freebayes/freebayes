@@ -15,6 +15,7 @@ using namespace std;
 
 enum AlleleType {
     ALLELE_REFERENCE,
+    ALLELE_MISMATCH, 
     ALLELE_SNP, 
     ALLELE_INSERTION, 
     ALLELE_DELETION,
@@ -39,11 +40,13 @@ public:
     // type
     AlleleType type;
     // reference
-    string referenceName;
+    string referenceName; // TODO, set me
     // sequence / chromosome
     ReferenceID referenceID;
+    // reference sequence at this allele
+    string referenceAllele;
     // alternate sequence
-    string alternate;
+    string alternateAllele;
     // position 1-based against reference
     Position position;
     // and event length (deletion implies 0, snp implies 1, insertion >1)
@@ -54,16 +57,20 @@ public:
     SampleID sampleID;
     // supporting reads
     //vector<BamAlignment*> supportingAlignments;
-    short quality; // quality score associated with this allele
+    short quality; // base quality score associated with this allele
+    short mapQuality; // map quality for the originating read
 
     Allele(AlleleType type, 
            ReferenceID referenceID,
+           string refname,
            Position position, 
            int length,
-           string alternate, 
+           string refseq,
+           string alt, 
            SampleID sampleid,
-           Strand strand,
-           short quality);
+           bool strand,
+           short quality,
+           short mapQual);
 
     // return a string representation of the type, for output
     string Type(void);

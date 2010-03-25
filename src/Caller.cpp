@@ -2,8 +2,8 @@
 
 // local helper macro to improve code readability
 #define DEBUG_LOG(msg) \
-    if (parameters->record) { logFile << msg; } \
-    if (parameters->debug) { cerr << msg; }
+    if (parameters->record) { logFile << msg << endl; } \
+    if (parameters->debug) { cerr << msg << endl; }
 
 
 using namespace std;
@@ -18,7 +18,7 @@ void Caller::openBam(void) {
   
     bamReader.Open(parameters->bam.c_str(), (parameters->bam + ".bai").c_str());
 
-    DEBUG_LOG(" done" << endl);
+    DEBUG_LOG(" done");
 }
 
 void Caller::openLogFile(void) {
@@ -102,7 +102,7 @@ void Caller::loadBamReferenceSequenceNames(void) {
     // store the names of all the reference sequences in the BAM file
     referenceSequences = bamReader.GetReferenceData();
 
-    DEBUG_LOG("Number of ref seqs: " << bamReader.GetReferenceCount() << endl);
+    DEBUG_LOG("Number of ref seqs: " << bamReader.GetReferenceCount());
 
 }
 
@@ -130,7 +130,7 @@ void Caller::loadFastaReference(void) {
 
     reference = new FastaReference(parameters->fasta);
 
-    referenceSequenceCount = 0;
+    fastaReferenceSequenceCount = 0;
 
     int id = 0;
 
@@ -151,11 +151,11 @@ void Caller::loadFastaReference(void) {
         // get the reference names in this vector
         referenceSequenceNames.push_back(name);
         referenceSequenceNameToID[name] = id++;
-        ++referenceSequenceCount;
+        ++fastaReferenceSequenceCount;
 
     }
 
-    DEBUG_LOG(" done." << endl);
+    DEBUG_LOG(" done.");
 
 }
 
@@ -173,7 +173,7 @@ void Caller::loadTargetRegions(void) {
   // if we have a targets file, use it...
   if (parameters->targets != "") {
     
-    DEBUG_LOG("Making BedReader object for target file: " << parameters->targets << " ..." << endl);
+    DEBUG_LOG("Making BedReader object for target file: " << parameters->targets << " ...");
     
     BedReader bedReader(parameters->targets);
     
@@ -197,7 +197,7 @@ void Caller::loadTargetRegions(void) {
     
     bedReader.close();
 
-    DEBUG_LOG("done" << endl);
+    DEBUG_LOG("done");
 
   // otherwise analyze all reference sequences from BAM file
   } else {
@@ -215,7 +215,7 @@ void Caller::loadTargetRegions(void) {
     }
   }
 
-  DEBUG_LOG("Number of target regions: " << targetCount << endl);
+  DEBUG_LOG("Number of target regions: " << targetCount);
 
 }
 
@@ -241,7 +241,7 @@ void Caller::initializeOutputFiles(void) {
       outputRPT = true;
       rptFile.open(parameters->rpt.c_str());
       if (!rptFile) {
-        DEBUG_LOG(" unable to open file: " << parameters->rpt << endl);
+        DEBUG_LOG(" unable to open file: " << parameters->rpt);
         exit(1);
       }
   } else { outputRPT = false; }
@@ -250,11 +250,11 @@ void Caller::initializeOutputFiles(void) {
       outputVCF = true;
       vcfFile.open(parameters->vcf.c_str());
       if (!vcfFile) {
-        DEBUG_LOG(" unable to open file: " << parameters->vcf << endl);
+        DEBUG_LOG(" unable to open file: " << parameters->vcf);
         exit(1);
       }
   } else { outputVCF = false; }
-  DEBUG_LOG(" done." << endl);
+  DEBUG_LOG(" done.");
 
   //----------------------------------------------------------------------------
   // write header information
@@ -278,7 +278,7 @@ void Caller::initializeOutputFiles(void) {
       rptFile << "#   --MQL0 = " << parameters->MQL0 << endl;
       rptFile << "#   --BQL1 = " << parameters->BQL1 << endl;
       rptFile << "#   --MQL1 = " << parameters->MQL1 << endl;
-      rptFile << "#   --parameters->BQL2 = " << parameters->BQL2 << endl;
+      rptFile << "#   --BQL2 = " << parameters->BQL2 << endl;
       rptFile << "#   --RMU = " << parameters->RMU << endl;
       rptFile << "#   --IDW = " << parameters->IDW << endl;
       rptFile << "#   --TH = " << parameters->TH << endl;
@@ -383,16 +383,20 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
     }
     */
 
+    // TODO this must exclude non-target bases
+    //
+
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
         unsigned int l = (*cigarIter).Length;
         char t = (*cigarIter).Type;
+        //cout << t << l << endl;
       
         if (t == 'S') { // soft clip
             rp += l;
         } else if (t == 'M') { // match or mismatch
-            for (int i=1; i<=l; i++) {
+            for (int i=0; i<l; i++) {
       
                 // extract aligned base
                 string b;
@@ -406,8 +410,13 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 TRY { sb = currentSequence.substr(sp-1, 1); } CATCH;
 
                 // register mismatch
-                if (b != sb && qual >= parameters->BQL2)
-                    ++ra.mismatches;
+                if (b != sb && qual >= parameters->BQL2) {
+                    ra.mismatches++;
+                    Allele allele = Allele(ALLELE_SNP, currentRefID,
+                            referenceSequenceNames[currentRefID], sp, 1, sb, b,
+                            sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
+                    ra.alleles.push_back(allele);
+                }
       
                 // update positions
                 ++sp;
@@ -421,11 +430,10 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             short qR = qualityChar2ShortInt(rQual[rp]);
 
             // calculate maximum of the two qualities values
-            short qual = min(qL, qR); // XXX was max, but min makes more sense, right ?
+            short qual = max(qL, qR); // XXX was max, but min makes more sense, right ?
             if (qual >= parameters->BQL2) {
-                //Allele::Allele(AlleleType, ReferenceID, Position, int, std::string, SampleID, Strand, short int)
-                Allele allele = Allele(ALLELE_DELETION, currentRefID, sp, l,
-                        "", sampleName, (!alignment.IsReverseStrand()) ? STRAND_FORWARD : STRAND_REVERSE, qual);
+                Allele allele = Allele(ALLELE_DELETION, currentRefID, referenceSequenceNames[currentRefID], sp, l,
+                        currentSequence.substr(sp-1, l), "", sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
                 ra.alleles.push_back(allele);
             }
 
@@ -434,7 +442,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
         } else if (t == 'I') { // insertion
 
             vector<short> quals;
-            for (int i=1; i<=l; i++) {
+            for (int i=0; i<l; i++) {
 
                 // extract base quality of inserted base
                 quals.push_back(qualityChar2ShortInt(rQual[rp-1]));
@@ -446,9 +454,9 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             short qual = jointQuality(quals);
             // register insertion + base quality with reference sequence
             if (qual >= parameters->BQL2) { // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the 'average' quality
-                Allele allele = Allele(ALLELE_INSERTION, currentRefID, sp, l,
-                        rDna.substr(rp, l), sampleName,
-                        (!alignment.IsReverseStrand()) ? STRAND_FORWARD : STRAND_REVERSE, qual);
+                Allele allele = Allele(ALLELE_INSERTION, currentRefID,
+                        referenceSequenceNames[currentRefID], sp, l,
+                        "", rDna.substr(rp, l), sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
                 ra.alleles.push_back(allele);
             }
 
@@ -464,11 +472,7 @@ void Caller::updateAlignmentQueue(void) {
     // filter input reads; only allow mapped reads with a certain quality
     bool moreAlignments = true; // flag to catch BAM EOF
     int i = 0;
-    while (moreAlignments && (
-                (currentTarget->left < currentAlignment.Position && 
-                currentTarget->right >= currentAlignment.Position) ||
-            (currentTarget->left < currentAlignment.Position + currentAlignment.Length  &&
-            currentTarget->right >= currentAlignment.Position + currentAlignment.Length))) {
+    while (moreAlignments && currentAlignment.Position <= currentPosition) {
     //while (moreAlignments && currentTarget->left < currentAlignment.Position) {
         // only process if mapped
         /*
@@ -485,6 +489,9 @@ void Caller::updateAlignmentQueue(void) {
             //                 ... but it should be implemented
             // low mapping quality --- hmmm ... could calculate it with the jointQuality function?
             // duplicates --- tracked via each BamAlignment
+            //for (vector<Allele>::const_iterator it = ra.alleles.begin(); it != ra.alleles.end(); ++it) {
+            //    Allele a = *it; cout << a << endl << endl;
+           // }
             if (!(ra.mismatches > parameters->RMU)) {
                 registeredAlignmentQueue.push_front(ra);
             }
@@ -496,9 +503,8 @@ void Caller::updateAlignmentQueue(void) {
 
     // pop from the back until we get to an alignment that overlaps our current position
     BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-    // BamAlignments are 0-based ... does this jive?
-    while (!(currentTarget->left < alignment->Position <= currentTarget->right ||
-            currentTarget->left < alignment->Position + alignment->Length <= currentTarget->right)) {
+    // is indexing (0 or 1 based) oK here?
+    while (currentPosition > alignment->Position + alignment->Length) {
         registeredAlignmentQueue.pop_back();
         alignment = &registeredAlignmentQueue.back().alignment;
     }
@@ -551,45 +557,43 @@ bool Caller::toFirstTargetPosition(void) {
 //  ...
 //  TODO might want to generalize this into a jump function and a step function
 
+bool Caller::setTarget(BedData& target) {
+    DEBUG_LOG("setting new target " << target.seq << " " << target.left << " " << target.right << " " << target.desc);
+    registeredAlignmentQueue.clear(); // clear our alignment deque when we step into a new target
+    currentTarget = &target;
+    currentPosition = target.left;
+    return bamReader.Jump(currentRefID, currentPosition) && bamReader.GetNextAlignment(currentAlignment);
+}
 
-// XXX logic here is borked !!!!!!!
-// XXX XXX CLEAN UP!!!!
+
+/// XXX here we need to add logic to clear the allele deque when we hit the end of a region/ start of a new one
 bool Caller::toNextTargetPosition(void) {
-
-    if ((currentPosition + 1) > currentTarget->right) {  // time to move targets
-        // if we are at the end of the targets in the current refseq
-        if (currentTarget == &targetsInCurrentRefSeq()->back()) {  
-            // if there are more reference sequences to process
-            if (currentRefID + 1 < referenceSequenceCount) {
-                do {
-                    ++currentRefID;
-                } while (currentRefID + 1 < referenceSequenceCount && targetsInCurrentRefSeq()->size() == 0);
-                if (currentRefID + 1 == referenceSequenceCount && targetsInCurrentRefSeq()->size() == 0) {
-                    return false; // ... done
-                } // otherwise we have remaining targets
-                currentTarget = &targetsInCurrentRefSeq()->front();
-                currentPosition = currentTarget->left;
-                if (!bamReader.Jump(currentRefID, currentPosition)) {
-                    cerr << "ERROR: cannot jump to refseq:" << currentRefID << ", position:" << currentPosition << " in bam file!" << endl;
-                    exit(1);
+    ++currentPosition;
+    DEBUG_LOG("processing position " << currentPosition << " in sequence " << currentRefID);
+    if (currentPosition > currentTarget->right) { // time to move on
+        DEBUG_LOG("current position " << currentPosition <<  " outside of current target right bound " << currentTarget->right);
+        if (currentTarget == &targetsInCurrentRefSeq()->back()) {
+            DEBUG_LOG("we are at the last target in the current reference sequence " 
+                    << currentRefID << " seeking to next reference sequence with targets");
+            while ((currentRefID + 1) < fastaReferenceSequenceCount) {
+                ++currentRefID;
+                if (targetsInCurrentRefSeq()->size() > 0) {
+                    DEBUG_LOG("found new target against reference sequence " << currentRefID);
+                    setTarget(targetsInCurrentRefSeq()->front());
+                    loadReferenceSequence(currentRefID);
+                    break;
                 }
-                if (!bamReader.GetNextAlignment(currentAlignment))
-                    return false; // done
-                loadReferenceSequence(currentRefID);
-                updateAlignmentQueue();
-                DEBUG_LOG("  Processing target: " << currentTarget->seq << ":"
-                        << currentTarget->left << " - " << currentTarget->right <<
-                        endl);
-            // if none, we are ...
-            } else {
-                return false; // ... done
             }
+            if (currentRefID + 1 == fastaReferenceSequenceCount) {
+                DEBUG_LOG("at end of reference sequences (id=" << currentRefID << ")");
+                return false;
+            }
+        } else {
+            DEBUG_LOG("moving to next target in reference sequence " << currentRefID);
+            setTarget(*(++currentTarget));
         }
-    } else { // if we are still in the current target, just step the position
-        ++currentPosition;
-        cerr << "at position " << currentPosition << endl;
-        updateAlignmentQueue();
     }
+    updateAlignmentQueue();
     return true;
 }
 
@@ -621,6 +625,7 @@ void Caller::getAlleles(vector<Allele>& alleles) {
         for (vector<Allele>::const_iterator ai = ra.alleles.begin(); ai != ra.alleles.end(); ++ai) {
             Allele a = *ai;
             // for now only record the allele if it is at exactly the current position
+            // XXX indexing is messed up...? currentPosition is on 0/1 indexing
             if (a.position == currentPosition)
                 alleles.push_back(a);
         }

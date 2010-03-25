@@ -82,6 +82,7 @@ public:
     bool toNextRefID(void);
     bool toFirstTargetPosition(void);
     bool toNextTargetPosition(void);
+    bool setTarget(BedData& target);
     bool getNextAlleles(vector<Allele>& alleles);
     void getAlleles(vector<Allele>& alleles);
 
@@ -92,7 +93,7 @@ private:
     string currentSequence;
 
     // pointer to current position in targets
-    int referenceSequenceCount; // number of reference sequences
+    int fastaReferenceSequenceCount; // number of reference sequences
     int currentRefID;
     BedData* currentTarget;
     long unsigned int currentPosition;

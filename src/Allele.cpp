@@ -2,20 +2,26 @@
 
 Allele::Allele(AlleleType t, 
         ReferenceID refID, 
+        string refname, 
         Position pos, 
         int len, 
+        string refallele,
         string alt, 
         SampleID sample, 
-        Strand strnd, 
-        short qual) 
+        bool strnd, 
+        short qual,
+        short mapqual) 
     : type(t)
     , referenceID(refID)
+    , referenceName(refname)
     , position(pos)
     , length(len)
-    , alternate(alt)
+    , referenceAllele(refallele)
+    , alternateAllele(alt)
     , sampleID(sample)
-    , strand(strnd)
+    , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
     , quality(qual) 
+    , mapQuality(mapqual) 
 { }
 
 string Allele::Type(void) {
@@ -25,6 +31,9 @@ string Allele::Type(void) {
     switch (this->type) {
         case ALLELE_REFERENCE:
             t = "reference";
+            break;
+        case ALLELE_MISMATCH:
+            t = "mismatch";
             break;
         case ALLELE_SNP:
             t = "snp";
@@ -50,12 +59,16 @@ string Allele::Type(void) {
 ostream &operator<<(ostream &out, Allele &allele) {
 
     out << "type: " << allele.Type() << endl
-        << "reference name: " << allele.referenceName << endl
-        << "position: " << allele.position << endl
         << "sequence id: " << allele.referenceID << endl
-        << "alternate sequence: " << allele.alternate << endl
+        << "sequence name: " << allele.referenceName << endl
+        << "position: " << allele.position << endl
         << "strand: " << (allele.strand == STRAND_FORWARD ? "+" : "-") << endl
-        << "sample id: " << allele.sampleID << endl;
+        << "length: " << allele.length << endl
+        << "reference allele: " << allele.referenceAllele << endl
+        << "alternate allele: " << allele.alternateAllele << endl
+        << "sample id: " << allele.sampleID << endl
+        << "quality: " << allele.quality << endl
+        << "read mapping quality: " << allele.mapQuality;
 
     return out;
 }
