@@ -6,6 +6,9 @@
 // Last modified: 5 February 2010 (EG)
 // ---------------------------------------------------------------------------
 
+#ifndef _FASTA_H
+#define _FASTA_H
+
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -18,9 +21,6 @@
 #include "LargeFileSupport.h"
 #include <sys/stat.h>
 
-
-#ifndef _FASTA_H
-#define _FASTA_H
 
 using namespace std;
 using boost::lexical_cast;
@@ -62,8 +62,10 @@ class FastaReference {
         FastaIndex* index;
         vector<FastaIndexEntry> findSequencesStartingWith(string seqnameStart);
         string getSequence(string seqname);
+        // potentially useful for performance, investigate
+        // void getSequence(string seqname, string& sequence);
         string getSubSequence(string seqname, int start, int length);
         string sequenceNameStartingWith(string seqnameStart);
+        long unsigned int sequenceLength(string seqname);
 };
-
 #endif

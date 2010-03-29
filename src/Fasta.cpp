@@ -259,3 +259,10 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     boost::erase_all(s, "\n");
     return s;
 }
+
+long unsigned int FastaReference::sequenceLength(string seqname) {
+    FastaIndexEntry entry = index->entry(seqname);
+    int newlines_in_sequence = entry.length / entry.line_len;
+    return entry.length - newlines_in_sequence;
+}
+

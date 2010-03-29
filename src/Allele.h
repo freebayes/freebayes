@@ -27,8 +27,6 @@ enum Strand {
     STRAND_REVERSE
 };
 
-typedef string SampleID;
-typedef unsigned int ReferenceID;
 typedef long unsigned int Position;
 
 class Allele {
@@ -41,8 +39,6 @@ public:
     AlleleType type;
     // reference
     string referenceName; // TODO, set me
-    // sequence / chromosome
-    ReferenceID referenceID;
     // reference sequence at this allele
     string referenceAllele;
     // alternate sequence
@@ -54,20 +50,19 @@ public:
     // strand
     Strand strand;
     // representative sample ID
-    SampleID sampleID;
+    string sampleID;
     // supporting reads
     //vector<BamAlignment*> supportingAlignments;
     short quality; // base quality score associated with this allele
     short mapQuality; // map quality for the originating read
 
     Allele(AlleleType type, 
-           ReferenceID referenceID,
            string refname,
            Position position, 
            int length,
            string refseq,
            string alt, 
-           SampleID sampleid,
+           string sampleid,
            bool strand,
            short quality,
            short mapQual);

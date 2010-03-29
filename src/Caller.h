@@ -54,7 +54,8 @@ public:
     
     // target regions
     //vector<vector<BedData>> targetRegions;  // beddatas indexed by sequence id
-    map<string, vector<BedData> > targetsByRefseq; // same, indexed by sequence name
+    //map<string, vector<BedData> > targetsByRefseq; // same, indexed by sequence name
+    vector<BedData> targets;
 
     // bamreader
     BamReader bamReader;
@@ -74,7 +75,9 @@ public:
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
     void loadReferenceSequence(int seqID);
-    void loadTargetRegions(void);
+    void loadReferenceSequence(string seqName, int start, int length);
+    void loadReferenceSequence(BedData*);
+    void loadTargets(void);
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment);
     void updateAlignmentQueue(void);
@@ -82,7 +85,8 @@ public:
     bool toNextRefID(void);
     bool toFirstTargetPosition(void);
     bool toNextTargetPosition(void);
-    bool setTarget(BedData& target);
+    bool toNextTarget(void);
+    void setPosition(long unsigned int);
     bool getNextAlleles(vector<Allele>& alleles);
     void getAlleles(vector<Allele>& alleles);
 

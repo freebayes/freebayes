@@ -1,18 +1,16 @@
 #include "Allele.h"
 
 Allele::Allele(AlleleType t, 
-        ReferenceID refID, 
         string refname, 
         Position pos, 
         int len, 
         string refallele,
         string alt, 
-        SampleID sample, 
+        string sample, 
         bool strnd, 
         short qual,
         short mapqual) 
     : type(t)
-    , referenceID(refID)
     , referenceName(refname)
     , position(pos)
     , length(len)
@@ -59,7 +57,6 @@ string Allele::Type(void) {
 ostream &operator<<(ostream &out, Allele &allele) {
 
     out << "type: " << allele.Type() << endl
-        << "sequence id: " << allele.referenceID << endl
         << "sequence name: " << allele.referenceName << endl
         << "position: " << allele.position << endl
         << "strand: " << (allele.strand == STRAND_FORWARD ? "+" : "-") << endl
