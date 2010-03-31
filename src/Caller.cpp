@@ -1,10 +1,19 @@
 #include "Caller.h"
 
-// local helper macro to improve code readability
-#define DEBUG_LOG(msg) \
+// local helper debugging macros to improve code readability
+#define LOG(msg) \
     if (parameters->record) { logFile << msg << endl; } \
     if (parameters->debug) { cerr << msg << endl; }
 
+// lower-priority messages
+#define LOG2(msg) \
+    if (parameters->record) { logFile << msg << endl; } \
+    if (parameters->debug2) { cerr << msg << endl; }
+
+// must-see error messages
+#define ERROR(msg) \
+    if (parameters->record) { logFile << msg << endl; } \
+    cerr << msg << endl;
 
 using namespace std;
 
@@ -14,11 +23,11 @@ using namespace std;
 // open BAM input file
 void Caller::openBam(void) {
 
-    DEBUG_LOG("Opening BAM fomat alignment input file: " << parameters->bam << " ...")
+    LOG("Opening BAM fomat alignment input file: " << parameters->bam << " ...")
   
     bamReader.Open(parameters->bam.c_str(), (parameters->bam + ".bai").c_str());
 
-    DEBUG_LOG(" done");
+    LOG(" done");
 }
 
 void Caller::openLogFile(void) {
@@ -28,7 +37,7 @@ void Caller::openLogFile(void) {
         if (parameters->debug) {cerr << "Opening log file: " << parameters->log << " ...";}
 
         if (!logFile) {
-            cerr << " unable to open file: " << parameters->log << endl;
+            ERROR(" unable to open file: " << parameters->log);
             exit(1);
         }
         if (parameters->debug) {cerr << " done." << endl;}
@@ -44,7 +53,7 @@ void Caller::getSampleNames(void) {
     if (parameters->samples != "") {
         ifstream sampleFile(parameters->samples.c_str(), ios::in);
         if (! sampleFile) {
-            cerr << "unable to open file: " << parameters->samples << endl;
+            ERROR("unable to open file: " << parameters->samples);
             exit(1);
         }
         boost::regex patternSample("^(\\S+)\\s*(.*)$");
@@ -57,13 +66,13 @@ void Caller::getSampleNames(void) {
             if (boost::regex_search(line, match, patternSample)) {
                 // assign content
                 string s = match[1];
-                if (parameters->debug) cerr << "found sample " << s << endl;
+                LOG2("found sample " << s);
                 sampleList.push_back(s);
             }
         }
     } else { // no samples file given, read from BAM file header for sample names
         // retrieve header information
-        if (parameters->debug) cerr << "no sample list file given, attempting to read sample names from bam file" << endl;
+        LOG("no sample list file given, attempting to read sample names from bam file");
 
         string bamHeader = bamReader.GetHeaderText();
 
@@ -86,7 +95,7 @@ void Caller::getSampleNames(void) {
                 boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
                 string name = nameParts.back();
                 //mergedHeader.append(1, '\n');
-                if (parameters->debug) cerr << "found sample " << name << endl;
+                LOG2("found sample " << name);
                 sampleList.push_back(name);
             }
         }
@@ -102,7 +111,7 @@ void Caller::loadBamReferenceSequenceNames(void) {
     // store the names of all the reference sequences in the BAM file
     referenceSequences = bamReader.GetReferenceData();
 
-    DEBUG_LOG("Number of ref seqs: " << bamReader.GetReferenceCount());
+    LOG("Number of ref seqs: " << bamReader.GetReferenceCount());
 
 }
 
@@ -119,7 +128,7 @@ void Caller::loadFastaReference(void) {
     // 
     // this keeps our memory requirements low, and will allow us to operate unmodified on more systems
 
-    DEBUG_LOG("processing fasta reference " << parameters->fasta);
+    LOG("processing fasta reference " << parameters->fasta);
 
     //--------------------------------------------------------------------------
     // process input fasta file
@@ -155,24 +164,33 @@ void Caller::loadFastaReference(void) {
 
     }
 
-    DEBUG_LOG(" done.");
+    LOG(" done.");
 
 }
 
 void Caller::loadReferenceSequence(int seqID) {
-    DEBUG_LOG("loading reference sequence " << seqID);
+    LOG2("loading reference sequence " << seqID);
     string name = reference->sequenceNameStartingWith(referenceSequenceNames[seqID]);
     currentSequence = reference->getSequence(name);
 }
 
 void Caller::loadReferenceSequence(string seqName, int start, int length) {
-    DEBUG_LOG("loading reference subsequence " << seqName << " from " << start << " to " << start + length);
+    LOG2("loading reference subsequence " << seqName << " from " << start << " to " << start + length);
     string name = reference->sequenceNameStartingWith(seqName);
     currentSequence = reference->getSubSequence(name, start, length);
 }
 
 void Caller::loadReferenceSequence(BedData* target) {
     loadReferenceSequence(target->seq, target->left, target->right - target->left);
+}
+
+// intended to load all the sequence covered by reads which overlap our current target
+// this lets us process the reads fully, checking for suspicious reads, etc.
+// but does not require us to load the whole sequence
+void Caller::loadReferenceSequence(BedData* target, int before, int after) {
+    basesBeforeCurrentTarget = before;
+    basesAfterCurrentTarget = after;
+    loadReferenceSequence(target->seq, target->left - before, target->right - target->left + after + before);
 }
 
 void Caller::loadTargets(void) {
@@ -184,12 +202,12 @@ void Caller::loadTargets(void) {
   // if we have a targets file, use it...
   if (parameters->targets != "") {
     
-    DEBUG_LOG("Making BedReader object for target file: " << parameters->targets << " ...");
+    LOG("Making BedReader object for target file: " << parameters->targets << " ...");
     
     BedReader bedReader(parameters->targets);
     
     if (! bedReader.isOpen()) {
-      cerr << "Unable to open target file: " << parameters->targets << "... terminating." << endl;
+      ERROR("Unable to open target file: " << parameters->targets << "... terminating.");
       exit(1);
     }
     
@@ -201,7 +219,7 @@ void Caller::loadTargets(void) {
         // TODO add back check that the right bound isn't out of bounds
         string seqName = reference->sequenceNameStartingWith(bd.seq);
         if (bd.left < 1 || bd.right < bd.left || bd.right >= reference->sequenceLength(seqName)) {
-          cerr << "Target region coordinate outside of reference sequence bounds... terminating." << endl;
+          ERROR("Target region coordinate outside of reference sequence bounds... terminating.");
           exit(1);
         }
         targets.push_back(bd);
@@ -210,7 +228,7 @@ void Caller::loadTargets(void) {
     
     bedReader.close();
 
-    DEBUG_LOG("done");
+    LOG("done");
 
   // otherwise analyze all reference sequences from BAM file
   } else {
@@ -228,7 +246,7 @@ void Caller::loadTargets(void) {
     }
   }
 
-  DEBUG_LOG("Number of target regions: " << targetCount);
+  LOG("Number of target regions: " << targetCount);
 
 }
 
@@ -245,7 +263,7 @@ void Caller::initializeOutputFiles(void) {
   //----------------------------------------------------------------------------
 
   // report
-  DEBUG_LOG("opening report output file for writing: " << parameters->rpt << "...");
+  LOG("opening report output file for writing: " << parameters->rpt << "...");
 
   // open output streams
   bool outputRPT, outputVCF; // for legibility
@@ -254,7 +272,7 @@ void Caller::initializeOutputFiles(void) {
       outputRPT = true;
       rptFile.open(parameters->rpt.c_str());
       if (!rptFile) {
-        DEBUG_LOG(" unable to open file: " << parameters->rpt);
+        ERROR(" unable to open file: " << parameters->rpt);
         exit(1);
       }
   } else { outputRPT = false; }
@@ -263,11 +281,11 @@ void Caller::initializeOutputFiles(void) {
       outputVCF = true;
       vcfFile.open(parameters->vcf.c_str());
       if (!vcfFile) {
-        DEBUG_LOG(" unable to open file: " << parameters->vcf);
+        ERROR(" unable to open file: " << parameters->vcf);
         exit(1);
       }
   } else { outputVCF = false; }
-  DEBUG_LOG(" done.");
+  LOG(" done.");
 
   //----------------------------------------------------------------------------
   // write header information
@@ -373,6 +391,10 @@ Caller::~Caller(void) {
     delete reference;
 }
 
+// position of alignment relative to current sequence
+int Caller::currentSequencePosition(const BamAlignment& alignment) {
+    return (alignment.Position - currentTarget->left) + basesBeforeCurrentTarget;
+}
 
 RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
 
@@ -380,17 +402,26 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
 
     string rDna = alignment.QueryBases;
     string rQual = alignment.Qualities;
-    int rp = 0;  // 0-based read position
-    int ssp = alignment.Position - currentTarget->left; // 0-based subsequence position; relative to currentSequence subsequence
-    int sp = alignment.Position + 1;  // 1-based position relative to current reference sequence
-
+    int rp = 0;  // read position, 0-based relative to read
+    int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
+    int sp = alignment.Position + 1;  // sequence position
+              //   ^^^ conversion between 0 and 1 based index
+              //
     // extract sample name and information
     string readName = alignment.Name;
     SampleInfo sampleInfo = extractSampleInfo(readName, parameters->sampleNaming, parameters->sampleDel);
     string sampleName = sampleInfo.sampleId;
 
+    LOG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
+         "alignment readName " << readName << endl <<
+         "alignment position " << alignment.Position << endl <<
+         "alignment length " << alignment.Length << endl <<
+         "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
+         "alignment end position " << alignment.Position + alignment.AlignedBases.size());
+
     /*
-     *  this approach seems to be broken for my test bam files
+     *  this approach seems to be broken;
+     *  but it will work as soon as we integrate some recent fixes to BamTools
     if (!alignment.GetReadGroup(sampleName)) {
         cerr << "ERROR: Couldn't find read group id for BAM Alignment " << alignment.Name << endl;
     }
@@ -398,68 +429,26 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
-    
-    // trim out-of-target positions
-
-    cerr << endl
-         << "sp = " << sp << endl
-         << "ssp = " << ssp << endl
-         << "rp = " << rp << endl
-         << "alignment length = " << alignment.Length << endl;
-    // trim cigar items ahead of the target
-    int left_gap = currentTarget->left - alignment.Position;
-    if (left_gap > 0) {
-        sp += left_gap;
-        rp += left_gap;
-        ssp += left_gap;
-        // now get us to the cigar element which overlaps this
-        int cigarPos = 0;
-        while (cigarPos + cigarIter->Length < rp) {
-            cigarPos += cigarIter->Length;
-            ++cigarIter;
-        }
-    }
-
-    int right_gap = (alignment.Position + alignment.Length) - (currentTarget->right - 1);
-    if (right_gap > 0) {
-        // trim cigar items after the target
-        // now get us to the ending cigar element which overlaps this
-        int endPos = alignment.Position + alignment.Length;
-        while (endPos - cigarEnd->Length > currentTarget->right) {
-            endPos -= cigarEnd->Length;
-            --cigarEnd;
-        }
-    }
-
-    cerr << "adjusted: " << endl;
-    cerr << "sp = " << sp << endl
-         << "ssp = " << ssp << endl
-         << "rp = " << rp << endl
-         << "alignment length = " << alignment.Length << endl << endl;
-
-
-    // TODO must step forward the cigar here...
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
-        unsigned int l = cigarIter->Length;
-        char t = cigarIter->Type;
-        cerr << t << l << endl;
-      
+        unsigned int l = (*cigarIter).Length;
+        char t = (*cigarIter).Type;
+        //cerr << t << l << endl;
+
         if (t == 'S') { // soft clip
             rp += l;
         } else if (t == 'M') { // match or mismatch
-            int i = 0;
-            while (i<l && sp < currentTarget->right) {
-                ++i;
+            for (int i=0; i<l; i++) {
+
                 // extract aligned base
                 string b;
-                TRY { b = rDna.substr(rp, 1); } CATCH;
+                TRY { b = rDna.at(rp); } CATCH;
 
                 // convert base quality value into short int
-                short qual = qualityChar2ShortInt(rQual[rp-1]);
+                short qual = qualityChar2ShortInt(rQual[rp]);
 
                 // get reference allele
                 string sb;
-                TRY { sb = currentSequence.substr(ssp, 1); } CATCH;
+                TRY { sb = currentSequence.at(csp); } CATCH;
 
                 // register mismatch
                 if (b != sb && qual >= parameters->BQL2) {
@@ -468,10 +457,10 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                             sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
                     ra.alleles.push_back(allele);
                 }
-      
+
                 // update positions
                 ++sp;
-                ++ssp;
+                ++csp;
                 ++rp;
             }
             // XXX what about 'N' s?
@@ -484,14 +473,13 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             // calculate maximum of the two qualities values
             short qual = max(qL, qR); // XXX was max, but min makes more sense, right ?
             if (qual >= parameters->BQL2) {
-                DEBUG_LOG("recording deletion");
                 Allele allele = Allele(ALLELE_DELETION, currentTarget->seq, sp, l,
-                        currentSequence.substr(ssp, l), "", sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
+                        currentSequence.substr(csp, l), "", sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
                 ra.alleles.push_back(allele);
             }
 
             sp += l;  // update sample position
-            ssp += l;
+            csp += l;
 
         } else if (t == 'I') { // insertion
 
@@ -502,13 +490,12 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 quals.push_back(qualityChar2ShortInt(rQual[rp]));
 
                 rp += 1; // update read position
-            }        
+            }
 
             // calculate joint quality, which is the probability that there are no errors in the observed bases
             short qual = jointQuality(quals);
             // register insertion + base quality with reference sequence
-            if (qual >= parameters->BQL2) { // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the 'average' quality
-                DEBUG_LOG("recording insertion");
+            if (qual >= parameters->BQL2) { // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the        'average' quality
                 Allele allele = Allele(ALLELE_INSERTION, currentTarget->seq, sp, l,
                         "", rDna.substr(rp, l), sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
                 ra.alleles.push_back(allele);
@@ -519,9 +506,10 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
     return ra;
 }
 
+
 void Caller::updateAlignmentQueue(void) {
 
-    DEBUG_LOG("updating alignment queue");
+    LOG2("updating alignment queue");
 
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
@@ -556,7 +544,7 @@ void Caller::updateAlignmentQueue(void) {
         moreAlignments &= bamReader.GetNextAlignment(currentAlignment);
     }
 
-    DEBUG_LOG("... finished pushing new alignments");
+    LOG2("... finished pushing new alignments");
 
     // pop from the back until we get to an alignment that overlaps our current position
     BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
@@ -566,31 +554,13 @@ void Caller::updateAlignmentQueue(void) {
         alignment = &registeredAlignmentQueue.back().alignment;
     }
 
-    DEBUG_LOG("... finished popping old alignments");
+    LOG2("... finished popping old alignments");
 }
 
 // initialization function, should only be called via constructor
 bool Caller::toFirstTargetPosition(void) {
-    currentTarget = &targets.front();
-    currentPosition = currentTarget->left;
-    bamReader.Jump(currentRefID, currentPosition);
-    if (!bamReader.GetNextAlignment(currentAlignment)) {
-        cerr << "Bam file has no alignments after position " << currentRefID << " " << currentPosition << endl;
-        exit(1);
-    }
-    loadReferenceSequence(currentTarget);
-    updateAlignmentQueue();
-    DEBUG_LOG("  Processing target: " << currentTarget->seq << ":"
-            << currentTarget->left << " - " << currentTarget->right <<
-            endl);
-    return true;
+    return loadTarget(&targets.front());
 }
-
-void Caller::setPosition(long unsigned int position) {
-    DEBUG_LOG("setting new position " << position);
-    currentPosition = position;
-}
-
 
 // steps our position/beddata/reference pointers through all positions in all
 // targets, returns false when we are finished
@@ -608,25 +578,59 @@ void Caller::setPosition(long unsigned int position) {
 
 bool Caller::toNextTarget(void) {
 
-    DEBUG_LOG("seeking to next valid target...");
+    LOG2("seeking to next valid target...");
 
     // if we are at the end of the list of targets in this reference sequence
     if (currentTarget == &targets.back()) {
-        DEBUG_LOG("we are at the last target in the current reference sequence, finishing");
         return false;
     } else {
-        ++currentTarget;
+        return loadTarget(++currentTarget);
     }
 
-    DEBUG_LOG("processing new target " << currentTarget->desc << " " <<
+}
+
+bool Caller::loadTarget(BedData* target) {
+
+    currentTarget = target;
+
+    LOG("processing target " << currentTarget->desc << " " <<
             currentTarget->seq << " " << currentTarget->left << " " <<
             currentTarget->right);
-    DEBUG_LOG("clearing alignment queue");
+    LOG2("clearing alignment queue");
     registeredAlignmentQueue.clear(); // clear our alignment deque on jumps
-    setPosition(currentTarget->left);
-    loadReferenceSequence(currentTarget);
-    DEBUG_LOG("jumping to first alignment in new target");
-    return bamReader.Jump(currentRefID, currentPosition) && bamReader.GetNextAlignment(currentAlignment);
+
+    LOG2("loading target reference subsequence");
+    BamAlignment alignment;
+    int refSeqID = referenceSequenceNameToID[currentTarget->seq];
+    LOG2("reference sequence id " << refSeqID);
+
+    bool r = bamReader.Jump(refSeqID, currentTarget->left);
+    r &= bamReader.GetNextAlignment(alignment);
+    int left_gap = currentTarget->left - alignment.Position;
+
+    r &= bamReader.Jump(refSeqID, currentTarget->right - 1);
+
+    int maxPos = 0;
+    do {
+        r &= bamReader.GetNextAlignment(alignment);
+        int newPos = alignment.Position + alignment.AlignedBases.size();
+        maxPos = (newPos > maxPos) ? newPos : maxPos;
+    } while (alignment.Position < currentTarget->right);
+
+    int right_gap = maxPos - currentTarget->right;
+    //cerr << "left_gap " << left_gap << " right gap " << right_gap << endl;
+    loadReferenceSequence(currentTarget,
+            (left_gap > 0) ? left_gap : 0,
+            (right_gap > 0) ? right_gap : 0);
+
+    LOG2("setting new position " << currentTarget->left);
+    currentPosition = currentTarget->left;
+
+    LOG2("jumping to first alignment in new target");
+    r &= bamReader.Jump(refSeqID, currentTarget->left);
+    r &= bamReader.GetNextAlignment(currentAlignment);
+
+    return r;
 
 }
 
@@ -638,14 +642,15 @@ bool Caller::toNextTarget(void) {
 bool Caller::toNextTargetPosition(void) {
 
     ++currentPosition;
+    // ... 0-base , 1-base ??? XXX this is borked
     if (currentPosition > currentTarget->right) { // time to move to a new target
-        DEBUG_LOG("next position " << currentPosition <<  " outside of current target right bound " << currentTarget->right);
+        LOG2("next position " << currentPosition <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
-            DEBUG_LOG("no more valid targets, finishing");
+            LOG("no more valid targets, finishing");
             return false;
         }
     }
-    DEBUG_LOG("processing position " << currentPosition << " in sequence " << currentRefID);
+    LOG2("processing position " << currentPosition << " in sequence " << currentTarget->seq);
     updateAlignmentQueue();
     return true;
 }

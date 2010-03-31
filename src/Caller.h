@@ -77,16 +77,19 @@ public:
     void loadReferenceSequence(int seqID);
     void loadReferenceSequence(string seqName, int start, int length);
     void loadReferenceSequence(BedData*);
+    void loadReferenceSequence(BedData*, int, int);
     void loadTargets(void);
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment);
     void updateAlignmentQueue(void);
     vector<BedData>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
+    bool loadTarget(BedData*);
     bool toFirstTargetPosition(void);
     bool toNextTargetPosition(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
+    int currentSequencePosition(const BamAlignment& alignment);
     bool getNextAlleles(vector<Allele>& alleles);
     void getAlleles(vector<Allele>& alleles);
 
@@ -95,6 +98,8 @@ private:
     ofstream rptFile, vcfFile, logFile;
 
     string currentSequence;
+    int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
+    int basesAfterCurrentTarget;  // ........................................  after ...................
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences

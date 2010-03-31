@@ -58,10 +58,12 @@ int main (int argc, char *argv[]) {
     while (caller->getNextAlleles(alleles)) {
         for (vector<Allele>::const_iterator it = alleles.begin(); it != alleles.end(); ++it) {
             Allele a = *it;
-            if (a.type == ALLELE_SNP)
+            //if (a.type == ALLELE_SNP)
                 cout << a << endl << endl;
         }
     }
+
+    delete caller;
 
     return 0;
 
