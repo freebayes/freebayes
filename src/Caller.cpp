@@ -17,7 +17,6 @@
 
 using namespace std;
 
-
 // XXX TODO change these void functions to bool
 
 // open BAM input file
@@ -369,6 +368,10 @@ Caller::Caller(int argc, char** argv)
 {
     parameters = new Parameters(argc, argv);
 
+    // mathematical constants
+    LOGFACTOR = log((long double)10.0) / ((long double)-10.0); 
+    LN3 = log((long double)3.0);
+
     // initialization
     // NOTE: these void functions have side effects, and currently have to be called in this order
     // this separation is done to improve legibility and debugging
@@ -394,6 +397,18 @@ Caller::~Caller(void) {
 // position of alignment relative to current sequence
 int Caller::currentSequencePosition(const BamAlignment& alignment) {
     return (alignment.Position - currentTarget->left) + basesBeforeCurrentTarget;
+}
+
+// registeredalignment friend
+ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
+    out << ra.alignment.Name << " " << ra.alignment.Position << endl
+        << ra.alignment.QueryBases << endl
+        << ra.alignment.Qualities << endl;
+    for (vector<Allele>::const_iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+        Allele allele = *a;
+        out << allele;
+    }
+    return out;
 }
 
 RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
@@ -437,6 +452,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
         if (t == 'S') { // soft clip
             rp += l;
         } else if (t == 'M') { // match or mismatch
+            int lastMismatch = csp; // track the last mismatch, for recording 'reference' alleles
             for (int i=0; i<l; i++) {
 
                 // extract aligned base
@@ -450,12 +466,29 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 string sb;
                 TRY { sb = currentSequence.at(csp); } CATCH;
 
+                // record match if we have a mismatch here
+                // TODO instrument this to validate behavior
+                if (b != sb) {
+                    if (lastMismatch < csp) {
+                        // TODO ; verify that the read and reference sequences *do* match
+                        int length = csp - lastMismatch;
+                        string matchingSequence = currentSequence.substr(lastMismatch, length);
+                        string qualstr = rQual.substr(rp - length, length);
+                        ra.alleles.push_back(Allele(ALLELE_REFERENCE,
+                                    currentTarget->seq, sp - length, length, 
+                                    matchingSequence, "", sampleName,
+                                    !alignment.IsReverseStrand(), -1, qualstr,
+                                    alignment.MapQuality));
+                    }
+                    lastMismatch = csp;
+                }
+
                 // register mismatch
                 if (b != sb && qual >= parameters->BQL2) {
+                    // record 'reference' allele for last matching region
                     ra.mismatches++;
-                    Allele allele = Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
-                            sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
-                    ra.alleles.push_back(allele);
+                    ra.alleles.push_back(Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
+                            sampleName, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality));
                 }
 
                 // update positions
@@ -463,42 +496,48 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 ++csp;
                 ++rp;
             }
+            if (lastMismatch < csp) {  // TODO use some param flag to trigger this operation
+                // TODO ; verify that the read and reference sequences *do* match
+                int length = csp - lastMismatch;
+                string matchingSequence = currentSequence.substr(lastMismatch, length);
+                string qualstr = rQual.substr(rp - length, length);
+                ra.alleles.push_back(Allele(ALLELE_REFERENCE,
+                            currentTarget->seq, sp - length, length, 
+                            matchingSequence, "", sampleName,
+                            !alignment.IsReverseStrand(), -1, qualstr,
+                            alignment.MapQuality));
+            }
             // XXX what about 'N' s?
         } else if (t == 'D') { // deletion
 
             // extract base quality of left and right flanking non-deleted bases
-            short qL = qualityChar2ShortInt(rQual[rp]);
-            short qR = qualityChar2ShortInt(rQual[rp+1]);
+            string qualstr = rQual.substr(rp, 2);
 
-            // calculate maximum of the two qualities values
-            short qual = max(qL, qR); // XXX was max, but min makes more sense, right ?
+            // calculate joint quality of the two flanking qualities
+            short qual = jointQuality(qualstr); // XXX was max, but joint makes more sense, right ?
             if (qual >= parameters->BQL2) {
-                Allele allele = Allele(ALLELE_DELETION, currentTarget->seq, sp, l,
-                        currentSequence.substr(csp, l), "", sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
-                ra.alleles.push_back(allele);
+                ra.alleles.push_back(Allele(ALLELE_DELETION,
+                            currentTarget->seq, sp, l,
+                            currentSequence.substr(csp, l), "", sampleName,
+                            !alignment.IsReverseStrand(), qual, qualstr,
+                            alignment.MapQuality));
             }
 
             sp += l;  // update sample position
             csp += l;
 
         } else if (t == 'I') { // insertion
-
-            vector<short> quals;
-            for (int i=0; i<l; i++) {
-
-                // extract base quality of inserted base
-                quals.push_back(qualityChar2ShortInt(rQual[rp]));
-
-                rp += 1; // update read position
-            }
+            
+            string qualstr = rQual.substr(rp, l);
 
             // calculate joint quality, which is the probability that there are no errors in the observed bases
-            short qual = jointQuality(quals);
+            short qual = jointQuality(qualstr);
             // register insertion + base quality with reference sequence
             if (qual >= parameters->BQL2) { // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the        'average' quality
-                Allele allele = Allele(ALLELE_INSERTION, currentTarget->seq, sp, l,
-                        "", rDna.substr(rp, l), sampleName, !alignment.IsReverseStrand(), qual, alignment.MapQuality);
-                ra.alleles.push_back(allele);
+                ra.alleles.push_back(Allele(ALLELE_INSERTION,
+                            currentTarget->seq, sp, l, "", rDna.substr(rp, l),
+                            sampleName, !alignment.IsReverseStrand(), qual,
+                            qualstr, alignment.MapQuality));
             }
 
         } // not handled, skipped region 'N's
@@ -688,3 +727,7 @@ void Caller::getAlleles(vector<Allele>& alleles) {
         }
     }
 }
+
+
+// math
+

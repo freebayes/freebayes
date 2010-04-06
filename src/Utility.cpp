@@ -14,6 +14,8 @@ short float2phred(double prob) {
     return -10 * log10(prob);
 }
 
+// TODO do the following in phred (log) space for perf boost
+
 // the probability that we have a completely true vector of qualities
 short jointQuality(const std::vector<short>& quals) {
     std::vector<double> probs;
@@ -29,3 +31,21 @@ short jointQuality(const std::vector<short>& quals) {
     return float2phred(1 - prod);
 }
 
+short jointQuality(const std::string& qualstr) {
+
+    std::vector<short> quals;
+    for (int i=0; i<qualstr.size(); i++)
+        quals.push_back(qualityChar2ShortInt(qualstr.at(i)));
+
+    return jointQuality(quals);
+
+}
+
+short averageQuality(const std::string& qualstr) {
+
+    double q = 0;
+    for (int i=0; i<qualstr.size(); i++)
+        q += phred2float(qualityChar2ShortInt(qualstr.at(i)));
+    return float2phred(q / qualstr.size());
+
+}

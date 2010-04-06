@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "Utility.h"
 
 #ifndef _ALLELE_H
 #define _ALLELE_H
@@ -46,25 +47,27 @@ public:
     // position 1-based against reference
     Position position;
     // and event length (deletion implies 0, snp implies 1, insertion >1)
-    int length;
+    unsigned int length;
     // strand
     Strand strand;
     // representative sample ID
     string sampleID;
     // supporting reads
     //vector<BamAlignment*> supportingAlignments;
+    string qualityString;
     short quality; // base quality score associated with this allele
     short mapQuality; // map quality for the originating read
 
     Allele(AlleleType type, 
            string refname,
            Position position, 
-           int length,
+           unsigned int length,
            string refseq,
            string alt, 
            string sampleid,
            bool strand,
-           short quality,
+           short qual,
+           string qualityStr,
            short mapQual);
 
     // return a string representation of the type, for output

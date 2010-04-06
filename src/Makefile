@@ -33,26 +33,26 @@ all: testMath bayes bamBayes bamIndel bamDup bamDump bamSlice bamStat rptSum agg
 testMath: testMath.o Function-Sequence.o Function-Math.o
 	$(CC) $(CFLAGS) testMath.o Function-Math.o Function-Sequence.o -o testMath -lboost_regex -lpthread -Wno-deprecated
 
-bamBayes: bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o
-	$(CC) $(CFLAGS) bamBayes.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o Fasta.o -o bamBayes -lz -lboost_regex -lpthread -Wno-deprecated
+bamBayes: bamBayes.o ReferenceSequenceReader.o BamReader.o BGZF.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o
+	$(CC) $(CFLAGS) bamBayes.o ReferenceSequenceReader.o BamReader.o BGZF.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o Fasta.o -o bamBayes -lz -lboost_regex -lpthread -Wno-deprecated
 
-bayes: bayes.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o Parameters.o Allele.o Caller.o Utility.o
-	$(CC) $(CFLAGS) bayes.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o Parameters.o fastlz.o Fasta.o Allele.o Caller.o Utility.o -o bayes -lz -lboost_regex -lpthread -Wno-deprecated
+bayes: bayes.o BamReader.o BGZF.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o Fasta.o Parameters.o Allele.o Caller.o Utility.o
+	$(CC) $(CFLAGS) bayes.o BamReader.o BGZF.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o Parameters.o fastlz.o Fasta.o Allele.o Caller.o Utility.o -o bayes -lz -lboost_regex -lpthread -Wno-deprecated
 
-bamIndel: bamIndel.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o
-	$(CC) $(CFLAGS) bamIndel.o ReferenceSequenceReader.o BamReader.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o -o bamIndel -lz -lboost_regex -lpthread -Wno-deprecated
+bamIndel: bamIndel.o ReferenceSequenceReader.o BamReader.o BGZF.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o fastlz.o
+	$(CC) $(CFLAGS) bamIndel.o ReferenceSequenceReader.o BamReader.o BGZF.o Class-BedReader.o Class-FastaReader.o Function-Sequence.o Function-Generic.o Function-Math.o  fastlz.o -o bamIndel -lz -lboost_regex -lpthread -Wno-deprecated
 
-bamDup: bamDup.o BamReader.o BamWriter.o Function-Generic.o
-	$(CC) $(CFLAGS) bamDup.o BamReader.o BamWriter.o Function-Generic.o -o bamDup -lz -lboost_regex -lpthread -Wno-deprecated
+bamDup: bamDup.o BamReader.o BamWriter.o BGZF.o Function-Generic.o
+	$(CC) $(CFLAGS) bamDup.o BamReader.o BamWriter.o BGZF.o Function-Generic.o -o bamDup -lz -lboost_regex -lpthread -Wno-deprecated
 
-bamDump: bamDump.o BamReader.o
-	$(CC) $(CFLAGS) bamDump.o BamReader.o -o bamDump -lz -lboost_regex -lpthread -Wno-deprecated
+bamDump: bamDump.o BamReader.o BGZF.o 
+	$(CC) $(CFLAGS) bamDump.o BamReader.o BGZF.o -o bamDump -lz -lboost_regex -lpthread -Wno-deprecated
 
-bamSlice: bamSlice.o ReferenceSequenceReader.o BamReader.o Function-Generic.o Function-Sequence.o Function-Math.o fastlz.o
-	$(CC) $(CFLAGS) bamSlice.o ReferenceSequenceReader.o BamReader.o Function-Generic.o Function-Sequence.o Function-Math.o fastlz.o -o bamSlice -lz -lboost_regex -lpthread -Wno-deprecated
+bamSlice: bamSlice.o ReferenceSequenceReader.o BamReader.o BGZF.o Function-Generic.o Function-Sequence.o Function-Math.o fastlz.o
+	$(CC) $(CFLAGS) bamSlice.o ReferenceSequenceReader.o BamReader.o BGZF.o Function-Generic.o Function-Sequence.o Function-Math.o fastlz.o -o bamSlice -lz -lboost_regex -lpthread -Wno-deprecated
 
 bamStat: bamStat.o BamReader.o Function-Generic.o Class-BedReader.o
-	$(CC) $(CFLAGS) bamStat.o BamReader.o Function-Generic.o Class-BedReader.o -o bamStat -lz -lboost_regex -lpthread -Wno-deprecated
+	$(CC) $(CFLAGS) bamStat.o BamReader.o BGZF.o Function-Generic.o Class-BedReader.o -o bamStat -lz -lboost_regex -lpthread -Wno-deprecated
 
 rptSum: rptSum.o Function-Generic.o Class-BedReader.o
 	$(CC) $(CFLAGS) rptSum.o Function-Generic.o  Class-BedReader.o -o rptSum -lboost_regex -lpthread -Wno-deprecated
@@ -114,6 +114,9 @@ BamReader.o: BamReader.cpp BamReader.h BamAux.h
 BamWriter.o: BamWriter.cpp BamReader.h BamAux.h
 	$(CC) $(CFLAGS) -c BamWriter.cpp  -Wno-deprecated	
 
+BGZF.o: BGZF.cpp BGZF.h
+	$(CC) $(CFLAGS) -c BGZF.cpp -Wno-deprecated
+
 Class-BedReader.o: Class-BedReader.cpp Class-BedReader.h Function-Generic.h
 	$(CC) $(CFLAGS) -c Class-BedReader.cpp -Wno-deprecated
 
@@ -123,7 +126,7 @@ Class-FastaReader.o: Class-FastaReader.cpp Class-FastaReader.h Function-Generic.
 Parameters.o: Parameters.cpp Parameters.h
 	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
 
-Allele.o: Allele.cpp Allele.h
+Allele.o: Allele.cpp Allele.h Utility.o
 	$(CC) $(CFLAGS) -c Allele.cpp -Wno-deprecated
 
 Caller.o: Caller.cpp Caller.h Allele.o

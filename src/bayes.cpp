@@ -131,7 +131,8 @@ int main (int argc, char *argv[]) {
 // for each sample in the sample list
 //     get basecalls corresponding to sample
 //         for each genotype from the fixed genotype list
-//             calculate the data likelihoods of p ( basecalls | genotype )  * "data likelihood" 
+//             calculate the data likelihoods of p ( basecalls | genotype )   == "data likelihood" 
+//                  this amounts to multiplying the quality scores from all the basecalls in that sample
 // 
 // (2) total genotype likelhoods for dominant genotype combinations
 // 

@@ -3,12 +3,13 @@
 Allele::Allele(AlleleType t, 
         string refname, 
         Position pos, 
-        int len, 
+        unsigned int len, 
         string refallele,
         string alt, 
         string sample, 
         bool strnd, 
         short qual,
+        string qstr,
         short mapqual) 
     : type(t)
     , referenceName(refname)
@@ -18,7 +19,8 @@ Allele::Allele(AlleleType t,
     , alternateAllele(alt)
     , sampleID(sample)
     , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
-    , quality(qual) 
+    , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
+    , qualityString(qstr)
     , mapQuality(mapqual) 
 { }
 
@@ -65,6 +67,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
         << "alternate allele: " << allele.alternateAllele << endl
         << "sample id: " << allele.sampleID << endl
         << "quality: " << allele.quality << endl
+        << "quality string: " << allele.qualityString << endl
         << "read mapping quality: " << allele.mapQuality;
 
     return out;

@@ -24,6 +24,7 @@ using namespace BamTools;
 
 // structure to encapsulate registered reads and alleles
 class RegisteredAlignment {
+    friend ostream &operator<<(ostream &out, RegisteredAlignment &a);
 public:
     BamAlignment alignment;
     vector<Allele> alleles;
@@ -93,6 +94,9 @@ public:
     bool getNextAlleles(vector<Allele>& alleles);
     void getAlleles(vector<Allele>& alleles);
 
+    // math
+    //long double logGenotypeLikelihood(vector<Allele>, string);
+
 private:
     // output files
     ofstream rptFile, vcfFile, logFile;
@@ -107,6 +111,10 @@ private:
     BedData* currentTarget;
     long unsigned int currentPosition;
     BamAlignment currentAlignment;
+
+    // constants
+    long double LOGFACTOR;  // log(10) / -10
+    long double LN3;  // log 3
 
 };
 
