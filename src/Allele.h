@@ -33,6 +33,7 @@ typedef long unsigned int Position;
 class Allele {
 
     friend ostream &operator<<(ostream &out, Allele &a);
+    friend bool operator==(Allele &a, Allele &b);
 
 public:
 

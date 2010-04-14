@@ -72,3 +72,9 @@ ostream &operator<<(ostream &out, Allele &allele) {
 
     return out;
 }
+
+bool operator==(Allele &a, Allele &b) {
+
+    return a.type == b.type && a.referenceName == b.referenceName && a.position == b.position && a.length == b.length;
+
+}

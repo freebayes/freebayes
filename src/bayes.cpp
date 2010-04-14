@@ -56,11 +56,22 @@ int main (int argc, char *argv[]) {
     //                 register base
 
     while (caller->getNextAlleles(alleles)) {
+        int refallelecount = 0;
+        int snpallelecount = 0;
         for (vector<Allele>::const_iterator it = alleles.begin(); it != alleles.end(); ++it) {
             Allele a = *it;
-            //if (a.type == ALLELE_SNP)
-                cout << a << endl << endl;
+            if (a.type == ALLELE_SNP) {
+                //cout << a << endl << endl;
+                ++snpallelecount;
+            }
+            if (a.type == ALLELE_REFERENCE)
+                ++refallelecount;
         }
+        cout << "sequence " << caller->currentTarget->seq
+            << " position " << caller->currentPosition 
+            << " counting "
+            << refallelecount << " reference alleles and " 
+            << snpallelecount << " snp alleles" << endl;
     }
 
     delete caller;

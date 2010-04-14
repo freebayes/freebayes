@@ -434,20 +434,22 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
          "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
          "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
+    LOG2(endl << rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
+
     /*
      *  this approach seems to be broken;
      *  but it will work as soon as we integrate some recent fixes to BamTools
+     */
     if (!alignment.GetReadGroup(sampleName)) {
         cerr << "ERROR: Couldn't find read group id for BAM Alignment " << alignment.Name << endl;
     }
-    */
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
         unsigned int l = (*cigarIter).Length;
         char t = (*cigarIter).Type;
-        //cerr << t << l << endl;
+        LOG2("cigar item: " << t << l);
 
         if (t == 'S') { // soft clip
             rp += l;
@@ -540,6 +542,8 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                             qualstr, alignment.MapQuality));
             }
 
+            rp += l;
+
         } // not handled, skipped region 'N's
     } // end cigar iter loop
     return ra;
@@ -586,11 +590,18 @@ void Caller::updateAlignmentQueue(void) {
     LOG2("... finished pushing new alignments");
 
     // pop from the back until we get to an alignment that overlaps our current position
-    BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-    // is indexing (0 or 1 based) oK here?
-    while (currentPosition > alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
-        registeredAlignmentQueue.pop_back();
-        alignment = &registeredAlignmentQueue.back().alignment;
+    if (registeredAlignmentQueue.size() > 0) {
+        BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
+        // is indexing (0 or 1 based) oK here?
+        while (currentPosition > alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
+            LOG2("popping alignment");
+            registeredAlignmentQueue.pop_back();
+            if (registeredAlignmentQueue.size() > 0) {
+                alignment = &registeredAlignmentQueue.back().alignment;
+            } else {
+                break;
+            }
+        }
     }
 
     LOG2("... finished popping old alignments");
@@ -706,16 +717,22 @@ bool Caller::getNextAlleles(vector<Allele>& alleles) {
 // updates the passed vector with the current alleles at the caller's target position
 void Caller::getAlleles(vector<Allele>& alleles) {
 
-    // clear the allele vector
-    alleles.clear();
+    // we used to just clear, but this seems inefficient (?)
+    // alleles.clear();
 
-    // get the alleles overlapping the current position
-    // 
-    // NB: if we ignore the differences between deletions and insertions, we
-    // will report them at a number of positions, as several positions in the
-    // reference can correspond to a deletion.  and we will report insertions
-    // only at one position.  for now this is fine; it can be fixed when the
-    // i/o systems are verified to be working.
+    // remove alleles which aren't reference alleles
+    // remove reference alleles which are no longer overlapping the current position
+    for (vector<Allele>::iterator ai = alleles.begin(); ai != alleles.end(); ++ai) {
+        Allele a = *ai;
+        if (!(a.type == ALLELE_REFERENCE && currentPosition >= a.position && currentPosition < a.position + a.length)) {
+            ai = alleles.erase(ai);
+            if (ai == alleles.end())
+                break;
+        }
+    }
+
+    // get the variant alleles *at* the current position
+    // and the reference alleles *overlapping* the current position
     
     for (deque<RegisteredAlignment>::const_iterator it = registeredAlignmentQueue.begin(); it != registeredAlignmentQueue.end(); ++it) {
         RegisteredAlignment ra = *it;
@@ -728,6 +745,125 @@ void Caller::getAlleles(vector<Allele>& alleles) {
     }
 }
 
+// TODO allele sorting by sample
+// which will enable tho following to work
 
 // math
 
+// p( observed alleles | genotype )
+double Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype, int ploidy) {
+
+    // overview:
+    //
+    // the alleles vector is assumed to be from a single sample
+    // the genotype vector is the genotype at this position
+    // we are estimating p( observed allele | genotype )
+    //
+    // note that the observed alleles are not true alleles in that they are, by
+    // definition, only representative of a single base, whereas the true
+    // alleles have can be hetero-  or homozygous
+    //
+    // sum, for all possible true alleles in our observedAlleles
+    // the product p( observed allele | true allele ) * p( true allele | genotype )
+    // 
+    // (1) "observed allele probabilities"
+    //      This relates the estimated observation error rate and the
+    //      probability that we observe what is actually present in the sample.
+    // p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele == true allele
+    //                          ... and   = 10 ^(-Q/10) if observed allele != true allele
+    //             where Q is the quality value associated with the observed allele
+    //             nb: this looks like the benoulli distribution to me -eg
+    //
+    // (2) "true allele probabilities"
+    //     This describes the probability that our 'true' alleles accurately
+    //     sample the underlying genotype.
+    //  in the case of diploid individuals, this is approximated as a binomial probability
+    // p( true allele | genotype ) = m! / f!(m - f) * p ^ f
+    //  where m is the count of observations and f is successes ? TODO
+    //  however, for n-ploid individuals, this must be approximated as a multinomial probability:
+    //  TODO
+    //
+
+    // computational steps:
+    //
+    // (A) for each observed allele
+    //   step through the allele set vector
+    //   if we match a set of alleles, push back on that set
+    //   else, push back on a new set and push it onto the allele set vector
+    //
+    // (B) generate all possible true allele combinations
+    //
+    // (C) for all possible true allele combinations
+    //   sum the product of (1) and (2)
+    // this is your probability
+
+    vector<vector<Allele*>> alleleGroups;
+    // (A)
+    for (vector<Allele*>::const_iterator oa = observedAlleles.begin(); oa != observedAlleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele*>>::const_iterator ag = alleleGroups.begin(); ag != alleleGroups.end(); ++ag) {
+            // is this just comparing allele pointers, or am i dereferencing properly?
+            if (*oa == *ag.first()) {
+                *ag.push_back(*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector trueAlleleGroup;
+            trueAlleleGroup.push_back(*oa);
+            uniqueAlleles.push_back(trueAlleleGroup);
+        }
+    }
+    
+    // (B)
+    // choose all possible allele combinations of n-ploidy
+    // ... and implicitly alternative rearrangements...?, e.g. 11 12 21 22 
+    // but for simplicity we can start with just the combinations
+    // TODO this will be a large datastructure for large ploidy and or number
+    // of unique alleles, so perhaps we should examine optimizations
+    // http://stackoverflow.com/questions/127704/algorithm-to-return-all-combinations-of-k-elements-from-n
+    // http://stackoverflow.com/questions/561/using-combinations-of-sets-as-test-data#794
+
+    // combinations
+    // number of combinations is equal to the binomial coefficient:
+    // ( n + 1 
+    //     k   )
+    // this is the number of combinations we expect
+    //int nCombinations = factorial(uniqueAlleles + 1) / (factorial(ploidy) * factorial(uniqueAlleles + 1 - ploidy));
+    vector<vector<vector<Allele*>*>> alleleCombinations;  // aka 'genotypes'
+    int uniqueAlleleCount = alleleGroups.size();
+    vector<int> indices;
+    for (int i = 0; i<uniqueAlleleCount; ++i)
+        indices.push_back(i);
+
+    bool done = false;
+    while (!done) {
+        for (int i = ploidy-1; i >= 0; --i) {
+            if (indices[i] != i + uniqueAlleleCount - ploidy)
+                break;
+            else
+                done=true;
+            if (!done) {
+                indices[i] += 1;
+                for (int j = i + 1; j < ploidy; ++j) {
+                    indices[j] = indices[j-1] + 1;
+                }
+                vector<vector<Allele*>*> combo;
+                for (int j = 0; j < indices.size(); ++j)
+                    combo.push_back(uniqueAlleles[j]);
+                alleleCombinations.push_back(combo);
+            }
+        }
+    }
+    // now add in the 'permutations' we care about
+    // specifically representatives of, e.g.
+    // 11, 22, 33, or 111, 112, 122, 222, etc.
+    //
+    // TODO
+    //
+    // and finally... 
+    // (C)
+
+
+}

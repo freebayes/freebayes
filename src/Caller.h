@@ -97,6 +97,13 @@ public:
     // math
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
+    double probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype);
+
+    // pointer to current position in targets
+    int fastaReferenceSequenceCount; // number of reference sequences
+    BedData* currentTarget;
+    long unsigned int currentPosition;
+
 private:
     // output files
     ofstream rptFile, vcfFile, logFile;
@@ -105,11 +112,7 @@ private:
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
     int basesAfterCurrentTarget;  // ........................................  after ...................
 
-    // pointer to current position in targets
-    int fastaReferenceSequenceCount; // number of reference sequences
     int currentRefID;
-    BedData* currentTarget;
-    long unsigned int currentPosition;
     BamAlignment currentAlignment;
 
     // constants
