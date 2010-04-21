@@ -15,6 +15,6 @@ short jointQuality(const std::vector<short>& quals);
 short jointQuality(const std::string& qualstr);
 // 
 short averageQuality(const std::string& qualstr);
-unsigned int factorial(int n);
+//unsigned int factorial(int n);
 
 #endif

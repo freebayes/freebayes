@@ -97,7 +97,7 @@ public:
     // math
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
-    double probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype);
+    double probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype, int ploidy);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences

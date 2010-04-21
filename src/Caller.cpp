@@ -1,4 +1,8 @@
 #include "Caller.h"
+#include "multichoose.h" // includes generic functions, so it must be included here
+                         // otherwise we will get a linker error
+                         // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
+                         // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
 
 // local helper debugging macros to improve code readability
 #define LOG(msg) \
@@ -16,6 +20,7 @@
     cerr << msg << endl;
 
 using namespace std;
+
 
 // XXX TODO change these void functions to bool
 
@@ -751,6 +756,7 @@ void Caller::getAlleles(vector<Allele>& alleles) {
 // math
 
 // p( observed alleles | genotype )
+// TODO restructure to take a set of genotypes to test and probs to return
 double Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype, int ploidy) {
 
     // overview:
@@ -797,73 +803,40 @@ double Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles,
     //   sum the product of (1) and (2)
     // this is your probability
 
-    vector<vector<Allele*>> alleleGroups;
+    vector<vector<Allele*> > alleleGroups;
     // (A)
-    for (vector<Allele*>::const_iterator oa = observedAlleles.begin(); oa != observedAlleles.end(); ++oa) {
+    for (vector<Allele*>::iterator oa = observedAlleles.begin(); oa != observedAlleles.end(); ++oa) {
         bool unique = true;
-        for (vector<vector<Allele*>>::const_iterator ag = alleleGroups.begin(); ag != alleleGroups.end(); ++ag) {
+        for (vector<vector<Allele*> >::iterator ag = alleleGroups.begin(); ag != alleleGroups.end(); ++ag) {
             // is this just comparing allele pointers, or am i dereferencing properly?
-            if (*oa == *ag.first()) {
-                *ag.push_back(*oa);
+            if (*oa == ag->front()) {
+                ag->push_back(*oa);
                 unique = false;
                 break;
             }
         }
         if (unique) {
-            vector trueAlleleGroup;
+            vector<Allele*> trueAlleleGroup;
             trueAlleleGroup.push_back(*oa);
-            uniqueAlleles.push_back(trueAlleleGroup);
+            alleleGroups.push_back(trueAlleleGroup);
         }
     }
     
     // (B)
     // choose all possible allele combinations of n-ploidy
     // ... and implicitly alternative rearrangements...?, e.g. 11 12 21 22 
-    // but for simplicity we can start with just the combinations
-    // TODO this will be a large datastructure for large ploidy and or number
-    // of unique alleles, so perhaps we should examine optimizations
+    //
     // http://stackoverflow.com/questions/127704/algorithm-to-return-all-combinations-of-k-elements-from-n
     // http://stackoverflow.com/questions/561/using-combinations-of-sets-as-test-data#794
 
-    // combinations
-    // number of combinations is equal to the binomial coefficient:
-    // ( n + 1 
-    //     k   )
-    // this is the number of combinations we expect
-    //int nCombinations = factorial(uniqueAlleles + 1) / (factorial(ploidy) * factorial(uniqueAlleles + 1 - ploidy));
-    vector<vector<vector<Allele*>*>> alleleCombinations;  // aka 'genotypes'
-    int uniqueAlleleCount = alleleGroups.size();
-    vector<int> indices;
-    for (int i = 0; i<uniqueAlleleCount; ++i)
-        indices.push_back(i);
+    // multiset combinations
+    // k multichoose n, or alleleGroups multichoose ploidy
+    // FIXME, currently using a *slow* recursive method
+    vector<vector<vector<Allele*> > > alleleMultiCombinations = multichoose(alleleGroups, ploidy);
 
-    bool done = false;
-    while (!done) {
-        for (int i = ploidy-1; i >= 0; --i) {
-            if (indices[i] != i + uniqueAlleleCount - ploidy)
-                break;
-            else
-                done=true;
-            if (!done) {
-                indices[i] += 1;
-                for (int j = i + 1; j < ploidy; ++j) {
-                    indices[j] = indices[j-1] + 1;
-                }
-                vector<vector<Allele*>*> combo;
-                for (int j = 0; j < indices.size(); ++j)
-                    combo.push_back(uniqueAlleles[j]);
-                alleleCombinations.push_back(combo);
-            }
-        }
-    }
-    // now add in the 'permutations' we care about
-    // specifically representatives of, e.g.
-    // 11, 22, 33, or 111, 112, 122, 222, etc.
-    //
-    // TODO
-    //
+    
+
     // and finally... 
     // (C)
-
 
 }

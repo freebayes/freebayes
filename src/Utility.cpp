@@ -50,6 +50,7 @@ short averageQuality(const std::string& qualstr) {
 
 }
 
+/*
 unsigned int factorial(int n) 
 {
     int f = 1;
@@ -59,3 +60,4 @@ unsigned int factorial(int n)
     }
     return f;
 }
+*/
