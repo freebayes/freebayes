@@ -1,5 +1,5 @@
 #include "Caller.h"
-#include "multichoose.h" // includes generic functions, so it must be included here
+#include "multichoose.hpp" // includes generic functions, so it must be included here
                          // otherwise we will get a linker error
                          // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
                          // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
@@ -832,7 +832,7 @@ double Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles,
     // multiset combinations
     // k multichoose n, or alleleGroups multichoose ploidy
     // FIXME, currently using a *slow* recursive method
-    vector<vector<vector<Allele*> > > alleleMultiCombinations = multichoose(alleleGroups, ploidy);
+    vector<vector<vector<Allele*> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
 
     
 
