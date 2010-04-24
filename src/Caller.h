@@ -15,6 +15,7 @@
 #include "Allele.h"
 #include "Fasta.h"
 #include "TryCatch.h"
+#include "Function-Math.h"
 #include "Function-Sequence.h"
 
 using namespace std;
@@ -97,7 +98,9 @@ public:
     // math
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
-    double probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype, int ploidy);
+    // p( observedAlleles | genotype ) for all genotypes
+    vector<double> probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector< vector<Allele*> > genotypes);
+    double probAlleleComboGivenGenotype(vector<vector<Allele*> > alleleCombo, vector<Allele*> genotype);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences

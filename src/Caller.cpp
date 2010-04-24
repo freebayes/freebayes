@@ -755,53 +755,61 @@ void Caller::getAlleles(vector<Allele>& alleles) {
 
 // math
 
-// p( observed alleles | genotype )
-// TODO restructure to take a set of genotypes to test and probs to return
-double Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<Allele*> genotype, int ploidy) {
+// p( observed alleles | genotypes )
+// for all genotypes
+//
+// overview:
+//
+// the alleles vector is assumed to be from a single sample
+// the genotype vector is the genotype at this position
+// we are estimating p( observed allele | genotype )
+//
+// note that the observed alleles are not true alleles in that they are, by
+// definition, only representative of a single base, whereas the true
+// alleles have can be hetero-  or homozygous
+//
+// sum, for all possible true alleles in our observedAlleles
+// the product p( observed allele | true allele ) * p( true allele | genotype )
+// 
+// (1) "observed allele probabilities"
+//      This relates the estimated observation error rate and the
+//      probability that we observe what is actually present in the sample.
+// p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele == true allele
+//                          ... and   = 10 ^(-Q/10) if observed allele != true allele
+//             where Q is the quality value associated with the observed allele
+//             nb: this looks like the benoulli distribution to me -eg
+//
+// (2) "true allele probabilities"
+//     This describes the probability that our 'true' alleles accurately
+//     sample the underlying genotype.
+//  in the case of diploid individuals, this is approximated as a binomial probability
+// p( true allele | genotype ) = m! / f!(m - f) * p ^ f
+//  where m is the count of observations and f is successes ? TODO
+//  however, for n-ploid individuals, this must be approximated as a multinomial probability:
+//  TODO
+//
 
-    // overview:
-    //
-    // the alleles vector is assumed to be from a single sample
-    // the genotype vector is the genotype at this position
-    // we are estimating p( observed allele | genotype )
-    //
-    // note that the observed alleles are not true alleles in that they are, by
-    // definition, only representative of a single base, whereas the true
-    // alleles have can be hetero-  or homozygous
-    //
-    // sum, for all possible true alleles in our observedAlleles
-    // the product p( observed allele | true allele ) * p( true allele | genotype )
-    // 
-    // (1) "observed allele probabilities"
-    //      This relates the estimated observation error rate and the
-    //      probability that we observe what is actually present in the sample.
-    // p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele == true allele
-    //                          ... and   = 10 ^(-Q/10) if observed allele != true allele
-    //             where Q is the quality value associated with the observed allele
-    //             nb: this looks like the benoulli distribution to me -eg
-    //
-    // (2) "true allele probabilities"
-    //     This describes the probability that our 'true' alleles accurately
-    //     sample the underlying genotype.
-    //  in the case of diploid individuals, this is approximated as a binomial probability
-    // p( true allele | genotype ) = m! / f!(m - f) * p ^ f
-    //  where m is the count of observations and f is successes ? TODO
-    //  however, for n-ploid individuals, this must be approximated as a multinomial probability:
-    //  TODO
-    //
+// computational steps:
+//
+// (A) for each observed allele
+//   step through the allele set vector
+//   if we match a set of alleles, push back on that set
+//   else, push back on a new set and push it onto the allele set vector
+//
+// (B) generate all possible true allele combinations
+//  choose all possible allele combinations of n-ploidy.
+//  Reduces to generating all multiset combinations, or k multichoos n from our
+//  groups of observed alleles.
+//  http://stackoverflow.com/questions/127704/algorithm-to-return-all-combinations-of-k-elements-from-n
+//  http://stackoverflow.com/questions/561/using-combinations-of-sets-as-test-data#794
+//
+// (C) for all possible true allele combinations
+//   sum the product of (1) and (2)
+//
+vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<vector<Allele*> > genotypes) {
 
-    // computational steps:
-    //
-    // (A) for each observed allele
-    //   step through the allele set vector
-    //   if we match a set of alleles, push back on that set
-    //   else, push back on a new set and push it onto the allele set vector
-    //
-    // (B) generate all possible true allele combinations
-    //
-    // (C) for all possible true allele combinations
-    //   sum the product of (1) and (2)
-    // this is your probability
+    int ploidy = genotypes.front().size(); // ploidy is determined by the number of alleles in the genotypes
+    vector<double> results;
 
     vector<vector<Allele*> > alleleGroups;
     // (A)
@@ -823,20 +831,58 @@ double Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles,
     }
     
     // (B)
-    // choose all possible allele combinations of n-ploidy
-    // ... and implicitly alternative rearrangements...?, e.g. 11 12 21 22 
-    //
-    // http://stackoverflow.com/questions/127704/algorithm-to-return-all-combinations-of-k-elements-from-n
-    // http://stackoverflow.com/questions/561/using-combinations-of-sets-as-test-data#794
-
-    // multiset combinations
-    // k multichoose n, or alleleGroups multichoose ploidy
-    // FIXME, currently using a *slow* recursive method
+    // k multichoose n, or ploidy multichoose alleleGroups
     vector<vector<vector<Allele*> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
 
+    // (C) 
+    for (vector<vector<Allele* > >::const_iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        double prob = 0.0;
+        for (vector<vector<vector<Allele*> > >::const_iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac) {
+            prob += probAlleleComboGivenGenotype(*ac, *g);
+        }
+        results.push_back(prob);
+    }
+
+    return results;
+
+}
+
+// the product p( observed allele | true allele ) * p( true allele | genotype )
+// (1) "observed allele probabilities"
+//      This relates the estimated observation error rate and the
+//      probability that we observe what is actually present in the sample.
+// p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele == true allele
+//                          ... and   = 10 ^(-Q/10) if observed allele != true allele
+//             where Q is the quality value associated with the observed allele
+//
+// (2) "true allele probabilities"
+// multinomial probability
+//   p( true allele | genotype ) = [ n! / ( n1! * n2! * ... nk! ) ] * ( p1n1 * p2n2 * . . . * pknk )
+//   P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( (1/ploidy)^alleleCount for alleleType in alleleCombo )
     
+double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > alleleCombo, vector<Allele*> genotype) {
 
-    // and finally... 
-    // (C)
+    int ploidy = genotype.size();
 
+    // (1)
+    // p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele == true allele
+    double allelecomboObservationProbability = 0;
+    for (vector<vector<Allele*> >::const_iterator alleleobs = alleleCombo.begin(); alleleobs != alleleCombo.end(); ++alleleobs) {
+        for (vector<Allele*>::const_iterator observation = alleleobs->begin(); observation != alleleobs->end(); ++observation)
+            allelecomboObservationProbability += 1 - phred2float((*observation)->quality);
+    }
+
+    // (2)
+    // P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( (1/ploidy)^alleleCount for alleleType in alleleCombo )
+    int factAlleleCountProduct = 0;
+    double probObsAllelesProduct = 0;
+    for (vector<vector<Allele*> >::const_iterator alleleObservations = alleleCombo.begin();
+            alleleObservations != alleleCombo.end(); ++alleleObservations) {
+        factAlleleCountProduct *= factorial(alleleObservations->size());
+        probObsAllelesProduct *= factorial(pow(1/ploidy, alleleObservations->size()));
+    }
+    double trueAlleleProbability = ( (double) factorial(ploidy) / (double) factAlleleCountProduct ) * probObsAllelesProduct;
+
+    // (1) * (2)
+    return allelecomboObservationProbability * trueAlleleProbability;
 }
