@@ -426,11 +426,17 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
     int sp = alignment.Position + 1;  // sequence position
               //   ^^^ conversion between 0 and 1 based index
-              //
+
+    
     // extract sample name and information
     string readName = alignment.Name;
-    SampleInfo sampleInfo = extractSampleInfo(readName, parameters->sampleNaming, parameters->sampleDel);
-    string sampleName = sampleInfo.sampleId;
+    string sampleName;
+    if (! alignment.GetReadGroup(sampleName)) {
+        cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << alignment.Name
+            << " ... attempting to read from read name" << endl;
+        SampleInfo sampleInfo = extractSampleInfo(readName, parameters->sampleNaming, parameters->sampleDel);
+        string sampleName = sampleInfo.sampleId;
+    }
 
     LOG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
          "alignment readName " << readName << endl <<
@@ -441,13 +447,6 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
 
     LOG2(endl << rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
 
-    /*
-     *  this approach seems to be broken;
-     *  but it will work as soon as we integrate some recent fixes to BamTools
-     */
-    if (!alignment.GetReadGroup(sampleName)) {
-        cerr << "ERROR: Couldn't find read group id for BAM Alignment " << alignment.Name << endl;
-    }
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();

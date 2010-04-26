@@ -1527,12 +1527,16 @@ int main (int argc, char *argv[]) {
 	    lowMapQualRead = true;
 	  }
 	  
-	  //----------------------------------------------------------------
-	  // extract sample info
-	  //----------------------------------------------------------------
-	  string readName = ba.Name;
-	  SampleInfo sampleInfo = extractSampleInfo(readName, sampleNaming, sampleDel);
-	  string sampleName = sampleInfo.sampleId;
+
+      // extract sample name and information
+      string readName = ba.Name;
+      string sampleName;
+      if (! ba.GetReadGroup(sampleName)) {
+          cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << ba.Name
+              << " ... attempting to read from read name" << endl;
+          SampleInfo sampleInfo = extractSampleInfo(readName, sampleNaming, sampleDel);
+          string sampleName = sampleInfo.sampleId;
+      }
 	  
 	  //----------------------------------------------------------------
 	  // get mapping quality
