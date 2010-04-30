@@ -68,4 +68,5 @@ class FastaReference {
         string sequenceNameStartingWith(string seqnameStart);
         long unsigned int sequenceLength(string seqname);
 };
+
 #endif

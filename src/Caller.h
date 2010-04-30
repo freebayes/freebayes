@@ -99,8 +99,8 @@ public:
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
     // p( observedAlleles | genotype ) for all genotypes
-    vector<double> probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector< vector<Allele*> > genotypes);
-    double probAlleleComboGivenGenotype(vector<vector<Allele*> > alleleCombo, vector<Allele*> genotype);
+    vector<double> probObservedAllelesGivenGenotype(vector<Allele> &observedAlleles, vector< vector<Allele> > &genotypes);
+    double probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo, vector<Allele> &genotype);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
@@ -123,5 +123,9 @@ private:
     long double LN3;  // log 3
 
 };
+
+// probability of drawing an allele from the set of alleles
+double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
+
 
 #endif

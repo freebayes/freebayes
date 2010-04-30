@@ -25,7 +25,6 @@
 // "hash_map" true hashes
 #include <ext/hash_map>
 
-
 // private libraries
 #include "Class-GigReader.h"
 #include "Function-Sequence.h"
@@ -41,6 +40,8 @@
 #include "Allele.h"
 #include "Caller.h"
 
+#include "multichoose.h"
+
 using namespace std; 
 
 int main (int argc, char *argv[]) {
@@ -55,23 +56,56 @@ int main (int argc, char *argv[]) {
     //             for each base in read
     //                 register base
 
+
     while (caller->getNextAlleles(alleles)) {
         int refallelecount = 0;
         int snpallelecount = 0;
-        for (vector<Allele>::const_iterator it = alleles.begin(); it != alleles.end(); ++it) {
+        vector<Allele*> allelepts;
+        for (vector<Allele>::iterator it = alleles.begin(); it != alleles.end(); ++it) {
             Allele a = *it;
             if (a.type == ALLELE_SNP) {
-                //cout << a << endl << endl;
                 ++snpallelecount;
             }
             if (a.type == ALLELE_REFERENCE)
                 ++refallelecount;
+            allelepts.push_back(&*it);
         }
+
+        vector<vector<Allele> > alleleGroups = groupAlleles(alleles, allelesEquivalent);
+        vector<vector<Allele> > sampleGroups = groupAlleles(alleles, allelesSameSample);
+        vector<Allele> genotypeAlleles = genotypeAllelesFromAlleleGroups(alleleGroups);
+        vector<vector<Allele> > genotypeCombos = multichoose(2, genotypeAlleles);
+
+        // log our progress
         cout << "sequence " << caller->currentTarget->seq
             << " position " << caller->currentPosition 
             << " counting "
-            << refallelecount << " reference alleles and " 
-            << snpallelecount << " snp alleles" << endl;
+            << refallelecount << " reference alleles, " 
+            << snpallelecount << " snp alleles, "
+            << genotypeAlleles.size() << " genotype alleles, and "
+            << genotypeCombos.size() << " genotype combinations" << endl;
+
+        int i= 0;
+        for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); genotype != genotypeCombos.end(); genotype ++) {
+            cout << "genotype " << i++ << endl;
+            cout << *genotype;
+        }
+        cout << endl;
+
+        i = 0;
+        for (vector<vector< Allele > >::iterator sampleAlleles = sampleGroups.begin(); sampleAlleles != sampleGroups.end(); sampleAlleles++) {
+            cout << stringForAlleles(*sampleAlleles) << endl;
+            vector<double> probs = caller->probObservedAllelesGivenGenotype(*sampleAlleles, genotypeCombos);
+            int i = 0;
+            for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); genotype != genotypeCombos.end(); genotype ++) {
+                cout << "{ " << stringForAlleles(*genotype) << " } : ";
+                cout << "\t" << probs[i] << endl;
+                ++i;
+            }
+            cout << endl;
+
+        }
+
     }
 
     delete caller;

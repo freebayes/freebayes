@@ -1,5 +1,5 @@
 #include "Caller.h"
-#include "multichoose.hpp" // includes generic functions, so it must be included here
+#include "multichoose.h" // includes generic functions, so it must be included here
                          // otherwise we will get a linker error
                          // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
                          // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
@@ -432,14 +432,16 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
     string readName = alignment.Name;
     string sampleName;
     if (! alignment.GetReadGroup(sampleName)) {
-        cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << alignment.Name
+        /*cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << alignment.Name
             << " ... attempting to read from read name" << endl;
+            */
         SampleInfo sampleInfo = extractSampleInfo(readName, parameters->sampleNaming, parameters->sampleDel);
-        string sampleName = sampleInfo.sampleId;
+        sampleName = sampleInfo.sampleId;
     }
 
     LOG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
          "alignment readName " << readName << endl <<
+         "alignment sampleID " << sampleName << endl << 
          "alignment position " << alignment.Position << endl <<
          "alignment length " << alignment.Length << endl <<
          "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
@@ -482,7 +484,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                         string qualstr = rQual.substr(rp - length, length);
                         ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                                     currentTarget->seq, sp - length, length, 
-                                    matchingSequence, "", sampleName,
+                                    matchingSequence, "", sampleName, alignment.Name,
                                     !alignment.IsReverseStrand(), -1, qualstr,
                                     alignment.MapQuality));
                     }
@@ -494,7 +496,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                     // record 'reference' allele for last matching region
                     ra.mismatches++;
                     ra.alleles.push_back(Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
-                            sampleName, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality));
+                            sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality));
                 }
 
                 // update positions
@@ -509,7 +511,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 string qualstr = rQual.substr(rp - length, length);
                 ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                             currentTarget->seq, sp - length, length, 
-                            matchingSequence, "", sampleName,
+                            matchingSequence, "", sampleName, alignment.Name,
                             !alignment.IsReverseStrand(), -1, qualstr,
                             alignment.MapQuality));
             }
@@ -524,7 +526,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             if (qual >= parameters->BQL2) {
                 ra.alleles.push_back(Allele(ALLELE_DELETION,
                             currentTarget->seq, sp, l,
-                            currentSequence.substr(csp, l), "", sampleName,
+                            currentSequence.substr(csp, l), "", sampleName, alignment.Name,
                             !alignment.IsReverseStrand(), qual, qualstr,
                             alignment.MapQuality));
             }
@@ -542,7 +544,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             if (qual >= parameters->BQL2) { // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the        'average' quality
                 ra.alleles.push_back(Allele(ALLELE_INSERTION,
                             currentTarget->seq, sp, l, "", rDna.substr(rp, l),
-                            sampleName, !alignment.IsReverseStrand(), qual,
+                            sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                             qualstr, alignment.MapQuality));
             }
 
@@ -752,7 +754,10 @@ void Caller::getAlleles(vector<Allele>& alleles) {
 // TODO allele sorting by sample
 // which will enable tho following to work
 
+
+///////////////////////////////////////////////////////////////////////////////
 // math
+///////////////////////////////////////////////////////////////////////////////
 
 // p( observed alleles | genotypes )
 // for all genotypes
@@ -805,41 +810,21 @@ void Caller::getAlleles(vector<Allele>& alleles) {
 // (C) for all possible true allele combinations
 //   sum the product of (1) and (2)
 //
-vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele*> observedAlleles, vector<vector<Allele*> > genotypes) {
+vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele> &observedAlleles, vector<vector<Allele> > &genotypes) {
 
     int ploidy = genotypes.front().size(); // ploidy is determined by the number of alleles in the genotypes
     vector<double> results;
 
-    vector<vector<Allele*> > alleleGroups;
     // (A)
-    for (vector<Allele*>::iterator oa = observedAlleles.begin(); oa != observedAlleles.end(); ++oa) {
-        bool unique = true;
-        for (vector<vector<Allele*> >::iterator ag = alleleGroups.begin(); ag != alleleGroups.end(); ++ag) {
-            // is this just comparing allele pointers, or am i dereferencing properly?
-            if (*oa == ag->front()) {
-                ag->push_back(*oa);
-                unique = false;
-                break;
-            }
-        }
-        if (unique) {
-            vector<Allele*> trueAlleleGroup;
-            trueAlleleGroup.push_back(*oa);
-            alleleGroups.push_back(trueAlleleGroup);
-        }
-    }
+    vector<vector<Allele> > alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
     
     // (B)
     // k multichoose n, or ploidy multichoose alleleGroups
-    vector<vector<vector<Allele*> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
+    //vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
 
     // (C) 
-    for (vector<vector<Allele* > >::const_iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        double prob = 0.0;
-        for (vector<vector<vector<Allele*> > >::const_iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac) {
-            prob += probAlleleComboGivenGenotype(*ac, *g);
-        }
-        results.push_back(prob);
+    for (vector<vector<Allele > >::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        results.push_back(probAlleleComboGivenGenotype(alleleGroups, *g));
     }
 
     return results;
@@ -858,30 +843,98 @@ vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele*> observed
 // multinomial probability
 //   p( true allele | genotype ) = [ n! / ( n1! * n2! * ... nk! ) ] * ( p1n1 * p2n2 * . . . * pknk )
 //   P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( (1/ploidy)^alleleCount for alleleType in alleleCombo )
-    
-double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > alleleCombo, vector<Allele*> genotype) {
+
+double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo, vector<Allele> &genotype) {
 
     int ploidy = genotype.size();
 
+    LOG2(stringForAlleles(genotype));
+
+    // counts indexed by genotype position
+    //vector<int> sumQ (ploidy, 0);
+    //vector<int> counts (ploidy, 0);
+    int outCount = 0, inCount = 0;
+    double inProb = 1;
+    double outProb = 1;
+    int alleleComboObsCount = 0;
+
     // (1)
-    // p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele == true allele
-    double allelecomboObservationProbability = 0;
-    for (vector<vector<Allele*> >::const_iterator alleleobs = alleleCombo.begin(); alleleobs != alleleCombo.end(); ++alleleobs) {
-        for (vector<Allele*>::const_iterator observation = alleleobs->begin(); observation != alleleobs->end(); ++observation)
-            allelecomboObservationProbability += 1 - phred2float((*observation)->quality);
+    // p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele in true allele
+    //                          ... and   = 10 ^(-Q/10) if observed allele != true allele
+    //             where Q is the quality value associated with the observed allele
+
+    double factAlleleCountProduct = 1;
+    double probObsAllelesProduct = 1;
+    for (vector<vector<Allele> >::iterator alleleObservations = alleleCombo.begin();
+            alleleObservations != alleleCombo.end(); ++alleleObservations) {
+        
+        // NB: Not the greatest solution.  This should be improved.
+        // Avoids processing the same observations more than once.
+        // We can safely do this because multichoose provides the allele
+        // combination multisets in lexographic order.
+        if ((alleleObservations + 1) != alleleCombo.end() 
+                && (alleleObservations + 1)->front().equivalent(alleleObservations->front())) {
+            continue;
+        }
+    // (2)
+    // P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( p_^alleleCount for alleleType in alleleCombo )
+        alleleComboObsCount += alleleObservations->size();
+        factAlleleCountProduct *= factorial(alleleObservations->size());
+        probObsAllelesProduct *= pow(probChooseAlleleFromAlleles(alleleObservations->front(), genotype), 
+                alleleObservations->size());
+
+        for (vector<Allele>::iterator observation = alleleObservations->begin();
+                observation != alleleObservations->end(); ++observation) {
+            bool in = false;
+            int i = 0;
+            for (vector<Allele>::iterator g = genotype.begin(); g != genotype.end(); g++) {
+                // process genotypes only once
+                if ((g + 1) != genotype.end() 
+                        && (g + 1)->equivalent(*g)) {
+                    continue;
+                }
+                if (g->equivalent(*observation)) {
+                    inProb *= 1 - phred2float(observation->Quality(currentPosition));
+                    inCount++;
+                    in = true;
+                }
+                ++i;
+            }
+            if (!in) {
+                outProb *= phred2float(observation->Quality(currentPosition));
+                outCount++;
+            }
+        }
     }
 
+    // (1)
+    LOG2("outCount = " << outCount);
+    LOG2("outProb = " << outProb);
+    LOG2("inCount = " << inCount);
+    LOG2("inProb = " << inProb);
+    double probAlleleObsGivenGenotype = outProb * inProb;
+    LOG2("probAlleleObsGivenGenotype = " << probAlleleObsGivenGenotype);
+    
     // (2)
-    // P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( (1/ploidy)^alleleCount for alleleType in alleleCombo )
-    int factAlleleCountProduct = 0;
-    double probObsAllelesProduct = 0;
-    for (vector<vector<Allele*> >::const_iterator alleleObservations = alleleCombo.begin();
-            alleleObservations != alleleCombo.end(); ++alleleObservations) {
-        factAlleleCountProduct *= factorial(alleleObservations->size());
-        probObsAllelesProduct *= factorial(pow(1/ploidy, alleleObservations->size()));
-    }
-    double trueAlleleProbability = ( (double) factorial(ploidy) / (double) factAlleleCountProduct ) * probObsAllelesProduct;
+    LOG2("factAlleleCountProduct = " << factAlleleCountProduct);
+    LOG2("alleleComboObsCount = " << alleleComboObsCount);
+    LOG2("probObsAllelesProduct = " << probObsAllelesProduct);
+    double trueAlleleProbability = ( (double) factorial(alleleComboObsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
+    LOG2("trueAlleleProbability = " << trueAlleleProbability);
 
     // (1) * (2)
-    return allelecomboObservationProbability * trueAlleleProbability;
+    return probAlleleObsGivenGenotype * trueAlleleProbability;
+}
+
+double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles) {
+
+    int matches = 0;
+
+    for (vector<Allele>::iterator ai = alleles.begin(); ai != alleles.end(); ai++) {
+        if (ai->equivalent(allele))
+            ++matches;
+    }
+
+    return (double) matches / (double) alleles.size();
+
 }
