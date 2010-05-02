@@ -37,6 +37,22 @@ public:
     { }
 };
 
+// functor to filter alleles outside of our analysis window
+class AlleleFilter {
+
+public:
+    AlleleFilter(long unsigned int s, long unsigned int e) : start(s), end(e) {}
+
+    // true of the allele is outside of our window
+    bool operator()(Allele& a) { 
+        return !(start >= a.position && end < a.position + a.length);
+    }
+
+private:
+    long unsigned int start, end;
+
+};
+
 
 class Caller {
 
@@ -92,8 +108,8 @@ public:
     bool toNextTarget(void);
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
-    bool getNextAlleles(vector<Allele>& alleles);
-    void getAlleles(vector<Allele>& alleles);
+    bool getNextAlleles(list<Allele>& alleles);
+    void getAlleles(list<Allele>& alleles);
 
     // math
     //long double logGenotypeLikelihood(vector<Allele>, string);

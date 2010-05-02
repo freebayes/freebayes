@@ -711,7 +711,7 @@ bool Caller::toNextTargetPosition(void) {
     return true;
 }
 
-bool Caller::getNextAlleles(vector<Allele>& alleles) {
+bool Caller::getNextAlleles(list<Allele>& alleles) {
     if (toNextTargetPosition()) {
         getAlleles(alleles);
         return true;
@@ -721,32 +721,31 @@ bool Caller::getNextAlleles(vector<Allele>& alleles) {
 }
 
 // updates the passed vector with the current alleles at the caller's target position
-void Caller::getAlleles(vector<Allele>& alleles) {
+void Caller::getAlleles(list<Allele>& alleles) {
 
     // we used to just clear, but this seems inefficient (?)
     // alleles.clear();
 
-    // remove alleles which aren't reference alleles
     // remove reference alleles which are no longer overlapping the current position
-    for (vector<Allele>::iterator ai = alleles.begin(); ai != alleles.end(); ++ai) {
-        Allele a = *ai;
-        if (!(a.type == ALLELE_REFERENCE && currentPosition >= a.position && currentPosition < a.position + a.length)) {
-            ai = alleles.erase(ai);
-            if (ai == alleles.end())
-                break;
-        }
-    }
+    // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
+    // TODO should check that we aren't keeping alleles that don't align properly to our analysis
+    //      such as insertions ?
+
+    alleles.erase(remove_if(alleles.begin(), alleles.end(), AlleleFilter(currentPosition, currentPosition)), 
+            alleles.end());
+
+    alleles.sort();
 
     // get the variant alleles *at* the current position
     // and the reference alleles *overlapping* the current position
     
     for (deque<RegisteredAlignment>::const_iterator it = registeredAlignmentQueue.begin(); it != registeredAlignmentQueue.end(); ++it) {
         RegisteredAlignment ra = *it;
-        for (vector<Allele>::const_iterator ai = ra.alleles.begin(); ai != ra.alleles.end(); ++ai) {
-            Allele a = *ai;
+        for (vector<Allele>::iterator ai = ra.alleles.begin(); ai != ra.alleles.end(); ++ai) {
             // for now only record the allele if it is at exactly the current position
-            if (a.position == currentPosition)
-                alleles.push_back(a);
+            if (ai->position == currentPosition) {
+                alleles.push_back(*ai);
+            }
         }
     }
 }
@@ -820,11 +819,14 @@ vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele> &observed
     
     // (B)
     // k multichoose n, or ploidy multichoose alleleGroups
-    //vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
+    vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
 
     // (C) 
     for (vector<vector<Allele > >::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        results.push_back(probAlleleComboGivenGenotype(alleleGroups, *g));
+        double prob = 0;
+        for (vector<vector<vector<Allele> > >::iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac)
+            prob += probAlleleComboGivenGenotype(*ac, *g);
+        results.push_back(prob / alleleMultiCombinations.size());
     }
 
     return results;
@@ -848,15 +850,15 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
 
     int ploidy = genotype.size();
 
-    LOG2(stringForAlleles(genotype));
+    LOG2(genotype);
 
     // counts indexed by genotype position
     //vector<int> sumQ (ploidy, 0);
     //vector<int> counts (ploidy, 0);
     int outCount = 0, inCount = 0;
-    double inProb = 1;
-    double outProb = 1;
-    int alleleComboObsCount = 0;
+    double inProb = 0;
+    double outProb = 0;
+    int obsCount = 0;
 
     // (1)
     // p( observed allele | true allele ) = 1 - 10 ^(-Q/10)  if observed allele in true allele
@@ -867,6 +869,7 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
     double probObsAllelesProduct = 1;
     for (vector<vector<Allele> >::iterator alleleObservations = alleleCombo.begin();
             alleleObservations != alleleCombo.end(); ++alleleObservations) {
+        LOG2(*alleleObservations);
         
         // NB: Not the greatest solution.  This should be improved.
         // Avoids processing the same observations more than once.
@@ -878,49 +881,53 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
         }
     // (2)
     // P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( p_^alleleCount for alleleType in alleleCombo )
-        alleleComboObsCount += alleleObservations->size();
+        obsCount += alleleObservations->size();
         factAlleleCountProduct *= factorial(alleleObservations->size());
         probObsAllelesProduct *= pow(probChooseAlleleFromAlleles(alleleObservations->front(), genotype), 
                 alleleObservations->size());
 
-        for (vector<Allele>::iterator observation = alleleObservations->begin();
-                observation != alleleObservations->end(); ++observation) {
-            bool in = false;
-            int i = 0;
-            for (vector<Allele>::iterator g = genotype.begin(); g != genotype.end(); g++) {
-                // process genotypes only once
-                if ((g + 1) != genotype.end() 
-                        && (g + 1)->equivalent(*g)) {
-                    continue;
-                }
-                if (g->equivalent(*observation)) {
-                    inProb *= 1 - phred2float(observation->Quality(currentPosition));
-                    inCount++;
-                    in = true;
-                }
-                ++i;
+        bool in = false;
+        int i = 0;
+        for (vector<Allele>::iterator g = genotype.begin(); g != genotype.end(); g++) {
+            // process genotypes only once
+            if (g->equivalent(alleleObservations->front())) {
+                in = true; break;
             }
-            if (!in) {
-                outProb *= phred2float(observation->Quality(currentPosition));
+        }
+
+        if (in) {
+            LOG2(*alleleObservations << " is in genotype " << genotype);
+            for (vector<Allele>::iterator obs = alleleObservations->begin(); 
+                    obs != alleleObservations->end(); obs++) {
+                inProb += obs->Quality(currentPosition);
+                inCount++;
+            }
+        } else {
+            LOG2(*alleleObservations << " is not in genotype " << genotype);
+            for (vector<Allele>::iterator obs = alleleObservations->begin(); 
+                    obs != alleleObservations->end(); obs++) {
+                outProb += obs->Quality(currentPosition);
                 outCount++;
             }
         }
     }
 
     // (1)
-    LOG2("outCount = " << outCount);
-    LOG2("outProb = " << outProb);
-    LOG2("inCount = " << inCount);
-    LOG2("inProb = " << inProb);
-    double probAlleleObsGivenGenotype = outProb * inProb;
-    LOG2("probAlleleObsGivenGenotype = " << probAlleleObsGivenGenotype);
+    double probAlleleObsGivenGenotype = ( (inCount ? (1 - phred2float(inProb / inCount)) * inCount : 0)
+                + (outCount ? (1 - phred2float(outProb / outCount)) * outCount : 0) ) 
+            / (inCount + outCount);
+    LOG2("outCount = " << outCount << endl
+        << "outProb = " << outProb << endl
+        << "inCount = " << inCount << endl
+        << "inProb = " << inProb << endl
+        << "probAlleleObsGivenGenotype = " << probAlleleObsGivenGenotype);
     
     // (2)
-    LOG2("factAlleleCountProduct = " << factAlleleCountProduct);
-    LOG2("alleleComboObsCount = " << alleleComboObsCount);
-    LOG2("probObsAllelesProduct = " << probObsAllelesProduct);
-    double trueAlleleProbability = ( (double) factorial(alleleComboObsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
-    LOG2("trueAlleleProbability = " << trueAlleleProbability);
+    double trueAlleleProbability = ( (double) factorial(obsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
+    LOG2("factAlleleCountProduct = " << factAlleleCountProduct << endl
+        << "obsCount = " << obsCount << endl
+        << "probObsAllelesProduct = " << probObsAllelesProduct << endl
+        << "trueAlleleProbability = " << trueAlleleProbability);
 
     // (1) * (2)
     return probAlleleObsGivenGenotype * trueAlleleProbability;

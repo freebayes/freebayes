@@ -1,5 +1,6 @@
 #include "Allele.h"
 #include "multichoose.h"
+#include "TryCatch.h"
 
 Allele::Allele(AlleleType t, 
             string refname, 
@@ -42,14 +43,21 @@ Allele::Allele(AlleleType t,
     , genotypeAllele(true)
 { }
 
+int Allele::referenceOffset(Position referencePosition) {
+    /*cout << readID << " offset checked " << referencePosition - position << " against position " << position 
+        << " allele length " << length << " str length " << referenceSequence.size() << " qstr size " << qualityString.size() << endl;
+        */
+    return referencePosition - position;
+}
 
 // quality at a given reference position
 short Allele::Quality(Position referencePosition) {
     switch (this->type) {
         case ALLELE_REFERENCE:
-            // XXX TODO!!!!
-            //return qualityChar2ShortInt(*qualityString.substr(referencePosition - position, 1).c_str());
-            //break;
+            TRY {
+            return qualityChar2ShortInt(qualityString.at(referenceOffset(referencePosition)));
+            } CATCH;
+            break;
         case ALLELE_INSERTION:
         case ALLELE_DELETION:
         case ALLELE_SNP:
@@ -90,8 +98,9 @@ string Allele::Type(void) {
 
 }
 
-ostream &operator<<(ostream &out, Allele &allele) {
+string stringForAllele(Allele &allele) {
 
+    stringstream out;
     if (!allele.genotypeAllele) {
         out 
             << allele.sampleID << "\t"
@@ -117,43 +126,48 @@ ostream &operator<<(ostream &out, Allele &allele) {
         out << endl;
     }
 
-    return out;
+    return out.str();
+}
+
+string stringForAlleles(vector<Allele> &alleles) {
+    stringstream out;
+    for (vector<Allele>::iterator allele = alleles.begin(); allele != alleles.end(); allele++) {
+        out << stringForAllele(*allele) << endl;
+    }
+    return out.str();
 }
 
 ostream &operator<<(ostream &out, vector<Allele> &alleles) {
-    for (vector<Allele>::iterator allele = alleles.begin(); allele != alleles.end(); allele++) {
-        out << *allele;
-    }
+    vector<Allele>::iterator a = alleles.begin();
+    out << *a++;
+    while (a != alleles.end())
+        out << "|" << *a++;
     return out;
 }
 
-string stringForAlleles(vector<Allele> &av) {
-    stringstream o;
-    for (vector<Allele>::iterator a = av.begin(); a != av.end(); a++) {
-        o << stringForAllele(*a) << "|";
-    }
-    string s = o.str();
-    return s.substr(0,s.size()-1);
-}
+ostream &operator<<(ostream &out, Allele &allele) {
 
-string stringForAllele(Allele &allele) {
-
-    stringstream o;
     if (!allele.genotypeAllele) {
-            o << allele.sampleID << ":" << allele.Type() << ":" 
+            out << allele.sampleID << ":" << allele.Type() << ":" 
                 << allele.length << (allele.strand == STRAND_FORWARD ? "+" : "-")
-                << ":" << allele.alternateSequence;
+                << ":" << allele.alternateSequence
+                << ":" << allele.quality;
     } else {
-        o << allele.Type();
+        out << allele.Type();
         switch (allele.type) {
             case ALLELE_REFERENCE:
                 break;
             default:
-                o << ":" << allele.length << ":" << (string) allele.alternateSequence;
+                out << ":" << allele.length << ":" << (string) allele.alternateSequence;
                 break;
         }
     }
-    return o.str();
+    return out;
+}
+
+// for sorting alleles by type
+bool operator<(Allele &a, Allele &b) {
+    return a.type < b.type;
 }
 
 bool operator==(Allele &a, Allele &b) {
@@ -195,6 +209,27 @@ bool Allele::equivalent(Allele &b) {
     }
 
     return false;
+}
+
+vector<vector<Allele> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
+    vector<vector<Allele> > groups;
+    for (list<Allele>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+            // is this just comparing allele pointers, or am i dereferencing properly?
+            if ((*fncompare)(*oa, ag->front())) {
+                ag->push_back(*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector<Allele> trueAlleleGroup;
+            trueAlleleGroup.push_back(*oa);
+            groups.push_back(trueAlleleGroup);
+        }
+    }
+    return groups;
 }
 
 vector<vector<Allele> >  groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <list>
 #include <map>
 #include <limits>
 #include <sstream>
@@ -36,6 +37,8 @@ class Allele {
 
     friend string stringForAllele(Allele &a);
     friend string stringForAlleles(vector<Allele> &av);
+
+    friend bool operator<(Allele &a, Allele &b);
 
     friend ostream &operator<<(ostream &out, vector<Allele> &a);
 
@@ -77,6 +80,7 @@ public:
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string Type(void); // return a string representation of the allele type, for output
+    int referenceOffset(Position referencePosition);
     short Quality(Position referencePosition);  // for getting the quality of a given position in multi-bp alleles
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
 
@@ -85,6 +89,7 @@ public:
 //typedef vector<Allele> Genotype; // unused
 
 vector<vector<Allele> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele> > groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 bool allelesSameType(Allele &a, Allele &b);
 bool allelesEquivalent(Allele &a, Allele &b);
 bool allelesSameSample(Allele &a, Allele &b);

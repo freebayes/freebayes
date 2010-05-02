@@ -47,7 +47,7 @@ using namespace std;
 int main (int argc, char *argv[]) {
 
     Caller* caller = new Caller(argc, argv);
-    vector<Allele> alleles;
+    list<Allele> alleles;
 
     ///////////////////////////////////////////
     // for each region in region list
@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
         int refallelecount = 0;
         int snpallelecount = 0;
         vector<Allele*> allelepts;
-        for (vector<Allele>::iterator it = alleles.begin(); it != alleles.end(); ++it) {
+        for (list<Allele>::iterator it = alleles.begin(); it != alleles.end(); ++it) {
             Allele a = *it;
             if (a.type == ALLELE_SNP) {
                 ++snpallelecount;
@@ -88,17 +88,17 @@ int main (int argc, char *argv[]) {
         int i= 0;
         for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); genotype != genotypeCombos.end(); genotype ++) {
             cout << "genotype " << i++ << endl;
-            cout << *genotype;
+            cout << *genotype << endl;
         }
         cout << endl;
 
         i = 0;
         for (vector<vector< Allele > >::iterator sampleAlleles = sampleGroups.begin(); sampleAlleles != sampleGroups.end(); sampleAlleles++) {
-            cout << stringForAlleles(*sampleAlleles) << endl;
+            cout << *sampleAlleles << endl;
             vector<double> probs = caller->probObservedAllelesGivenGenotype(*sampleAlleles, genotypeCombos);
             int i = 0;
             for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); genotype != genotypeCombos.end(); genotype ++) {
-                cout << "{ " << stringForAlleles(*genotype) << " } : ";
+                cout << "{ " << *genotype << " } : ";
                 cout << "\t" << probs[i] << endl;
                 ++i;
             }
