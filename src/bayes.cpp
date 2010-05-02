@@ -58,6 +58,8 @@ int main (int argc, char *argv[]) {
 
 
     while (caller->getNextAlleles(alleles)) {
+        if (alleles.size() == 0)
+            continue;
         int refallelecount = 0;
         int snpallelecount = 0;
         vector<Allele*> allelepts;
