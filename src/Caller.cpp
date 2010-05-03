@@ -824,13 +824,26 @@ vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele> &observed
     // (C) 
     for (vector<vector<Allele > >::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         double prob = 0;
+        //results.push_back(probAlleleComboGivenGenotype(alleleGroups, *g));
         for (vector<vector<vector<Allele> > >::iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac)
-            prob += probAlleleComboGivenGenotype(*ac, *g);
-        results.push_back(prob / alleleMultiCombinations.size());
+            prob += probAlleleComboGivenGenotype(*ac, *g) * observationsInAlleleCombo(*ac);
+        results.push_back(prob / observedAlleles.size());
     }
 
     return results;
 
+}
+
+int observationsInAlleleCombo(vector<vector<Allele> > &combo) {
+    int count = 0;
+    for (vector<vector<Allele> >::iterator obs = combo.begin(); obs != combo.end(); obs++) {
+        if ((obs + 1) != combo.end()
+                && (obs + 1)->front().equivalent(obs->front())) {
+            continue;
+        }
+        count += obs->size();
+    }
+    return count;
 }
 
 // the product p( observed allele | true allele ) * p( true allele | genotype )
@@ -896,14 +909,14 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
         }
 
         if (in) {
-            LOG2(*alleleObservations << " is in genotype " << genotype);
+            LOG2(*alleleObservations << " in " << genotype);
             for (vector<Allele>::iterator obs = alleleObservations->begin(); 
                     obs != alleleObservations->end(); obs++) {
                 inProb += obs->Quality(currentPosition);
                 inCount++;
             }
         } else {
-            LOG2(*alleleObservations << " is not in genotype " << genotype);
+            LOG2(*alleleObservations << " not in " << genotype);
             for (vector<Allele>::iterator obs = alleleObservations->begin(); 
                     obs != alleleObservations->end(); obs++) {
                 outProb += obs->Quality(currentPosition);
@@ -913,21 +926,21 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
     }
 
     // (1)
-    double probAlleleObsGivenGenotype = ( (inCount ? (1 - phred2float(inProb / inCount)) * inCount : 0)
-                + (outCount ? (1 - phred2float(outProb / outCount)) * outCount : 0) ) 
+    double probAlleleObsGivenGenotype = ( (inCount ? (1 - phred2float(inProb)) * inCount : 0)
+                + (outCount ? (1 - phred2float(outProb)) * outCount : 0) ) 
             / (inCount + outCount);
-    LOG2("outCount = " << outCount << endl
-        << "outProb = " << outProb << endl
-        << "inCount = " << inCount << endl
-        << "inProb = " << inProb << endl
-        << "probAlleleObsGivenGenotype = " << probAlleleObsGivenGenotype);
+    LOG2("outCount:" << outCount << ";"
+        << "outProb:" << outProb << ";"
+        << "inCount:" << inCount << ";"
+        << "inProb:" << inProb << ";"
+        << "probAlleleObsGivenGenotype:" << probAlleleObsGivenGenotype);
     
     // (2)
     double trueAlleleProbability = ( (double) factorial(obsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
-    LOG2("factAlleleCountProduct = " << factAlleleCountProduct << endl
-        << "obsCount = " << obsCount << endl
-        << "probObsAllelesProduct = " << probObsAllelesProduct << endl
-        << "trueAlleleProbability = " << trueAlleleProbability);
+    LOG2("factAlleleCountProduct:" << factAlleleCountProduct << ";"
+        << "obsCount:" << obsCount << ";"
+        << "probObsAllelesProduct:" << probObsAllelesProduct << ";"
+        << "trueAlleleProbability:" << trueAlleleProbability);
 
     // (1) * (2)
     return probAlleleObsGivenGenotype * trueAlleleProbability;

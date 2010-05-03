@@ -149,7 +149,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
 
     if (!allele.genotypeAllele) {
             out << allele.sampleID << ":" << allele.Type() << ":" 
-                << allele.length << (allele.strand == STRAND_FORWARD ? "+" : "-")
+                << allele.length << "," << allele.position << (allele.strand == STRAND_FORWARD ? "+" : "-")
                 << ":" << allele.alternateSequence
                 << ":" << allele.quality;
     } else {

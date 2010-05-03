@@ -142,6 +142,6 @@ private:
 
 // probability of drawing an allele from the set of alleles
 double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
-
+int observationsInAlleleCombo(vector<vector<Allele> > &combo);
 
 #endif
