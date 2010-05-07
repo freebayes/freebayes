@@ -7,6 +7,8 @@
 #include <vector>
 #include <map>
 #include <deque>
+#include <utility>
+#include <algorithm>
 #include <boost/regex.hpp>
 #include "BamReader.h"
 #include "Class-BedReader.h"
@@ -115,7 +117,7 @@ public:
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
     // p( observedAlleles | genotype ) for all genotypes
-    vector<double> probObservedAllelesGivenGenotype(vector<Allele> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<double> probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector< vector<Allele> > &genotypes);
     double probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo, vector<Allele> &genotype);
 
     // pointer to current position in targets
@@ -143,5 +145,13 @@ private:
 // probability of drawing an allele from the set of alleles
 double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
 int observationsInAlleleCombo(vector<vector<Allele> > &combo);
+double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
+        vector<vector<double> > &probGenotypesGivenSampleObs,
+        vector<vector<Allele> > &sampleGroups);
+double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
+        vector<vector<double> > &probGenotypesGivenSampleObs,
+        vector<vector<Allele> > &sampleGroups);
+vector<pair<double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos, 
+                vector<vector<double> > &probsBySample, bool normalize = false);
 
 #endif

@@ -87,26 +87,50 @@ int main (int argc, char *argv[]) {
             << genotypeAlleles.size() << " genotype alleles, and "
             << genotypeCombos.size() << " genotype combinations" << endl;
 
-        int i= 0;
-        for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); genotype != genotypeCombos.end(); genotype ++) {
-            cout << "genotype " << i++ << endl;
+        cout << genotypeCombos.size() << " genotypes: " << endl;
+        for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin();
+                genotype != genotypeCombos.end(); genotype ++) {
             cout << *genotype << endl;
         }
         cout << endl;
 
-        i = 0;
-        for (vector<vector< Allele > >::iterator sampleAlleles = sampleGroups.begin(); sampleAlleles != sampleGroups.end(); sampleAlleles++) {
+        vector<vector<double> > probsBySample;
+
+        for (vector<vector< Allele > >::iterator sampleAlleles = sampleGroups.begin();
+                sampleAlleles != sampleGroups.end(); sampleAlleles++) {
             cout << *sampleAlleles << endl;
-            vector<double> probs = caller->probObservedAllelesGivenGenotype(*sampleAlleles, genotypeCombos);
+            vector<double> probs = caller->probObservedAllelesGivenGenotypes(*sampleAlleles, genotypeCombos);
+            probsBySample.push_back(probs);
             int i = 0;
-            for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); genotype != genotypeCombos.end(); genotype ++) {
+            for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); 
+                    genotype != genotypeCombos.end(); genotype++) {
                 cout << "{ " << *genotype << " } : ";
                 cout << "\t" << probs[i] << endl;
                 ++i;
             }
             cout << endl;
-
         }
+
+        // broken
+        //double normalizer = bayesianNormalizationFactor(genotypeCombos, probsBySample, sampleGroups);
+        //double approximatenormalizer = approximateBayesianNormalizationFactor(genotypeCombos, probsBySample, sampleGroups);
+        //cout << "posterior normalizer: " << normalizer << endl;
+        //cout << "approximate posterior normalizer: " << approximatenormalizer << endl;
+
+        // output most-likely genotype vector for all individuals
+        
+        vector<pair<double, vector<Allele> > > mlgt = mostLikelyGenotypesGivenObservations(genotypeCombos, probsBySample, true);
+
+        double probProduct = 1;
+        int i = 0;
+        for (vector<vector<Allele> >::iterator s = sampleGroups.begin();
+                s != sampleGroups.end(); s++) {
+            probProduct *= mlgt.at(i).first;
+            cout << "best genotype: "<< s->front().sampleID << " " << mlgt.at(i).second <<  " " <<  mlgt.at(i).first << " " << s->size() << endl;
+            i++;
+        }
+
+        //cout << "probability of best genotype vector: " << probProduct / normalizer << endl << endl;
 
     }
 

@@ -223,7 +223,7 @@ void Caller::loadTargets(void) {
         // TODO add back check that the right bound isn't out of bounds
         string seqName = reference->sequenceNameStartingWith(bd.seq);
         if (bd.left < 1 || bd.right < bd.left || bd.right >= reference->sequenceLength(seqName)) {
-          ERROR("Target region coordinate outside of reference sequence bounds... terminating.");
+          ERROR("Target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right << ") outside of reference sequence bounds (" << bd.seq << " " << reference->sequenceLength(seqName) << ") terminating.");
           exit(1);
         }
         targets.push_back(bd);
@@ -809,7 +809,7 @@ void Caller::getAlleles(list<Allele>& alleles) {
 // (C) for all possible true allele combinations
 //   sum the product of (1) and (2)
 //
-vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele> &observedAlleles, vector<vector<Allele> > &genotypes) {
+vector<double> Caller::probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector<vector<Allele> > &genotypes) {
 
     int ploidy = genotypes.front().size(); // ploidy is determined by the number of alleles in the genotypes
     vector<double> results;
@@ -819,31 +819,19 @@ vector<double> Caller::probObservedAllelesGivenGenotype(vector<Allele> &observed
     
     // (B)
     // k multichoose n, or ploidy multichoose alleleGroups
-    vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
+    //vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
 
     // (C) 
     for (vector<vector<Allele > >::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         double prob = 0;
-        //results.push_back(probAlleleComboGivenGenotype(alleleGroups, *g));
-        for (vector<vector<vector<Allele> > >::iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac)
-            prob += probAlleleComboGivenGenotype(*ac, *g) * observationsInAlleleCombo(*ac);
-        results.push_back(prob / observedAlleles.size());
+        results.push_back(probAlleleComboGivenGenotype(alleleGroups, *g));
+        //for (vector<vector<vector<Allele> > >::iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac)
+            //prob += probAlleleComboGivenGenotype(*ac, *g) * observationsInAlleleCombo(*ac);
+        //results.push_back(prob / observedAlleles.size());
     }
 
     return results;
 
-}
-
-int observationsInAlleleCombo(vector<vector<Allele> > &combo) {
-    int count = 0;
-    for (vector<vector<Allele> >::iterator obs = combo.begin(); obs != combo.end(); obs++) {
-        if ((obs + 1) != combo.end()
-                && (obs + 1)->front().equivalent(obs->front())) {
-            continue;
-        }
-        count += obs->size();
-    }
-    return count;
 }
 
 // the product p( observed allele | true allele ) * p( true allele | genotype )
@@ -896,13 +884,13 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
     // P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( p_^alleleCount for alleleType in alleleCombo )
         obsCount += alleleObservations->size();
         factAlleleCountProduct *= factorial(alleleObservations->size());
-        probObsAllelesProduct *= pow(probChooseAlleleFromAlleles(alleleObservations->front(), genotype), 
+        double multinomialProb = pow(probChooseAlleleFromAlleles(alleleObservations->front(), genotype), 
                 alleleObservations->size());
+        probObsAllelesProduct *= (multinomialProb > 0) ? multinomialProb : 1;
 
         bool in = false;
         int i = 0;
         for (vector<Allele>::iterator g = genotype.begin(); g != genotype.end(); g++) {
-            // process genotypes only once
             if (g->equivalent(alleleObservations->front())) {
                 in = true; break;
             }
@@ -926,8 +914,8 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
     }
 
     // (1)
-    double probAlleleObsGivenGenotype = ( (inCount ? (1 - phred2float(inProb)) * inCount : 0)
-                + (outCount ? (1 - phred2float(outProb)) * outCount : 0) ) 
+    double probAlleleObsGivenGenotype = ( (inCount ? (1 - phred2float(inProb)) * inCount : 1)
+                * (outCount ? phred2float(outProb) * outCount : 1) ) 
             / (inCount + outCount);
     LOG2("outCount:" << outCount << ";"
         << "outProb:" << outProb << ";"
@@ -946,6 +934,30 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo
     return probAlleleObsGivenGenotype * trueAlleleProbability;
 }
 
+vector<pair<double, vector<Allele> > >
+probGenotypeGivenObservedAlleles(vector<Allele> &genotype,
+        vector<vector<Allele> > &alleleObservations) {
+
+    // estimation
+    // normalization of the posterior numerator by the sum of all possible numerators
+    //
+    // instead of calculating this by generating all genotype vector permutations
+    // let's instead
+    //
+}
+
+int observationsInAlleleCombo(vector<vector<Allele> > &combo) {
+    int count = 0;
+    for (vector<vector<Allele> >::iterator obs = combo.begin(); obs != combo.end(); obs++) {
+        if ((obs + 1) != combo.end()
+                && (obs + 1)->front().equivalent(obs->front())) {
+            continue;
+        }
+        count += obs->size();
+    }
+    return count;
+}
+
 double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles) {
 
     int matches = 0;
@@ -958,3 +970,92 @@ double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles) {
     return (double) matches / (double) alleles.size();
 
 }
+
+// gets an approximate normalizer for our bayesian posterior
+double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
+        vector<vector<double> > &probGenotypesGivenSampleObs,
+        vector<vector<Allele> > &sampleGroups) {
+
+    double permutationsCount =  factorial(sampleGroups.size()) / factorial(sampleGroups.size() - genotypes.size());
+    double probSum = 0;
+    int probsCount = 0;
+
+    for (vector<vector<double> >::const_iterator s =
+            probGenotypesGivenSampleObs.begin(); 
+            s != probGenotypesGivenSampleObs.end(); s++) {
+        probsCount += s->size();
+        for (vector<double>::const_iterator r = s->begin(); r != s->end(); r++)
+            probSum += *r;
+    }
+
+    double averageProb = probSum / probsCount;
+
+    // *gross* approximation
+
+    return averageProb * permutationsCount;
+
+}
+
+// very, very, (impossibly,) computationally intensive
+double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
+        vector<vector<double> > &probGenotypesGivenSampleObs,
+        vector<vector<Allele> > &sampleGroups) {
+
+    double probSum = 0;
+    int probsCount = 0;
+    int permutationsCount = 0;
+    
+    vector<int> indexes;
+    for (int i=0; i<genotypes.size(); ++i)
+        indexes.push_back(i);
+
+    vector<vector<int> > genotype_indexes = multichoose(sampleGroups.size(), indexes);
+
+    //int i =0;
+    for (vector<vector<int> >::iterator it = genotype_indexes.begin(); it != genotype_indexes.end(); ++it) {
+        //cout << i++ << " of " << genotype_indexes.size()  << endl;
+        do {
+            double currProb = 1;
+            // get the probability of this genotype vector
+            int j = 0;
+            for (vector<int>::iterator index = it->begin(); index != it->end(); ++index) {
+                currProb *= probGenotypesGivenSampleObs.at(j++).at(*index);
+            }
+            // add it to our probs sum
+            probSum += currProb;
+            permutationsCount++;
+        } while (next_permutation(it->begin(), it->end()));
+    }
+
+    return probSum;
+
+}
+
+// bayesian inversion, mapped across all individuals
+vector<pair<double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos,
+        vector<vector<double> > &probsBySample, bool normalize) {
+
+    vector<pair<double, vector<Allele> > > results;
+
+    for (vector<vector<double> >::const_iterator s = probsBySample.begin(); 
+            s != probsBySample.end(); s++) {
+        double maxP = 0;
+        double sumP = 0;
+        int maxI = 0;
+        int i = 0;
+        for (vector<double>::const_iterator r = s->begin(); r != s->end(); r++) {
+            if (*r > maxP) {
+                maxP = *r;
+                maxI = i;
+            }
+            i++;
+            sumP += *r;
+        }
+        results.push_back(make_pair(normalize ? maxP / sumP : maxP, genotypeCombos.at(maxI)));
+
+    }
+
+    return results;
+
+}
+
