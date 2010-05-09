@@ -117,7 +117,8 @@ public:
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
     // p( observedAlleles | genotype ) for all genotypes
-    vector<double> probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<pair<Genotype, double> > probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<pair<Genotype, double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele> &observedAlleles, int ploidy);
     double probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo, vector<Allele> &genotype);
 
     // pointer to current position in targets

@@ -30,9 +30,9 @@ public:
 
 
 MyOutput::MyOutput(void)
-    : ProgramName("bamBayes")
+    : ProgramName("freeBayes")
     , ProgramDescription("Bayesian SNP and short-INDEL polymorphism discovery program.")
-    , ProgramVersion("0.8.0")
+    , ProgramVersion("0.1.0")
     , ProgramDate("2010-04-27")
     , ProgramDeveloper("Gabor T. Marth, Erik Garrison")
     , ProgramInstitution("Boston College")

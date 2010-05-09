@@ -39,7 +39,7 @@ class FastaIndexEntry {
         void clear(void);
 };
 
-class FastaIndex: public map<string, FastaIndexEntry>{
+class FastaIndex: public vector<FastaIndexEntry>{
     friend ostream& operator<<(ostream& output, const FastaIndex& i);
     public:
         FastaIndex(void);

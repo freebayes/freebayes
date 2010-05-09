@@ -58,8 +58,11 @@ int main (int argc, char *argv[]) {
 
 
     while (caller->getNextAlleles(alleles)) {
+        // skips 0-coverage regions
         if (alleles.size() == 0)
             continue;
+
+        /*
         int refallelecount = 0;
         int snpallelecount = 0;
         vector<Allele*> allelepts;
@@ -72,15 +75,17 @@ int main (int argc, char *argv[]) {
                 ++refallelecount;
             allelepts.push_back(&*it);
         }
+        */
 
-        vector<vector<Allele> > alleleGroups = groupAlleles(alleles, allelesEquivalent);
+        //vector<vector<Allele> > alleleGroups = groupAlleles(alleles, allelesEquivalent);
         vector<vector<Allele> > sampleGroups = groupAlleles(alleles, allelesSameSample);
-        vector<Allele> genotypeAlleles = genotypeAllelesFromAlleleGroups(alleleGroups);
-        vector<vector<Allele> > genotypeCombos = multichoose(2, genotypeAlleles);
+        //vector<Allele> genotypeAlleles = genotypeAllelesFromAlleleGroups(alleleGroups);
+        //vector<vector<Allele> > genotypeCombos = multichoose(2, genotypeAlleles);
 
         // log our progress
         cout << "sequence " << caller->currentTarget->seq
-            << " position " << caller->currentPosition 
+            << " position " << caller->currentPosition << endl;
+        /*
             << " counting "
             << refallelecount << " reference alleles, " 
             << snpallelecount << " snp alleles, "
@@ -93,20 +98,19 @@ int main (int argc, char *argv[]) {
             cout << *genotype << endl;
         }
         cout << endl;
+        */
 
-        vector<vector<double> > probsBySample;
+        vector<vector<pair<Genotype, double> > > probsBySample;
 
         for (vector<vector< Allele > >::iterator sampleAlleles = sampleGroups.begin();
                 sampleAlleles != sampleGroups.end(); sampleAlleles++) {
             cout << *sampleAlleles << endl;
-            vector<double> probs = caller->probObservedAllelesGivenGenotypes(*sampleAlleles, genotypeCombos);
+            vector<pair<Genotype, double> > probs = 
+                caller->probObservedAllelesGivenPossibleGenotypes(*sampleAlleles, 2);
             probsBySample.push_back(probs);
-            int i = 0;
-            for (vector<vector< Allele > >::iterator genotype = genotypeCombos.begin(); 
-                    genotype != genotypeCombos.end(); genotype++) {
-                cout << "{ " << *genotype << " } : ";
-                cout << "\t" << probs[i] << endl;
-                ++i;
+            for (vector<pair<Genotype, double> >::iterator g = probs.begin(); 
+                    g != probs.end(); ++g) {
+                cout << "{ \"" << g->first << "\" : " << g->second << " }" << endl;
             }
             cout << endl;
         }
@@ -119,6 +123,7 @@ int main (int argc, char *argv[]) {
 
         // output most-likely genotype vector for all individuals
         
+        /*
         vector<pair<double, vector<Allele> > > mlgt = mostLikelyGenotypesGivenObservations(genotypeCombos, probsBySample, true);
 
         double probProduct = 1;
@@ -129,6 +134,7 @@ int main (int argc, char *argv[]) {
             cout << "best genotype: "<< s->front().sampleID << " " << mlgt.at(i).second <<  " " <<  mlgt.at(i).first << " " << s->size() << endl;
             i++;
         }
+        */
 
         //cout << "probability of best genotype vector: " << probProduct / normalizer << endl << endl;
 

@@ -86,7 +86,7 @@ public:
 
 };
 
-//typedef vector<Allele> Genotype; // unused
+typedef vector<Allele> Genotype;
 
 vector<vector<Allele> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
@@ -94,6 +94,7 @@ bool allelesSameType(Allele &a, Allele &b);
 bool allelesEquivalent(Allele &a, Allele &b);
 bool allelesSameSample(Allele &a, Allele &b);
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele> > &groups);
+vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 Allele genotypeAllele(Allele& a);
 
 #endif

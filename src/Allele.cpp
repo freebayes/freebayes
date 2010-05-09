@@ -272,8 +272,17 @@ bool allelesSameSample(Allele &a, Allele &b) {
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele> > &groups) {
 
     vector<Allele> results;
-    for (vector<vector<Allele> >::iterator g = groups.begin(); g != groups.end(); g++)
+    for (vector<vector<Allele> >::iterator g = groups.begin(); g != groups.end(); ++g)
         results.push_back(genotypeAllele(g->front()));
+    return results;
+
+}
+
+vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles) {
+
+    vector<Allele> results;
+    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a)
+        results.push_back(genotypeAllele(*a));
     return results;
 
 }

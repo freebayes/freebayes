@@ -1140,10 +1140,10 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   // load ref seq names into hash
   //--------------------------------------------------------------------------
-  for(map<string, FastaIndexEntry>::const_iterator it = fastaReference->index->begin(); 
+  for(vector<FastaIndexEntry>::const_iterator it = fastaReference->index->begin(); 
           it != fastaReference->index->end(); ++it) {
 
-    FastaIndexEntry entry = it->second;
+    FastaIndexEntry entry = *it;
 
     if (debug) cerr << "reading sequence... " << entry << endl;
 

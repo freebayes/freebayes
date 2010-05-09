@@ -150,16 +150,15 @@ void Caller::loadFastaReference(void) {
     //--------------------------------------------------------------------------
     // load ref seq names into hash
     //--------------------------------------------------------------------------
-    for(map<string, FastaIndexEntry>::const_iterator it = reference->index->begin(); 
-          it != reference->index->end(); ++it) {
-
-        FastaIndexEntry entry = it->second;
+    for(vector<FastaIndexEntry>::const_iterator entry = reference->index->begin(); 
+          entry != reference->index->end(); ++entry) {
 
         // we split out the first word of the full sequence name for keying our sequences
         // as often the full sequence names are overkill
         vector<string> sequenceNameParts;
-        boost::split(sequenceNameParts, entry.name, boost::is_any_of(" "));
+        boost::split(sequenceNameParts, entry->name, boost::is_any_of(" "));
         string name = sequenceNameParts.front();
+        LOG("sequence name " << name << " id = " << id);
 
         // get the reference names in this vector
         referenceSequenceNames.push_back(name);  // WARNING: these are broken; no order guarantees
@@ -194,6 +193,7 @@ void Caller::loadReferenceSequence(BedData* target) {
 void Caller::loadReferenceSequence(BedData* target, int before, int after) {
     basesBeforeCurrentTarget = before;
     basesAfterCurrentTarget = after;
+    LOG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
     loadReferenceSequence(target->seq, target->left - before, target->right - target->left + after + before);
 }
 
@@ -373,10 +373,6 @@ Caller::Caller(int argc, char** argv)
 {
     parameters = new Parameters(argc, argv);
 
-    // mathematical constants
-    LOGFACTOR = log((long double)10.0) / ((long double)-10.0); 
-    LN3 = log((long double)3.0);
-
     // initialization
     // NOTE: these void functions have side effects, and currently have to be called in this order
     // this separation is done to improve legibility and debugging
@@ -447,7 +443,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
          "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
          "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
-    LOG2(endl << rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
+    LOG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
 
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
@@ -671,7 +667,11 @@ bool Caller::loadTarget(BedData* target) {
         r &= bamReader.GetNextAlignment(alignment);
         int newPos = alignment.Position + alignment.AlignedBases.size();
         maxPos = (newPos > maxPos) ? newPos : maxPos;
-    } while (alignment.Position < currentTarget->right);
+    } while (alignment.Position <= currentTarget->right);
+    // NB ^^^ if all bed files were 0-based start 1-based end, then the above could be
+    //        alignment.Position < currentTarget->right
+    //        However, with the 'Marth Lab' BED format and other potentially variant formats this may not be the case.
+    //        Reading in slightly more data here is not a serious problem, so this quirk allows it.
 
     int right_gap = maxPos - currentTarget->right;
     //cerr << "left_gap " << left_gap << " right gap " << right_gap << endl;
@@ -809,22 +809,40 @@ void Caller::getAlleles(list<Allele>& alleles) {
 // (C) for all possible true allele combinations
 //   sum the product of (1) and (2)
 //
-vector<double> Caller::probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector<vector<Allele> > &genotypes) {
+
+vector<pair<Genotype, double> > Caller::probObservedAllelesGivenPossibleGenotypes(vector<Allele> &observedAlleles, int ploidy) {
+
+    vector<vector<Allele> > alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
+    
+    vector<Allele> genotypeAlleles =genotypeAllelesFromAlleleGroups(alleleGroups);
+    vector<Genotype> genotypes = multichoose(ploidy, genotypeAlleles);
+
+    vector<pair<Genotype, double> > results;
+
+    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        double prob = 0;
+        results.push_back(make_pair(*g, probAlleleComboGivenGenotype(alleleGroups, *g)));
+    }
+
+    return results;
+
+}
+vector<pair<Genotype, double> > Caller::probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector<vector<Allele> > &genotypes) {
 
     int ploidy = genotypes.front().size(); // ploidy is determined by the number of alleles in the genotypes
-    vector<double> results;
+    vector<pair<Genotype, double> > results;
 
     // (A)
-    vector<vector<Allele> > alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
+    vector<Genotype> alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
     
     // (B)
     // k multichoose n, or ploidy multichoose alleleGroups
     //vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
 
     // (C) 
-    for (vector<vector<Allele > >::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         double prob = 0;
-        results.push_back(probAlleleComboGivenGenotype(alleleGroups, *g));
+        results.push_back(make_pair(*g, probAlleleComboGivenGenotype(alleleGroups, *g)));
         //for (vector<vector<vector<Allele> > >::iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac)
             //prob += probAlleleComboGivenGenotype(*ac, *g) * observationsInAlleleCombo(*ac);
         //results.push_back(prob / observedAlleles.size());

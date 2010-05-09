@@ -55,11 +55,10 @@ void FastaIndex::readIndexFile(string fname) {
             boost::split(fields, line, boost::is_any_of("\t")); // split on tab
             if (fields.size() == 5) {  // if we don't get enough fields then there is a problem with the file
                 // note that fields[0] is the sequence name
-                this->insert(pair<string, FastaIndexEntry>(fields[0],
-                            FastaIndexEntry(fields[0], lexical_cast<int>(fields[1]),
+                this->push_back(FastaIndexEntry(fields[0], lexical_cast<int>(fields[1]),
                                                     lexical_cast<long long>(fields[2]),
                                                     lexical_cast<int>(fields[3]),
-                                                    lexical_cast<int>(fields[4]))));
+                                                    lexical_cast<int>(fields[4])));
             } else {
                 cerr << "Warning: malformed fasta index file " << fname << 
                     "does not have enough fields @ line " << linenum << endl;
@@ -75,9 +74,9 @@ bool fastaIndexEntryCompare ( FastaIndexEntry a, FastaIndexEntry b) { return (a.
 
 ostream& operator<<(ostream& output, const FastaIndex& fastaIndex) {
     vector<FastaIndexEntry> sortedIndex;
-    for(map<string, FastaIndexEntry>::const_iterator it = fastaIndex.begin(); it != fastaIndex.end(); ++it)
+    for(vector<FastaIndexEntry>::const_iterator it = fastaIndex.begin(); it != fastaIndex.end(); ++it)
     {
-        sortedIndex.push_back(it->second);
+        sortedIndex.push_back(*it);
     }
     sort(sortedIndex.begin(), sortedIndex.end(), fastaIndexEntryCompare);
     for( vector<FastaIndexEntry>::iterator fit = sortedIndex.begin(); fit != sortedIndex.end(); ++fit) {
@@ -176,10 +175,9 @@ void FastaIndex::indexReference(string refname) {
 }
 
 void FastaIndex::flushEntryToIndex(FastaIndexEntry& entry) {
-    this->insert(pair<string, FastaIndexEntry>(entry.name,
-                FastaIndexEntry(entry.name, entry.length,
+    this->push_back(FastaIndexEntry(entry.name, entry.length,
                                 entry.offset, entry.line_blen,
-                                entry.line_len)));
+                                entry.line_len));
 
 }
 
@@ -200,7 +198,10 @@ FastaIndex::~FastaIndex(void) {
 }
 
 FastaIndexEntry FastaIndex::entry(string name) {
-    return this->find(name)->second;
+    for (vector<FastaIndexEntry>::const_iterator it = this->begin(); it != this->end(); ++it) {
+        if (it->name == name)
+            return *it;
+    }
 }
 
 string FastaIndex::indexFileExtension() { return ".fai"; }
@@ -247,14 +248,14 @@ string FastaReference::sequenceNameStartingWith(string seqnameStart) {
     string teststr;
     string result = "";
     vector<string> fields;
-    for(map<string, FastaIndexEntry>::const_iterator it = index->begin(); it != index->end(); ++it)
+    for(vector<FastaIndexEntry>::const_iterator it = index->begin(); it != index->end(); ++it)
     {
-        boost::split(fields, it->second.name, boost::is_any_of("\t ")); // split on ws
+        boost::split(fields, it->name, boost::is_any_of("\t ")); // split on ws
         // check if the first field is the same as our startseq
         teststr = fields.at(0);
         if (teststr == seqnameStart) {
             if (result == "") {
-                result = it->second.name;
+                result = it->name;
             } else {
                 cerr << " is not unique in fasta index" << endl;
                 return "";
@@ -265,7 +266,7 @@ string FastaReference::sequenceNameStartingWith(string seqnameStart) {
         return result;
     } else {
         cerr << "could not find sequence named " << seqnameStart << endl;
-        return ""; // XXX returning an empty string is a bad result; it should raise an error!!!
+        return ""; // XXX returning an empty string is an unclear result; should raise an error!!!
     }
 }
 

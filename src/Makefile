@@ -23,7 +23,9 @@ CC=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=-g # debugging
+#CFLAGS=-g # debugging
+CFLAGS=-pg -O3# profiling
+#CFLAGS=-O3
 
 ################################################################################
 # Program builds
