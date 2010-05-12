@@ -405,7 +405,7 @@ ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
     out << ra.alignment.Name << " " << ra.alignment.Position << endl
         << ra.alignment.QueryBases << endl
         << ra.alignment.Qualities << endl;
-    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+    for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
         out << *a;
     }
     return out;
@@ -482,7 +482,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                                                 matchingSequence, "", sampleName, alignment.Name,
                                                 !alignment.IsReverseStrand(), -1, qualstr,
                                                 alignment.MapQuality);
-                        registeredAlleles.push_back(allele);
+                        ra.alleles.push_back(allele);
                     }
                     lastMismatch = csp;
                 }
@@ -493,7 +493,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                     ra.mismatches++;
                     Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
-                    registeredAlleles.push_back(allele);
+                    ra.alleles.push_back(allele);
                 }
 
                 // update positions
@@ -511,7 +511,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                                             matchingSequence, "", sampleName, alignment.Name,
                                             !alignment.IsReverseStrand(), -1, qualstr,
                                             alignment.MapQuality);
-                registeredAlleles.push_back(allele);
+                ra.alleles.push_back(allele);
             }
             // XXX what about 'N' s?
         } else if (t == 'D') { // deletion
@@ -527,7 +527,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                             currentSequence.substr(csp, l), "", sampleName, alignment.Name,
                             !alignment.IsReverseStrand(), qual, qualstr,
                             alignment.MapQuality);
-                registeredAlleles.push_back(allele);
+                ra.alleles.push_back(allele);
             }
 
             sp += l;  // update sample position
@@ -545,7 +545,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                             currentTarget->seq, sp, l, "", rDna.substr(rp, l),
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                             qualstr, alignment.MapQuality);
-                registeredAlleles.push_back(allele);
+                ra.alleles.push_back(allele);
             }
 
             rp += l;
@@ -567,14 +567,17 @@ void Caller::updateAlignmentQueue(void) {
     int i = 0;
     while (moreAlignments && currentAlignment.Position <= currentPosition) {
         if (currentAlignment.IsMapped()) {
+            // we have to register the alignment to acquire some information required by filters
+            // such as mismatches
             RegisteredAlignment ra = registerAlignment(currentAlignment);
-            // filters to implement:
-            // 'read mask' --- this just means "don't consider snps right next to potential indels
-            //                 ... but it should be implemented
+            // TODO filters to implement:
             // low mapping quality --- hmmm ... could calculate it with the jointQuality function?
             // duplicates --- tracked via each BamAlignment
             if (!(ra.mismatches > parameters->RMU)) {
                 registeredAlignmentQueue.push_front(ra);
+                for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
+                    registeredAlleles.push_back(*allele);
+                }
             }
             // TODO collect statistics here...
         }
@@ -603,8 +606,10 @@ void Caller::updateAlignmentQueue(void) {
 
 void Caller::updateRegisteredAlleles(void) {
 
+    // remove reference alleles which are no longer overlapping the current position
+    // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
     /*
-    for (vector<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ) {
+    for (list<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ) {
         if (currentPosition > (*allele)->position + (*allele)->length) {
             delete *allele;
             allele = registeredAlleles.erase(allele);
@@ -743,8 +748,6 @@ void Caller::getAlleles(list<Allele*>& alleles) {
     // we used to just clear, but this seems inefficient (?)
     // alleles.clear();
 
-    // remove reference alleles which are no longer overlapping the current position
-    // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
     // TODO should check that we aren't keeping alleles that don't align properly to our analysis
     //      such as insertions ?
 
@@ -766,7 +769,7 @@ void Caller::getAlleles(list<Allele*>& alleles) {
             alleles.push_back(allele);
     }
 
-    alleles.sort(AllelePtrCmp());
+    //alleles.sort(AllelePtrCmp());
     /*
     for (deque<RegisteredAlignment>::const_iterator it = registeredAlignmentQueue.begin(); it != registeredAlignmentQueue.end(); ++it) {
         RegisteredAlignment ra = *it;

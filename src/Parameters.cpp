@@ -124,8 +124,6 @@ ostream &operator<<(ostream &out, const Parameters &p) {
          << "  --samples = " << p.samples << endl
          << "  --rpt = " << p.rpt << endl
          << "  --log = " << p.log << endl
-         << "  --useRefAllele = " <<  (p.useRefAllele ? "true" : "false") << endl
-         << "  --forceRefAllele = " <<  (p.forceRefAllele ? "true" : "false") << endl
          << "  --MQR = " << p.MQR << endl
          << "  --BQR = " << p.BQR << endl
          << "  --ploidy = " << p.ploidy << endl
@@ -275,32 +273,6 @@ Parameters::Parameters (int argc, char** argv) {
     arg.multi = false;
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_log(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
-
-    // useRefAllele
-    ArgStruct argUseRefAllele;
-    arg = argUseRefAllele;
-    arg.shortId = "";
-    arg.longId = "useRefAllele";
-    arg.description = "Use reference sequence allele in polymorphism calling?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_useRefAllele(arg.shortId, arg.longId, arg.description, cmd, false);
-
-    // forceRefAllele
-    ArgStruct argForceRefAllele;
-    arg = argForceRefAllele;
-    arg.shortId = "";
-    arg.longId = "forceRefAllele";
-    arg.description = "Force reference sequence allele to be always considered?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_forceRefAllele(arg.shortId, arg.longId, arg.description, cmd, false);
 
     // MQR: reference sequence mapping quality value
     ArgStruct argMQR;
@@ -682,8 +654,6 @@ Parameters::Parameters (int argc, char** argv) {
     vcf = cmd_vcf.getValue();
     log = cmd_log.getValue();
 
-    useRefAllele = cmd_useRefAllele.getValue();
-    forceRefAllele = cmd_forceRefAllele.getValue();
     MQR = cmd_MQR.getValue();
     BQR = cmd_BQR.getValue();
     ploidy = cmd_ploidy.getValue();

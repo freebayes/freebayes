@@ -206,10 +206,15 @@ bool Allele::equivalent(Allele &b) {
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles) {
     map<string, vector<Allele*> > groups;
-    for (list<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-        groups[(*a)->sampleID].push_back(*a);
-    }
+    groupAllelesBySample(alleles, groups);
     return groups;
+}
+
+void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups) {
+    for (list<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele*& allele = *a;
+        groups[allele->sampleID].push_back(allele);
+    }
 }
 
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b)) {

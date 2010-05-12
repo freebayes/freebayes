@@ -30,7 +30,7 @@ class RegisteredAlignment {
     friend ostream &operator<<(ostream &out, RegisteredAlignment &a);
 public:
     BamAlignment alignment;
-    vector<Allele> alleles; // unused
+    vector<Allele*> alleles;
     int mismatches;
 
     RegisteredAlignment(BamAlignment alignment)
@@ -96,7 +96,8 @@ public:
 
     deque<RegisteredAlignment> registeredAlignmentQueue;
     vector<Allele*> registeredAlleles;
-    //map<string, Allele*> allelesBySample;
+    //list<Allele*> registeredAlleles;
+    //map<string, list<Allele*> > allelesBySample;
 
     // reference names indexed by id
     vector<RefData> referenceSequences;

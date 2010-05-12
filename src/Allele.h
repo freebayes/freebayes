@@ -175,6 +175,7 @@ private:
 typedef vector<Allele> Genotype;
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
+void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
 // is there a way to template these?  difficult as the syntax for pointer-based comparisons is different
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));
