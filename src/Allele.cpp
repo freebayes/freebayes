@@ -2,46 +2,6 @@
 #include "multichoose.h"
 #include "TryCatch.h"
 
-Allele::Allele(AlleleType t, 
-            string refname, 
-            Position pos, 
-            unsigned int len, 
-            string refallele, 
-            string alt, 
-            string sampleid,
-            string readid,
-            bool strnd, 
-            short qual,
-            string qstr, 
-            short mapqual)
-    : type(t)
-    , referenceName(refname)
-    , position(pos)
-    , length(len)
-    , referenceSequence(refallele)
-    , alternateSequence(alt)
-    , sampleID(sampleid)
-    , readID(readid)
-    , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
-    , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
-    , qualityString(qstr)
-    , mapQuality(mapqual) 
-    , genotypeAllele(false)
-{ }
-
-// for constructing genotype alleles
-Allele::Allele(AlleleType t,
-        string alt,
-        unsigned int len,
-        Position pos,
-        bool gallele) 
-    : type(t)
-    , alternateSequence(alt)
-    , length(len)
-    , quality(0)
-    , position(pos)
-    , genotypeAllele(true)
-{ }
 
 int Allele::referenceOffset(Position referencePosition) {
     /*cout << readID << " offset checked " << referencePosition - position << " against position " << position 
@@ -137,11 +97,32 @@ string stringForAlleles(vector<Allele> &alleles) {
     return out.str();
 }
 
+ostream &operator<<(ostream &out, vector<Allele*> &alleles) {
+    vector<Allele*>::iterator a = alleles.begin();
+    out << **a++;
+    while (a != alleles.end())
+        out << "|" << **a++;
+    return out;
+}
+
 ostream &operator<<(ostream &out, vector<Allele> &alleles) {
     vector<Allele>::iterator a = alleles.begin();
     out << *a++;
     while (a != alleles.end())
         out << "|" << *a++;
+    return out;
+}
+
+ostream &operator<<(ostream &out, list<Allele*> &alleles) {
+    list<Allele*>::iterator a = alleles.begin();
+    out << **a++;
+    while (a != alleles.end())
+        out << "|" << **a++;
+    return out;
+}
+
+ostream &operator<<(ostream &out, Allele* &allele) {
+    out << *allele;
     return out;
 }
 
@@ -169,6 +150,18 @@ ostream &operator<<(ostream &out, Allele &allele) {
 bool operator<(Allele &a, Allele &b) {
     return a.type < b.type;
 }
+
+// impossible:
+/*
+bool operator<(Allele* &a, Allele* &b) {
+    return a->type < b->type;
+}
+
+// possible...
+bool allelePtrCmp(Allele* &a, Allele* &b) {
+    return a->type < b->type;
+}
+*/
 
 bool operator==(Allele &a, Allele &b) {
 
@@ -211,12 +204,79 @@ bool Allele::equivalent(Allele &b) {
     return false;
 }
 
-vector<vector<Allele> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
+map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles) {
+    map<string, vector<Allele*> > groups;
+    for (list<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        groups[(*a)->sampleID].push_back(*a);
+    }
+    return groups;
+}
+
+vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b)) {
+    vector<vector<Allele*> > groups;
+    for (list<Allele*>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele*> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+            if ((*fncompare)(*oa, ag->front())) {
+                ag->push_back(*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector<Allele*> trueAlleleGroup;
+            trueAlleleGroup.push_back(*oa);
+            groups.push_back(trueAlleleGroup);
+        }
+    }
+    return groups;
+}
+
+vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
+    vector<vector<Allele*> > groups;
+    for (list<Allele>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele*> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+            if ((*fncompare)(*oa, *ag->front())) {
+                ag->push_back(&*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector<Allele*> trueAlleleGroup;
+            trueAlleleGroup.push_back(&*oa);
+            groups.push_back(trueAlleleGroup);
+        }
+    }
+    return groups;
+}
+
+vector<vector<Allele*> >  groupAlleles(vector<Allele*> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
+    vector<vector<Allele*> > groups;
+    for (vector<Allele*>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele*> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+            if ((*fncompare)(**oa, *ag->front())) {
+                ag->push_back(*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector<Allele*> trueAlleleGroup;
+            trueAlleleGroup.push_back(*oa);
+            groups.push_back(trueAlleleGroup);
+        }
+    }
+    return groups;
+}
+
+vector<vector<Allele> >  groupAlleles_copy(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
     vector<vector<Allele> > groups;
     for (list<Allele>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
         bool unique = true;
         for (vector<vector<Allele> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
-            // is this just comparing allele pointers, or am i dereferencing properly?
             if ((*fncompare)(*oa, ag->front())) {
                 ag->push_back(*oa);
                 unique = false;
@@ -232,12 +292,11 @@ vector<vector<Allele> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(A
     return groups;
 }
 
-vector<vector<Allele> >  groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
+vector<vector<Allele> >  groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
     vector<vector<Allele> > groups;
     for (vector<Allele>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
         bool unique = true;
         for (vector<vector<Allele> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
-            // is this just comparing allele pointers, or am i dereferencing properly?
             if ((*fncompare)(*oa, ag->front())) {
                 ag->push_back(*oa);
                 unique = false;
@@ -253,20 +312,36 @@ vector<vector<Allele> >  groupAlleles(vector<Allele> &alleles, bool (*fncompare)
     return groups;
 }
 
-bool Allele::sameSample(Allele &other) {
-    return this->sampleID == other.sampleID;
+bool Allele::sameSample(Allele &other) { return this->sampleID == other.sampleID; }
+
+bool allelesSameType(Allele* &a, Allele* &b) { return a->type == b->type; }
+
+bool allelesEquivalent(Allele* &a, Allele* &b) { return a->equivalent(*b); }
+
+bool allelesSameSample(Allele* &a, Allele* &b) { return a->sampleID == b->sampleID; }
+
+bool allelesSameType(Allele &a, Allele &b) { return a.type == b.type; }
+
+bool allelesEquivalent(Allele &a, Allele &b) { return a.equivalent(b); }
+
+bool allelesSameSample(Allele &a, Allele &b) { return a.sampleID == b.sampleID; }
+
+vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups) {
+
+    vector<Allele> results;
+    for (vector<vector<Allele*> >::iterator g = groups.begin(); g != groups.end(); ++g)
+        results.push_back(genotypeAllele(*g->front()));
+    return results;
+
 }
 
-bool allelesSameType(Allele &a, Allele &b) {
-    return a.type == b.type;
-}
+vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles) {
 
-bool allelesEquivalent(Allele &a, Allele &b) {
-    return a.equivalent(b);
-}
+    vector<Allele> results;
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a)
+        results.push_back(genotypeAllele(**a));
+    return results;
 
-bool allelesSameSample(Allele &a, Allele &b) {
-    return a.sampleID == b.sampleID;
 }
 
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele> > &groups) {
@@ -295,3 +370,33 @@ Allele genotypeAllele(Allele &a) {
 vector<Allele> uniqueAlleleObservations(vector<vector<Allele> > &alleleObservations) {
 }
 */
+
+
+void* AlleleFreeList::NewAllele() {
+    if (_p != NULL) {
+        void* mem = _p;
+        _p = _p->pNext();
+        return mem;
+    } else {
+        return ::new char [sizeof (Allele)];
+    }
+}
+
+void AlleleFreeList::Recycle(void* mem) {
+    Allele* allele = static_cast<Allele*> (mem);
+    allele->_pNext = _p;
+    _p = allele;
+    ++_allocs;
+}
+
+AlleleFreeList::~AlleleFreeList() {
+    Purge();
+}
+
+void AlleleFreeList::Purge() {
+    while (_p != NULL) {
+        char * mem = reinterpret_cast<char *> (_p);
+        _p = _p->pNext();
+        ::delete [] mem;
+    }
+}

@@ -30,13 +30,14 @@ class RegisteredAlignment {
     friend ostream &operator<<(ostream &out, RegisteredAlignment &a);
 public:
     BamAlignment alignment;
-    vector<Allele> alleles;
+    vector<Allele> alleles; // unused
     int mismatches;
 
     RegisteredAlignment(BamAlignment alignment)
         : alignment(alignment)
         , mismatches(0)
     { }
+
 };
 
 // functor to filter alleles outside of our analysis window
@@ -50,8 +51,21 @@ public:
         return !(start >= a.position && end < a.position + a.length);
     }
 
+    bool operator()(Allele*& a) { 
+        return !(start >= a->position && end < a->position + a->length);
+    }
+
 private:
     long unsigned int start, end;
+
+};
+
+class AllelePtrCmp {
+
+public:
+    bool operator()(Allele* &a, Allele* &b) {
+        return a->type < b->type;
+    }
 
 };
 
@@ -81,6 +95,8 @@ public:
     BamReader bamReader;
 
     deque<RegisteredAlignment> registeredAlignmentQueue;
+    vector<Allele*> registeredAlleles;
+    //map<string, Allele*> allelesBySample;
 
     // reference names indexed by id
     vector<RefData> referenceSequences;
@@ -102,6 +118,7 @@ public:
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment);
     void updateAlignmentQueue(void);
+    void updateRegisteredAlleles(void);
     vector<BedData>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
     bool loadTarget(BedData*);
@@ -110,16 +127,16 @@ public:
     bool toNextTarget(void);
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
-    bool getNextAlleles(list<Allele>& alleles);
-    void getAlleles(list<Allele>& alleles);
+    bool getNextAlleles(list<Allele*>& alleles);
+    void getAlleles(list<Allele*>& alleles);
 
     // math
     //long double logGenotypeLikelihood(vector<Allele>, string);
 
     // p( observedAlleles | genotype ) for all genotypes
-    vector<pair<Genotype, double> > probObservedAllelesGivenGenotypes(vector<Allele> &observedAlleles, vector< vector<Allele> > &genotypes);
-    vector<pair<Genotype, double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele> &observedAlleles, int ploidy);
-    double probAlleleComboGivenGenotype(vector<vector<Allele> > &alleleCombo, vector<Allele> &genotype);
+    vector<pair<Genotype, double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<pair<Genotype, double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
+    double probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences

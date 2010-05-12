@@ -24,13 +24,14 @@ C=gcc
 
 # Compiler flags
 #CFLAGS=-g # debugging
-CFLAGS=-pg -O3# profiling
-#CFLAGS=-O3
+#CFLAGS=-O3 #-pg #profiling
+#CFLAGS=-pg -O3
+CFLAGS=-O3
 
 ################################################################################
 # Program builds
 ################################################################################
-all: testMath bayes bamBayes bamIndel bamDup bamDump bamSlice bamStat rptSum aggregateHapmap
+all: bayes
 
 testMath: testMath.o Function-Sequence.o Function-Math.o
 	$(CC) $(CFLAGS) testMath.o Function-Math.o Function-Sequence.o -o testMath -lboost_regex -lpthread -Wno-deprecated
@@ -137,7 +138,7 @@ tests.o: tests.cpp
 Allele.o: Allele.cpp Allele.h multichoose.h
 	$(CC) $(CFLAGS) -c Allele.cpp -Wno-deprecated
 
-Caller.o: Caller.cpp Caller.h multichoose.h Allele.cpp Allele.h
+Caller.o: Caller.cpp Caller.h multichoose.h
 	$(CC) $(CFLAGS) -c Caller.cpp -Wno-deprecated
 
 Utility.o: Utility.cpp Utility.h
