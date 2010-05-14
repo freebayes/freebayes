@@ -6,17 +6,17 @@
 
 // local helper debugging macros to improve code readability
 #define LOG(msg) \
-    if (parameters->record) { logFile << msg << endl; } \
-    if (parameters->debug) { cerr << msg << endl; }
+    if (parameters.record) { logFile << msg << endl; } \
+    if (parameters.debug) { cerr << msg << endl; }
 
 // lower-priority messages
 #define LOG2(msg) \
-    if (parameters->record) { logFile << msg << endl; } \
-    if (parameters->debug2) { cerr << msg << endl; }
+    if (parameters.record) { logFile << msg << endl; } \
+    if (parameters.debug2) { cerr << msg << endl; }
 
 // must-see error messages
 #define ERROR(msg) \
-    if (parameters->record) { logFile << msg << endl; } \
+    if (parameters.record) { logFile << msg << endl; } \
     cerr << msg << endl;
 
 using namespace std;
@@ -25,26 +25,34 @@ using namespace std;
 // XXX TODO change these void functions to bool
 
 // open BAM input file
-void Caller::openBam(void) {
+void Caller::openBams(void) {
 
-    LOG("Opening BAM fomat alignment input file: " << parameters->bam << " ...")
-  
-    bamReader.Open(parameters->bam.c_str(), (parameters->bam + ".bai").c_str());
 
+    if (parameters.bams.size() == 1) {
+        LOG("Opening BAM fomat alignment input file: " << parameters.bams.front() << " ...");
+    } else if (parameters.bams.size() > 1) {
+        LOG("Opening BAM fomat alignment input files: ");
+        for (vector<string>::const_iterator b = parameters.bams.begin(); 
+                b != parameters.bams.end(); ++b) {
+            LOG(*b);
+        }
+    }
+    bamMultiReader.Open(parameters.bams);
     LOG(" done");
+
 }
 
 void Caller::openLogFile(void) {
 
-    logFile.open(parameters->log.c_str(), ios::out);
-    if (parameters->record) {
-        if (parameters->debug) {cerr << "Opening log file: " << parameters->log << " ...";}
+    logFile.open(parameters.log.c_str(), ios::out);
+    if (parameters.record) {
+        if (parameters.debug) {cerr << "Opening log file: " << parameters.log << " ...";}
 
         if (!logFile) {
-            ERROR(" unable to open file: " << parameters->log);
+            ERROR(" unable to open file: " << parameters.log);
             exit(1);
         }
-        if (parameters->debug) {cerr << " done." << endl;}
+        if (parameters.debug) {cerr << " done." << endl;}
     }
     // previously we wrote the command to the logfile here
 }
@@ -54,10 +62,10 @@ void Caller::getSampleNames(void) {
     // If a sample file is given, use it.  But otherwise process the bam file
     // header to get the sample names.
     //
-    if (parameters->samples != "") {
-        ifstream sampleFile(parameters->samples.c_str(), ios::in);
+    if (parameters.samples != "") {
+        ifstream sampleFile(parameters.samples.c_str(), ios::in);
         if (! sampleFile) {
-            ERROR("unable to open file: " << parameters->samples);
+            ERROR("unable to open file: " << parameters.samples);
             exit(1);
         }
         boost::regex patternSample("^(\\S+)\\s*(.*)$");
@@ -78,7 +86,7 @@ void Caller::getSampleNames(void) {
         // retrieve header information
         LOG("no sample list file given, attempting to read sample names from bam file");
 
-        string bamHeader = bamReader.GetHeaderText();
+        string bamHeader = bamMultiReader.GetHeaderText();
 
         vector<string> headerLines;
         boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
@@ -113,9 +121,9 @@ void Caller::loadBamReferenceSequenceNames(void) {
     //--------------------------------------------------------------------------
 
     // store the names of all the reference sequences in the BAM file
-    referenceSequences = bamReader.GetReferenceData();
+    referenceSequences = bamMultiReader.GetReferenceData();
 
-    LOG("Number of ref seqs: " << bamReader.GetReferenceCount());
+    LOG("Number of ref seqs: " << bamMultiReader.GetReferenceCount());
 
 }
 
@@ -132,7 +140,7 @@ void Caller::loadFastaReference(void) {
     // 
     // this keeps our memory requirements low, and will allow us to operate unmodified on more systems
 
-    LOG("processing fasta reference " << parameters->fasta);
+    LOG("processing fasta reference " << parameters.fasta);
 
     //--------------------------------------------------------------------------
     // process input fasta file
@@ -141,7 +149,7 @@ void Caller::loadFastaReference(void) {
     // If it can't find an index file for the reference, it will attempt to
     // generate one alongside it.
 
-    reference = new FastaReference(parameters->fasta);
+    reference = new FastaReference(parameters.fasta);
 
     fastaReferenceSequenceCount = 0;
 
@@ -158,7 +166,7 @@ void Caller::loadFastaReference(void) {
         vector<string> sequenceNameParts;
         boost::split(sequenceNameParts, entry->name, boost::is_any_of(" "));
         string name = sequenceNameParts.front();
-        LOG("sequence name " << name << " id = " << id);
+        LOG2("sequence name " << name << " id = " << id);
 
         // get the reference names in this vector
         referenceSequenceNames.push_back(name);  // WARNING: these are broken; no order guarantees
@@ -204,20 +212,20 @@ void Caller::loadTargets(void) {
   // if target file specified use targets from file
   int targetCount = 0;
   // if we have a targets file, use it...
-  if (parameters->targets != "") {
+  if (parameters.targets != "") {
     
-    LOG("Making BedReader object for target file: " << parameters->targets << " ...");
+    LOG("Making BedReader object for target file: " << parameters.targets << " ...");
     
-    BedReader bedReader(parameters->targets);
+    BedReader bedReader(parameters.targets);
     
     if (! bedReader.isOpen()) {
-      ERROR("Unable to open target file: " << parameters->targets << "... terminating.");
+      ERROR("Unable to open target file: " << parameters.targets << "... terminating.");
       exit(1);
     }
     
     BedData bd;
     while (bedReader.getNextEntry(bd)) {
-        if (parameters->debug2) {
+        if (parameters.debug2) {
             cerr << bd.seq << "\t" << bd.left << "\t" << bd.right << "\t" << bd.desc << endl;
         }
         // TODO add back check that the right bound isn't out of bounds
@@ -267,25 +275,25 @@ void Caller::initializeOutputFiles(void) {
   //----------------------------------------------------------------------------
 
   // report
-  LOG("opening report output file for writing: " << parameters->rpt << "...");
+  LOG("opening report output file for writing: " << parameters.rpt << "...");
 
   // open output streams
   bool outputRPT, outputVCF; // for legibility
 
-  if (parameters->rpt != "") {
+  if (parameters.rpt != "") {
       outputRPT = true;
-      rptFile.open(parameters->rpt.c_str());
+      rptFile.open(parameters.rpt.c_str());
       if (!rptFile) {
-        ERROR(" unable to open file: " << parameters->rpt);
+        ERROR(" unable to open file: " << parameters.rpt);
         exit(1);
       }
   } else { outputRPT = false; }
 
-  if (parameters->vcf != "") {
+  if (parameters.vcf != "") {
       outputVCF = true;
-      vcfFile.open(parameters->vcf.c_str());
+      vcfFile.open(parameters.vcf.c_str());
       if (!vcfFile) {
-        ERROR(" unable to open file: " << parameters->vcf);
+        ERROR(" unable to open file: " << parameters.vcf);
         exit(1);
       }
   } else { outputVCF = false; }
@@ -296,37 +304,33 @@ void Caller::initializeOutputFiles(void) {
   //----------------------------------------------------------------------------
   if (outputRPT) {
       rptFile << "# Complete list of parameter values:" << endl;
-      rptFile << "#   --bam = " << parameters->bam << endl;
-      rptFile << "#   --fasta = " << parameters->fasta << endl;
-      rptFile << "#   --targets = " << parameters->targets << endl;
-      rptFile << "#   --samples = " << parameters->samples << endl;
-      rptFile << "#   --rpt = " << parameters->rpt << endl;
-      rptFile << "#   --log = " << parameters->log << endl;
-      rptFile << "#   --useRefAllele = " <<  ( parameters->useRefAllele ? "true" : "false" ) << endl;
-      rptFile << "#   --forceRefAllele = " <<  ( parameters->forceRefAllele ? "true" : "false" ) << endl;
-      rptFile << "#   --MQR = " << parameters->MQR << endl;
-      rptFile << "#   --BQR = " << parameters->BQR << endl;
-      rptFile << "#   --ploidy = " << parameters->ploidy << endl;
-      rptFile << "#   --sampleNaming = " << parameters->sampleNaming << endl;
-      rptFile << "#   --sampleDel = " << parameters->sampleDel << endl;
-      rptFile << "#   --BQL0 = " << parameters->BQL0 << endl;
-      rptFile << "#   --MQL0 = " << parameters->MQL0 << endl;
-      rptFile << "#   --BQL1 = " << parameters->BQL1 << endl;
-      rptFile << "#   --MQL1 = " << parameters->MQL1 << endl;
-      rptFile << "#   --BQL2 = " << parameters->BQL2 << endl;
-      rptFile << "#   --RMU = " << parameters->RMU << endl;
-      rptFile << "#   --IDW = " << parameters->IDW << endl;
-      rptFile << "#   --TH = " << parameters->TH << endl;
-      rptFile << "#   --PVL = " << parameters->PVL << endl;
-      rptFile << "#   --algorithm = " << parameters->algorithm << endl;
-      rptFile << "#   --RDF = " << parameters->RDF << endl;
-      rptFile << "#   --WB = " << parameters->WB << endl;
-      rptFile << "#   --TB = " << parameters->TB << endl;
-      rptFile << "#   --includeMonoB = " <<  ( parameters->includeMonoB ? "true" : "false" ) << endl;
-      rptFile << "#   --TR = " << parameters->TR << endl;
-      rptFile << "#   --I = " << parameters->I << endl;
-      rptFile << "#   --debug = " <<  ( parameters->debug ? "true" : "false" ) << endl;
-      rptFile << "#   --debug2 = " <<  ( parameters->debug2 ? "true" : "false" ) << endl;
+      rptFile << "#   --bam = " << parameters.bam << endl;
+      rptFile << "#   --fasta = " << parameters.fasta << endl;
+      rptFile << "#   --targets = " << parameters.targets << endl;
+      rptFile << "#   --samples = " << parameters.samples << endl;
+      rptFile << "#   --rpt = " << parameters.rpt << endl;
+      rptFile << "#   --log = " << parameters.log << endl;
+      rptFile << "#   --MQR = " << parameters.MQR << endl;
+      rptFile << "#   --BQR = " << parameters.BQR << endl;
+      rptFile << "#   --ploidy = " << parameters.ploidy << endl;
+      rptFile << "#   --sampleNaming = " << parameters.sampleNaming << endl;
+      rptFile << "#   --sampleDel = " << parameters.sampleDel << endl;
+      rptFile << "#   --BQL0 = " << parameters.BQL0 << endl;
+      rptFile << "#   --MQL0 = " << parameters.MQL0 << endl;
+      rptFile << "#   --BQL2 = " << parameters.BQL2 << endl;
+      rptFile << "#   --RMU = " << parameters.RMU << endl;
+      rptFile << "#   --IDW = " << parameters.IDW << endl;
+      rptFile << "#   --TH = " << parameters.TH << endl;
+      rptFile << "#   --PVL = " << parameters.PVL << endl;
+      rptFile << "#   --algorithm = " << parameters.algorithm << endl;
+      rptFile << "#   --RDF = " << parameters.RDF << endl;
+      rptFile << "#   --WB = " << parameters.WB << endl;
+      rptFile << "#   --TB = " << parameters.TB << endl;
+      rptFile << "#   --includeMonoB = " <<  ( parameters.includeMonoB ? "true" : "false" ) << endl;
+      rptFile << "#   --TR = " << parameters.TR << endl;
+      rptFile << "#   --I = " << parameters.I << endl;
+      rptFile << "#   --debug = " <<  ( parameters.debug ? "true" : "false" ) << endl;
+      rptFile << "#   --debug2 = " <<  ( parameters.debug2 ? "true" : "false" ) << endl;
       rptFile << "#" << endl;
   }
 
@@ -369,16 +373,15 @@ void Caller::initializeOutputFiles(void) {
 
 // initialization function
 // sets up environment so we can start registering alleles
-Caller::Caller(int argc, char** argv)
+Caller::Caller(int argc, char** argv) : parameters(Parameters(argc, argv))
 {
-    parameters = new Parameters(argc, argv);
 
     // initialization
     // NOTE: these void functions have side effects, and currently have to be called in this order
     // this separation is done to improve legibility and debugging
     // perhaps it will just increase confusion
     openLogFile();
-    openBam();
+    openBams();
     getSampleNames();
     loadFastaReference();
     loadBamReferenceSequenceNames();
@@ -391,7 +394,6 @@ Caller::Caller(int argc, char** argv)
 }
 
 Caller::~Caller(void) {
-    delete parameters;
     delete reference;
 }
 
@@ -430,7 +432,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
         /*cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << alignment.Name
             << " ... attempting to read from read name" << endl;
             */
-        SampleInfo sampleInfo = extractSampleInfo(readName, parameters->sampleNaming, parameters->sampleDel);
+        SampleInfo sampleInfo = extractSampleInfo(readName, parameters.sampleNaming, parameters.sampleDel);
         sampleName = sampleInfo.sampleId;
     }
 
@@ -488,7 +490,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 }
 
                 // register mismatch
-                if (b != sb && qual >= parameters->BQL2) {
+                if (b != sb && qual >= parameters.BQL2) {
                     // record 'reference' allele for last matching region
                     ra.mismatches++;
                     Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
@@ -521,7 +523,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
 
             // calculate joint quality of the two flanking qualities
             short qual = jointQuality(qualstr); // XXX was max, but joint makes more sense, right ?
-            if (qual >= parameters->BQL2) {
+            if (qual >= parameters.BQL2) {
                 Allele* allele = new Allele(ALLELE_DELETION,
                             currentTarget->seq, sp, l,
                             currentSequence.substr(csp, l), "", sampleName, alignment.Name,
@@ -540,7 +542,9 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             // calculate joint quality, which is the probability that there are no errors in the observed bases
             short qual = jointQuality(qualstr);
             // register insertion + base quality with reference sequence
-            if (qual >= parameters->BQL2) { // XXX this cutoff may not make sense for long indels... the joint quality is much lower than the        'average' quality
+            // XXX this cutoff may not make sense for long indels... the joint
+            // quality is much lower than the 'average' quality
+            if (qual >= parameters.BQL2) {
                 Allele* allele = new Allele(ALLELE_INSERTION,
                             currentTarget->seq, sp, l, "", rDna.substr(rp, l),
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
@@ -569,19 +573,21 @@ void Caller::updateAlignmentQueue(void) {
         if (currentAlignment.IsMapped()) {
             // we have to register the alignment to acquire some information required by filters
             // such as mismatches
-            RegisteredAlignment ra = registerAlignment(currentAlignment);
-            // TODO filters to implement:
-            // low mapping quality --- hmmm ... could calculate it with the jointQuality function?
-            // duplicates --- tracked via each BamAlignment
-            if (!(ra.mismatches > parameters->RMU)) {
-                registeredAlignmentQueue.push_front(ra);
-                for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
-                    registeredAlleles.push_back(*allele);
+            // filter low mapping quality (what happens if MapQuality is not in the file)
+            if (currentAlignment.MapQuality > parameters.MQL0) {
+                RegisteredAlignment ra = registerAlignment(currentAlignment);
+                // TODO filters to implement:
+                // duplicates --- tracked via each BamAlignment
+                if (ra.mismatches <= parameters.RMU) {
+                    registeredAlignmentQueue.push_front(ra);
+                    for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
+                        registeredAlleles.push_back(*allele);
+                    }
                 }
             }
             // TODO collect statistics here...
         }
-        moreAlignments &= bamReader.GetNextAlignment(currentAlignment);
+        moreAlignments &= bamMultiReader.GetNextAlignment(currentAlignment);
     }
 
     LOG2("... finished pushing new alignments");
@@ -676,15 +682,15 @@ bool Caller::loadTarget(BedData* target) {
     int refSeqID = referenceSequenceNameToID[currentTarget->seq];
     LOG2("reference sequence id " << refSeqID);
 
-    bool r = bamReader.Jump(refSeqID, currentTarget->left);
-    r &= bamReader.GetNextAlignment(alignment);
+    bool r = bamMultiReader.Jump(refSeqID, currentTarget->left);
+    r &= bamMultiReader.GetNextAlignment(alignment);
     int left_gap = currentTarget->left - alignment.Position;
 
-    r &= bamReader.Jump(refSeqID, currentTarget->right - 1);
+    r &= bamMultiReader.Jump(refSeqID, currentTarget->right - 1);
 
     int maxPos = 0;
     do {
-        r &= bamReader.GetNextAlignment(alignment);
+        r &= bamMultiReader.GetNextAlignment(alignment);
         int newPos = alignment.Position + alignment.AlignedBases.size();
         maxPos = (newPos > maxPos) ? newPos : maxPos;
     } while (alignment.Position <= currentTarget->right);
@@ -703,8 +709,8 @@ bool Caller::loadTarget(BedData* target) {
     currentPosition = currentTarget->left;
 
     LOG2("jumping to first alignment in new target");
-    r &= bamReader.Jump(refSeqID, currentTarget->left);
-    r &= bamReader.GetNextAlignment(currentAlignment);
+    r &= bamMultiReader.Jump(refSeqID, currentTarget->left);
+    r &= bamMultiReader.GetNextAlignment(currentAlignment);
 
     return r;
 
@@ -745,23 +751,13 @@ bool Caller::getNextAlleles(list<Allele*>& alleles) {
 // updates the passed vector with the current alleles at the caller's target position
 void Caller::getAlleles(list<Allele*>& alleles) {
 
-    // we used to just clear, but this seems inefficient (?)
-    // alleles.clear();
-
-    // TODO should check that we aren't keeping alleles that don't align properly to our analysis
-    //      such as insertions ?
-
+    // this is inefficient but no method besides shared_ptr exists to guarantee
+    // that we don't end up with corrupted alleles in this structure-- we won't
+    // be able to remove them if we recycle them elsewhere
     alleles.clear();
-
-    /*
-    alleles.erase(remove_if(alleles.begin(), alleles.end(), AlleleFilter(currentPosition, currentPosition)), 
-            alleles.end());
-            */
 
     // get the variant alleles *at* the current position
     // and the reference alleles *overlapping* the current position
-    
-
     for (vector<Allele*>::const_iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
         Allele* allele = *a;
         if ((allele->type == ALLELE_REFERENCE && currentPosition >= allele->position && currentPosition < allele->position + allele->length)
@@ -769,23 +765,11 @@ void Caller::getAlleles(list<Allele*>& alleles) {
             alleles.push_back(allele);
     }
 
-    //alleles.sort(AllelePtrCmp());
-    /*
-    for (deque<RegisteredAlignment>::const_iterator it = registeredAlignmentQueue.begin(); it != registeredAlignmentQueue.end(); ++it) {
-        RegisteredAlignment ra = *it;
-        for (vector<Allele*>::iterator ai = ra.alleles.begin(); ai != ra.alleles.end(); ++ai) {
-            // for now only record the allele if it is at exactly the current position
-            if ((*ai)->position == currentPosition) {
-                alleles.push_back(*ai);
-            }
-        }
-    }
-    */
-
+    // TODO allele sorting by sample on registration
+    // for another potential perf boost
+    // as we always sort them by sample later
 }
 
-// TODO allele sorting by sample
-// which will enable tho following to work
 
 
 ///////////////////////////////////////////////////////////////////////////////

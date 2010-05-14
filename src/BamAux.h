@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 31 March 2010 (DB)
+// Last modified: 14 April 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides the basic constants, data structures, etc. for using BAM files
 // ***************************************************************************
@@ -66,178 +66,52 @@ struct CigarOp;
 
 struct BamAlignment {
 
-    // Queries against alignment flag
+    // constructors & destructor
     public:
-        // Returns true if this read is a PCR duplicate (determined by external app)
-        bool IsDuplicate(void) const { return ( (AlignmentFlag & DUPLICATE) != 0 ); }
-        // Returns true if this read failed quality control (determined by external app)
-        bool IsFailedQC(void) const { return ( (AlignmentFlag & QC_FAILED) != 0 ); }
-        // Returns true if alignment is first mate on read
-        bool IsFirstMate(void) const { return ( (AlignmentFlag & READ_1) != 0 ); }
-        // Returns true if alignment is mapped
-        bool IsMapped(void) const { return ( (AlignmentFlag & UNMAPPED) == 0 ); }
-        // Returns true if alignment's mate is mapped
-        bool IsMateMapped(void) const { return ( (AlignmentFlag & MATE_UNMAPPED) == 0 ); }
-        // Returns true if alignment's mate mapped to reverse strand
-        bool IsMateReverseStrand(void) const { return ( (AlignmentFlag & MATE_REVERSE)  != 0 ); }
-        // Returns true if alignment part of paired-end read
-        bool IsPaired(void) const { return ( (AlignmentFlag & PAIRED) != 0 ); }
-        // Returns true if this position is primary alignment (determined by external app)
-        bool IsPrimaryAlignment(void) const  { return ( (AlignmentFlag & SECONDARY) == 0 ); }
-        // Returns true if alignment is part of read that satisfied paired-end resolution (determined by external app)
-        bool IsProperPair(void) const { return ( (AlignmentFlag & PROPER_PAIR) != 0 ); }
-        // Returns true if alignment mapped to reverse strand
-        bool IsReverseStrand(void) const { return ( (AlignmentFlag & REVERSE) != 0 ); }
-        // Returns true if alignment is second mate on read
-        bool IsSecondMate(void) const { return ( (AlignmentFlag & READ_2) != 0 ); }
+        BamAlignment(void);
+        BamAlignment(const BamAlignment& other);
+        ~BamAlignment(void);
 
-    // Manipulate alignment flag
+    // Queries against alignment flags
+    public:        
+        bool IsDuplicate(void) const;		// Returns true if this read is a PCR duplicate       
+        bool IsFailedQC(void) const;		// Returns true if this read failed quality control      
+        bool IsFirstMate(void) const;		// Returns true if alignment is first mate on read        
+        bool IsMapped(void) const;		// Returns true if alignment is mapped        
+        bool IsMateMapped(void) const;		// Returns true if alignment's mate is mapped        
+        bool IsMateReverseStrand(void) const;	// Returns true if alignment's mate mapped to reverse strand        
+        bool IsPaired(void) const;		// Returns true if alignment part of paired-end read        
+        bool IsPrimaryAlignment(void) const;	// Returns true if reported position is primary alignment       
+        bool IsProperPair(void) const;		// Returns true if alignment is part of read that satisfied paired-end resolution     
+        bool IsReverseStrand(void) const;	// Returns true if alignment mapped to reverse strand
+        bool IsSecondMate(void) const;		// Returns true if alignment is second mate on read
+
+    // Manipulate alignment flags
+    public:        
+        void SetIsDuplicate(bool ok);		// Sets "PCR duplicate" flag        
+        void SetIsFailedQC(bool ok);		// Sets "failed quality control" flag        
+        void SetIsFirstMate(bool ok);		// Sets "alignment is first mate" flag        
+        void SetIsMateUnmapped(bool ok);	// Sets "alignment's mate is mapped" flag        
+        void SetIsMateReverseStrand(bool ok);	// Sets "alignment's mate mapped to reverse strand" flag        
+        void SetIsPaired(bool ok);		// Sets "alignment part of paired-end read" flag        
+	void SetIsProperPair(bool ok);		// Sets "alignment is part of read that satisfied paired-end resolution" flag        
+        void SetIsReverseStrand(bool ok);	// Sets "alignment mapped to reverse strand" flag        
+        void SetIsSecondaryAlignment(bool ok);	// Sets "position is primary alignment" flag        
+        void SetIsSecondMate(bool ok);		// Sets "alignment is second mate on read" flag        
+        void SetIsUnmapped(bool ok);		// Sets "alignment is mapped" flag
+
+    // Tag data access methods
     public:
-        // Sets "PCR duplicate" bit 
-        void SetIsDuplicate(bool ok) { if (ok) AlignmentFlag |= DUPLICATE; else AlignmentFlag &= ~DUPLICATE; }
-        // Sets "failed quality control" bit
-        void SetIsFailedQC(bool ok) { if (ok) AlignmentFlag |= QC_FAILED; else AlignmentFlag &= ~QC_FAILED; }
-        // Sets "alignment is first mate" bit
-        void SetIsFirstMate(bool ok) { if (ok) AlignmentFlag |= READ_1; else AlignmentFlag &= ~READ_1; }
-        // Sets "alignment's mate is mapped" bit
-        void SetIsMateUnmapped(bool ok) { if (ok) AlignmentFlag |= MATE_UNMAPPED; else AlignmentFlag &= ~MATE_UNMAPPED; }
-        // Sets "alignment's mate mapped to reverse strand" bit
-        void SetIsMateReverseStrand(bool ok) { if (ok) AlignmentFlag |= MATE_REVERSE; else AlignmentFlag &= ~MATE_REVERSE; }
-        // Sets "alignment part of paired-end read" bit
-        void SetIsPaired(bool ok) { if (ok) AlignmentFlag |= PAIRED; else AlignmentFlag &= ~PAIRED; }
-        // Sets "alignment is part of read that satisfied paired-end resolution" bit
-        void SetIsProperPair(bool ok) { if (ok) AlignmentFlag |= PROPER_PAIR; else AlignmentFlag &= ~PROPER_PAIR; }
-        // Sets "alignment mapped to reverse strand" bit
-        void SetIsReverseStrand(bool ok) { if (ok) AlignmentFlag |= REVERSE; else AlignmentFlag &= ~REVERSE; }
-        // Sets "position is primary alignment (determined by external app)"
-        void SetIsSecondaryAlignment(bool ok)  { if (ok) AlignmentFlag |= SECONDARY; else AlignmentFlag &= ~SECONDARY; }
-        // Sets "alignment is second mate on read" bit
-        void SetIsSecondMate(bool ok) { if (ok) AlignmentFlag |= READ_2; else AlignmentFlag &= ~READ_2; }
-        // Sets "alignment is mapped" bit
-        void SetIsUnmapped(bool ok) { if (ok) AlignmentFlag |= UNMAPPED; else AlignmentFlag &= ~UNMAPPED; }
+        bool GetEditDistance(uint8_t& editDistance) const;	// get "NM" tag data - contributed by Aaron Quinlan
+        bool GetReadGroup(std::string& readGroup) const;	// get "RG" tag data
 
+    // Additional data access methods
     public:
+	int GetEndPosition(bool usePadded = false) const;	// calculates alignment end position, based on starting position and CIGAR operations
 
-        // get "RG" tag data
-        bool GetReadGroup(std::string& readGroup) const {
-
-            if ( TagData.empty() ) { return false; }
-
-            // localize the tag data
-            char* pTagData = (char*)TagData.data();
-            const unsigned int tagDataLen = TagData.size();
-            unsigned int numBytesParsed = 0;
-
-            bool foundReadGroupTag = false;
-            while( numBytesParsed < tagDataLen ) {
-
-                const char* pTagType = pTagData;
-                const char* pTagStorageType = pTagData + 2;
-                pTagData       += 3;
-                numBytesParsed += 3;
-
-                // check the current tag
-                if ( std::strncmp(pTagType, "RG", 2) == 0 ) {
-                    foundReadGroupTag = true;
-                    break;
-                }
-
-                // get the storage class and find the next tag
-                if (*pTagStorageType == '\0') { return false; }
-                SkipToNextTag( *pTagStorageType, pTagData, numBytesParsed );
-                if (*pTagData == '\0') { return false; }
-            }
-
-            // return if the read group tag was not present
-            if ( !foundReadGroupTag ) { return false; }
-
-            // assign the read group
-            const unsigned int readGroupLen = std::strlen(pTagData);
-            readGroup.resize(readGroupLen);
-            std::memcpy( (char*)readGroup.data(), pTagData, readGroupLen );
-            return true;
-        }
-
-        // get "NM" tag data - contributed by Aaron Quinlan
-        bool GetEditDistance(uint8_t& editDistance) const {
-
-            if ( TagData.empty() ) { return false; }
-
-            // localize the tag data
-            char* pTagData = (char*)TagData.data();
-            const unsigned int tagDataLen = TagData.size();
-            unsigned int numBytesParsed = 0;
-
-            bool foundEditDistanceTag = false;
-            while( numBytesParsed < tagDataLen ) {
-
-                const char* pTagType = pTagData;
-                const char* pTagStorageType = pTagData + 2;
-                pTagData       += 3;
-                numBytesParsed += 3;
-
-                // check the current tag
-                if ( strncmp(pTagType, "NM", 2) == 0 ) {
-                    foundEditDistanceTag = true;
-                    break;
-                }
-
-                // get the storage class and find the next tag
-                if (*pTagStorageType == '\0') { return false; }
-                SkipToNextTag( *pTagStorageType, pTagData, numBytesParsed );
-                if (*pTagData == '\0') { return false; }
-            }
-            // return if the edit distance tag was not present
-            if ( !foundEditDistanceTag ) { return false; }
-
-            // assign the editDistance value
-            std::memcpy(&editDistance, pTagData, 1);
-            return true;
-        }
-
+    // 'internal' utility methods 
     private:
-        static void SkipToNextTag(const char storageType, char* &pTagData, unsigned int& numBytesParsed) {
-            switch(storageType) {
-
-                case 'A':
-                case 'c':
-                case 'C':
-                        ++numBytesParsed;
-                        ++pTagData;
-                        break;
-
-                case 's':
-                case 'S':
-                        numBytesParsed += 2;
-                        pTagData       += 2;
-                        break;
-
-                case 'f':
-                case 'i':
-                case 'I':
-                        numBytesParsed += 4;
-                        pTagData       += 4;
-                        break;
-
-                case 'Z':
-                case 'H':
-                        while(*pTagData) {
-                            ++numBytesParsed;
-                            ++pTagData;
-                        }
-                        // ---------------------------
-                        // Added: 3-25-2010 DWB
-                        // Contributed: ARQ
-                        // Fixed: error parsing variable length tag data
-                        ++pTagData;
-                        // ---------------------------
-                        break;
-
-                default:
-                        printf("ERROR: Unknown tag storage class encountered: [%c]\n", *pTagData);
-                        exit(1);
-            }
-        }
+        static void SkipToNextTag(const char storageType, char* &pTagData, unsigned int& numBytesParsed);
 
     // Data members
     public:
@@ -258,18 +132,19 @@ struct BamAlignment {
         int32_t      InsertSize;        // Mate-pair insert size
 
     // Alignment flag query constants
+    // Use the get/set methods above instead
     private:
-        enum { PAIRED        = 1,
-               PROPER_PAIR   = 2,
-               UNMAPPED      = 4,
-               MATE_UNMAPPED = 8,
-               REVERSE       = 16,
-               MATE_REVERSE  = 32,
-               READ_1        = 64,
-               READ_2        = 128,
-               SECONDARY     = 256,
-               QC_FAILED     = 512,
-               DUPLICATE     = 1024
+        enum { PAIRED        = 1
+             , PROPER_PAIR   = 2
+             , UNMAPPED      = 4
+             , MATE_UNMAPPED = 8
+             , REVERSE       = 16
+             , MATE_REVERSE  = 32
+             , READ_1        = 64
+             , READ_2        = 128
+             , SECONDARY     = 256
+             , QC_FAILED     = 512
+             , DUPLICATE     = 1024 
              };
 };
 
@@ -282,14 +157,17 @@ struct CigarOp {
 };
 
 struct RefData {
+   
     // data members
     std::string RefName;          // Name of reference sequence
     int32_t     RefLength;        // Length of reference sequence
     bool        RefHasAlignments; // True if BAM file contains alignments mapped to reference sequence
+    
     // constructor
-    RefData(void)
-        : RefLength(0)
-        , RefHasAlignments(false)
+    RefData(const int32_t& length = 0, 
+            bool ok = false)
+        : RefLength(length)
+        , RefHasAlignments(ok)
     { }
 };
 
@@ -300,11 +178,14 @@ typedef std::vector<BamAlignment> BamAlignmentVector;
 // Indexing structs & typedefs
 
 struct Chunk {
+
     // data members
     uint64_t Start;
     uint64_t Stop;
+
     // constructor
-    Chunk(const uint64_t& start = 0, const uint64_t& stop = 0)
+    Chunk(const uint64_t& start = 0, 
+          const uint64_t& stop = 0)
         : Start(start)
         , Stop(stop)
     { }
@@ -332,6 +213,209 @@ struct ReferenceIndex {
 };
 
 typedef std::vector<ReferenceIndex> BamIndex;
+
+// ----------------------------------------------------------------
+// BamAlignment member methods
+
+// constructors & destructor
+inline 
+BamAlignment::BamAlignment(void) { }
+
+inline 
+BamAlignment::BamAlignment(const BamAlignment& other)
+    : Name(other.Name)
+    , Length(other.Length)
+    , QueryBases(other.QueryBases)
+    , AlignedBases(other.AlignedBases)
+    , Qualities(other.Qualities)
+    , TagData(other.TagData)
+    , RefID(other.RefID)
+    , Position(other.Position)
+    , Bin(other.Bin)
+    , MapQuality(other.MapQuality)
+    , AlignmentFlag(other.AlignmentFlag)
+    , CigarData(other.CigarData)
+    , MateRefID(other.MateRefID)
+    , MatePosition(other.MatePosition)
+    , InsertSize(other.InsertSize)
+{ }
+
+inline 
+BamAlignment::~BamAlignment(void) { }
+
+// Queries against alignment flags
+inline bool BamAlignment::IsDuplicate(void) const         { return ( (AlignmentFlag & DUPLICATE)     != 0 ); }
+inline bool BamAlignment::IsFailedQC(void) const          { return ( (AlignmentFlag & QC_FAILED)     != 0 ); }
+inline bool BamAlignment::IsFirstMate(void) const         { return ( (AlignmentFlag & READ_1)        != 0 ); }
+inline bool BamAlignment::IsMapped(void) const            { return ( (AlignmentFlag & UNMAPPED)      == 0 ); }
+inline bool BamAlignment::IsMateMapped(void) const        { return ( (AlignmentFlag & MATE_UNMAPPED) == 0 ); }
+inline bool BamAlignment::IsMateReverseStrand(void) const { return ( (AlignmentFlag & MATE_REVERSE)  != 0 ); }
+inline bool BamAlignment::IsPaired(void) const            { return ( (AlignmentFlag & PAIRED)        != 0 ); }
+inline bool BamAlignment::IsPrimaryAlignment(void) const  { return ( (AlignmentFlag & SECONDARY)     == 0 ); }
+inline bool BamAlignment::IsProperPair(void) const        { return ( (AlignmentFlag & PROPER_PAIR)   != 0 ); }
+inline bool BamAlignment::IsReverseStrand(void) const     { return ( (AlignmentFlag & REVERSE)       != 0 ); }
+inline bool BamAlignment::IsSecondMate(void) const        { return ( (AlignmentFlag & READ_2)        != 0 ); }
+
+// Manipulate alignment flags 
+inline void BamAlignment::SetIsDuplicate(bool ok)          { if (ok) AlignmentFlag |= DUPLICATE;     else AlignmentFlag &= ~DUPLICATE; }
+inline void BamAlignment::SetIsFailedQC(bool ok)           { if (ok) AlignmentFlag |= QC_FAILED;     else AlignmentFlag &= ~QC_FAILED; }
+inline void BamAlignment::SetIsFirstMate(bool ok)          { if (ok) AlignmentFlag |= READ_1;        else AlignmentFlag &= ~READ_1; }
+inline void BamAlignment::SetIsMateUnmapped(bool ok)       { if (ok) AlignmentFlag |= MATE_UNMAPPED; else AlignmentFlag &= ~MATE_UNMAPPED; }
+inline void BamAlignment::SetIsMateReverseStrand(bool ok)  { if (ok) AlignmentFlag |= MATE_REVERSE;  else AlignmentFlag &= ~MATE_REVERSE; }
+inline void BamAlignment::SetIsPaired(bool ok)             { if (ok) AlignmentFlag |= PAIRED;        else AlignmentFlag &= ~PAIRED; }
+inline void BamAlignment::SetIsProperPair(bool ok)         { if (ok) AlignmentFlag |= PROPER_PAIR;   else AlignmentFlag &= ~PROPER_PAIR; }
+inline void BamAlignment::SetIsReverseStrand(bool ok)      { if (ok) AlignmentFlag |= REVERSE;       else AlignmentFlag &= ~REVERSE; }
+inline void BamAlignment::SetIsSecondaryAlignment(bool ok) { if (ok) AlignmentFlag |= SECONDARY;     else AlignmentFlag &= ~SECONDARY; }
+inline void BamAlignment::SetIsSecondMate(bool ok)         { if (ok) AlignmentFlag |= READ_2;        else AlignmentFlag &= ~READ_2; }
+inline void BamAlignment::SetIsUnmapped(bool ok)           { if (ok) AlignmentFlag |= UNMAPPED;      else AlignmentFlag &= ~UNMAPPED; }
+
+// calculates alignment end position, based on starting position and CIGAR operations
+inline 
+int BamAlignment::GetEndPosition(bool usePadded) const {
+
+    // initialize alignment end to starting position
+    int alignEnd = Position;
+
+    // iterate over cigar operations
+    std::vector<CigarOp>::const_iterator cigarIter = CigarData.begin();
+    std::vector<CigarOp>::const_iterator cigarEnd  = CigarData.end();
+    for ( ; cigarIter != cigarEnd; ++cigarIter) {
+	const char cigarType = (*cigarIter).Type;
+	if ( cigarType == 'M' || cigarType == 'D' || cigarType == 'N' ) {
+	    alignEnd += (*cigarIter).Length;
+	} 
+        else if ( usePadded && cigarType == 'I' ) {
+            alignEnd += (*cigarIter).Length;
+        }
+    }
+    return alignEnd;
+}
+
+// get "NM" tag data - contributed by Aaron Quinlan
+// stores data in 'editDistance', returns success/fail
+inline 
+bool BamAlignment::GetEditDistance(uint8_t& editDistance) const {
+
+    if ( TagData.empty() ) { return false; }
+
+    // localize the tag data
+    char* pTagData = (char*)TagData.data();
+    const unsigned int tagDataLen = TagData.size();
+    unsigned int numBytesParsed = 0;
+
+    bool foundEditDistanceTag = false;
+    while( numBytesParsed < tagDataLen ) {
+
+        const char* pTagType = pTagData;
+        const char* pTagStorageType = pTagData + 2;
+        pTagData       += 3;
+        numBytesParsed += 3;
+
+        // check the current tag
+        if ( strncmp(pTagType, "NM", 2) == 0 ) {
+            foundEditDistanceTag = true;
+            break;
+        }
+
+        // get the storage class and find the next tag
+        if (*pTagStorageType == '\0') { return false; }
+        SkipToNextTag( *pTagStorageType, pTagData, numBytesParsed );
+        if (*pTagData == '\0') { return false; }
+    }
+    // return if the edit distance tag was not present
+    if ( !foundEditDistanceTag ) { return false; }
+
+    // assign the editDistance value
+    std::memcpy(&editDistance, pTagData, 1);
+    return true;
+}
+
+// get "RG" tag data
+// stores data in 'readGroup', returns success/fail
+inline 
+bool BamAlignment::GetReadGroup(std::string& readGroup) const {
+
+    if ( TagData.empty() ) { return false; }
+
+    // localize the tag data
+    char* pTagData = (char*)TagData.data();
+    const unsigned int tagDataLen = TagData.size();
+    unsigned int numBytesParsed = 0;
+
+    bool foundReadGroupTag = false;
+    while( numBytesParsed < tagDataLen ) {
+
+        const char* pTagType = pTagData;
+        const char* pTagStorageType = pTagData + 2;
+        pTagData       += 3;
+        numBytesParsed += 3;
+
+        // check the current tag
+        if ( std::strncmp(pTagType, "RG", 2) == 0 ) {
+            foundReadGroupTag = true;
+            break;
+        }
+
+        // get the storage class and find the next tag
+        if (*pTagStorageType == '\0') { return false; }
+        SkipToNextTag( *pTagStorageType, pTagData, numBytesParsed );
+        if (*pTagData == '\0') { return false; }
+    }
+
+    // return if the read group tag was not present
+    if ( !foundReadGroupTag ) { return false; }
+
+    // assign the read group
+    const unsigned int readGroupLen = std::strlen(pTagData);
+    readGroup.resize(readGroupLen);
+    std::memcpy( (char*)readGroup.data(), pTagData, readGroupLen );
+    return true;
+}
+
+inline
+void BamAlignment::SkipToNextTag(const char storageType, char* &pTagData, unsigned int& numBytesParsed) {
+    
+    switch(storageType) {
+
+        case 'A':
+        case 'c':
+        case 'C':
+            ++numBytesParsed;
+            ++pTagData;
+            break;
+
+        case 's':
+        case 'S':
+            numBytesParsed += 2;
+            pTagData       += 2;
+            break;
+
+        case 'f':
+        case 'i':
+        case 'I':
+            numBytesParsed += 4;
+            pTagData       += 4;
+            break;
+
+        case 'Z':
+        case 'H':
+            while(*pTagData) {
+                ++numBytesParsed;
+                ++pTagData;
+            }
+        // ---------------------------
+        // Added: 3-25-2010 DWB
+        // Contributed: ARQ
+        // Fixed: error parsing variable length tag data
+            ++pTagData;
+        // ---------------------------
+            break;
+
+        default:
+            printf("ERROR: Unknown tag storage class encountered: [%c]\n", *pTagData);
+            exit(1);
+    }
+}
 
 // ----------------------------------------------------------------
 // Added: 3-35-2010 DWB
@@ -395,16 +479,19 @@ inline void SwapEndian_64(uint64_t& x) {
         );
 }
 
+// swaps endianness of 'next 2 bytes' in a char buffer (in-place)
 inline void SwapEndian_16p(char* data) {
     uint16_t& value = (uint16_t&)*data; 
     SwapEndian_16(value);
 }
 
+// swaps endianness of 'next 4 bytes' in a char buffer (in-place)
 inline void SwapEndian_32p(char* data) {
     uint32_t& value = (uint32_t&)*data; 
     SwapEndian_32(value);
 }
 
+// swaps endianness of 'next 8 bytes' in a char buffer (in-place)
 inline void SwapEndian_64p(char* data) {
     uint64_t& value = (uint64_t&)*data; 
     SwapEndian_64(value);

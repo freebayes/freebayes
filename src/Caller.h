@@ -19,6 +19,7 @@
 #include "TryCatch.h"
 #include "Function-Math.h"
 #include "Function-Sequence.h"
+#include "BamMultiReader.h"
 
 using namespace std;
 using namespace BamTools;
@@ -74,7 +75,7 @@ class Caller {
 
 public:
 
-    Parameters* parameters; // holds operational parameters passed at program invocation
+    Parameters parameters; // holds operational parameters passed at program invocation
     
     Caller(int argc, char** argv);
     ~Caller(void); 
@@ -92,7 +93,7 @@ public:
     vector<BedData> targets;
 
     // bamreader
-    BamReader bamReader;
+    BamMultiReader bamMultiReader;
 
     deque<RegisteredAlignment> registeredAlignmentQueue;
     vector<Allele*> registeredAlleles;
@@ -106,7 +107,7 @@ public:
     //RefLength;        //!< Length of reference sequence
     //RefHasAlignments; //!< True if BAM file contains alignments mapped to reference sequence
  
-    void openBam(void);
+    void openBams(void);
     void openLogFile(void);
     void getSampleNames(void);
     void loadBamReferenceSequenceNames(void);

@@ -64,6 +64,8 @@ class BamReader {
         const BamTools::RefVector GetReferenceData(void) const;
         // returns reference id (used for BamReader::Jump()) for the given reference name
         int GetReferenceID(const std::string& refName) const;
+        // returns the name of the file associated with this BamReader
+        const std::string GetFilename(void) const;
 
         // ----------------------
         // BAM index operations

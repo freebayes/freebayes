@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 6 April 2010 (DB)
+// Last modified: 14 April 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -39,7 +39,7 @@ struct BamReader::BamReaderPrivate {
     // data members
     // -------------------------------
 
-    // general data
+    // general file data
     BgzfData  mBGZF;
     string    HeaderText;
     BamIndex  Index;
@@ -49,6 +49,7 @@ struct BamReader::BamReaderPrivate {
     string    Filename;
     string    IndexFilename;
     
+    // system data
     bool IsBigEndian;
 
     // user-specified region values
@@ -70,7 +71,7 @@ struct BamReader::BamReaderPrivate {
     // "public" interface
     // -------------------------------
 
-    // flie operations
+    // file operations
     void Close(void);
     bool Jump(int refID, int position = 0);
     void Open(const string& filename, const string& indexFilename = "");
@@ -95,8 +96,6 @@ struct BamReader::BamReaderPrivate {
     int BinsFromRegion(int refID, int left, uint16_t[MAX_BIN]);
     // fills out character data for BamAlignment data
     bool BuildCharData(BamAlignment& bAlignment, const BamAlignmentSupportData& supportData);
-    // calculates alignment end position based on starting position and provided CIGAR operations
-    int CalculateAlignmentEnd(const int& position, const std::vector<CigarOp>& cigarData);
     // calculate file offset for first alignment chunk overlapping 'left'
     int64_t GetOffset(int refID, int left);
     // checks to see if alignment overlaps current region
@@ -155,6 +154,7 @@ const string BamReader::GetHeaderText(void) const { return d->HeaderText; }
 int BamReader::GetReferenceCount(void) const { return d->References.size(); }
 const RefVector BamReader::GetReferenceData(void) const { return d->References; }
 int BamReader::GetReferenceID(const string& refName) const { return d->GetReferenceID(refName); }
+const std::string BamReader::GetFilename(void) const { return d->Filename; }
 
 // index operations
 bool BamReader::CreateIndex(void) { return d->CreateIndex(); }
@@ -465,24 +465,6 @@ bool BamReader::BamReaderPrivate::BuildIndex(void) {
     return Rewind();
 }
 
-// calculates alignment end position based on starting position and provided CIGAR operations
-int BamReader::BamReaderPrivate::CalculateAlignmentEnd(const int& position, const vector<CigarOp>& cigarData) {
-
-    // initialize alignment end to starting position
-    int alignEnd = position;
-
-    // iterate over cigar operations
-    vector<CigarOp>::const_iterator cigarIter = cigarData.begin();
-    vector<CigarOp>::const_iterator cigarEnd  = cigarData.end();
-    for ( ; cigarIter != cigarEnd; ++cigarIter) {
-        char cigarType = (*cigarIter).Type;
-        if ( cigarType == 'M' || cigarType == 'D' || cigarType == 'N' ) {
-            alignEnd += (*cigarIter).Length;
-        }
-    }
-    return alignEnd;
-}
-
 
 // clear index data structure
 void BamReader::BamReaderPrivate::ClearIndex(void) {
@@ -634,7 +616,7 @@ void BamReader::BamReaderPrivate::InsertLinearOffset(LinearOffsetVector& offsets
 {
     // get converted offsets
     int beginOffset = bAlignment.Position >> BAM_LIDX_SHIFT;
-    int endOffset   = ( CalculateAlignmentEnd(bAlignment.Position, bAlignment.CigarData) - 1) >> BAM_LIDX_SHIFT;
+    int endOffset   = (bAlignment.GetEndPosition() - 1) >> BAM_LIDX_SHIFT;
 
     // resize vector if necessary
     int oldSize = offsets.size();
@@ -659,7 +641,7 @@ bool BamReader::BamReaderPrivate::IsOverlap(BamAlignment& bAlignment) {
     if ( bAlignment.Position >= CurrentLeft) { return true; }
 
     // return whether alignment end overlaps left boundary
-    return ( CalculateAlignmentEnd(bAlignment.Position, bAlignment.CigarData) >= CurrentLeft );
+    return ( bAlignment.GetEndPosition() >= CurrentLeft );
 }
 
 // jumps to specified region(refID, leftBound) in BAM file, returns success/fail
@@ -894,12 +876,10 @@ bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment, Ba
     else {
      
         // store alignment name and length
-//         bAlignment.Name.clear();
         bAlignment.Name.assign((const char*)(allCharData));
         bAlignment.Length = supportData.QuerySequenceLength;
       
         // store remaining 'allCharData' in supportData structure
-//         supportData.AllCharData.clear();
         supportData.AllCharData.assign((const char*)allCharData, dataLength);
         
         // save CigarOps for BamAlignment

@@ -131,9 +131,6 @@ ostream &operator<<(ostream &out, const Parameters &p) {
          << "  --sampleDel = " << p.sampleDel << endl
          << "  --BQL0 = " << p.BQL0 << endl
          << "  --MQL0 = " << p.MQL0 << endl
-         << "  --BQL1 = " << p.BQL1 << endl
-         << "  --MQL1 = " << p.MQL1 << endl
-         << "  --BQL2 = " << p.BQL2 << endl
          << "  --RMU = " << p.RMU << endl
          << "  --IDW = " << p.IDW << endl
          << "  --TH = " << p.TH << endl
@@ -188,11 +185,11 @@ Parameters::Parameters (int argc, char** argv) {
     arg = argBam; 
     arg.shortId = ""; 
     arg.longId = "bam"; 
-    arg.description = "Read alignment input file (indexed and sorted BAM format)";
+    arg.description = "Read alignment input file or files (indexed and sorted BAM format)";
     arg.required = false; 
     arg.defaultValueString = ""; 
     arg.type = "string"; 
-    arg.multi = false; 
+    arg.multi = true; 
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_bam(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
@@ -376,45 +373,6 @@ Parameters::Parameters (int argc, char** argv) {
     arg.multi = false;
     my.ArgList.push_back(arg);
     ValueArg<int> cmd_BQL0(arg.shortId, arg.longId, arg.description, arg.required, 10, arg.type, cmd);
-
-    // MQL1: minimum mapping quality value required for at least one read for each allele
-    ArgStruct argMQL1;
-    arg = argMQL1;
-    arg.shortId = "";
-    arg.longId = "MQL1";
-    arg.description = "Minimum mapping quality value required for at least one read for each allele";
-    arg.required = false;
-    arg.defaultValueString = "40";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_MQL1(arg.shortId, arg.longId, arg.description, arg.required, 40, arg.type, cmd);
-
-    // BQL1: minimum base quality value required for at least one base for each allele
-    ArgStruct argBQL1;
-    arg = argBQL1;
-    arg.shortId = "";
-    arg.longId = "BQL1";
-    arg.description = "Minimum read base quality value required for at least one base for each allele";
-    arg.required = false;
-    arg.defaultValueString = "30";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_BQL1(arg.shortId, arg.longId, arg.description, arg.required, 30, arg.type, cmd);
-
-    // BQL2: minimum mismatch base quality value for read mismatch filtering
-    ArgStruct argBQL2;
-    arg = argBQL2;
-    arg.shortId = "";
-    arg.longId = "BQL2";
-    arg.description = "Minimum mismatch base quality value for read mismatch filtering";
-    arg.required = false;
-    arg.defaultValueString = "10";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_BQL2(arg.shortId, arg.longId, arg.description, arg.required, 10, arg.type, cmd);
 
     // RMU: maximum number of mismatches between read and reference sequence
     ArgStruct argRMU;
@@ -647,6 +605,8 @@ Parameters::Parameters (int argc, char** argv) {
     //----------------------------------------------------------------------------
 
     bam = cmd_bam.getValue();
+    boost::split(bams, bam, boost::is_any_of(" \n"));
+
     fasta = cmd_fasta.getValue();
     targets = cmd_targets.getValue();
     samples = cmd_samples.getValue();
@@ -661,9 +621,6 @@ Parameters::Parameters (int argc, char** argv) {
     sampleDel = cmd_sampleDel.getValue();
     MQL0 = cmd_MQL0.getValue();
     BQL0 = cmd_BQL0.getValue();
-    MQL1 = cmd_MQL1.getValue();
-    BQL1 = cmd_BQL1.getValue();
-    BQL2 = cmd_BQL2.getValue();
     RMU = cmd_RMU.getValue();
     IDW = cmd_IDW.getValue();
     TH = (long double)cmd_TH.getValue();
@@ -712,6 +669,5 @@ Parameters::Parameters (int argc, char** argv) {
     if (log != "") {
         record = true;
     }
-
 
 }
