@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
@@ -53,6 +54,7 @@ public:
 
     // i/o parameters:
     string bam;
+    vector<string> bams;
     string fasta;
     string targets;
     string samples;
