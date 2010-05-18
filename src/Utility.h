@@ -8,8 +8,9 @@
 #include <string>
 
 short qualityChar2ShortInt(char c);
-double phred2float(int qual);
-short float2phred(double prob);
+//long double phred2float(int qual);
+long double phred2float(int qual);
+short float2phred(long double prob);
 // here 'joint' means 'probability that we have a vector entirely composed of true bases'
 short jointQuality(const std::vector<short>& quals);
 short jointQuality(const std::string& qualstr);

@@ -6,11 +6,11 @@ short qualityChar2ShortInt(char c) {
     return static_cast<short>(c) - 33;
 }
 
-double phred2float(int qual) {
+long double phred2float(int qual) {
     return pow(10,qual * -.1);
 }
 
-short float2phred(double prob) {
+short float2phred(long double prob) {
     return -10 * log10(prob);
 }
 
@@ -18,12 +18,12 @@ short float2phred(double prob) {
 
 // the probability that we have a completely true vector of qualities
 short jointQuality(const std::vector<short>& quals) {
-    std::vector<double> probs;
+    std::vector<long double> probs;
     for (int i = 0; i<quals.size(); ++i) {
         probs.push_back(phred2float(quals[i]));
     }
     // product of probability we don't have a true event for each element
-    double prod = 1 - probs.front();
+    long double prod = 1 - probs.front();
     for (int i = 1; i<probs.size(); ++i) {
         prod *= 1 - probs.at(i);
     }
@@ -43,7 +43,7 @@ short jointQuality(const std::string& qualstr) {
 
 short averageQuality(const std::string& qualstr) {
 
-    double q = 0;
+    long double q = 0;
     for (int i=0; i<qualstr.size(); i++)
         q += phred2float(qualityChar2ShortInt(qualstr.at(i)));
     return float2phred(q / qualstr.size());

@@ -57,26 +57,37 @@ int main (int argc, char *argv[]) {
         if (alleles.size() == 0)
             continue;
 
-        cout << "sequence " << caller->currentTarget->seq
-            << " position " << caller->currentPosition << endl;
+        cout << "{\"sequence\":\"" << caller->currentTarget->seq << "\","
+            << "\"position\":\"" << caller->currentPosition << "\","
+            << "\"samples\":{";
 
         //vector<vector<Allele*> > sampleGroups = groupAlleles(alleles, allelesSameSample);
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 
-        vector<vector<pair<Genotype, double> > > probsBySample;
+        //vector<vector<pair<Genotype, long double> > > probsBySample;
 
+        bool first = true;
         for (map<string, vector< Allele* > >::iterator sampleAlleles = sampleGroups.begin();
                 sampleAlleles != sampleGroups.end(); ++sampleAlleles) {
-            cout << sampleAlleles->second << endl;
-            vector<pair<Genotype, double> > probs = 
+            //cout << sampleAlleles->second << endl;
+             // TODO get ploidy
+            if (!first) { cout << ","; } else { first = false; }
+            vector<pair<Genotype, long double> > probs = 
                 caller->probObservedAllelesGivenPossibleGenotypes(sampleAlleles->second, 2);
-            probsBySample.push_back(probs);
-            for (vector<pair<Genotype, double> >::iterator g = probs.begin(); 
+            normalizeGenotypeProbabilities(probs);
+            cout << "\"" << sampleAlleles->second.front()->sampleID << "\":{"
+                << "\"genotypes\":{";
+            //probsBySample.push_back(probs);
+            for (vector<pair<Genotype, long double> >::iterator g = probs.begin(); 
                     g != probs.end(); ++g) {
-                cout << "{ \"" << g->first << "\" : " << g->second << " }" << endl;
+                if (g != probs.begin())
+                    cout << ",";
+                cout << "\"" << g->first << "\":[" << float2phred(1 - g->second) << "," << g->second << "]";
             }
-            cout << endl;
+            cout << "}}";
         }
+
+        cout << "}}" << endl;
 
     }
 

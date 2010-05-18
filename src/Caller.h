@@ -132,13 +132,10 @@ public:
     bool getNextAlleles(list<Allele*>& alleles);
     void getAlleles(list<Allele*>& alleles);
 
-    // math
-    //long double logGenotypeLikelihood(vector<Allele>, string);
-
     // p( observedAlleles | genotype ) for all genotypes
-    vector<pair<Genotype, double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
-    vector<pair<Genotype, double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
-    double probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
+    vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<pair<Genotype, long double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
+    long double probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
@@ -156,22 +153,19 @@ private:
     int currentRefID;
     BamAlignment currentAlignment;
 
-    // constants
-    long double LOGFACTOR;  // log(10) / -10
-    long double LN3;  // log 3
-
 };
 
 // probability of drawing an allele from the set of alleles
-double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
+long double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
 int observationsInAlleleCombo(vector<vector<Allele> > &combo);
-double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
-        vector<vector<double> > &probGenotypesGivenSampleObs,
+long double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
+        vector<vector<long double> > &probGenotypesGivenSampleObs,
         vector<vector<Allele> > &sampleGroups);
-double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
-        vector<vector<double> > &probGenotypesGivenSampleObs,
+long double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
+        vector<vector<long double> > &probGenotypesGivenSampleObs,
         vector<vector<Allele> > &sampleGroups);
-vector<pair<double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos, 
-                vector<vector<double> > &probsBySample, bool normalize = false);
+vector<pair<long double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos, 
+                vector<vector<long double> > &probsBySample, bool normalize = false);
+void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities);
 
 #endif

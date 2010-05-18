@@ -765,6 +765,8 @@ void Caller::getAlleles(list<Allele*>& alleles) {
             alleles.push_back(allele);
     }
 
+    alleles.sort();
+
     // TODO allele sorting by sample on registration
     // for another potential perf boost
     // as we always sort them by sample later
@@ -828,17 +830,17 @@ void Caller::getAlleles(list<Allele*>& alleles) {
 //   sum the product of (1) and (2)
 //
 
-vector<pair<Genotype, double> > Caller::probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy) {
+vector<pair<Genotype, long double> > Caller::probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy) {
 
     vector<vector<Allele*> > alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
     
     vector<Allele> genotypeAlleles =genotypeAllelesFromAlleleGroups(alleleGroups);
     vector<Genotype> genotypes = multichoose(ploidy, genotypeAlleles);
 
-    vector<pair<Genotype, double> > results;
+    vector<pair<Genotype, long double> > results;
 
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        double prob = 0;
+        long double prob = 0;
         results.push_back(make_pair(*g, probAlleleComboGivenGenotype(alleleGroups, *g)));
     }
 
@@ -846,10 +848,10 @@ vector<pair<Genotype, double> > Caller::probObservedAllelesGivenPossibleGenotype
 
 }
 
-vector<pair<Genotype, double> > Caller::probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector<Genotype> &genotypes) {
+vector<pair<Genotype, long double> > Caller::probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector<Genotype> &genotypes) {
 
     int ploidy = genotypes.front().size(); // ploidy is determined by the number of alleles in the genotypes
-    vector<pair<Genotype, double> > results;
+    vector<pair<Genotype, long double> > results;
 
     // (A)
     vector<vector<Allele*> > alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
@@ -860,7 +862,7 @@ vector<pair<Genotype, double> > Caller::probObservedAllelesGivenGenotypes(vector
 
     // (C) 
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        double prob = 0;
+        long double prob = 0;
         results.push_back(make_pair(*g, probAlleleComboGivenGenotype(alleleGroups, *g)));
         //for (vector<vector<vector<Allele> > >::iterator ac = alleleMultiCombinations.begin(); ac != alleleMultiCombinations.end(); ++ac)
             //prob += probAlleleComboGivenGenotype(*ac, *g) * observationsInAlleleCombo(*ac);
@@ -869,6 +871,18 @@ vector<pair<Genotype, double> > Caller::probObservedAllelesGivenGenotypes(vector
 
     return results;
 
+}
+
+void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities) {
+    long double sum = 0;
+    for (vector<pair<Genotype, long double> >::const_iterator p = genotypeProbabilities.begin(); p != genotypeProbabilities.end(); ++p) {
+        sum += p->second;
+    }
+    if (sum != 0) { // -nan guard
+        for (vector<pair<Genotype, long double> >::iterator p = genotypeProbabilities.begin(); p != genotypeProbabilities.end(); ++p) {
+            p->second /= sum;
+        }
+    }
 }
 
 // the product p( observed allele | true allele ) * p( true allele | genotype )
@@ -884,7 +898,7 @@ vector<pair<Genotype, double> > Caller::probObservedAllelesGivenGenotypes(vector
 //   p( true allele | genotype ) = [ n! / ( n1! * n2! * ... nk! ) ] * ( p1n1 * p2n2 * . . . * pknk )
 //   P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( (1/ploidy)^alleleCount for alleleType in alleleCombo )
 
-double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype) {
+long double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype) {
 
     int ploidy = genotype.size();
 
@@ -894,8 +908,10 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleComb
     //vector<int> sumQ (ploidy, 0);
     //vector<int> counts (ploidy, 0);
     int outCount = 0, inCount = 0;
-    double inProb = 0;
-    double outProb = 0;
+    long double inProb = 1;
+    long double outProb = 1;
+    long double inProbln = 0;
+    long double outProbln = 0;
     int obsCount = 0;
 
     // (1)
@@ -903,8 +919,8 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleComb
     //                          ... and   = 10 ^(-Q/10) if observed allele != true allele
     //             where Q is the quality value associated with the observed allele
 
-    double factAlleleCountProduct = 1;
-    double probObsAllelesProduct = 1;
+    long double factAlleleCountProduct = 1;
+    long double probObsAllelesProduct = 1;
     for (vector<vector<Allele*> >::iterator alleleObservations = alleleCombo.begin();
             alleleObservations != alleleCombo.end(); ++alleleObservations) {
         LOG2(*alleleObservations);
@@ -919,12 +935,14 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleComb
         }
     // (2)
     // P = ( ploidy! / product( alleleCount! for alleleType in alleleCombo ) ) * product( p_^alleleCount for alleleType in alleleCombo )
-        obsCount += alleleObservations->size();
-        factAlleleCountProduct *= factorial(alleleObservations->size());
-        double multinomialProb = pow(probChooseAlleleFromAlleles(*alleleObservations->front(), genotype), 
+        long double multinomialProb = pow(probChooseAlleleFromAlleles(*alleleObservations->front(), genotype), 
                 alleleObservations->size());
+        if (multinomialProb > 0) {
+            probObsAllelesProduct *= multinomialProb;
+            factAlleleCountProduct *= factorial(alleleObservations->size());
+            obsCount += alleleObservations->size();
+        }
         // XXX if you are going to ignore sampling 'misses' here, you should do so wrt the obsCount too
-        probObsAllelesProduct *= (multinomialProb > 0) ? multinomialProb : 1;
 
         bool in = false;
         int i = 0;
@@ -938,32 +956,34 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleComb
             LOG2(*alleleObservations << " in " << genotype);
             for (vector<Allele*>::iterator obs = alleleObservations->begin(); 
                     obs != alleleObservations->end(); obs++) {
-                inProb += (*obs)->Quality(currentPosition);
-                inCount++;
+                //inProb *= 1 - phred2float((*obs)->Quality(currentPosition));
+                inProbln += (*obs)->Quality(currentPosition);
+                ++inCount;
             }
         } else {
             LOG2(*alleleObservations << " not in " << genotype);
             for (vector<Allele*>::iterator obs = alleleObservations->begin(); 
                     obs != alleleObservations->end(); obs++) {
-                outProb += (*obs)->Quality(currentPosition);
-                outCount++;
+                //outProb *= phred2float((*obs)->Quality(currentPosition));
+                outProbln += (*obs)->Quality(currentPosition);
+                ++outCount;
             }
         }
     }
 
     // (1)
-    double probAlleleObsGivenGenotype = ( (inCount ? (1 - phred2float(inProb)) * inCount : 1)
-                * (outCount ? phred2float(outProb) * outCount : 1) ) 
-            / (inCount + outCount);
+    long double probAlleleObsGivenGenotype = ( inCount ? 1 - phred2float(inProbln) : 1 ) * ( outCount ? phred2float(outProbln) : 1 );
+    LOG2(genotype);
     LOG2("outCount:" << outCount << ";"
-        << "outProb:" << outProb << ";"
+        << "outProb:" << phred2float(outProbln) << ";"
+        << "outProbln:" << outProbln << ";"
         << "inCount:" << inCount << ";"
-        << "inProb:" << inProb << ";"
+        << "inProb:" << 1 - phred2float(inProbln) << ";"
+        << "inProbln:" << inProbln << ";"
         << "probAlleleObsGivenGenotype:" << probAlleleObsGivenGenotype);
     
     // (2)
-    // XXX ------------------------------------------------ ploidy ?
-    double alleleSamplingProbability = ( (double) factorial(obsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
+    long double alleleSamplingProbability = ( (long double) factorial(obsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
     LOG2("factAlleleCountProduct:" << factAlleleCountProduct << ";"
         << "obsCount:" << obsCount << ";"
         << "probObsAllelesProduct:" << probObsAllelesProduct << ";"
@@ -973,7 +993,7 @@ double Caller::probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleComb
     return probAlleleObsGivenGenotype * alleleSamplingProbability;
 }
 
-vector<pair<double, vector<Allele> > >
+vector<pair<long double, vector<Allele> > >
 probGenotypeGivenObservedAlleles(vector<Allele> &genotype,
         vector<vector<Allele> > &alleleObservations) {
 
@@ -997,7 +1017,7 @@ int observationsInAlleleCombo(vector<vector<Allele> > &combo) {
     return count;
 }
 
-double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles) {
+long double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles) {
 
     int matches = 0;
 
@@ -1006,28 +1026,28 @@ double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles) {
             ++matches;
     }
 
-    return (double) matches / (double) alleles.size();
+    return (long double) matches / (long double) alleles.size();
 
 }
 
 // gets an approximate normalizer for our bayesian posterior
-double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
-        vector<vector<double> > &probGenotypesGivenSampleObs,
+long double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
+        vector<vector<long double> > &probGenotypesGivenSampleObs,
         vector<vector<Allele> > &sampleGroups) {
 
-    double permutationsCount =  factorial(sampleGroups.size()) / factorial(sampleGroups.size() - genotypes.size());
-    double probSum = 0;
+    long double permutationsCount =  factorial(sampleGroups.size()) / factorial(sampleGroups.size() - genotypes.size());
+    long double probSum = 0;
     int probsCount = 0;
 
-    for (vector<vector<double> >::const_iterator s =
+    for (vector<vector<long double> >::const_iterator s =
             probGenotypesGivenSampleObs.begin(); 
             s != probGenotypesGivenSampleObs.end(); s++) {
         probsCount += s->size();
-        for (vector<double>::const_iterator r = s->begin(); r != s->end(); r++)
+        for (vector<long double>::const_iterator r = s->begin(); r != s->end(); r++)
             probSum += *r;
     }
 
-    double averageProb = probSum / probsCount;
+    long double averageProb = probSum / probsCount;
 
     // *gross* approximation
 
@@ -1036,11 +1056,11 @@ double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes
 }
 
 // very, very, (impossibly,) computationally intensive
-double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
-        vector<vector<double> > &probGenotypesGivenSampleObs,
+long double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
+        vector<vector<long double> > &probGenotypesGivenSampleObs,
         vector<vector<Allele> > &sampleGroups) {
 
-    double probSum = 0;
+    long double probSum = 0;
     int probsCount = 0;
     int permutationsCount = 0;
     
@@ -1054,7 +1074,7 @@ double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
     for (vector<vector<int> >::iterator it = genotype_indexes.begin(); it != genotype_indexes.end(); ++it) {
         //cout << i++ << " of " << genotype_indexes.size()  << endl;
         do {
-            double currProb = 1;
+            long double currProb = 1;
             // get the probability of this genotype vector
             int j = 0;
             for (vector<int>::iterator index = it->begin(); index != it->end(); ++index) {
@@ -1067,34 +1087,6 @@ double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
     }
 
     return probSum;
-
-}
-
-// bayesian inversion, mapped across all individuals
-vector<pair<double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos,
-        vector<vector<double> > &probsBySample, bool normalize) {
-
-    vector<pair<double, vector<Allele> > > results;
-
-    for (vector<vector<double> >::const_iterator s = probsBySample.begin(); 
-            s != probsBySample.end(); s++) {
-        double maxP = 0;
-        double sumP = 0;
-        int maxI = 0;
-        int i = 0;
-        for (vector<double>::const_iterator r = s->begin(); r != s->end(); r++) {
-            if (*r > maxP) {
-                maxP = *r;
-                maxI = i;
-            }
-            i++;
-            sumP += *r;
-        }
-        results.push_back(make_pair(normalize ? maxP / sumP : maxP, genotypeCombos.at(maxI)));
-
-    }
-
-    return results;
 
 }
 
