@@ -6,12 +6,23 @@ short qualityChar2ShortInt(char c) {
     return static_cast<short>(c) - 33;
 }
 
+/*
+long double factorial(int n) {
+    long double f = 1;
+    while ( n > 1) {
+        f *= n;
+        n -= 1;
+    }
+    return f;
+}
+*/
+
 long double phred2float(int qual) {
     return pow(10,qual * -.1);
 }
 
-short float2phred(long double prob) {
-    return -10 * log10(prob);
+int float2phred(long double prob) {
+    return std::min(-10 * (long double) log10(prob), (long double) 99);
 }
 
 // TODO do the following in phred (log) space for perf boost

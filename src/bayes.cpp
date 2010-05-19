@@ -44,13 +44,29 @@
 
 using namespace std; 
 
-//boost::object_pool<Allele> Allele::Pool; // recycler
+// Allele object recycling:
+//
+// We use the Allele freelist for performance reasons.  When an Allele object
+// is destroyed, it is pushed onto this freelist.  When a new Allele object is
+// created, new first checks if we have a free Allele object on the freelist.
+// Because we are dynamically linked, we have to declare the freelist here,
+// although it exists as a static member of the Allele class.
+//
 AlleleFreeList Allele::_freeList;
 
 int main (int argc, char *argv[]) {
 
     Caller* caller = new Caller(argc, argv);
     list<Allele*> alleles;
+
+    // only estimate probabilities for these genotypes
+    vector<Allele> genotypeAlleles;
+    genotypeAlleles.push_back(genotypeAllele(ALLELE_REFERENCE));
+    genotypeAlleles.push_back(genotypeAllele(ALLELE_SNP, "A", 1));
+    genotypeAlleles.push_back(genotypeAllele(ALLELE_SNP, "T", 1));
+    genotypeAlleles.push_back(genotypeAllele(ALLELE_SNP, "G", 1));
+    genotypeAlleles.push_back(genotypeAllele(ALLELE_SNP, "C", 1));
+    vector<vector<Allele> > genotypes = multichoose(2, genotypeAlleles);
 
     while (caller->getNextAlleles(alleles)) {
         // skips 0-coverage regions
@@ -61,30 +77,38 @@ int main (int argc, char *argv[]) {
             << "\"position\":\"" << caller->currentPosition << "\","
             << "\"samples\":{";
 
-        //vector<vector<Allele*> > sampleGroups = groupAlleles(alleles, allelesSameSample);
+        // TODO force calculation for samples not in this list
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 
-        //vector<vector<pair<Genotype, long double> > > probsBySample;
+        //vector<pair<string, vector<pair<Genotype, long double> > > > results;
 
-        bool first = true;
+        bool first = true; // output flag
         for (map<string, vector< Allele* > >::iterator sampleAlleles = sampleGroups.begin();
                 sampleAlleles != sampleGroups.end(); ++sampleAlleles) {
-            //cout << sampleAlleles->second << endl;
-             // TODO get ploidy
+
             if (!first) { cout << ","; } else { first = false; }
+
             vector<pair<Genotype, long double> > probs = 
-                caller->probObservedAllelesGivenPossibleGenotypes(sampleAlleles->second, 2);
-            normalizeGenotypeProbabilities(probs);
+                caller->probObservedAllelesGivenGenotypes(sampleAlleles->second, genotypes);
+            
+            normalizeGenotypeProbabilities(probs);  // self-normalizes genotype probs
+            // if we were doing straight genotyping, this is where we would incorporate priors
+
+            //results.push_back(make_pair(sampleAlleles->second.front()->sampleID, probs));
+
             cout << "\"" << sampleAlleles->second.front()->sampleID << "\":{"
+                << "\"coverage\":" << sampleAlleles->second.size() << ","
                 << "\"genotypes\":{";
-            //probsBySample.push_back(probs);
+
             for (vector<pair<Genotype, long double> >::iterator g = probs.begin(); 
                     g != probs.end(); ++g) {
                 if (g != probs.begin())
                     cout << ",";
-                cout << "\"" << g->first << "\":[" << float2phred(1 - g->second) << "," << g->second << "]";
+                cout << "\"" << g->first << "\":" << float2phred(1 - g->second);
             }
+
             cout << "}}";
+
         }
 
         cout << "}}" << endl;

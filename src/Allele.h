@@ -121,7 +121,7 @@ public:
     Allele(AlleleType t,
             string alt,
             unsigned int len,
-            Position pos,
+            Position pos=0,
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
@@ -194,6 +194,7 @@ vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups)
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
+Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0);
 
 //AlleleFreeList Allele::_freeList;
 

@@ -10,6 +10,7 @@
 #include <utility>
 #include <algorithm>
 #include <boost/regex.hpp>
+#include <boost/tuple/tuple.hpp>
 #include "BamReader.h"
 #include "Class-BedReader.h"
 #include "Parameters.h"
@@ -23,6 +24,8 @@
 
 using namespace std;
 using namespace BamTools;
+using boost::tuple;
+using boost::make_tuple;
 
 // a structure holding information about our parameters
 
@@ -135,7 +138,12 @@ public:
     // p( observedAlleles | genotype ) for all genotypes
     vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
     vector<pair<Genotype, long double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
-    long double probAlleleComboGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
+    long double probObservedAllelesGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
+    long double probObservedAllelesGivenGenotype(vector<tuple<long double, long double, vector<Allele*> > > &alleleComboProbs, 
+            vector<Allele> &genotype);
+    // caches probability products of the allele observations
+    void calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleGroups, 
+            vector<tuple<long double, long double, vector<Allele*> > >& alleleGroupsAndQualities);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
@@ -155,6 +163,9 @@ private:
 
 };
 
+
+// helper functions:
+
 // probability of drawing an allele from the set of alleles
 long double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
 int observationsInAlleleCombo(vector<vector<Allele> > &combo);
@@ -167,5 +178,6 @@ long double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
 vector<pair<long double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos, 
                 vector<vector<long double> > &probsBySample, bool normalize = false);
 void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities);
+
 
 #endif

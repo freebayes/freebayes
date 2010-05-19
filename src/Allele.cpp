@@ -180,16 +180,15 @@ bool Allele::equivalent(Allele &b) {
     } else {
         switch (type) {
             case ALLELE_SNP:
-                if (alternateSequence == b.alternateSequence && position == b.position)
+                if (alternateSequence == b.alternateSequence)
                     return true;
                 break;
             case ALLELE_DELETION:
-                if (length == b.length && position == b.position)
+                if (length == b.length)
                     return true;
                 break;
             case ALLELE_INSERTION:
                 if (length == b.length 
-                    && position == b.position 
                     && alternateSequence == b.alternateSequence)
                     return true;
                 break;
@@ -369,6 +368,10 @@ vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles) {
 
 Allele genotypeAllele(Allele &a) {
     return Allele(a.type, a.alternateSequence, a.length, a.position);
+}
+
+Allele genotypeAllele(AlleleType type, string alt, unsigned int len) {
+    return Allele(type, alt, len);
 }
 
 /*

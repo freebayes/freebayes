@@ -146,8 +146,6 @@ long double gammaln(
   //----------------------------------------------------------------------------
   // constants
   //----------------------------------------------------------------------------
-  // XXX TODO these cofactors are drawn from population genetics, but their
-  // genesis is not noted anywhere in this source.
   vector<long double> cofactors;
   cofactors.push_back(76.18009173);
   cofactors.push_back(-86.50532033);
