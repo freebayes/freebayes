@@ -21,19 +21,20 @@
 
 // "boost" string manipulation
 #include <boost/algorithm/string/join.hpp>
-
-// "hash_map" true hashes
-#include <ext/hash_map>
+// tuple
+#include <boost/tuple/tuple.hpp>
 
 // private libraries
+/*
 #include "Class-GigReader.h"
 #include "Function-Sequence.h"
 #include "Function-Generic.h"
 #include "Function-Math.h"
 #include "Class-BedReader.h"
 #include "Class-FastaReader.h"
-#include "BamReader.h"
 #include "ReferenceSequenceReader.h"
+*/
+#include "BamReader.h"
 #include "Fasta.h"
 #include "TryCatch.h"
 #include "Parameters.h"
@@ -43,6 +44,9 @@
 #include "multichoose.h"
 
 using namespace std; 
+
+using boost::tuple;
+using boost::make_tuple;
 
 // Allele object recycling:
 //
@@ -73,20 +77,21 @@ int main (int argc, char *argv[]) {
         if (alleles.size() == 0)
             continue;
 
-        cout << "{\"sequence\":\"" << caller->currentTarget->seq << "\","
-            << "\"position\":\"" << caller->currentPosition << "\","
-            << "\"samples\":{";
-
         // TODO force calculation for samples not in this list
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 
-        //vector<pair<string, vector<pair<Genotype, long double> > > > results;
+        // TODO vebose; alias this with a typedef
+        vector<
+            tuple<
+                string,  // sample ID
+                vector<pair<Genotype, long double> >, // raw genotype probabilities
+                vector<Allele*> // observations
+                > 
+            > results;
 
-        bool first = true; // output flag
+        // calculate
         for (map<string, vector< Allele* > >::iterator sampleAlleles = sampleGroups.begin();
                 sampleAlleles != sampleGroups.end(); ++sampleAlleles) {
-
-            if (!first) { cout << ","; } else { first = false; }
 
             vector<pair<Genotype, long double> > probs = 
                 caller->probObservedAllelesGivenGenotypes(sampleAlleles->second, genotypes);
@@ -94,16 +99,33 @@ int main (int argc, char *argv[]) {
             normalizeGenotypeProbabilities(probs);  // self-normalizes genotype probs
             // if we were doing straight genotyping, this is where we would incorporate priors
 
-            //results.push_back(make_pair(sampleAlleles->second.front()->sampleID, probs));
+            results.push_back(make_tuple(sampleAlleles->second.front()->sampleID, probs, sampleAlleles->second));
 
-            cout << "\"" << sampleAlleles->second.front()->sampleID << "\":{"
-                << "\"coverage\":" << sampleAlleles->second.size() << ","
+        }
+
+        // now do ~pSnp and marginals estimation
+
+        // ...
+
+        // report in json-formatted stream
+        cout << "{\"sequence\":\"" << caller->currentTarget->seq << "\","
+            << "\"position\":\"" << caller->currentPosition << "\","
+            << "\"samples\":{";  // TODO ... quality (~pSnp)
+
+        bool suppressComma = true; // output flag
+        for (vector<tuple<string, vector<pair<Genotype, long double> >, vector<Allele*> > >::iterator sample = results.begin();
+                sample != results.end(); ++sample) {
+
+            if (!suppressComma) { cout << ","; } else { suppressComma = false; }
+
+            cout << "\"" << sample->get<0>() << "\":{"
+                << "\"coverage\":" << sample->get<2>().size() << ","
                 << "\"genotypes\":{";
 
+            vector<pair<Genotype, long double> >& probs = sample->get<1>();
             for (vector<pair<Genotype, long double> >::iterator g = probs.begin(); 
                     g != probs.end(); ++g) {
-                if (g != probs.begin())
-                    cout << ",";
+                if (g != probs.begin()) cout << ",";
                 cout << "\"" << g->first << "\":" << float2phred(1 - g->second);
             }
 
