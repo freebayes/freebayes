@@ -1038,8 +1038,8 @@ int main (int argc, char *argv[]) {
       if (record) {logFile << "Opening BAM fomat alignment input file: " << bam << " ...";}
       if (debug) {cerr << "Opening BAM format alignment input file: " << bam << " ...";}
   } else if (bams.size() > 1) {
-      if (record) {logFile << "Opening BAM fomat alignment input files: ";}
-      if (debug) {cerr << "Opening BAM format alignment input files: ";}
+      if (record) {logFile << "Opening BAM fomat alignment input files: " << endl;}
+      if (debug) {cerr << "Opening BAM format alignment input files: " << endl;}
       for (vector<string>::const_iterator b = bams.begin(); b != bams.end(); ++b) {
           if (record) {logFile << *b << endl;}
           if (debug) {cerr << *b << endl;}
