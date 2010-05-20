@@ -99,7 +99,8 @@
 #include "Function-Math.h"
 #include "Class-BedReader.h"
 #include "Class-FastaReader.h"
-#include "BamReader.h"
+//#include "BamReader.h"
+#include "BamMultiReader.h"
 #include "ReferenceSequenceReader.h"
 #include "Fasta.h"
 #include "TryCatch.h"
@@ -342,7 +343,7 @@ int main (int argc, char *argv[]) {
   arg = argBam; 
   arg.shortId = ""; 
   arg.longId = "bam"; 
-  arg.description = "Read alignment input file (indexed and sorted BAM format)";
+  arg.description = "Read alignment input file or files (indexed and sorted BAM format, multiple files must refer to the same reference)";
   arg.required = false; 
   arg.defaultValueString = ""; 
   arg.type = "string"; 
@@ -1027,16 +1028,24 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   
   // report
-  if (record) {logFile << "Opening BAM fomat alignment input file: " << bam << " ...";}
-  if (debug) {cerr << "Opening BAM format alignment input file: " << bam << " ...";}
   
   // open
-  const char * bamFileNameC = bam.c_str();
-  string bamIndexFileName = bam + ".bai";
-  const char * bamIndexFileNameC = bamIndexFileName.c_str();
-  BamReader bReader;
-  bReader.Open(bamFileNameC, bamIndexFileNameC);
-  
+  //string  bamFileNameC = bam.c_str();
+  BamMultiReader bReader;
+  vector<string> bams;
+  boost::split(bams, bam, boost::is_any_of(" \n"));
+  if (bams.size() == 1) {
+      if (record) {logFile << "Opening BAM fomat alignment input file: " << bam << " ...";}
+      if (debug) {cerr << "Opening BAM format alignment input file: " << bam << " ...";}
+  } else if (bams.size() > 1) {
+      if (record) {logFile << "Opening BAM fomat alignment input files: ";}
+      if (debug) {cerr << "Opening BAM format alignment input files: ";}
+      for (vector<string>::const_iterator b = bams.begin(); b != bams.end(); ++b) {
+          if (record) {logFile << *b;}
+          if (debug) {cerr << *b;}
+      }
+  }
+  bReader.Open(bams);
   // report
   if (record) {logFile << " done." << endl;}
   if (debug) {cerr << " done." << endl;}
@@ -1073,32 +1082,54 @@ int main (int argc, char *argv[]) {
 	sampleList.push_back(s);
       }
     }
-  } else { // no samples file given, read from BAM file header for sample names
+  } 
       // retrieve header information
-      if (debug) cerr << "no sample list file given, attempting to read sample names from bam file" << endl;
-      string bamHeader = bReader.GetHeaderText();
 
-      vector<string> headerLines;
-      boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
+  vector<string> sampleListFromBam;
 
-      for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
+  string bamHeader = bReader.GetHeaderText();
 
-          // get next line from header, skip if empty
-          string headerLine = *it;
-          if ( headerLine.empty() ) { continue; }
+  vector<string> headerLines;
+  boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
 
-          // lines of the header look like:
-          // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
-          //                     ^^^^^^^\ is our sample name
-          if ( headerLine.find("@RG") == 0 ) {
-              vector<string> readGroupParts;
-              boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
-              vector<string> nameParts;
-              boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
-              string name = nameParts.back();
-              //mergedHeader.append(1, '\n');
-              if (debug) cerr << "found sample " << name << endl;
-              sampleList.push_back(name);
+  for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
+
+      // get next line from header, skip if empty
+      string headerLine = *it;
+      if ( headerLine.empty() ) { continue; }
+
+      // lines of the header look like:
+      // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
+      //                     ^^^^^^^\ is our sample name
+      if ( headerLine.find("@RG") == 0 ) {
+          vector<string> readGroupParts;
+          boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
+          vector<string> nameParts;
+          boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
+          string name = nameParts.back();
+          //mergedHeader.append(1, '\n');
+          if (debug) cerr << "found sample " << name << endl;
+          sampleListFromBam.push_back(name);
+      }
+  }
+   // no samples file given, read from BAM file header for sample names
+  if (sampleList.size() == 0) {
+      if (debug) cerr << "no sample list file given, reading sample names from bam file" << endl;
+      for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s)
+          sampleList.push_back(*s);
+  } else {
+      // verify that the samples in the sample list are present in the bam,
+      // and raise an error and exit if not
+      for (vector<string>::const_iterator s = sampleList.begin(); s != sampleList.end(); ++s) {
+          bool in = false;
+          for (vector<string>::const_iterator b = sampleListFromBam.begin(); b != sampleListFromBam.end(); ++b) {
+              if (*s == *b) { in = true; break; }
+          }
+          if (!in) {
+              cerr << "ERROR: sample " << *s << " listed in sample file "
+                  << samples.c_str() << " is not listed in the header of BAM file "
+                  << bam << endl;
+              exit(1);
           }
       }
   }
@@ -1532,8 +1563,8 @@ int main (int argc, char *argv[]) {
       string readName = ba.Name;
       string sampleName;
       if (! ba.GetReadGroup(sampleName)) {
-          cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << ba.Name
-              << " ... attempting to read from read name" << endl;
+          //cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << ba.Name
+           //   << " ... attempting to read from read name" << endl;
           SampleInfo sampleInfo = extractSampleInfo(readName, sampleNaming, sampleDel);
           string sampleName = sampleInfo.sampleId;
       }

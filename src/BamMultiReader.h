@@ -74,7 +74,9 @@ class BamMultiReader {
         // returns vector of reference objects
         const BamTools::RefVector GetReferenceData(void) const;
         // returns reference id (used for BamMultiReader::Jump()) for the given reference name
-        //const int GetReferenceID(const std::string& refName) const;
+        const int GetReferenceID(const std::string& refName) const;
+        // validates that we have a congruent set of BAM files that are aligned against the same reference sequences
+        void ValidateReaders() const;
 
         // ----------------------
         // BAM index operations
