@@ -8,7 +8,7 @@
 #include <string>
 #include <algorithm>
 
-//long double factorial(int);
+long double factorial(int);
 short qualityChar2ShortInt(char c);
 //long double phred2float(int qual);
 long double phred2float(int qual);

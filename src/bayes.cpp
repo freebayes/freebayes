@@ -25,15 +25,6 @@
 #include <boost/tuple/tuple.hpp>
 
 // private libraries
-/*
-#include "Class-GigReader.h"
-#include "Function-Sequence.h"
-#include "Function-Generic.h"
-#include "Function-Math.h"
-#include "Class-BedReader.h"
-#include "Class-FastaReader.h"
-#include "ReferenceSequenceReader.h"
-*/
 #include "BamReader.h"
 #include "Fasta.h"
 #include "TryCatch.h"
@@ -80,7 +71,7 @@ int main (int argc, char *argv[]) {
         // TODO force calculation for samples not in this list
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 
-        // TODO vebose; alias this with a typedef
+        // vebose; alias this with a typedef?
         vector<
             tuple<
                 string,  // sample ID
@@ -89,7 +80,7 @@ int main (int argc, char *argv[]) {
                 > 
             > results;
 
-        // calculate
+        // calculate data likelihoods
         for (map<string, vector< Allele* > >::iterator sampleAlleles = sampleGroups.begin();
                 sampleAlleles != sampleGroups.end(); ++sampleAlleles) {
 
@@ -106,10 +97,18 @@ int main (int argc, char *argv[]) {
         // now do ~pSnp and marginals estimation
 
         // ...
+        // break this down into a banded estimation of the full probability
+        // space (optionally do this in full to check that the banded
+        // approximation approaches the full space)
+        // 
+        // store the terms within our bandwidth, as we'll use them several times
+        // first pass; 
+
 
         // report in json-formatted stream
+        //
         cout << "{\"sequence\":\"" << caller->currentTarget->seq << "\","
-            << "\"position\":\"" << caller->currentPosition << "\","
+            << "\"position\":" << caller->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
             << "\"samples\":{";  // TODO ... quality (~pSnp)
 
         bool suppressComma = true; // output flag
@@ -128,8 +127,10 @@ int main (int argc, char *argv[]) {
                 if (g != probs.begin()) cout << ",";
                 cout << "\"" << g->first << "\":" << float2phred(1 - g->second);
             }
-
-            cout << "}}";
+            cout << "}";
+            if (caller->parameters.outputAlleles)
+                cout << ",\"alleles\":" << json(sample->get<2>());
+            cout << "}";
 
         }
 

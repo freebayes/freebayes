@@ -18,7 +18,7 @@
 #include "Allele.h"
 #include "Fasta.h"
 #include "TryCatch.h"
-#include "Function-Math.h"
+//#include "Function-Math.h"
 #include "Function-Sequence.h"
 #include "BamMultiReader.h"
 
@@ -148,7 +148,7 @@ public:
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
     BedData* currentTarget;
-    long unsigned int currentPosition;
+    long unsigned int currentPosition;  // 0-based current position
 
 private:
     // output files

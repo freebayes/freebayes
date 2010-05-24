@@ -18,6 +18,7 @@
 #include <map>
 #include <iterator>
 #include <algorithm>
+#include <boost/lexical_cast.hpp>
 
 using std::ios;
 using std::ifstream;

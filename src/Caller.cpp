@@ -27,14 +27,13 @@ using namespace std;
 // open BAM input file
 void Caller::openBams(void) {
 
-
     if (parameters.bams.size() == 1) {
         LOG("Opening BAM fomat alignment input file: " << parameters.bams.front() << " ...");
     } else if (parameters.bams.size() > 1) {
-        LOG("Opening BAM fomat alignment input files: ");
+        LOG("Opening " << parameters.bams.size() << " BAM fomat alignment input files");
         for (vector<string>::const_iterator b = parameters.bams.begin(); 
                 b != parameters.bams.end(); ++b) {
-            LOG(*b);
+            LOG2(*b);
         }
     }
     bamMultiReader.Open(parameters.bams);
@@ -390,7 +389,8 @@ Caller::Caller(int argc, char** argv) : parameters(Parameters(argc, argv))
 
     currentRefID = 0; // will get set properly via toNextRefID
     //toNextRefID(); // initializes currentRefID
-    toFirstTargetPosition(); // initializes currentTarget, currentAlignment
+    //toFirstTargetPosition(); // initializes currentTarget, currentAlignment
+    currentTarget = NULL; // to be initialized on first call to getNextAlleles
 }
 
 Caller::~Caller(void) {
@@ -406,10 +406,8 @@ int Caller::currentSequencePosition(const BamAlignment& alignment) {
 ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
     out << ra.alignment.Name << " " << ra.alignment.Position << endl
         << ra.alignment.QueryBases << endl
-        << ra.alignment.Qualities << endl;
-    for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-        out << *a;
-    }
+        << ra.alignment.Qualities << endl
+        << ra.alleles << endl;
     return out;
 }
 
@@ -421,31 +419,49 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
     string rQual = alignment.Qualities;
     int rp = 0;  // read position, 0-based relative to read
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
-    int sp = alignment.Position + 1;  // sequence position
-              //   ^^^ conversion between 0 and 1 based index
+    int sp = alignment.Position;  // sequence position
+    //   ^^^ conversion between 0 and 1 based index
 
-    
+
     // extract sample name and information
     string readName = alignment.Name;
     string sampleName;
     if (! alignment.GetReadGroup(sampleName)) {
         /*cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << alignment.Name
-            << " ... attempting to read from read name" << endl;
-            */
+          << " ... attempting to read from read name" << endl;
+          */
         SampleInfo sampleInfo = extractSampleInfo(readName, parameters.sampleNaming, parameters.sampleDel);
         sampleName = sampleInfo.sampleId;
     }
 
     LOG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
-         "alignment readName " << readName << endl <<
-         "alignment sampleID " << sampleName << endl << 
-         "alignment position " << alignment.Position << endl <<
-         "alignment length " << alignment.Length << endl <<
-         "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
-         "alignment end position " << alignment.Position + alignment.AlignedBases.size());
+            "alignment readName " << readName << endl <<
+            "alignment sampleID " << sampleName << endl << 
+            "alignment position " << alignment.Position << endl <<
+            "alignment length " << alignment.Length << endl <<
+            "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
+            "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
     LOG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
 
+    /*
+     * This should be simpler, but isn't because the cigar only records matches
+     * for sequences that have embedded mismatches.
+     *
+     * Also, we don't store the entire undelying sequence; just the subsequence
+     * that matches our current target region.
+     * 
+     * As we step through a match sequence, we look for mismatches.  When we
+     * see one we set a positional flag indicating the location, and we emit a
+     * 'Reference' allele that stretches from the the base after the last
+     * mismatch to the base before the current one.
+     *
+     * An example follows:
+     *
+     * NNNNNNNNNNNMNNNNNNNNNNNNNNNN
+     * reference  ^\-snp  reference
+     *
+     */
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
@@ -457,7 +473,8 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
         if (t == 'S') { // soft clip
             rp += l;
         } else if (t == 'M') { // match or mismatch
-            int lastMismatch = csp; // track the last mismatch, for recording 'reference' alleles
+            int firstMatch = csp; // track the first match after a mismatch, for recording 'reference' alleles
+                                        // we start one back because the first position in a match should match...
             for (int i=0; i<l; i++) {
 
                 // extract aligned base
@@ -465,37 +482,42 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 TRY { b = rDna.at(rp); } CATCH;
 
                 // convert base quality value into short int
-                short qual = qualityChar2ShortInt(rQual[rp]);
+                short qual = qualityChar2ShortInt(rQual.at(rp));
 
                 // get reference allele
                 string sb;
                 TRY { sb = currentSequence.at(csp); } CATCH;
 
-                // record match if we have a mismatch here
-                // TODO instrument this to validate behavior
+                // XXX XXX XXX THIS LOGIC IS ILLOGICAL!!!
+                //
+                // record mismatch if we have a mismatch here
                 if (b != sb) {
-                    if (lastMismatch < csp) {
+                    if (firstMatch < csp) {
                         // TODO ; verify that the read and reference sequences *do* match
-                        int length = csp - lastMismatch;
-                        string matchingSequence = currentSequence.substr(lastMismatch, length);
-                        string qualstr = rQual.substr(rp - length, length);
+                        int length = csp - firstMatch - 1;
+                        string matchingSequence = currentSequence.substr(csp - length - 1, length);
+                        string readSequence = rDna.substr(rp - length - 1, length);
+                        string qualstr = rQual.substr(rp - length - 1, length);
                         Allele* allele = new Allele(ALLELE_REFERENCE,
-                                                currentTarget->seq, sp - length, length, 
-                                                matchingSequence, "", sampleName, alignment.Name,
-                                                !alignment.IsReverseStrand(), -1, qualstr,
-                                                alignment.MapQuality);
+                                currentTarget->seq, sp - length - 1, length, 
+                                matchingSequence, readSequence, sampleName, alignment.Name,
+                                !alignment.IsReverseStrand(), -1, qualstr,
+                                alignment.MapQuality);
                         ra.alleles.push_back(allele);
                     }
-                    lastMismatch = csp;
+                    firstMatch = csp + 1;
                 }
 
                 // register mismatch
-                if (b != sb && qual >= parameters.BQL2) {
-                    // record 'reference' allele for last matching region
-                    ra.mismatches++;
-                    Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
-                            sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
-                    ra.alleles.push_back(allele);
+                if (b != sb) {
+                    if (qual >= parameters.BQL2) {
+                        // record 'reference' allele for last matching region
+                        ra.mismatches++;
+                        Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, 1, sb, b,
+                                sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
+                        ra.alleles.push_back(allele);
+                    }
+                    firstMatch = csp + 1;
                 }
 
                 // update positions
@@ -503,16 +525,17 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
                 ++csp;
                 ++rp;
             }
-            if (lastMismatch < csp) {  // TODO use some param flag to trigger this operation
+            if (firstMatch < csp) {  // TODO use some param flag to trigger this operation
                 // TODO ; verify that the read and reference sequences *do* match
-                int length = csp - lastMismatch;
-                string matchingSequence = currentSequence.substr(lastMismatch, length);
-                string qualstr = rQual.substr(rp - length, length);
+                int length = csp - firstMatch - 1;
+                string matchingSequence = currentSequence.substr(csp - length - 1, length);
+                string readSequence = rDna.substr(rp - length - 1, length);
+                string qualstr = rQual.substr(rp - length - 1, length);
                 Allele* allele = new Allele(ALLELE_REFERENCE,
-                                            currentTarget->seq, sp - length, length, 
-                                            matchingSequence, "", sampleName, alignment.Name,
-                                            !alignment.IsReverseStrand(), -1, qualstr,
-                                            alignment.MapQuality);
+                        currentTarget->seq, sp - length - 1, length, 
+                        matchingSequence, readSequence, sampleName, alignment.Name,
+                        !alignment.IsReverseStrand(), -1, qualstr,
+                        alignment.MapQuality);
                 ra.alleles.push_back(allele);
             }
             // XXX what about 'N' s?
@@ -525,10 +548,10 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             short qual = jointQuality(qualstr); // XXX was max, but joint makes more sense, right ?
             if (qual >= parameters.BQL2) {
                 Allele* allele = new Allele(ALLELE_DELETION,
-                            currentTarget->seq, sp, l,
-                            currentSequence.substr(csp, l), "", sampleName, alignment.Name,
-                            !alignment.IsReverseStrand(), qual, qualstr,
-                            alignment.MapQuality);
+                        currentTarget->seq, sp, l,
+                        currentSequence.substr(csp, l), "", sampleName, alignment.Name,
+                        !alignment.IsReverseStrand(), qual, qualstr,
+                        alignment.MapQuality);
                 ra.alleles.push_back(allele);
             }
 
@@ -536,7 +559,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             csp += l;
 
         } else if (t == 'I') { // insertion
-            
+
             string qualstr = rQual.substr(rp, l);
 
             // calculate joint quality, which is the probability that there are no errors in the observed bases
@@ -546,9 +569,9 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
             // quality is much lower than the 'average' quality
             if (qual >= parameters.BQL2) {
                 Allele* allele = new Allele(ALLELE_INSERTION,
-                            currentTarget->seq, sp, l, "", rDna.substr(rp, l),
-                            sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
-                            qualstr, alignment.MapQuality);
+                        currentTarget->seq, sp, l, "", rDna.substr(rp, l),
+                        sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
+                        qualstr, alignment.MapQuality);
                 ra.alleles.push_back(allele);
             }
 
@@ -556,6 +579,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
 
         } // not handled, skipped region 'N's
     } // end cigar iter loop
+    //cerr << ra << endl;
     return ra;
 }
 
@@ -596,7 +620,7 @@ void Caller::updateAlignmentQueue(void) {
     if (registeredAlignmentQueue.size() > 0) {
         BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
         // is indexing (0 or 1 based) oK here?
-        while (currentPosition > alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
+        while (currentPosition >= alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
             LOG2("popping alignment");
             registeredAlignmentQueue.pop_back();
             if (registeredAlignmentQueue.size() > 0) {
@@ -615,18 +639,18 @@ void Caller::updateRegisteredAlleles(void) {
     // remove reference alleles which are no longer overlapping the current position
     // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
     /*
-    for (list<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ) {
-        if (currentPosition > (*allele)->position + (*allele)->length) {
-            delete *allele;
-            allele = registeredAlleles.erase(allele);
-        } else {
-            ++allele;
-        }
-    }
-    */
+       for (list<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ) {
+       if (currentPosition > (*allele)->position + (*allele)->length) {
+       delete *allele;
+       allele = registeredAlleles.erase(allele);
+       } else {
+       ++allele;
+       }
+       }
+       */
     vector<Allele*>& alleles = registeredAlleles;
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition > (*allele)->position + (*allele)->length) {
+        if (currentPosition >= (*allele)->position + (*allele)->length) {
             delete *allele;
             *allele = NULL;
         }
@@ -706,11 +730,15 @@ bool Caller::loadTarget(BedData* target) {
             (right_gap > 0) ? right_gap : 0);
 
     LOG2("setting new position " << currentTarget->left);
-    currentPosition = currentTarget->left;
+    currentPosition = currentTarget->left; // bed targets are always 0-based at the left
 
     LOG2("jumping to first alignment in new target");
     r &= bamMultiReader.Jump(refSeqID, currentTarget->left);
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
+
+    LOG2("clearing registered alignments and alleles");
+    registeredAlignmentQueue.clear();
+    registeredAlleles.clear();
 
     return r;
 
@@ -723,8 +751,12 @@ bool Caller::loadTarget(BedData* target) {
 // if none exist, return false
 bool Caller::toNextTargetPosition(void) {
 
-    ++currentPosition;
-    if (currentPosition > currentTarget->right) { // time to move to a new target
+    if (currentTarget == NULL) {
+        toFirstTargetPosition();
+    } else {
+        ++currentPosition;
+    }
+    if (currentPosition >= currentTarget->right) { // time to move to a new target
         LOG2("next position " << currentPosition <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             LOG("no more valid targets, finishing");
@@ -761,7 +793,7 @@ void Caller::getAlleles(list<Allele*>& alleles) {
         Allele* allele = *a;
         if (((allele->type == ALLELE_REFERENCE 
                  && currentPosition >= allele->position 
-                 && currentPosition < allele->position + allele->length)
+                 && currentPosition < allele->position + allele->length) // 0-based, means position + length - 1 is the last included base
                 || (allele->position == currentPosition)) 
                 && allele->Quality(currentPosition) >= parameters.BQL0
                 )

@@ -168,8 +168,8 @@ bool BedReader::getNextEntry(BedData & bd) {
 
       // assign content
       bd.seq = match[1];
-      bd.left = string2Int(match[2]);
-      bd.right = string2Int(match[3]);
+      bd.left = boost::lexical_cast<int>(match[2]);
+      bd.right = boost::lexical_cast<int>(match[3]);
       bd.desc = match[4];
 
       // return true

@@ -263,6 +263,19 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_vcf(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
+    // output option: output information about all alleles contributing to a given genotyping position
+    ArgStruct argOutputAlleles;
+    arg = argOutputAlleles; 
+    arg.shortId = ""; 
+    arg.longId = "outputAlleles"; 
+    arg.description = "Output option: output information about all alleles contributing to a given genotyping position";
+    arg.required = false; 
+    arg.defaultValueString = "false"; 
+    arg.type = "switch"; 
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    SwitchArg cmd_outputAlleles(arg.shortId, arg.longId, arg.description, cmd, false);
+
     // log file
     ArgStruct argLog;
     arg = argLog; 
@@ -683,6 +696,7 @@ Parameters::Parameters (int argc, char** argv) {
     rpt = cmd_rpt.getValue();
     vcf = cmd_vcf.getValue();
     log = cmd_log.getValue();
+    outputAlleles = cmd_outputAlleles.getValue();
 
     useRefAllele = cmd_useRefAllele.getValue();
     forceRefAllele = cmd_forceRefAllele.getValue();

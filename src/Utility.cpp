@@ -6,7 +6,6 @@ short qualityChar2ShortInt(char c) {
     return static_cast<short>(c) - 33;
 }
 
-/*
 long double factorial(int n) {
     long double f = 1;
     while ( n > 1) {
@@ -15,7 +14,6 @@ long double factorial(int n) {
     }
     return f;
 }
-*/
 
 long double phred2float(int qual) {
     return pow(10,qual * -.1);

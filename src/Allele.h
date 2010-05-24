@@ -73,13 +73,17 @@ class Allele {
     friend ostream &operator<<(ostream &out, Allele* &a);
     friend bool operator==(Allele &a, Allele &b);
 
+    friend string json(vector<Allele*> &alleles);
+    friend string json(Allele* &allele);
+    friend string json(Allele &allele);
+
 public:
 
     AlleleType type;        // type of the allele, enumerated above
     string referenceName;   // reference name, for sanity checking
     string referenceSequence; // reference sequence or "" (in case of insertions)
     string alternateSequence; // alternate sequence or "" (in case of deletions and reference alleles)
-    Position position;      // position 1-based against reference
+    Position position;      // position 0-based against reference
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID

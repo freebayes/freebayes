@@ -1115,8 +1115,10 @@ int main (int argc, char *argv[]) {
    // no samples file given, read from BAM file header for sample names
   if (sampleList.size() == 0) {
       if (debug) cerr << "no sample list file given, reading sample names from bam file" << endl;
-      for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s)
+      for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s) {
+          if (debug) cerr << "found sample " << *s << endl;
           sampleList.push_back(*s);
+      }
   } else {
       // verify that the samples in the sample list are present in the bam,
       // and raise an error and exit if not
@@ -1563,10 +1565,12 @@ int main (int argc, char *argv[]) {
       string readName = ba.Name;
       string sampleName;
       if (! ba.GetReadGroup(sampleName)) {
-          //cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << ba.Name
-           //   << " ... attempting to read from read name" << endl;
-          SampleInfo sampleInfo = extractSampleInfo(readName, sampleNaming, sampleDel);
-          string sampleName = sampleInfo.sampleId;
+          cerr << "ERROR: Couldn't find read group id (@RG tag) for BAM Alignment " << ba.Name 
+               << " EXITING!" << endl;
+          exit(1);
+               //<< " ... attempting to read from read name" << endl;
+          //SampleInfo sampleInfo = extractSampleInfo(readName, sampleNaming, sampleDel);
+          //string sampleName = sampleInfo.sampleId;
       }
 	  
 	  //----------------------------------------------------------------

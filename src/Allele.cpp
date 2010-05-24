@@ -97,6 +97,45 @@ string stringForAlleles(vector<Allele> &alleles) {
     return out.str();
 }
 
+string json(vector<Allele*> &alleles) {
+    stringstream out;
+    vector<Allele*>::iterator a = alleles.begin();
+    out << "[" << json(**a++);
+    while (a != alleles.end())
+        out << "," << json(**a++);
+    out << "]";
+    return out.str();
+}
+
+string json(Allele*& allele) { return json(*allele); }
+
+string json(Allele& allele) {
+    stringstream out;
+    if (!allele.genotypeAllele) {
+            // << &allele << ":" 
+            out << "{\"id\":\"" << allele.readID 
+                << "\",\"type\":\"" << allele.Type() 
+                << "\",\"length\":" << allele.length 
+                << ",\"position\":" << allele.position 
+                << ",\"strand\":\"" << (allele.strand == STRAND_FORWARD ? "+" : "-")
+                << "\",\"alt\":\"" << allele.alternateSequence
+                << "\",\"reference\":\"" << allele.referenceSequence
+                << "\",\"quality\":" << allele.quality << "}";
+    } else {
+        out << "{\"type\":\"" << allele.Type() << "\"";
+        switch (allele.type) {
+            case ALLELE_REFERENCE:
+                out << "}";
+                break;
+            default:
+                out << "\",\"length\":" << allele.length 
+                    << ",\"alt\":\"" << allele.alternateSequence << "\"}";
+                break;
+        }
+    }
+    return out.str();
+}
+
 ostream &operator<<(ostream &out, vector<Allele*> &alleles) {
     vector<Allele*>::iterator a = alleles.begin();
     out << **a++;
@@ -129,9 +168,14 @@ ostream &operator<<(ostream &out, Allele* &allele) {
 ostream &operator<<(ostream &out, Allele &allele) {
 
     if (!allele.genotypeAllele) {
-            out << allele.sampleID << ":" << allele.Type() << ":" 
-                << allele.length << "," << allele.position << (allele.strand == STRAND_FORWARD ? "+" : "-")
+            // << &allele << ":" 
+            out << allele.readID 
+                << ":" << allele.Type() 
+                << ":" << allele.length 
+                << ":" << allele.position 
+                << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
                 << ":" << allele.alternateSequence
+                << ":" << allele.referenceSequence
                 << ":" << allele.quality;
     } else {
         out << allele.Type();
