@@ -48,7 +48,7 @@ class BamMultiReader {
         bool Jump(int refID, int position = 0);
         // opens BAM files (and optional BAM index files, if provided)
         //void Open(const vector<std::string&> filenames, const vector<std::string&> indexFilenames);
-        void Open(const vector<string> filenames);
+        void Open(const vector<string> filenames, bool openIndexes = true);
         // returns file pointers to beginning of alignments
         bool Rewind(void);
 
