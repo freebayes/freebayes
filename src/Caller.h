@@ -84,6 +84,8 @@ public:
     ~Caller(void); 
 
     vector<string> sampleList; // list of sample names, indexed by sample id
+    vector<string> sampleListFromBam; // sample names drawn from BAM file
+    map<string, string> readGroupToSampleNames; // maps read groups to samples
 
     // reference
     FastaReference* reference;
@@ -121,7 +123,7 @@ public:
     void loadReferenceSequence(BedData*, int, int);
     void loadTargets(void);
     void initializeOutputFiles(void);
-    RegisteredAlignment registerAlignment(BamAlignment& alignment);
+    RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
     void updateAlignmentQueue(void);
     void updateRegisteredAlleles(void);
     vector<BedData>* targetsInCurrentRefSeq(void);

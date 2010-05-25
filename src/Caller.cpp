@@ -61,10 +61,20 @@ void Caller::getSampleNames(void) {
     // If a sample file is given, use it.  But otherwise process the bam file
     // header to get the sample names.
     //
+
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  // read sample list file or get sample names from bam file header
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  //
+  // If a sample file is given, use it.  But otherwise process the bam file
+  // header to get the sample names.
+  //
     if (parameters.samples != "") {
         ifstream sampleFile(parameters.samples.c_str(), ios::in);
         if (! sampleFile) {
-            ERROR("unable to open file: " << parameters.samples);
+            cerr << "unable to open file: " << parameters.samples << endl;
             exit(1);
         }
         boost::regex patternSample("^(\\S+)\\s*(.*)$");
@@ -77,38 +87,94 @@ void Caller::getSampleNames(void) {
             if (boost::regex_search(line, match, patternSample)) {
                 // assign content
                 string s = match[1];
-                LOG2("found sample " << s);
+                LOG("found sample " << s);
                 sampleList.push_back(s);
             }
         }
-    } else { // no samples file given, read from BAM file header for sample names
-        // retrieve header information
-        LOG("no sample list file given, attempting to read sample names from bam file");
+    } 
 
-        string bamHeader = bamMultiReader.GetHeaderText();
+    // retrieve header information
 
-        vector<string> headerLines;
-        boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
+    string bamHeader = bamMultiReader.GetHeaderText();
 
-        for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
+    vector<string> headerLines;
+    boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
 
-            // get next line from header, skip if empty
-            string headerLine = *it;
-            if ( headerLine.empty() ) { continue; }
+    for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
 
-            // lines of the header look like:
-            // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
-            //                     ^^^^^^^\ is our sample name
-            if ( headerLine.find("@RG") == 0 ) {
-                vector<string> readGroupParts;
-                boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
+        // get next line from header, skip if empty
+        string headerLine = *it;
+        if ( headerLine.empty() ) { continue; }
+
+        // lines of the header look like:
+        // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
+        //                     ^^^^^^^\ is our sample name
+        if ( headerLine.find("@RG") == 0 ) {
+            vector<string> readGroupParts;
+            boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
+            string name = "";
+            string readGroupID = "";
+            for (vector<string>::const_iterator r = readGroupParts.begin(); r != readGroupParts.end(); ++r) {
                 vector<string> nameParts;
-                boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
-                string name = nameParts.back();
-                //mergedHeader.append(1, '\n');
-                LOG2("found sample " << name);
-                sampleList.push_back(name);
+                boost::split(nameParts, *r, boost::is_any_of(":"));
+                if (nameParts.at(0) == "SM") {
+                   name = nameParts.at(1);
+                } else if (nameParts.at(0) == "ID") {
+                   readGroupID = nameParts.at(1);
+                }
             }
+            if (name == "") {
+                ERROR(" could not find SM: in @RG tag " << endl << headerLine);
+                exit(1);
+            }
+            if (readGroupID == "") {
+                ERROR(" could not find ID: in @RG tag " << endl << headerLine);
+                exit(1);
+            }
+            //string name = nameParts.back();
+            //mergedHeader.append(1, '\n');
+            LOG("found read group id " << readGroupID << " containing sample " << name);
+            sampleListFromBam.push_back(name);
+            readGroupToSampleNames[readGroupID] = name;
+        }
+    }
+    //cout << sampleListFromBam.size() << endl;
+     // no samples file given, read from BAM file header for sample names
+    if (sampleList.size() == 0) {
+        LOG("no sample list file given, reading sample names from bam file");
+        for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s) {
+            LOG("found sample " << *s);
+            if (!stringInVector(*s, sampleList)) {
+                sampleList.push_back(*s);
+            }
+        }
+    } else {
+        // verify that the samples in the sample list are present in the bam,
+        // and raise an error and exit if not
+        for (vector<string>::const_iterator s = sampleList.begin(); s != sampleList.end(); ++s) {
+            bool inBam = false;
+            bool inReadGroup = false;
+            //cout << "checking sample from sample file " << *s << endl;
+            for (vector<string>::const_iterator b = sampleListFromBam.begin(); b != sampleListFromBam.end(); ++b) {
+                //cout << *s << " against " << *b << endl;
+                if (*s == *b) { inBam = true; break; }
+            }
+            for (map<string, string>::const_iterator p = readGroupToSampleNames.begin(); p != readGroupToSampleNames.end(); ++p) {
+                if (*s == p->second) { inReadGroup = true; break; }
+            }
+            if (!inBam) {
+                ERROR("sample " << *s << " listed in sample file "
+                    << parameters.samples.c_str() << " is not listed in the header of BAM file(s) "
+                    << parameters.bam);
+                exit(1);
+            }
+            if (!inReadGroup) {
+                ERROR("sample " << *s << " listed in sample file "
+                    << parameters.samples.c_str() << " is not associated with any read group in the header of BAM file(s) "
+                    << parameters.bam);
+                exit(1);
+            }
+
         }
     }
 }
@@ -301,7 +367,7 @@ ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
     return out;
 }
 
-RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
+RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment, string sampleName) {
 
     RegisteredAlignment ra = RegisteredAlignment(alignment); // result
 
@@ -312,17 +378,7 @@ RegisteredAlignment Caller::registerAlignment(BamAlignment& alignment) {
     int sp = alignment.Position;  // sequence position
     //   ^^^ conversion between 0 and 1 based index
 
-
-    // extract sample name and information
     string readName = alignment.Name;
-    string sampleName;
-    if (! alignment.GetReadGroup(sampleName)) {
-        /*cerr << "WARNING: Couldn't find read group id (@RG tag) for BAM Alignment " << alignment.Name
-          << " ... attempting to read from read name" << endl;
-          */
-        SampleInfo sampleInfo = extractSampleInfo(readName, parameters.sampleNaming, parameters.sampleDel);
-        sampleName = sampleInfo.sampleId;
-    }
 
     LOG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
             "alignment readName " << readName << endl <<
@@ -481,27 +537,41 @@ void Caller::updateAlignmentQueue(void) {
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
-    bool moreAlignments = true; // flag to catch BAM EOF
     int i = 0;
-    while (moreAlignments && currentAlignment.Position <= currentPosition) {
-        if (currentAlignment.IsMapped()) {
-            // we have to register the alignment to acquire some information required by filters
-            // such as mismatches
-            // filter low mapping quality (what happens if MapQuality is not in the file)
-            if (currentAlignment.MapQuality > parameters.MQL0) {
-                RegisteredAlignment ra = registerAlignment(currentAlignment);
-                // TODO filters to implement:
-                // duplicates --- tracked via each BamAlignment
-                if (ra.mismatches <= parameters.RMU) {
-                    registeredAlignmentQueue.push_front(ra);
-                    for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
-                        registeredAlleles.push_back(*allele);
+    if (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition) {
+        do {
+            // get read group, and map back to a sample name
+            string readGroup;
+            if (!currentAlignment.GetTag("RG", readGroup)) {
+                ERROR("Couldn't find read group id (@RG tag) for BAM Alignment " <<
+                        currentAlignment.Name << " at position " << currentPosition
+                        << " in sequence " << currentSequence << " EXITING!");
+                exit(1);
+            }
+            // skip this alignment if we are not analyzing the sample it is drawn from
+            if (readGroupToSampleNames.find(readGroup) == readGroupToSampleNames.end()) {
+                continue;
+            }
+            // otherwise, get the sample name and register the alignment to generate a sequence of alleles
+            string sampleName = readGroupToSampleNames[readGroup];
+            if (currentAlignment.IsMapped()) {
+                // we have to register the alignment to acquire some information required by filters
+                // such as mismatches
+                // filter low mapping quality (what happens if MapQuality is not in the file)
+                if (currentAlignment.MapQuality > parameters.MQL0) {
+                    RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
+                    // TODO filters to implement:
+                    // duplicates --- tracked via each BamAlignment
+                    if (ra.mismatches <= parameters.RMU) {
+                        registeredAlignmentQueue.push_front(ra);
+                        for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
+                            registeredAlleles.push_back(*allele);
+                        }
                     }
                 }
+                // TODO collect statistics here...
             }
-            // TODO collect statistics here...
-        }
-        moreAlignments &= bamMultiReader.GetNextAlignment(currentAlignment);
+        } while (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition);
     }
 
     LOG2("... finished pushing new alignments");

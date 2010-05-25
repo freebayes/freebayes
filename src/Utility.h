@@ -7,6 +7,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <string>
+
+using namespace std;
 
 long double factorial(int);
 short qualityChar2ShortInt(char c);
@@ -19,5 +22,6 @@ short jointQuality(const std::string& qualstr);
 // 
 short averageQuality(const std::string& qualstr);
 //unsigned int factorial(int n);
+bool stringInVector(string item, vector<string> items);
 
 #endif
