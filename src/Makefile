@@ -31,7 +31,7 @@ C=gcc
 ################################################################################
 # Program builds
 ################################################################################
-all: bayes
+all: bayes bamBayes
 
 testMath: testMath.o Function-Sequence.o Function-Math.o
 	$(CC) $(CFLAGS) testMath.o Function-Math.o Function-Sequence.o -o testMath -lboost_regex -lpthread -Wno-deprecated
