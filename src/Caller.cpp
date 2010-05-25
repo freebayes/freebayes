@@ -261,115 +261,6 @@ void Caller::loadTargets(void) {
 
 }
 
-void Caller::initializeOutputFiles(void) {
-
-  //----------------------------------------------------------------------------
-  //----------------------------------------------------------------------------
-  // open output file(s)
-  //----------------------------------------------------------------------------
-  //----------------------------------------------------------------------------
-
-  //----------------------------------------------------------------------------
-  // open report output file
-  //----------------------------------------------------------------------------
-
-  // report
-  LOG("opening report output file for writing: " << parameters.rpt << "...");
-
-  // open output streams
-  bool outputRPT, outputVCF; // for legibility
-
-  if (parameters.rpt != "") {
-      outputRPT = true;
-      rptFile.open(parameters.rpt.c_str());
-      if (!rptFile) {
-        ERROR(" unable to open file: " << parameters.rpt);
-        exit(1);
-      }
-  } else { outputRPT = false; }
-
-  if (parameters.vcf != "") {
-      outputVCF = true;
-      vcfFile.open(parameters.vcf.c_str());
-      if (!vcfFile) {
-        ERROR(" unable to open file: " << parameters.vcf);
-        exit(1);
-      }
-  } else { outputVCF = false; }
-  LOG(" done.");
-
-  //----------------------------------------------------------------------------
-  // write header information
-  //----------------------------------------------------------------------------
-  if (outputRPT) {
-      rptFile << "# Complete list of parameter values:" << endl;
-      rptFile << "#   --bam = " << parameters.bam << endl;
-      rptFile << "#   --fasta = " << parameters.fasta << endl;
-      rptFile << "#   --targets = " << parameters.targets << endl;
-      rptFile << "#   --samples = " << parameters.samples << endl;
-      rptFile << "#   --rpt = " << parameters.rpt << endl;
-      rptFile << "#   --log = " << parameters.log << endl;
-      rptFile << "#   --MQR = " << parameters.MQR << endl;
-      rptFile << "#   --BQR = " << parameters.BQR << endl;
-      rptFile << "#   --ploidy = " << parameters.ploidy << endl;
-      rptFile << "#   --sampleNaming = " << parameters.sampleNaming << endl;
-      rptFile << "#   --sampleDel = " << parameters.sampleDel << endl;
-      rptFile << "#   --BQL0 = " << parameters.BQL0 << endl;
-      rptFile << "#   --MQL0 = " << parameters.MQL0 << endl;
-      rptFile << "#   --BQL2 = " << parameters.BQL2 << endl;
-      rptFile << "#   --RMU = " << parameters.RMU << endl;
-      rptFile << "#   --IDW = " << parameters.IDW << endl;
-      rptFile << "#   --TH = " << parameters.TH << endl;
-      rptFile << "#   --PVL = " << parameters.PVL << endl;
-      rptFile << "#   --algorithm = " << parameters.algorithm << endl;
-      rptFile << "#   --RDF = " << parameters.RDF << endl;
-      rptFile << "#   --WB = " << parameters.WB << endl;
-      rptFile << "#   --TB = " << parameters.TB << endl;
-      rptFile << "#   --includeMonoB = " <<  ( parameters.includeMonoB ? "true" : "false" ) << endl;
-      rptFile << "#   --TR = " << parameters.TR << endl;
-      rptFile << "#   --I = " << parameters.I << endl;
-      rptFile << "#   --debug = " <<  ( parameters.debug ? "true" : "false" ) << endl;
-      rptFile << "#   --debug2 = " <<  ( parameters.debug2 ? "true" : "false" ) << endl;
-      rptFile << "#" << endl;
-  }
-
-  
-  if (outputVCF) {
-      time_t rawtime;
-      struct tm * timeinfo;
-      char datestr [80];
-
-      time(&rawtime);
-      timeinfo = localtime(&rawtime);
-
-      strftime(datestr, 80, "%Y%m%d %X", timeinfo);
-
-      vcfFile << "##format=VCFv3.3" << endl
-              << "##fileDate=" << datestr << endl
-              << "##source=gigabayes" << endl
-              << "##reference=1000GenomesPilot-NCBI36" << endl
-              << "##phasing=none" << endl
-              << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
-             
-              << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
-              << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
-              << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
-              << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
-              //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
-
-              // these are req'd
-              << "##FORMAT=GT,1,String,\"Genotype\"" << endl // g
-              << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl // phred prob of genotype
-              << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl // NiBAll[ind]
-              << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
-              << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
-              << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" 
-              << boost::algorithm::join(sampleList, "\t")
-              << endl;
-
-  }
-}
-
 // initialization function
 // sets up environment so we can start registering alleles
 Caller::Caller(int argc, char** argv) : parameters(Parameters(argc, argv))
@@ -385,7 +276,6 @@ Caller::Caller(int argc, char** argv) : parameters(Parameters(argc, argv))
     loadFastaReference();
     loadBamReferenceSequenceNames();
     loadTargets();
-    initializeOutputFiles();
 
     currentRefID = 0; // will get set properly via toNextRefID
     //toNextRefID(); // initializes currentRefID

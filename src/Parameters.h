@@ -58,8 +58,6 @@ public:
     string fasta;
     string targets;
     string samples;
-    string rpt;
-    string vcf;
     string log;
 
     // operation parameters

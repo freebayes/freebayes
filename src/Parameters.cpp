@@ -122,7 +122,6 @@ ostream &operator<<(ostream &out, const Parameters &p) {
          << "  --fasta = " << p.fasta << endl
          << "  --targets = " << p.targets << endl
          << "  --samples = " << p.samples << endl
-         << "  --rpt = " << p.rpt << endl
          << "  --log = " << p.log << endl
          << "  --useRefAllele = " <<  (p.useRefAllele ? "true" : "false") << endl
          << "  --forceRefAllele = " <<  (p.forceRefAllele ? "true" : "false") << endl
@@ -236,32 +235,6 @@ Parameters::Parameters (int argc, char** argv) {
     arg.multi = false; 
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_samples(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
-
-    // output file: tab-delimited alignment and SNP report text file
-    ArgStruct argRpt;
-    arg = argRpt; 
-    arg.shortId = ""; 
-    arg.longId = "rpt"; 
-    arg.description = "Output file: tab-delimited alignment and SNP report text file";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_rpt(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
-
-    // output file: VCF (variant call format) file
-    ArgStruct argVcf;
-    arg = argVcf; 
-    arg.shortId = ""; 
-    arg.longId = "vcf"; 
-    arg.description = "Output file: VCF (variant call format) file";
-    arg.required = true; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_vcf(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
     // output option: output information about all alleles contributing to a given genotyping position
     ArgStruct argOutputAlleles;
@@ -693,8 +666,6 @@ Parameters::Parameters (int argc, char** argv) {
     fasta = cmd_fasta.getValue();
     targets = cmd_targets.getValue();
     samples = cmd_samples.getValue();
-    rpt = cmd_rpt.getValue();
-    vcf = cmd_vcf.getValue();
     log = cmd_log.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
 
@@ -732,12 +703,6 @@ Parameters::Parameters (int argc, char** argv) {
     //----------------------------------------------------------------------------
 
   
-    // check that we have one output file specified
-    if (rpt == "" && vcf == "") {
-        cerr << "You must specify at least one output file (via --rpt or --vcf)" << endl;
-        exit(1);
-    }
-
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
     // derived variables
