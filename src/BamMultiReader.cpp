@@ -152,9 +152,11 @@ bool BamMultiReader::Jump(int refID, int position) {
     CurrentLeft  = position;
 
     bool result = true;
+    int index = 0;
     for (vector<BamReader*>::iterator br = readers.begin(); br != readers.end(); ++br) {
         BamReader* reader = *br;
         result &= reader->Jump(refID, position);
+        readerStates.at(index++) = READING;
     }
     if (result)
         UpdateAlignments();

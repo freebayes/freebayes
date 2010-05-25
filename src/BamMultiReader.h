@@ -22,7 +22,7 @@ using namespace std;
 
 namespace BamTools {
 
-enum BamReaderState { START, END, CLOSED };
+enum BamReaderState { START, END, READING, CLOSED };
 
 class BamMultiReader {
 
