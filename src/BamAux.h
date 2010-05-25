@@ -104,6 +104,9 @@ struct BamAlignment {
     public:
         bool GetEditDistance(uint8_t& editDistance) const;	// get "NM" tag data - contributed by Aaron Quinlan
         bool GetReadGroup(std::string& readGroup) const;	// get "RG" tag data
+        
+        bool GetTag(const std::string& tag, std::string& destination);
+        template<typename T> bool GetTag(const std::string& tag, T& destination);
 
     // Additional data access methods
     public:
@@ -369,6 +372,83 @@ bool BamAlignment::GetReadGroup(std::string& readGroup) const {
     const unsigned int readGroupLen = std::strlen(pTagData);
     readGroup.resize(readGroupLen);
     std::memcpy( (char*)readGroup.data(), pTagData, readGroupLen );
+    return true;
+}
+
+inline
+bool BamAlignment::GetTag(const std::string& tag, std::string& destination) {
+  
+    if ( TagData.empty() ) { return false; }
+
+    // localize the tag data
+    char* pTagData = (char*)TagData.data();
+    const unsigned int tagDataLen = TagData.size();
+    unsigned int numBytesParsed = 0;
+
+    bool foundReadGroupTag = false;
+    while( numBytesParsed < tagDataLen ) {
+
+        const char* pTagType = pTagData;
+        const char* pTagStorageType = pTagData + 2;
+        pTagData       += 3;
+        numBytesParsed += 3;
+
+        // check the current tag
+        if ( std::strncmp(pTagType, tag.c_str(), 2) == 0 ) {
+            foundReadGroupTag = true;
+            break;
+        }
+
+        // get the storage class and find the next tag
+        if (*pTagStorageType == '\0') { return false; }
+        SkipToNextTag( *pTagStorageType, pTagData, numBytesParsed );
+        if (*pTagData == '\0') { return false; }
+    }
+
+    // return if the read group tag was not present
+    if ( !foundReadGroupTag ) { return false; }
+
+    // assign the read group
+    const unsigned int dataLen = std::strlen(pTagData);
+    destination.resize(dataLen);
+    std::memcpy( (char*)destination.data(), pTagData, dataLen );
+    return true;
+}
+
+template<typename T> 
+bool BamAlignment::GetTag(const std::string& tag, T& destination) {
+  
+    if ( TagData.empty() ) { return false; }
+
+    // localize the tag data
+    char* pTagData = (char*)TagData.data();
+    const unsigned int tagDataLen = TagData.size();
+    unsigned int numBytesParsed = 0;
+
+    bool foundDesiredTag = false;
+    while( numBytesParsed < tagDataLen ) {
+
+        const char* pTagType = pTagData;
+        const char* pTagStorageType = pTagData + 2;
+        pTagData       += 3;
+        numBytesParsed += 3;
+
+        // check the current tag
+        if ( strncmp(pTagType, tag.c_str(), 2) == 0 ) {
+            foundDesiredTag = true;
+            break;
+        }
+
+        // get the storage class and find the next tag
+        if (*pTagStorageType == '\0') { return false; }
+        SkipToNextTag( *pTagStorageType, pTagData, numBytesParsed );
+        if (*pTagData == '\0') { return false; }
+    }
+    // return if the edit distance tag was not present
+    if ( !foundDesiredTag ) { return false; }
+
+    // assign the editDistance value
+    std::memcpy(&destination, pTagData, sizeof(T));
     return true;
 }
 

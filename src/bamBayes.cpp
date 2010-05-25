@@ -1083,9 +1083,10 @@ int main (int argc, char *argv[]) {
       }
     }
   } 
-      // retrieve header information
+  // retrieve header information
 
   vector<string> sampleListFromBam;
+  map<string, string> readGroupToSampleNames; // maps read groups to samples
 
   string bamHeader = bReader.GetHeaderText();
 
@@ -1104,35 +1105,69 @@ int main (int argc, char *argv[]) {
       if ( headerLine.find("@RG") == 0 ) {
           vector<string> readGroupParts;
           boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
-          vector<string> nameParts;
-          boost::split(nameParts, readGroupParts.at(2), boost::is_any_of(":"));
-          string name = nameParts.back();
+          string name = "";
+          string readGroupID = "";
+          for (vector<string>::const_iterator r = readGroupParts.begin(); r != readGroupParts.end(); ++r) {
+              vector<string> nameParts;
+              boost::split(nameParts, *r, boost::is_any_of(":"));
+              if (nameParts.at(0) == "SM") {
+                 name = nameParts.at(1);
+              } else if (nameParts.at(0) == "ID") {
+                 readGroupID = nameParts.at(1);
+              }
+          }
+          if (name == "") {
+              cerr << "ERROR: could not find SM: in @RG tag " << endl << headerLine << endl;
+              exit(1);
+          }
+          if (readGroupID == "") {
+              cerr << "ERROR: could not find ID: in @RG tag " << endl << headerLine << endl;
+              exit(1);
+          }
+          //string name = nameParts.back();
           //mergedHeader.append(1, '\n');
-          if (debug) cerr << "found sample " << name << endl;
+          if (debug) cerr << "found read group id " << readGroupID << " containing sample " << name << endl;
           sampleListFromBam.push_back(name);
+          readGroupToSampleNames[readGroupID] = name;
       }
   }
+  //cout << sampleListFromBam.size() << endl;
    // no samples file given, read from BAM file header for sample names
   if (sampleList.size() == 0) {
       if (debug) cerr << "no sample list file given, reading sample names from bam file" << endl;
       for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s) {
           if (debug) cerr << "found sample " << *s << endl;
-          sampleList.push_back(*s);
+          if (!stringInVector(*s, sampleList)) {
+              sampleList.push_back(*s);
+          }
       }
   } else {
       // verify that the samples in the sample list are present in the bam,
       // and raise an error and exit if not
       for (vector<string>::const_iterator s = sampleList.begin(); s != sampleList.end(); ++s) {
-          bool in = false;
+          bool inBam = false;
+          bool inReadGroup = false;
+          //cout << "checking sample from sample file " << *s << endl;
           for (vector<string>::const_iterator b = sampleListFromBam.begin(); b != sampleListFromBam.end(); ++b) {
-              if (*s == *b) { in = true; break; }
+              //cout << *s << " against " << *b << endl;
+              if (*s == *b) { inBam = true; break; }
           }
-          if (!in) {
+          for (map<string, string>::const_iterator p = readGroupToSampleNames.begin(); p != readGroupToSampleNames.end(); ++p) {
+              if (*s == p->second) { inReadGroup = true; break; }
+          }
+          if (!inBam) {
               cerr << "ERROR: sample " << *s << " listed in sample file "
                   << samples.c_str() << " is not listed in the header of BAM file "
                   << bam << endl;
               exit(1);
           }
+          if (!inReadGroup) {
+              cerr << "ERROR: sample " << *s << " listed in sample file "
+                  << samples.c_str() << " is not associated with any read group in the header of BAM file "
+                  << bam << endl;
+              exit(1);
+          }
+
       }
   }
   
@@ -1518,8 +1553,10 @@ int main (int argc, char *argv[]) {
         while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
             ++numReadsInTarget;
         }
-        if (debug) cerr << "numReadsInTarget " << numReadsInTarget << endl;
-        bReader.Jump(refId, target.left); // jump back
+        if (!bReader.Jump(refId, target.left)) { // jump back
+            cerr << "ERROR: Could not jump to target " << refId << " " << target.left << endl;
+            exit(1);
+        }
       }
 
       //------------------------------------------------------------------
@@ -1535,16 +1572,23 @@ int main (int argc, char *argv[]) {
  
       // otherwise analyze target
       else {
-	if (record) {logFile << "    Target OK... processing..." << endl;}
-	if (debug) {cerr << "    Target OK... processing..." << endl;}
-      
-    int processedReadsInTarget = 0;
-	int refPosLast = target.left - 1;
+    // get the first alignment
+    if (! bReader.GetNextAlignment(ba))  {
+        if (record) {logFile << "    Target not OK... cannot get first alignment, adding default stats" << endl;}
+        if (debug) {cerr << "    Target not OK... cannot get first alignment, adding default stats" << endl;}
+    } else {
+        if (record) {logFile << "    Target OK... processing..." << endl;}
+        if (debug) {cerr << "    Target OK... processing..." << endl;}
+          
+        int processedReadsInTarget = 0;
+        int refPosLast = target.left - 1;
+
 	while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
         ++processedReadsInTarget;
-	  
+
 	  // only process if mapped
 	  if (! ba.IsMapped()) {
+          cerr << "read is not mapped" << endl;
 	    continue;
 	  }
 	  
@@ -1563,8 +1607,8 @@ int main (int argc, char *argv[]) {
 
       // extract sample name and information
       string readName = ba.Name;
-      string sampleName;
-      if (! ba.GetReadGroup(sampleName)) {
+      string readGroup, sampleName;
+      if (! ba.GetTag("RG", readGroup)) {
           cerr << "ERROR: Couldn't find read group id (@RG tag) for BAM Alignment " << ba.Name 
                << " EXITING!" << endl;
           exit(1);
@@ -1572,6 +1616,11 @@ int main (int argc, char *argv[]) {
           //SampleInfo sampleInfo = extractSampleInfo(readName, sampleNaming, sampleDel);
           //string sampleName = sampleInfo.sampleId;
       }
+      if (readGroupToSampleNames.find(readGroup) == readGroupToSampleNames.end()) {
+          continue;
+      }
+      sampleName = readGroupToSampleNames[readGroup];
+      
 	  
 	  //----------------------------------------------------------------
 	  // get mapping quality
@@ -1741,6 +1790,7 @@ int main (int argc, char *argv[]) {
 		// extract aligned base
         string b;
 		TRY { b = rDna.substr(rp-1, 1); } CATCH;
+        //cout << sp << " " << b << endl;
 		char Q = rQual[rp-1];
 		
 		// convert base quality value into short int
@@ -1758,6 +1808,7 @@ int main (int argc, char *argv[]) {
 		}
 		
 		// register base call
+        //cout << sp << " " << sampleName << " " << bc.base << " " << bc.qual  << endl;
 		individualBasecallsAll[sp][sampleName].push_back(bc);
 		if (!dupRead) {
 		  individualBasecallsNondup[sp][sampleName].push_back(bc);
@@ -2077,6 +2128,7 @@ int main (int argc, char *argv[]) {
 	    //---------------------------------------------------------------
 	    // report if required
 	    //---------------------------------------------------------------
+        //cerr << "var.pSnp == " << var.pSnp << endl;
 	    if (var.pSnp >= PVL) {
 
             if (outputRPT) {
@@ -2222,6 +2274,7 @@ int main (int argc, char *argv[]) {
       gD += tD;
       gT++;
       gL += tL;
+    } // end conditional processing clause
     } // end bed targets loop
   } // end reference targets loop
 

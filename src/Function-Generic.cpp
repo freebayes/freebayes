@@ -199,4 +199,13 @@ vector<keyType> sortKeysByValue(map<keyType, valueType, std::less<keyType> > has
   return sortedKeys;
 }
 
+bool stringInVector(string item, vector<string> items) {
+    for (vector<string>::iterator i = items.begin(); i != items.end(); ++i) {
+        if (item == *i) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif

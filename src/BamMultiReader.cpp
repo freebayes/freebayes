@@ -88,7 +88,7 @@ void BamMultiReader::UpdateReferenceID(void) {
                 }
             }
         }
-        cerr << "updating reference id from " << CurrentRefID << " to " << nextRefID << endl;
+        //cerr << "updating reference id from " << CurrentRefID << " to " << nextRefID << endl;
         CurrentRefID = nextRefID;
     }
 }
@@ -137,7 +137,7 @@ bool BamMultiReader::GetNextAlignment(BamAlignment& nextAlignment) {
     // else continue and load the next alignment
     bool r = (readers.at(lowestAlignmentIndex))->GetNextAlignment(*alignments.at(lowestAlignmentIndex));
     if (!r) {
-        cerr << "reached end of file " << readers.at(lowestAlignmentIndex)->GetFilename() << endl;
+        //cerr << "reached end of file " << readers.at(lowestAlignmentIndex)->GetFilename() << endl;
         readerStates.at(lowestAlignmentIndex) = END;  // set flag for end of file
     }
 
@@ -152,9 +152,11 @@ bool BamMultiReader::Jump(int refID, int position) {
     CurrentLeft  = position;
 
     bool result = true;
+    int index = 0;
     for (vector<BamReader*>::iterator br = readers.begin(); br != readers.end(); ++br) {
         BamReader* reader = *br;
         result &= reader->Jump(refID, position);
+        readerStates.at(index++) = READING;
     }
     if (result)
         UpdateAlignments();
@@ -162,13 +164,17 @@ bool BamMultiReader::Jump(int refID, int position) {
 }
 
 // opens BAM files
-void BamMultiReader::Open(const vector<string> filenames) {
+void BamMultiReader::Open(const vector<string> filenames, bool openIndexes) {
     // for filename in filenames
     fileNames = filenames; // save filenames in our multireader
     for (vector<string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it) {
         string filename = *it;
         BamReader* reader = new BamReader;
-        reader->Open(filename, filename + ".bai");
+        if (openIndexes) {
+            reader->Open(filename, filename + ".bai");
+        } else {
+            reader->Open(filename); // for merging, jumping is disallowed
+        }
         BamAlignment* alignment = new BamAlignment;
         reader->GetNextAlignment(*alignment);
         readers.push_back(reader); // tracks readers

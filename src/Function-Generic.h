@@ -71,4 +71,6 @@ long double string2LongDouble (string);
 template< typename keyType, typename valueType >
 vector<keyType> sortKeysByValue(map<keyType, valueType, less<keyType> >, bool);
 
+bool stringInVector(string, vector<string>);
+
 #endif
