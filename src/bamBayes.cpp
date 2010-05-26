@@ -2176,7 +2176,7 @@ int main (int argc, char *argv[]) {
             if (outputVCF) {
 
                 vcfFile << refName << "\t" 
-                    <<  p + 1 << "\t"
+                    <<  p << "\t"
                     << "." << "\t"  // . is the default signifier for "no id"
                     << sb << "\t"; // reference base at this position
                 //vcfFile << allele1 << "," << allele2 << "\t";
