@@ -2066,7 +2066,7 @@ int main (int argc, char *argv[]) {
 	      if (basecalls.size() > 0) {
 		DataSufficientGi[ind] = true;
 	      }
-	    }	      
+	    }
 	    
 	    //---------------------------------------------------------------
 	    // find best two alleles
@@ -2082,10 +2082,10 @@ int main (int argc, char *argv[]) {
 	    // find best alleles
 	    string allele1 = sortedAlleles[0];
 	    string allele2 = sortedAlleles[1];
-	    
+
 	    // if ref allele is to be used make sure that is one of the alleles
 	    if (useRefAllele && forceRefAllele) {
-	      if (sb != allele1 && sb != allele2) {
+	      if (sb != allele1 && sb != allele2 && sb != "N") {
             allele2 = allele1;
             allele1 = sb;
 	      }
