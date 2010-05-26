@@ -2085,7 +2085,10 @@ int main (int argc, char *argv[]) {
 
 	    // if ref allele is to be used make sure that is one of the alleles
 	    if (useRefAllele && forceRefAllele) {
-	      if (sb != allele1 && sb != allele2 && sb != "N") {
+          if (sb == "N") {
+              continue; // skip this position if the reference is N
+          }
+	      if (sb != allele1 && sb != allele2) {
             allele2 = allele1;
             allele1 = sb;
 	      }
