@@ -87,7 +87,7 @@ int main (int argc, char *argv[]) {
             vector<pair<Genotype, long double> > probs = 
                 caller->probObservedAllelesGivenGenotypes(sampleAlleles->second, genotypes);
             
-            normalizeGenotypeProbabilities(probs);  // self-normalizes genotype probs
+            normalizeGenotypeProbabilitiesln(probs);  // self-normalizes genotype probs
             // if we were doing straight genotyping, this is where we would incorporate priors
 
             results.push_back(make_tuple(sampleAlleles->second.front()->sampleID, probs, sampleAlleles->second));
@@ -109,6 +109,7 @@ int main (int argc, char *argv[]) {
         //
         cout << "{\"sequence\":\"" << caller->currentTarget->seq << "\","
             << "\"position\":" << caller->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
+            //<< "\"raDepth\":" << caller->registeredAlleles.size() << ","
             << "\"samples\":{";  // TODO ... quality (~pSnp)
 
         bool suppressComma = true; // output flag
@@ -125,7 +126,7 @@ int main (int argc, char *argv[]) {
             for (vector<pair<Genotype, long double> >::iterator g = probs.begin(); 
                     g != probs.end(); ++g) {
                 if (g != probs.begin()) cout << ",";
-                cout << "\"" << g->first << "\":" << float2phred(1 - g->second);
+                cout << "\"" << g->first << "\":" << float2phred(1 - exp(g->second));
             }
             cout << "}";
             if (caller->parameters.outputAlleles)

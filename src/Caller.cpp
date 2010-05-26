@@ -879,21 +879,23 @@ void Caller::calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleG
         vector<tuple<long double, long double, vector<Allele*> > >& alleleGroupsAndQualities) {
 
     for (vector<vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
-        long double inProb = 1;
-        long double outProb = 1;
+        long double inProb = 0;
+        long double outProb = 0;
         for (vector<Allele*>::iterator obs = group->begin(); obs != group->end(); obs++) {
-            long double p = phred2float((*obs)->Quality(currentPosition));
+            int q = (*obs)->Quality(currentPosition);
+            long double p = phred2float(q);
             if (p == 1) {
                 ERROR("Encountered phred Q = 0 when processing allele " << *obs << " at " << currentPosition);
             }
-            inProb *= 1 - p;
-            outProb *= p;
+            inProb += log(1 - p);
+            outProb += phred2ln(q);
         }
         alleleGroupsAndQualities.push_back(make_tuple(inProb, outProb, *group));
     }
 
 }
 
+// TODO move to log space
 void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities) {
     long double sum = 0;
     for (vector<pair<Genotype, long double> >::const_iterator p = genotypeProbabilities.begin(); p != genotypeProbabilities.end(); ++p) {
@@ -904,6 +906,19 @@ void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genoty
             p->second /= sum;
         }
     }
+}
+
+void normalizeGenotypeProbabilitiesln(vector<pair<Genotype, long double> >& genotypeProbabilities) {
+    long double sum = 0;
+    for (vector<pair<Genotype, long double> >::const_iterator p = genotypeProbabilities.begin(); p != genotypeProbabilities.end(); ++p) {
+        sum += exp(p->second);
+    }
+    sum = log(sum);
+    //if (sum != 0) { // -nan guard
+    for (vector<pair<Genotype, long double> >::iterator p = genotypeProbabilities.begin(); p != genotypeProbabilities.end(); ++p) {
+        p->second -= sum;
+    }
+    //}
 }
 
 // the product p( observed allele | true allele ) * p( true allele | genotype )
@@ -1032,8 +1047,8 @@ long double Caller::probObservedAllelesGivenGenotype(
     //vector<int> sumQ (ploidy, 0);
     //vector<int> counts (ploidy, 0);
     int outCount = 0, inCount = 0;
-    long double inProb = 1;
-    long double outProb = 1;
+    long double inProbln = 0;
+    long double outProbln = 0;
     int obsCount = 0;
 
     // (1)
@@ -1041,8 +1056,8 @@ long double Caller::probObservedAllelesGivenGenotype(
     //                          ... and   = 10 ^(-Q/10) if observed allele != true allele
     //             where Q is the quality value associated with the observed allele
 
-    long double factAlleleCountProduct = 1;
-    long double probObsAllelesProduct = 1;
+    long double factAlleleCountProductln = 0;
+    long double probObsAllelesProductln = 0;
     for (vector<tuple<long double, long double, vector<Allele*> > >::iterator obs = alleleGroupProbs.begin();
             obs != alleleGroupProbs.end(); ++obs) {
 
@@ -1062,8 +1077,8 @@ long double Caller::probObservedAllelesGivenGenotype(
         long double multinomialProb = pow(probChooseAlleleFromAlleles(*alleles.front(), genotype), 
                 alleles.size());
         if (multinomialProb > 0) {
-            probObsAllelesProduct *= multinomialProb;
-            factAlleleCountProduct *= factorial(alleles.size());
+            probObsAllelesProductln += log(multinomialProb);
+            factAlleleCountProductln += log(factorial(alleles.size()));
             obsCount += alleles.size();
         }
 
@@ -1079,33 +1094,33 @@ long double Caller::probObservedAllelesGivenGenotype(
         // if it supports, add to our in* prob and count
         if (in) {
             LOG2(alleles << " in " << genotype);
-            inProb *= obs->get<0>();
+            inProbln += obs->get<0>();
             inCount += alleles.size();
         } else {
             LOG2(alleles << " not in " << genotype);
-            outProb *= obs->get<1>();
+            outProbln += obs->get<1>();
             outCount += alleles.size();
         }
     }
 
     // (1)
-    long double probAlleleObsGivenGenotype = ( inCount ? inProb : 1 ) * ( outCount ? outProb : 1 );
+    long double probAlleleObsGivenGenotypeln = ( inCount ? inProbln : 0 ) + ( outCount ? outProbln : 0 );
     LOG2(genotype);
     LOG2("outCount:" << outCount << ";"
-        << "outProb:" << outProb << ";"
+        << "outProbln:" << outProbln << ";"
         << "inCount:" << inCount << ";"
-        << "inProb:" << inProb << ";"
-        << "probAlleleObsGivenGenotype:" << probAlleleObsGivenGenotype);
+        << "inProbln:" << inProbln << ";"
+        << "probAlleleObsGivenGenotypeln:" << probAlleleObsGivenGenotypeln);
     
     // (2)
-    long double alleleSamplingProbability = ( (long double) factorial(obsCount) / factAlleleCountProduct ) * probObsAllelesProduct;
-    LOG2("factAlleleCountProduct:" << factAlleleCountProduct << ";"
+    long double alleleSamplingProbability = ( (long double) log(factorial(obsCount)) - factAlleleCountProductln ) + probObsAllelesProductln;
+    LOG2("factAlleleCountProduct:" << factAlleleCountProductln << ";"
         << "obsCount:" << obsCount << ";"
-        << "probObsAllelesProduct:" << probObsAllelesProduct << ";"
+        << "probObsAllelesProduct:" << probObsAllelesProductln << ";"
         << "alleleSamplingProbability:" << alleleSamplingProbability);
 
     // (1) * (2)
-    return probAlleleObsGivenGenotype * alleleSamplingProbability;
+    return probAlleleObsGivenGenotypeln + alleleSamplingProbability;
 }
 
 

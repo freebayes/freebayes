@@ -180,6 +180,7 @@ long double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes,
 vector<pair<long double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos, 
                 vector<vector<long double> > &probsBySample, bool normalize = false);
 void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities);
+void normalizeGenotypeProbabilitiesln(vector<pair<Genotype, long double> >& genotypeProbabilities);
 
 
 #endif

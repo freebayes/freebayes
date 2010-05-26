@@ -17,6 +17,14 @@ long double factorial(int n) {
     return f;
 }
 
+long double phred2ln(int qual) {
+    return M_LN10 * qual * -.1;
+}
+
+int ln2phred(long double prob) {
+    return -10 * M_LOG10E * prob;
+}
+
 long double phred2float(int qual) {
     return pow(10,qual * -.1);
 }
