@@ -1240,9 +1240,6 @@ int main (int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   
   // reference-specific target lists
-  // XXX this need not be a map between a string and a vector; it could go
-  // vector to vector, as the reference sequences are referred to by number in
-  // BamTools anyway
   map<string, vector<BedData> > RefTargetList;
   
   // if target file specified use targets from file
@@ -1487,15 +1484,11 @@ int main (int argc, char *argv[]) {
       //----------------------------------------------------------------------
       
       // contig-position specific coverage quantities
-      // XXX all these maps can be replaced by one data structure
-      //     mapping a range of ints into a vector of structures which hold these
-      // XXX these are unused??
       map<int, int > readCount, readCountPlus, readCountMinus;
       map<int, map_string_int > alleleCount, alleleCountPlus, alleleCountMinus;
       map<int, map_string_longDouble > alleleQual, alleleQualPlus, alleleQualMinus;
       
       // contig-position and individual specific coverage quantities
-      // XXX this map as well
       map<int, map<string, vector<Basecall> > >
           individualBasecalls, 
           individualBasecallsAll,
@@ -1644,7 +1637,6 @@ int main (int argc, char *argv[]) {
 	  
 	  // indicator function of ref seq positions where this read
 	  //   has an INDEL
-      //   XXX this one can also get mapped into the above data structure
 	  map<int, bool > readINDEL;
 
 	  // initialize reference sequence position and read position
@@ -1743,7 +1735,6 @@ int main (int argc, char *argv[]) {
 	  //----------------------------------------------------------------
 	  
 	  // mask data structure
-      // XXX this can also be encapsulated
 	  map<int, bool > readMask;
 
 	  // !!! too simplistic! Replace with more sophisticated method!
@@ -1875,8 +1866,6 @@ int main (int argc, char *argv[]) {
 	    int ntT = 0, qtT = 0, ntTp = 0, ntTm = 0;
 	    
 	    // single-individual coverage maps
-        // XXX this should be a unified data structure
-        //   ... not 22 maps
 	    map<string, int > NiBAll, NiBNondup;
 	    map<string, int > NiB, QiB, NiBp, NiBm;
 	    map<string, int > NiA, QiA, NiAp, NiAm;
@@ -2005,7 +1994,6 @@ int main (int argc, char *argv[]) {
 	    string sbPrev = "?";
 	    string sbNext = "?";
 	    
-        // XXX very bad, why are we appending the ref seq to the end of this vector?
 	    vector<string> sampleListPlusRef = sampleList;
 	    
 	    if (useRefAllele) {
@@ -2034,7 +2022,6 @@ int main (int argc, char *argv[]) {
 		bc.qual = sq;
 		bc.strand = "?";
 	      
-        // XXX
 		sampleListPlusRef.push_back(target.seq);
 		vector<Basecall> basecalls;
 		basecalls.push_back(bc);
