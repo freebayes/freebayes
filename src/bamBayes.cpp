@@ -1528,7 +1528,7 @@ int main (int argc, char *argv[]) {
       
       if (record) {logFile << "      Jumping to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
       if (debug) {cerr << "      Jumping to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
-      if (! bReader.Jump(refId, target.left)) {
+      if (! bReader.SetRegion(refId, target.left, refId, target.right - 1)) {
         badTarget = true;
         if (record) {logFile << "      WARNING: Cannot jump to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
         if (debug) {cerr << "      WARNING: Cannot jump to target start in BAM file. REfId: " << refId << " pos: " << target.left << endl;}	
@@ -1543,10 +1543,11 @@ int main (int argc, char *argv[]) {
          * positions at the end of the region that do not have reads following
          * them without having to loop through them one by one.
          */
-        while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
+        while (bReader.GetNextAlignment(ba)) {
             ++numReadsInTarget;
         }
-        if (!bReader.Jump(refId, target.left)) { // jump back
+        //if (!bReader.Jump(refId, target.left)) { // jump back
+        if (! bReader.SetRegion(refId, target.left, refId, target.right - 1)) {
             cerr << "ERROR: Could not jump to target " << refId << " " << target.left << endl;
             exit(1);
         }
@@ -1558,13 +1559,17 @@ int main (int argc, char *argv[]) {
       if (badTarget) {
         if (record) {logFile << "    Target not OK... adding default stats" << endl;}
         if (debug) {cerr << "    Target not OK... adding default stats" << endl;}
-
         cerr << "    Warning: Bad target starting at position " << target.left << endl;
-
-      }
+      if (numReadsInTarget == 0) {
  
+        if (record) {logFile << "    No reads in target... not processing" << endl;}
+        if (debug) {cerr << "    No reads in target... not processing" << endl;}
+      }
+
+
+      } 
       // otherwise analyze target
-      else {
+       else {
     // get the first alignment
     if (! bReader.GetNextAlignment(ba))  {
         if (record) {logFile << "    Target not OK... cannot get first alignment, adding default stats" << endl;}
@@ -1576,7 +1581,7 @@ int main (int argc, char *argv[]) {
         int processedReadsInTarget = 0;
         int refPosLast = target.left - 1;
 
-	while (bReader.GetNextAlignment(ba) && (ba.Position + 1 <= target.right)) {
+	while (bReader.GetNextAlignment(ba)) { // && (ba.Position + 1 <= target.right)) {
         ++processedReadsInTarget;
 
 	  // only process if mapped
@@ -1842,7 +1847,7 @@ int main (int argc, char *argv[]) {
 	    if (record && (p % I == 0)) {
 	      logFile << "    Processing refseq:" << refName << " position: " << p << endl;
 	    }
-	    if (debug && (p % I == 0)) {
+	    if (debug) {
 	      cerr << "    Processing ref seq:" << refName << " position: " << p << endl;
 	    }
 	    
@@ -2272,8 +2277,8 @@ int main (int argc, char *argv[]) {
   // report global stats
   //--------------------------------------------------------------------
   if (debug) {
-    cerr << "Total numnber of targets: " << gT << endl;
-    cerr << "Total numnber of reads overlapping targets: " << gA << endl;
+    cerr << "Total number of targets: " << gT << endl;
+    cerr << "Total number of reads overlapping targets: " << gA << endl;
     cerr << "Total length of targets: " << gL << endl;
     cerr << "Total depth in targets: " << gD << endl;
   }

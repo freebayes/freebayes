@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 14 April 2010 (DB)
+// Last modified: 16 June 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides the basic constants, data structures, etc. for using BAM files
 // ***************************************************************************
@@ -133,6 +133,28 @@ struct BamAlignment {
         int32_t      MateRefID;         // ID number for reference sequence where alignment's mate was aligned
         int32_t      MatePosition;      // Position (0-based) where alignment's mate starts
         int32_t      InsertSize;        // Mate-pair insert size
+        
+        struct BamAlignmentSupportData {
+      
+            // data members
+            std::string AllCharData;
+            uint32_t    BlockLength;
+            uint32_t    NumCigarOperations;
+            uint32_t    QueryNameLength;
+            uint32_t    QuerySequenceLength;
+            bool        IsParsed;
+            
+            // constructor
+            BamAlignmentSupportData(void)
+                : BlockLength(0)
+                , NumCigarOperations(0)
+                , QueryNameLength(0)
+                , QuerySequenceLength(0)
+                , IsParsed(false)
+            { }
+        };
+        
+        BamAlignmentSupportData SupportData;  // Contains raw character data & lengths 
 
     // Alignment flag query constants
     // Use the get/set methods above instead
@@ -155,8 +177,17 @@ struct BamAlignment {
 // Auxiliary data structs & typedefs
 
 struct CigarOp {
+  
+    // data members
     char     Type;   // Operation type (MIDNSHP)
     uint32_t Length; // Operation length (number of bases)
+    
+    // constructor
+    CigarOp(const char type = '\0', 
+            const uint32_t length = 0) 
+        : Type(type)
+        , Length(length) 
+    { }
 };
 
 struct RefData {
@@ -176,6 +207,26 @@ struct RefData {
 
 typedef std::vector<RefData>      RefVector;
 typedef std::vector<BamAlignment> BamAlignmentVector;
+
+struct BamRegion {
+  
+    // data members
+    int LeftRefID;
+    int LeftPosition;
+    int RightRefID;
+    int RightPosition;
+    
+    // constructor
+    BamRegion(const int& leftID   = -1, 
+              const int& leftPos  = -1,
+              const int& rightID  = -1,
+              const int& rightPos = -1)
+        : LeftRefID(leftID)
+        , LeftPosition(leftPos)
+        , RightRefID(rightID)
+        , RightPosition(rightPos)
+    { }
+};
 
 // ----------------------------------------------------------------
 // Indexing structs & typedefs
@@ -241,6 +292,7 @@ BamAlignment::BamAlignment(const BamAlignment& other)
     , MateRefID(other.MateRefID)
     , MatePosition(other.MatePosition)
     , InsertSize(other.InsertSize)
+    , SupportData(other.SupportData)
 { }
 
 inline 

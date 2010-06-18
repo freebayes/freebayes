@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 14 April 2010 (DB)
+// Last modified: 17 June 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -16,6 +16,7 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include <iostream>
 
 // BamTools includes
 #include "BGZF.h"
@@ -23,17 +24,15 @@
 using namespace BamTools;
 using namespace std;
 
-namespace BamTools {
-  struct BamAlignmentSupportData {
-      string   AllCharData;
-      uint32_t BlockLength;
-      uint32_t NumCigarOperations;
-      uint32_t QueryNameLength;
-      uint32_t QuerySequenceLength;
-  };
-} // namespace BamTools
-
 struct BamReader::BamReaderPrivate {
+
+    // -------------------------------
+    // structs, enums, typedefs
+    // -------------------------------
+    enum RegionState { BEFORE_REGION = 0
+                      , WITHIN_REGION
+                      , AFTER_REGION
+          };
 
     // -------------------------------
     // data members
@@ -53,6 +52,10 @@ struct BamReader::BamReaderPrivate {
     bool IsBigEndian;
 
     // user-specified region values
+    BamRegion Region;
+    bool IsLeftBoundSpecified;
+    bool IsRightBoundSpecified;
+    
     bool IsRegionSpecified;
     int  CurrentRefID;
     int  CurrentLeft;
@@ -76,9 +79,11 @@ struct BamReader::BamReaderPrivate {
     bool Jump(int refID, int position = 0);
     void Open(const string& filename, const string& indexFilename = "");
     bool Rewind(void);
+    bool SetRegion(const BamRegion& region);
 
     // access alignment data
     bool GetNextAlignment(BamAlignment& bAlignment);
+    bool GetNextAlignmentCore(BamAlignment& bAlignment);
 
     // access auxiliary data
     int GetReferenceID(const string& refName) const;
@@ -92,18 +97,18 @@ struct BamReader::BamReaderPrivate {
 
     // *** reading alignments and auxiliary data *** //
 
-    // calculate bins that overlap region ( left to reference end for now )
-    int BinsFromRegion(int refID, int left, uint16_t[MAX_BIN]);
+    // calculate bins that overlap region
+    int BinsFromRegion(uint16_t bins[MAX_BIN]);
     // fills out character data for BamAlignment data
-    bool BuildCharData(BamAlignment& bAlignment, const BamAlignmentSupportData& supportData);
-    // calculate file offset for first alignment chunk overlapping 'left'
-    int64_t GetOffset(int refID, int left);
+    bool BuildCharData(BamAlignment& bAlignment);
+    // calculate file offset for first alignment chunk overlapping specified region
+    int64_t GetOffset(std::vector<int64_t>& chunkStarts);
     // checks to see if alignment overlaps current region
-    bool IsOverlap(BamAlignment& bAlignment);
+    RegionState IsOverlap(BamAlignment& bAlignment);
     // retrieves header text from BAM file
     void LoadHeaderData(void);
     // retrieves BAM alignment under file pointer
-    bool LoadNextAlignment(BamAlignment& bAlignment, BamAlignmentSupportData& supportData);
+    bool LoadNextAlignment(BamAlignment& bAlignment);
     // builds reference data structure from BAM file
     void LoadReferenceData(void);
 
@@ -142,12 +147,23 @@ BamReader::~BamReader(void) {
 
 // file operations
 void BamReader::Close(void) { d->Close(); }
-bool BamReader::Jump(int refID, int position) { return d->Jump(refID, position); }
+bool BamReader::Jump(int refID, int position) { 
+    d->Region.LeftRefID = refID;
+    d->Region.LeftPosition = position;
+    d->IsLeftBoundSpecified = true;
+    d->IsRightBoundSpecified = false;
+    return d->Jump(refID, position); 
+}
 void BamReader::Open(const string& filename, const string& indexFilename) { d->Open(filename, indexFilename); }
 bool BamReader::Rewind(void) { return d->Rewind(); }
+bool BamReader::SetRegion(const BamRegion& region) { return d->SetRegion(region); }
+bool BamReader::SetRegion(const int& leftRefID, const int& leftBound, const int& rightRefID, const int& rightBound) {
+    return d->SetRegion( BamRegion(leftRefID, leftBound, rightRefID, rightBound) );
+}
 
 // access alignment data
 bool BamReader::GetNextAlignment(BamAlignment& bAlignment) { return d->GetNextAlignment(bAlignment); }
+bool BamReader::GetNextAlignmentCore(BamAlignment& bAlignment) { return d->GetNextAlignmentCore(bAlignment); }
 
 // access auxiliary data
 const string BamReader::GetHeaderText(void) const { return d->HeaderText; }
@@ -167,6 +183,8 @@ bool BamReader::CreateIndex(void) { return d->CreateIndex(); }
 BamReader::BamReaderPrivate::BamReaderPrivate(void)
     : IsIndexLoaded(false)
     , AlignmentsBeginOffset(0)
+    , IsLeftBoundSpecified(false)
+    , IsRightBoundSpecified(false)
     , IsRegionSpecified(false)
     , CurrentRefID(0)
     , CurrentLeft(0)
@@ -181,13 +199,22 @@ BamReader::BamReaderPrivate::~BamReaderPrivate(void) {
     Close();
 }
 
-// calculate bins that overlap region ( left to reference end for now )
-int BamReader::BamReaderPrivate::BinsFromRegion(int refID, int left, uint16_t list[MAX_BIN]) {
+// calculate bins that overlap region
+int BamReader::BamReaderPrivate::BinsFromRegion(uint16_t list[MAX_BIN]) {
 
     // get region boundaries
-    uint32_t begin = (unsigned int)left;
-    uint32_t end   = (unsigned int)References.at(refID).RefLength - 1;
-
+    uint32_t begin = (unsigned int)Region.LeftPosition;
+    uint32_t end;
+    
+    // if right bound specified AND left&right bounds are on same reference
+    // OK to use right bound position
+    if ( IsRightBoundSpecified && ( Region.LeftRefID == Region.RightRefID ) )
+        end = (unsigned int)Region.RightPosition; // -1 ??
+    
+    // otherwise, use end of left bound reference as cutoff
+    else
+        end = (unsigned int)References.at(Region.LeftRefID).RefLength - 1;
+    
     // initialize list, bin '0' always a valid bin
     int i = 0;
     list[i++] = 0;
@@ -204,40 +231,40 @@ int BamReader::BamReaderPrivate::BinsFromRegion(int refID, int left, uint16_t li
     return i;
 }
 
-bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment, const BamAlignmentSupportData& supportData) {
+bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
   
     // calculate character lengths/offsets
-    const unsigned int dataLength     = supportData.BlockLength - BAM_CORE_SIZE;
-    const unsigned int seqDataOffset  = supportData.QueryNameLength + (supportData.NumCigarOperations * 4);
-    const unsigned int qualDataOffset = seqDataOffset + (supportData.QuerySequenceLength+1)/2;
-    const unsigned int tagDataOffset  = qualDataOffset + supportData.QuerySequenceLength;
+    const unsigned int dataLength     = bAlignment.SupportData.BlockLength - BAM_CORE_SIZE;
+    const unsigned int seqDataOffset  = bAlignment.SupportData.QueryNameLength + (bAlignment.SupportData.NumCigarOperations * 4);
+    const unsigned int qualDataOffset = seqDataOffset + (bAlignment.SupportData.QuerySequenceLength+1)/2;
+    const unsigned int tagDataOffset  = qualDataOffset + bAlignment.SupportData.QuerySequenceLength;
     const unsigned int tagDataLength  = dataLength - tagDataOffset;
       
     // set up char buffers
-    const char* allCharData = supportData.AllCharData.data();
+    const char* allCharData = bAlignment.SupportData.AllCharData.data();
     const char* seqData     = ((const char*)allCharData) + seqDataOffset;
     const char* qualData    = ((const char*)allCharData) + qualDataOffset;
     char* tagData     = ((char*)allCharData) + tagDataOffset;
   
     // save query sequence
     bAlignment.QueryBases.clear();
-    bAlignment.QueryBases.reserve(supportData.QuerySequenceLength);
-    for (unsigned int i = 0; i < supportData.QuerySequenceLength; ++i) {
+    bAlignment.QueryBases.reserve(bAlignment.SupportData.QuerySequenceLength);
+    for (unsigned int i = 0; i < bAlignment.SupportData.QuerySequenceLength; ++i) {
         char singleBase = DNA_LOOKUP[ ( ( seqData[(i/2)] >> (4*(1-(i%2)))) & 0xf ) ];
         bAlignment.QueryBases.append(1, singleBase);
     }
   
     // save qualities, converting from numeric QV to 'FASTQ-style' ASCII character
     bAlignment.Qualities.clear();
-    bAlignment.Qualities.reserve(supportData.QuerySequenceLength);
-    for (unsigned int i = 0; i < supportData.QuerySequenceLength; ++i) {
+    bAlignment.Qualities.reserve(bAlignment.SupportData.QuerySequenceLength);
+    for (unsigned int i = 0; i < bAlignment.SupportData.QuerySequenceLength; ++i) {
         char singleQuality = (char)(qualData[i]+33);
         bAlignment.Qualities.append(1, singleQuality);
     }
     
     // parse CIGAR to build 'AlignedBases'
     bAlignment.AlignedBases.clear();
-    bAlignment.AlignedBases.reserve(supportData.QuerySequenceLength);
+    bAlignment.AlignedBases.reserve(bAlignment.SupportData.QuerySequenceLength);
     
     int k = 0;
     vector<CigarOp>::const_iterator cigarIter = bAlignment.CigarData.begin();
@@ -330,6 +357,9 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment, const 
     bAlignment.TagData.clear();
     bAlignment.TagData.resize(tagDataLength);
     memcpy((char*)bAlignment.TagData.data(), tagData, tagDataLength);
+    
+    // set support data parsed flag
+    bAlignment.SupportData.IsParsed = true;
     
     // return success
     return true;
@@ -476,6 +506,8 @@ void BamReader::BamReaderPrivate::Close(void) {
     mBGZF.Close();
     ClearIndex();
     HeaderText.clear();
+    IsLeftBoundSpecified = false;
+    IsRightBoundSpecified = false;
     IsRegionSpecified = false;
 }
 
@@ -494,72 +526,77 @@ bool BamReader::BamReaderPrivate::CreateIndex(void) {
     return ok;
 }
 
-// returns RefID for given RefName (returns References.size() if not found)
-int BamReader::BamReaderPrivate::GetReferenceID(const string& refName) const {
-
-    // retrieve names from reference data
-    vector<string> refNames;
-    RefVector::const_iterator refIter = References.begin();
-    RefVector::const_iterator refEnd  = References.end();
-    for ( ; refIter != refEnd; ++refIter) {
-        refNames.push_back( (*refIter).RefName );
-    }
-
-    // return 'index-of' refName ( if not found, returns refNames.size() )
-    return distance(refNames.begin(), find(refNames.begin(), refNames.end(), refName));
-}
-
 // get next alignment (from specified region, if given)
 bool BamReader::BamReaderPrivate::GetNextAlignment(BamAlignment& bAlignment) {
 
-    BamAlignmentSupportData supportData;
-  
+    // if valid alignment found, attempt to parse char data, and return success/failure
+    if ( GetNextAlignmentCore(bAlignment) )
+        return BuildCharData(bAlignment);
+    
+    // no valid alignment found
+    else
+        return false;
+}
+
+// retrieves next available alignment core data (returns success/fail)
+// ** DOES NOT parse any character data (bases, qualities, tag data)
+//    these can be accessed, if necessary, from the supportData 
+// useful for operations requiring ONLY positional or other alignment-related information
+bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment) {
+
     // if valid alignment available
-    if ( LoadNextAlignment(bAlignment, supportData) ) {
+    if ( LoadNextAlignment(bAlignment) ) {
 
         // if region not specified, return success
-        if ( !IsRegionSpecified ) { 
-          bool ok = BuildCharData(bAlignment, supportData);
-          return ok; 
-        }
+        if ( !IsLeftBoundSpecified ) return true;
 
-        // load next alignment until region overlap is found
-        while ( !IsOverlap(bAlignment) ) {
+        // determine region state (before, within, after)
+        BamReader::BamReaderPrivate::RegionState state = IsOverlap(bAlignment);
+      
+        // if alignment lies after region, return false
+        if ( state == AFTER_REGION ) 
+            return false;
+
+        while ( state != WITHIN_REGION ) {
             // if no valid alignment available (likely EOF) return failure
-            if ( !LoadNextAlignment(bAlignment, supportData) ) { return false; }
+            if ( !LoadNextAlignment(bAlignment) ) return false;
+            // if alignment lies after region, return false (no available read within region)
+            state = IsOverlap(bAlignment);
+            if ( state == AFTER_REGION) return false;
+            
         }
 
         // return success (alignment found that overlaps region)
-        bool ok = BuildCharData(bAlignment, supportData);
-        return ok;
+        return true;
     }
 
     // no valid alignment
-    else { return false; }
+    else
+        return false;
 }
 
-// calculate closest indexed file offset for region specified
-int64_t BamReader::BamReaderPrivate::GetOffset(int refID, int left) {
+// calculate file offset for first alignment chunk overlapping specified region
+int64_t BamReader::BamReaderPrivate::GetOffset(std::vector<int64_t>& chunkStarts) {
 
     // calculate which bins overlap this region
     uint16_t* bins = (uint16_t*)calloc(MAX_BIN, 2);
-    int numBins = BinsFromRegion(refID, left, bins);
+    int numBins = BinsFromRegion(bins);
 
     // get bins for this reference
-    const ReferenceIndex& refIndex = Index.at(refID);
+    const ReferenceIndex& refIndex = Index.at(Region.LeftRefID);
     const BamBinMap& binMap        = refIndex.Bins;
 
     // get minimum offset to consider
     const LinearOffsetVector& offsets = refIndex.Offsets;
-    uint64_t minOffset = ( (unsigned int)(left>>BAM_LIDX_SHIFT) >= offsets.size() ) ? 0 : offsets.at(left>>BAM_LIDX_SHIFT);
+    uint64_t minOffset = ( (unsigned int)(Region.LeftPosition>>BAM_LIDX_SHIFT) >= offsets.size() ) ? 0 : offsets.at(Region.LeftPosition>>BAM_LIDX_SHIFT);
 
     // store offsets to beginning of alignment 'chunks'
-    std::vector<int64_t> chunkStarts;
+    //std::vector<int64_t> chunkStarts;
 
     // store all alignment 'chunk' starts for bins in this region
     for (int i = 0; i < numBins; ++i ) {
-        uint16_t binKey = bins[i];
-
+      
+        const uint16_t binKey = bins[i];
         map<uint32_t, ChunkVector>::const_iterator binIter = binMap.find(binKey);
         if ( (binIter != binMap.end()) && ((*binIter).first == binKey) ) {
 
@@ -581,6 +618,21 @@ int64_t BamReader::BamReaderPrivate::GetOffset(int refID, int left) {
     // if no alignments found, else return smallest offset for alignment starts
     if ( chunkStarts.size() == 0 ) { return -1; }
     else { return *min_element(chunkStarts.begin(), chunkStarts.end()); }
+}
+
+// returns RefID for given RefName (returns References.size() if not found)
+int BamReader::BamReaderPrivate::GetReferenceID(const string& refName) const {
+
+    // retrieve names from reference data
+    vector<string> refNames;
+    RefVector::const_iterator refIter = References.begin();
+    RefVector::const_iterator refEnd  = References.end();
+    for ( ; refIter != refEnd; ++refIter) {
+        refNames.push_back( (*refIter).RefName );
+    }
+
+    // return 'index-of' refName ( if not found, returns refNames.size() )
+    return distance(refNames.begin(), find(refNames.begin(), refNames.end(), refName));
 }
 
 // saves BAM bin entry for index
@@ -631,17 +683,46 @@ void BamReader::BamReaderPrivate::InsertLinearOffset(LinearOffsetVector& offsets
     }
 }
 
-// returns whether alignment overlaps currently specified region (refID, leftBound)
-bool BamReader::BamReaderPrivate::IsOverlap(BamAlignment& bAlignment) {
+// returns region state - whether alignment ends before, overlaps, or starts after currently specified region
+// this *internal* method should ONLY called when (at least) IsLeftBoundSpecified == true
+BamReader::BamReaderPrivate::RegionState BamReader::BamReaderPrivate::IsOverlap(BamAlignment& bAlignment) {
+    
+    // --------------------------------------------------
+    // check alignment start against right bound cutoff
+    
+    // if full region of interest was given
+    if ( IsRightBoundSpecified ) {
+      
+        // read starts on right bound reference, but AFTER right bound position
+        if ( bAlignment.RefID == Region.RightRefID && bAlignment.Position > Region.RightPosition )
+            return AFTER_REGION;
+      
+        // if read starts on reference AFTER right bound, return false
+        if ( bAlignment.RefID > Region.RightRefID ) 
+            return AFTER_REGION;
+    }
+  
+    // --------------------------------------------------------
+    // no right bound given OR read starts before right bound
+    // so, check if it overlaps left bound 
+  
+    // if read starts on left bound reference AND after left boundary, return success
+    if ( bAlignment.RefID == Region.LeftRefID && bAlignment.Position >= Region.LeftPosition)
+        return WITHIN_REGION;
+  
+    // if read is on any reference sequence before left bound, return false
+    if ( bAlignment.RefID < Region.LeftRefID )
+        return BEFORE_REGION;
 
-    // if on different reference sequence, quit
-    if ( bAlignment.RefID != CurrentRefID ) { return false; }
+    // --------------------------------------------------------
+    // read is on left bound reference, but starts before left bound position
 
-    // read starts after left boundary
-    if ( bAlignment.Position >= CurrentLeft) { return true; }
-
-    // return whether alignment end overlaps left boundary
-    return ( bAlignment.GetEndPosition() >= CurrentLeft );
+    // if it overlaps, return WITHIN_REGION
+    if ( bAlignment.GetEndPosition() >= Region.LeftPosition )
+        return WITHIN_REGION;
+    // else begins before left bound position
+    else
+        return BEFORE_REGION;
 }
 
 // jumps to specified region(refID, leftBound) in BAM file, returns success/fail
@@ -650,19 +731,37 @@ bool BamReader::BamReaderPrivate::Jump(int refID, int position) {
     // if data exists for this reference and position is valid    
     if ( References.at(refID).RefHasAlignments && (position <= References.at(refID).RefLength) ) {
 
-        // set current region
-        CurrentRefID = refID;
-        CurrentLeft  = position;
-        IsRegionSpecified = true;
-
         // calculate offset
-        int64_t offset = GetOffset(CurrentRefID, CurrentLeft);
+        std::vector<int64_t> chunkStarts;
+        int64_t offset = GetOffset(chunkStarts);
+	sort(chunkStarts.begin(), chunkStarts.end());
 
         // if in valid offset, return failure
-        if ( offset == -1 ) { return false; }
-
         // otherwise return success of seek operation
-        else { return mBGZF.Seek(offset); }
+        if ( offset == -1 ) {
+            return false;
+        } else {
+            //return mBGZF.Seek(offset);
+            BamAlignment bAlignment;
+            bool result = true;
+            for (std::vector<int64_t>::const_iterator o = chunkStarts.begin(); o != chunkStarts.end(); ++o) {
+            //    std::cerr << *o << endl;
+	    //	std::cerr << "Seeking to offset: " << *o << endl;
+                result &= mBGZF.Seek(*o);
+                LoadNextAlignment(bAlignment);
+            //    std::cerr << "alignment: " << bAlignment.RefID 
+            //        << ":" << bAlignment.Position << ".." << bAlignment.Position + bAlignment.Length << endl;
+                if ((bAlignment.RefID == refID && bAlignment.Position + bAlignment.Length > position) || bAlignment.RefID > refID) {
+             //       std::cerr << "here i am" << endl;
+	     //	    std::cerr << "seeking to offset: " << (*(o-1)) << endl;
+	     //	    std::cerr << "*** Finished jumping ***" << endl;
+                    return mBGZF.Seek(*o);
+                }
+            }
+
+            //std::cerr << "*** Finished jumping ***" << endl;
+            return result;
+        }
     }
 
     // invalid jump request parameters, return failure
@@ -827,14 +926,14 @@ bool BamReader::BamReaderPrivate::LoadIndex(void) {
 }
 
 // populates BamAlignment with alignment data under file pointer, returns success/fail
-bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment, BamAlignmentSupportData& supportData) {
+bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment) {
 
     // read in the 'block length' value, make sure it's not zero
     char buffer[4];
     mBGZF.Read(buffer, 4);
-    supportData.BlockLength = BgzfData::UnpackUnsignedInt(buffer);
-    if ( IsBigEndian ) { SwapEndian_32(supportData.BlockLength); }
-    if ( supportData.BlockLength == 0 ) { return false; }
+    bAlignment.SupportData.BlockLength = BgzfData::UnpackUnsignedInt(buffer);
+    if ( IsBigEndian ) { SwapEndian_32(bAlignment.SupportData.BlockLength); }
+    if ( bAlignment.SupportData.BlockLength == 0 ) { return false; }
 
     // read in core alignment data, make sure the right size of data was read
     char x[BAM_CORE_SIZE];
@@ -853,20 +952,20 @@ bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment, Ba
     unsigned int tempValue = BgzfData::UnpackUnsignedInt(&x[8]);
     bAlignment.Bin        = tempValue >> 16;
     bAlignment.MapQuality = tempValue >> 8 & 0xff;
-    supportData.QueryNameLength = tempValue & 0xff;
+    bAlignment.SupportData.QueryNameLength = tempValue & 0xff;
 
     tempValue = BgzfData::UnpackUnsignedInt(&x[12]);
     bAlignment.AlignmentFlag = tempValue >> 16;
-    supportData.NumCigarOperations = tempValue & 0xffff;
+    bAlignment.SupportData.NumCigarOperations = tempValue & 0xffff;
 
-    supportData.QuerySequenceLength = BgzfData::UnpackUnsignedInt(&x[16]);
+    bAlignment.SupportData.QuerySequenceLength = BgzfData::UnpackUnsignedInt(&x[16]);
     bAlignment.MateRefID    = BgzfData::UnpackSignedInt(&x[20]);
     bAlignment.MatePosition = BgzfData::UnpackSignedInt(&x[24]);
     bAlignment.InsertSize   = BgzfData::UnpackSignedInt(&x[28]);
     
     // store 'all char data' and cigar ops
-    const unsigned int dataLength      = supportData.BlockLength - BAM_CORE_SIZE;
-    const unsigned int cigarDataOffset = supportData.QueryNameLength;
+    const unsigned int dataLength      = bAlignment.SupportData.BlockLength - BAM_CORE_SIZE;
+    const unsigned int cigarDataOffset = bAlignment.SupportData.QueryNameLength;
     
     char*     allCharData = (char*)calloc(sizeof(char), dataLength);
     uint32_t* cigarData   = (uint32_t*)(allCharData + cigarDataOffset);
@@ -877,14 +976,14 @@ bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment, Ba
      
         // store alignment name and length
         bAlignment.Name.assign((const char*)(allCharData));
-        bAlignment.Length = supportData.QuerySequenceLength;
+        bAlignment.Length = bAlignment.SupportData.QuerySequenceLength;
       
         // store remaining 'allCharData' in supportData structure
-        supportData.AllCharData.assign((const char*)allCharData, dataLength);
+        bAlignment.SupportData.AllCharData.assign((const char*)allCharData, dataLength);
         
         // save CigarOps for BamAlignment
         bAlignment.CigarData.clear();
-        for (unsigned int i = 0; i < supportData.NumCigarOperations; ++i) {
+        for (unsigned int i = 0; i < bAlignment.SupportData.NumCigarOperations; ++i) {
 
             // swap if necessary
             if ( IsBigEndian ) { SwapEndian_32(cigarData[i]); }
@@ -1027,13 +1126,34 @@ bool BamReader::BamReaderPrivate::Rewind(void) {
         if ( References.at(refID).RefHasAlignments ) { break; }
     }
 
-    // store default bounds for first alignment
-    CurrentRefID = refID;
-    CurrentLeft = 0;
-    IsRegionSpecified = false;
+    // reset default region info
+    Region.LeftRefID = refID;
+    Region.LeftPosition = 0;
+    Region.RightRefID = -1;
+    Region.RightPosition = -1;
+    IsLeftBoundSpecified = false;
+    IsRightBoundSpecified = false;
 
     // return success/failure of seek
     return mBGZF.Seek(AlignmentsBeginOffset);
+}
+
+// sets a region of interest (with left & right bound reference/position)
+// attempts a Jump() to left bound as well
+// returns success/failure of Jump()
+bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
+    
+    // save region of interest
+    Region = region;
+    
+    // set flags
+    if ( region.LeftRefID >= 0 && region.LeftPosition >= 0 ) 
+        IsLeftBoundSpecified = true;
+    if ( region.RightRefID >= 0 && region.RightPosition >= 0 ) 
+        IsRightBoundSpecified = true;
+    
+    // attempt jump to beginning of region, return success/fail of Jump()
+    return Jump( Region.LeftRefID, Region.LeftPosition );
 }
 
 // saves index data to BAM index file (".bai"), returns success/fail

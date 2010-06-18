@@ -13,6 +13,9 @@
 
 // C++ includes
 #include <string>
+#include <map>
+#include <utility> // for pair
+#include <sstream>
 
 using namespace std;
 
@@ -22,7 +25,9 @@ using namespace std;
 
 namespace BamTools {
 
-enum BamReaderState { START, END, READING, CLOSED };
+// index mapping reference/position pairings to bamreaders and their alignments
+typedef multimap<pair<int, int>, pair<BamReader*, BamAlignment*> > AlignmentIndex;
+
 
 class BamMultiReader {
 
@@ -38,17 +43,31 @@ class BamMultiReader {
         int CurrentRefID;
         int CurrentLeft;
 
+        // region under analysis, specified using SetRegion
+        BamRegion Region;
+
         // ----------------------
         // BAM file operations
         // ----------------------
 
         // close BAM files
         void Close(void);
+
+        // opens BAM files (and optional BAM index files, if provided)
+        // @openIndexes - triggers index opening, useful for suppressing
+        // error messages during merging of files in which we may not have
+        // indexes.
+        // @coreMode - setup our first alignments using GetNextAlignmentCore();
+        // also useful for merging
+        void Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false);
+
         // performs random-access jump to reference, position
         bool Jump(int refID, int position = 0);
-        // opens BAM files (and optional BAM index files, if provided)
-        //void Open(const vector<std::string&> filenames, const vector<std::string&> indexFilenames);
-        void Open(const vector<string> filenames, bool openIndexes = true);
+
+        // sets the target region
+        bool SetRegion(const BamRegion& region);
+        bool SetRegion(const int&, const int&, const int&, const int&); // convenience function to above
+
         // returns file pointers to beginning of alignments
         bool Rewind(void);
 
@@ -60,6 +79,10 @@ class BamMultiReader {
 
         // retrieves next available alignment (returns success/fail) from all files
         bool GetNextAlignment(BamAlignment&);
+        // retrieves next available alignment (returns success/fail) from all files
+        // and populates the support data with information about the alignment
+        // *** BUT DOES NOT PARSE CHARACTER DATA FROM THE ALIGNMENT
+        bool GetNextAlignmentCore(BamAlignment&);
         // ... should this be private?
         bool HasOpenReaders(void);
 
@@ -89,21 +112,19 @@ class BamMultiReader {
 
         // utility
         void PrintFilenames(void);
-        void UpdateAlignments(void);
-
+        void DumpAlignmentIndex(void);
+        void UpdateAlignments(void); // updates our alignment cache
 
     // private implementation
     private:
-        // TODO perhaps, for legibility, I should use a struct to wrap them all up
-        //      But this may actually make things more confusing, as I'm only
-        //      operating on them all simultaneously during GetNextAlignment
-        //      calls.
-        // all these vectors are ordered the same
-        // readers.at(N) refers to the same reader as alignments.at(N) and readerStates.at(N)
-        vector<BamReader*> readers; // the set of readers which we operate on
-        vector<BamAlignment*> alignments; // the equivalent set of alignments we use to step through the files
-        vector<BamReaderState> readerStates; // states of the various readers
-        // alignment position?
+
+        // the set of readers and alignments which we operate on, maintained throughout the life of this class
+        vector<pair<BamReader*, BamAlignment*> > readers;
+
+        // readers and alignments sorted by reference id and position, to keep track of the lowest (next) alignment
+        // when a reader reaches EOF, its entry is removed from this index
+        AlignmentIndex alignments;
+
         vector<string> fileNames;
 };
 
