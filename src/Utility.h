@@ -26,4 +26,12 @@ short averageQuality(const std::string& qualstr);
 //unsigned int factorial(int n);
 bool stringInVector(string item, vector<string> items);
 
+long double gammaln( long double x);
+long double factorial( int n);
+long double factorialln( int n);
+long double cofactor( int n, int i);
+long double cofactorln( int n, int i);
+
+long double logsumexp(const vector<long double>& lnv);
+
 #endif

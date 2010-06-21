@@ -177,6 +177,7 @@ private:
 };
 
 typedef vector<Allele> Genotype;
+bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b);
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);

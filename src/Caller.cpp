@@ -860,7 +860,19 @@ Caller::probObservedAllelesGivenGenotypes(
     
     // (B)
     // k multichoose n, or ploidy multichoose alleleGroups
-    //vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
+    // vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
+    //
+    // the true result for this sums the result over all possible true alleles
+    // ... we consider true alleles to be all permutations of all multiset
+    // combinations of the distinct alleles among our  'observed alleles' at
+    // this location
+    // ... this would require us to recompute this function for a series of
+    // true allele : observed allele pairings, for each multiset of true
+    // alleles possible
+    // ... note that this breaks down in the sense that we have no mechanism to
+    // differentiate the likelihood that an observation yields one base or
+    // another if neither base is the most-likely observed base.
+    // 
 
     // (C) 
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {

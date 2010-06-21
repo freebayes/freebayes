@@ -149,6 +149,8 @@ ostream &operator<<(ostream &out, const Parameters &p) {
          << "  --record = " << (p.record ? "true" : "false" ) << endl
          << "  --debug = " <<  (p.debug ? "true" : "false") << endl
          << "  --debug2 = " <<  (p.debug2 ? "true" : "false") << endl
+         << "  --outputAlleles = " << p.outputAlleles << endl
+         << "  --suppressOutput = " << p.suppressOutput << endl
          << endl;
 
     return out;
@@ -248,6 +250,19 @@ Parameters::Parameters (int argc, char** argv) {
     arg.multi = false;
     my.ArgList.push_back(arg);
     SwitchArg cmd_outputAlleles(arg.shortId, arg.longId, arg.description, cmd, false);
+
+    // output option: output information about all alleles contributing to a given genotyping position
+    ArgStruct argSuppressOutput;
+    arg = argSuppressOutput; 
+    arg.shortId = ""; 
+    arg.longId = "suppressOutput"; 
+    arg.description = "Output option: suppress output stream (for debugging work)";
+    arg.required = false; 
+    arg.defaultValueString = "false"; 
+    arg.type = "switch"; 
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    SwitchArg cmd_suppressOutput(arg.shortId, arg.longId, arg.description, cmd, false);
 
     // log file
     ArgStruct argLog;
@@ -668,6 +683,7 @@ Parameters::Parameters (int argc, char** argv) {
     samples = cmd_samples.getValue();
     log = cmd_log.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
+    suppressOutput = cmd_suppressOutput.getValue();
 
     useRefAllele = cmd_useRefAllele.getValue();
     forceRefAllele = cmd_forceRefAllele.getValue();

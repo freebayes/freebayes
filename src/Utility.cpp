@@ -8,15 +8,6 @@ short qualityChar2ShortInt(char c) {
     return static_cast<short>(c) - 33;
 }
 
-long double factorial(int n) {
-    long double f = 1;
-    while ( n > 1) {
-        f *= n;
-        n -= 1;
-    }
-    return f;
-}
-
 long double phred2ln(int qual) {
     return M_LN10 * qual * -.1;
 }
@@ -69,18 +60,6 @@ short averageQuality(const std::string& qualstr) {
 
 }
 
-/*
-unsigned int factorial(int n) 
-{
-    int f = 1;
-    for(int i=1; i<=n; i++) 
-    {
-        f *= i;
-    }
-    return f;
-}
-*/
-
 bool stringInVector(string item, vector<string> items) {
     for (vector<string>::iterator i = items.begin(); i != items.end(); ++i) {
         if (item == *i) {
@@ -90,3 +69,113 @@ bool stringInVector(string item, vector<string> items) {
     return false;
 }
 
+// from Function-Math.cpp
+
+long double gammaln(
+		     long double x
+		     ) {
+
+  long double cofactors[] = { 76.18009173, 
+                              -86.50532033,
+                              24.01409822,
+                              -1.231739516,
+                              0.120858003E-2,
+                              -0.536382E-5 };    
+
+  long double x1 = x - 1.0;
+  long double tmp = x1 + 5.5;
+  tmp -= (x1 + 0.5) * log(tmp);
+  long double ser = 1.0;
+  for (int j=0; j<=5; j++) {
+    x1 += 1.0;
+    ser += cofactors[j]/x1;
+  }
+  long double y =  (-1.0 * tmp + log(2.50662827465 * ser));
+
+  return y;
+}
+
+long double factorial(
+		      int n
+		      ) {
+  if (n < 0) {
+    return (long double)0.0;
+  }
+  else if (n == 0) {
+    return (long double)1.0;
+  }
+  else {
+    return exp(gammaln(n + 1.0));
+  }
+}
+
+long double factorialln(
+			int n
+			) {
+  if (n < 0) {
+    return (long double)-1.0;
+  }
+  else if (n == 0) {
+    return (long double)0.0;
+  }
+  else {
+    return gammaln(n + 1.0);
+  }
+}
+
+long double cofactor(
+		     int n, 
+		     int i
+		     ) {
+  if ((n < 0) || (i < 0) || (n < i)) {
+    return (long double)0.0;
+  }
+  else if (n == i) {
+    return (long double)1.0;
+  }
+  else {
+    return exp(gammaln(n + 1.0) - gammaln(i + 1.0) - gammaln(n-i + 1.0));
+  }
+}
+
+long double cofactorln(
+		       int n, 
+		       int i
+		       ) {
+  if ((n < 0) || (i < 0) || (n < i)) {
+    return (long double)-1.0;
+  }
+  else if (n == i) {
+    return (long double)0.0;
+  }
+  else {
+    return gammaln(n + 1.0) - gammaln(i + 1.0) - gammaln(n-i + 1.0);
+  }
+}
+
+long double logsumexp(const vector<long double>& lnv) {
+    long double maxAbs, minN, maxN, c;
+    vector<long double>::const_iterator i = lnv.begin();
+    long double n = *i;
+    maxAbs = n; maxN = n; minN = n;
+    ++i;
+    for (; i != lnv.end(); ++i) {
+        n = *i;
+        if (n > maxN)
+            maxN = n;
+        if (abs((int) n) > maxAbs)
+            maxAbs = abs((int) n);
+        if (n < minN)
+            minN = n;
+    }
+    if (maxAbs > maxN) {
+        c = minN;
+    } else {
+        c = maxN;
+    }
+    long double sum = 0;
+    for (vector<long double>::const_iterator i = lnv.begin(); i != lnv.end(); ++i) {
+        sum += exp(*i - c);
+    }
+    return c + log(sum);
+}

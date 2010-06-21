@@ -63,6 +63,7 @@ public:
     // operation parameters
     bool useRefAllele;
     bool outputAlleles;
+    bool suppressOutput;
     bool forceRefAllele;
     int MQR;
     int BQR;

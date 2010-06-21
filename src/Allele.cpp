@@ -195,6 +195,11 @@ bool operator<(Allele &a, Allele &b) {
     return a.type < b.type;
 }
 
+// for sorting pairs of genotype, probs
+bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b) {
+    return a.second > b.second;
+}
+
 // impossible:
 /*
 bool operator<(Allele* &a, Allele* &b) {
