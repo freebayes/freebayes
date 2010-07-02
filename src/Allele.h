@@ -63,7 +63,7 @@ class Allele {
     friend string stringForAllele(Allele &a);
     friend string stringForAlleles(vector<Allele> &av);
 
-    friend bool operator<(Allele &a, Allele &b);
+    friend bool operator<(const Allele &a, const Allele &b);
 
     friend ostream &operator<<(ostream &out, vector<Allele> &a);
     friend ostream &operator<<(ostream &out, vector<Allele*> &a);
@@ -186,6 +186,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));
 vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele*> > groupAlleles(vector<Allele*> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele*> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles_copy(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 bool allelesSameType(Allele* &a, Allele* &b);

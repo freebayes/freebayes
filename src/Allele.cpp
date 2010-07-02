@@ -191,7 +191,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
 }
 
 // for sorting alleles by type
-bool operator<(Allele &a, Allele &b) {
+bool operator<(const Allele &a, const Allele &b) {
     return a.type < b.type;
 }
 
@@ -319,6 +319,26 @@ vector<vector<Allele*> >  groupAlleles(vector<Allele*> &alleles, bool (*fncompar
         if (unique) {
             vector<Allele*> trueAlleleGroup;
             trueAlleleGroup.push_back(*oa);
+            groups.push_back(trueAlleleGroup);
+        }
+    }
+    return groups;
+}
+
+vector<vector<Allele*> >  groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b)) {
+    vector<vector<Allele*> > groups;
+    for (vector<Allele>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele*> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+            if ((*fncompare)(*oa, *ag->front())) {
+                ag->push_back(&*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector<Allele*> trueAlleleGroup;
+            trueAlleleGroup.push_back(&*oa);
             groups.push_back(trueAlleleGroup);
         }
     }

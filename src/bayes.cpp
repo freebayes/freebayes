@@ -152,7 +152,7 @@ int main (int argc, char *argv[]) {
 
         long double posteriorNormalizer = 0;  // our posterior normalizer sum
 
-        for (vector<vector<int> >::const_iterator b = bandedIndexes.begin(); b != bandedIndexes.end(); ++b) {
+        for (vector<vector<int> >::iterator b = bandedIndexes.begin(); b != bandedIndexes.end(); ++b) {
             
             // multipermute...
             vector<vector<int> > permutations = multipermute(*b);
@@ -162,7 +162,7 @@ int main (int argc, char *argv[]) {
             //      in the previous version the banded approximation only mixed a single 2nd index at a time
             //      ... also, this could be recast as a generator to avoid memcpys
 
-            for (vector<vector<int> >::const_iterator p = permutations.begin(); p != permutations.end(); ++p) {
+            for (vector<vector<int> >::iterator p = permutations.begin(); p != permutations.end(); ++p) {
             //
             //     1) get a genotype combo from the permutation
             // 
@@ -176,32 +176,32 @@ int main (int argc, char *argv[]) {
                 for (vector<int>::const_iterator i = indexes.begin(); i != indexes.end(); ++i) {
                     // use the index to get a reference the Nth best genotype
                     map<Allele, int> currentGenotypeAlleleFrequencies;
-                    pair<long double, Genotype>& nthBest = sampleResult->get<1>().at(*i);
+                    pair<Genotype, long double>& nthBest = sampleResult->get<1>().at(*i);
                     ++sampleResult;
-                    long double& prob = nthBest.first;
-                    Genotype& genotype = nthBest.second;
+                    Genotype& genotype = nthBest.first;
+                    long double& prob = nthBest.second;
                     // get the log probability of that genotype from results, multiply our normalizer by it
                     posteriorNormalizer += prob;
                     // sum genotype into allele frequency (af) for this combo
                     totalCopiesAtLocus += genotype.size();
 
-                    for (vector<Allele>::const_iterator a = genotype.begin(); a != genotype.end(); ++a) {
+                    for (vector<Allele>::iterator a = genotype.begin(); a != genotype.end(); ++a) {
                         Allele& allele = *a;
 
                         // increment population-wide allele frequencies
-                        map<Allele, int>::iterator frequency = alleleFrequencies.find(allele);
-                        if (frequency == alleleFrequencies.end()) {
-                            alleleFrequencies[allele] = 1;
+                        map<Allele, int>::iterator freq = alleleFrequencies.find(allele);
+                        if (freq == alleleFrequencies.end()) {
+                            alleleFrequencies.insert(pair<Allele,int>(allele, 1));
                         } else {
-                            frequency->second += 1;
+                            freq->second += 1;
                         }
 
                         // increment current genotype allele frequencies
-                        frequency = currentGenotypeAlleleFrequencies.find(allele);
-                        if (frequency == alleleFrequencies.end()) {
-                            currentGenotypeAlleleFrequencies[allele] = 1;
+                        freq = currentGenotypeAlleleFrequencies.find(allele);
+                        if (freq == currentGenotypeAlleleFrequencies.end()) {
+                            currentGenotypeAlleleFrequencies.insert(pair<Allele,int>(allele, 1));
                         } else {
-                            frequency->second += 1;
+                            freq->second += 1;
                         }
                     }
 

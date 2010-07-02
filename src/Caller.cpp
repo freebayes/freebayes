@@ -3,6 +3,7 @@
                          // otherwise we will get a linker error
                          // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
                          // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
+#include "multipermute.h"
 
 // local helper debugging macros to improve code readability
 #define LOG(msg) \
@@ -845,6 +846,7 @@ vector<pair<Genotype, long double> > Caller::probObservedAllelesGivenPossibleGen
 
 }
 
+/*
 vector<pair<Genotype, long double> > 
 Caller::probObservedAllelesGivenGenotypes(
         vector<Allele*> &observedAlleles,
@@ -853,28 +855,10 @@ Caller::probObservedAllelesGivenGenotypes(
     int ploidy = genotypes.front().size(); // ploidy is determined by the number of alleles in the genotypes
     vector<pair<Genotype, long double> > results;
 
-    // (A)
     vector<vector<Allele*> > alleleGroups = groupAlleles(observedAlleles, allelesEquivalent);
     vector<tuple<long double, long double, vector<Allele*> > > alleleGroupsAndQualities;
-    calculateAlleleGroupProbabilities(alleleGroups, alleleGroupsAndQualities);
-    
-    // (B)
-    // k multichoose n, or ploidy multichoose alleleGroups
-    // vector<vector<vector<Allele> > > alleleMultiCombinations = multichoose(ploidy, alleleGroups);
-    //
-    // the true result for this sums the result over all possible true alleles
-    // ... we consider true alleles to be all permutations of all multiset
-    // combinations of the distinct alleles among our  'observed alleles' at
-    // this location
-    // ... this would require us to recompute this function for a series of
-    // true allele : observed allele pairings, for each multiset of true
-    // alleles possible
-    // ... note that this breaks down in the sense that we have no mechanism to
-    // differentiate the likelihood that an observation yields one base or
-    // another if neither base is the most-likely observed base.
-    // 
+    calculateAlleleGroupProbabilities(alleleGroups, alleleGroupsAndQualities); // caches for faster calc
 
-    // (C) 
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         long double prob = 0;
         results.push_back(make_pair(*g, probObservedAllelesGivenGenotype(alleleGroupsAndQualities, *g)));
@@ -883,6 +867,7 @@ Caller::probObservedAllelesGivenGenotypes(
     return results;
 
 }
+*/
 
 // caches in and out probabilities per allele grouping in alleleGroups
 // results are pushed into alleleGroupsAndQualities
@@ -906,6 +891,111 @@ void Caller::calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleG
     }
 
 }
+
+vector<pair<Genotype, long double> > 
+Caller::probObservedAllelesGivenGenotypes(
+        vector<Allele*> &observedAlleles,
+        vector<Genotype> &genotypes) {
+
+    vector<pair<Genotype, long double> > results;
+
+    vector<tuple<long double, long double, Allele* > > observedAllelesAndProbs;
+    calculateAlleleBinaryProbabilities(observedAlleles, observedAllelesAndProbs); // in and out probability in log space for each allele at this position
+
+    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        // XXX this following statement is where you should target pruning optimizations:
+        vector<vector<Allele*> > trueCombos = trueAlleleCombinations(observedAlleles.size(), *g);
+        vector<long double> probs;
+        for (vector<vector<Allele*> >::iterator combo = trueCombos.begin(); combo != trueCombos.end(); ++combo) {
+            probs.push_back(probObservedAllelesGivenGenotypeAndTrueAlleles(observedAllelesAndProbs, *combo, *g));
+        }
+        results.push_back(make_pair(*g, logsumexp(probs)));
+    }
+
+    return results;
+
+}
+
+//returns prob in log space
+long double
+Caller::probObservedAllelesGivenGenotypeAndTrueAlleles(
+        vector<tuple<long double, long double, Allele* > >& observedAllelesAndProbs,
+        vector<Allele*>& trueAlleles,
+        vector<Allele>& genotype) {
+
+    int ploidy = genotype.size();
+    long double ploidyFactorial = factorialln(ploidy);
+
+    // summation variables for counting our sampling distribution
+    long double alleleGenotypeFrequencyProd = 0;
+    long double genotypeAlleleFrequencyFactorialProd = 0;
+    long double alleleCountFactorialSum;
+
+    vector<vector<Allele*> > trueAlleleGroups = groupAlleles(trueAlleles, allelesEquivalent);
+    vector<vector<Allele*> > genotypeAlleleGroups = groupAlleles(genotype, allelesEquivalent);
+
+    for (vector<vector<Allele*> >::const_iterator alleles = genotypeAlleleGroups.begin(); alleles != genotypeAlleleGroups.end(); ++alleles) {
+        genotypeAlleleFrequencyFactorialProd += factorialln(alleles->size());
+    }
+
+    for (vector<vector<Allele*> >::const_iterator alleles = trueAlleleGroups.begin(); alleles != trueAlleleGroups.end(); ++alleles) {
+        alleleGenotypeFrequencyProd += log(probChooseAlleleFromAlleles(*(alleles->front()), genotype));
+        alleleCountFactorialSum += factorial(alleles->size());
+    }
+
+    //long double samplingProb = (ploidyFactorial + ploidyFactorial) - (genotypeFreqProd + obsFreqSum) + alleleProbProd;
+    long double samplingProb = 
+        (ploidyFactorial + ploidyFactorial) // squared in log space
+            - (genotypeAlleleFrequencyFactorialProd + log(alleleCountFactorialSum)) 
+        + alleleGenotypeFrequencyProd;
+
+    vector<long double> obsProbs;
+    vector<Allele*>::const_iterator t = trueAlleles.begin();
+    for (vector<tuple<long double, long double, Allele* > >::const_iterator p = observedAllelesAndProbs.begin();
+         p != observedAllelesAndProbs.end() && t != trueAlleles.end();
+         ++p, ++t) {
+        if (p->get<2>()->equivalent(**t)) {
+            obsProbs.push_back(p->get<0>());
+        } else {
+            obsProbs.push_back(p->get<1>());
+        }
+    }
+    
+    return logsumexp(obsProbs) + samplingProb;
+
+}
+
+// the true allele combinations / permutations that can be drawn out of a given genotype
+// this will be a very, very large set for even modest n and small g
+vector<vector<Allele*> > trueAlleleCombinations(int n, Genotype& g) {
+
+    vector<vector<Allele*> > results;
+
+    vector<vector<Allele*> > combinations = multichoose_ptr(n, g);
+    for(vector<vector<Allele*> >::iterator av = combinations.begin(); av != combinations.end(); ++av) {
+        vector<vector<Allele*> > perms = multipermute(*av);
+        for(vector<vector<Allele*> >::const_iterator p = perms.begin(); p != perms.end(); ++p) {
+            results.push_back(*p);
+        }
+    }
+
+    return results;
+
+}
+
+// log in and out probabilities per allele, caching step
+void Caller::calculateAlleleBinaryProbabilities(
+        vector<Allele*>& alleles, 
+        vector<tuple<long double, long double, Allele* > >& allelesAndProbs) {
+
+    for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele *allele = *a;
+        long double q = allele->Quality(currentPosition);
+        allelesAndProbs.push_back(make_tuple(log(1 - phred2float(q)), phred2ln(q), allele));
+    }
+
+}
+
 
 // TODO move to log space
 void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities) {

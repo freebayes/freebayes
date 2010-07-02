@@ -137,15 +137,30 @@ public:
     bool getNextAlleles(list<Allele*>& alleles);
     void getAlleles(list<Allele*>& alleles);
 
+    // TODO clean these up...
     // p( observedAlleles | genotype ) for all genotypes
     vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
     vector<pair<Genotype, long double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
     long double probObservedAllelesGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
     long double probObservedAllelesGivenGenotype(vector<tuple<long double, long double, vector<Allele*> > > &alleleComboProbs, 
             vector<Allele> &genotype);
+
+    // NB: this is the one we're currently using
+    long double probObservedAllelesGivenGenotypeAndTrueAlleles(
+            vector<tuple<long double, long double, Allele* > >& allelesAndProbs,
+            vector<Allele*>& trueAlleles,
+            vector<Allele>& genotype);
+
     // caches probability products of the allele observations
     void calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleGroups, 
             vector<tuple<long double, long double, vector<Allele*> > >& alleleGroupsAndQualities);
+
+
+    // calculates log observation true/false probabilities and caches them in allelesAndProbs
+    // true prob = log(1 - phred2float(Q score)), false prob = phred2log(Q score)
+    void calculateAlleleBinaryProbabilities(
+            vector<Allele*>& alleles, 
+            vector<tuple<long double, long double, Allele* > >& allelesAndProbs);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
@@ -181,6 +196,10 @@ vector<pair<long double, vector<Allele> > > mostLikelyGenotypesGivenObservations
                 vector<vector<long double> > &probsBySample, bool normalize = false);
 void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities);
 void normalizeGenotypeProbabilitiesln(vector<pair<Genotype, long double> >& genotypeProbabilities);
+
+// provides the potential 'true combinations' which could underly n observations
+// aka: all multiset permutations of all multiset combinations of size n of Genotype& g
+vector<vector<Allele*> > trueAlleleCombinations(int n, Genotype& g);
 
 
 #endif
