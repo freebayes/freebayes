@@ -1203,7 +1203,9 @@ int main (int argc, char *argv[]) {
   // generate one alongside it.
   FastaReference* fastaReference = new FastaReference(fasta);
   map<string, unsigned int > refseqLength;
-  map<string, string > refseqDna;
+  //map<string, string > refseqDna;
+  string targetDna; // target DNA, we will update this as we switch targets
+  unsigned int targetStart;  // target start, used to offset substr lookups against targetDna
 
   //--------------------------------------------------------------------------
   // load ref seq names into hash
@@ -1222,13 +1224,10 @@ int main (int argc, char *argv[]) {
 
     refseqLength[name] = entry.length;
     // get the reference base sequence
-    refseqDna[name] = fastaReference->getSequence(entry.name);
+    //refseqDna[name] = fastaReference->getSequence(entry.name);
 
   }
 
-  // close the reference sequence reader
-  delete fastaReference;
-  
   // report success
   if (record) {logFile << " done." << endl;}
   if (debug) {logFile << " done." << endl;}
@@ -1408,8 +1407,8 @@ int main (int argc, char *argv[]) {
 
       vcfFile << "##format=VCFv3.3" << endl
               << "##fileDate=" << datestr << endl
-              << "##source=gigabayes" << endl
-              << "##reference=1000GenomesPilot-NCBI36" << endl
+              << "##source=bambayes" << endl
+              << "##reference=" << fasta << endl
               << "##phasing=none" << endl
               << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
              
@@ -1458,6 +1457,13 @@ int main (int argc, char *argv[]) {
       
       // retrieve target region
       BedData target = * targetIter;
+
+      // load reference DNA corresponding to this target
+      // add a base to the start and end to handle the sbPrev and sbNext
+      targetDna = fastaReference->getSubSequence(target.seq, target.left - 2, target.right - target.left + 2);
+
+      // set target offset
+      targetStart = target.left - 2;
       
       // find target ref seq in list of ref seqs from BAM file
       int refId = bReader.GetReferenceID(target.seq);
@@ -1501,7 +1507,6 @@ int main (int argc, char *argv[]) {
       
       // collect targets for which there is no read data
       bool badTarget = false;
-      int numReadsInTarget = 0;    
       BamAlignment ba;
 
       // skip target if invalid reference
@@ -1528,7 +1533,7 @@ int main (int argc, char *argv[]) {
       
       if (record) {logFile << "      Jumping to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
       if (debug) {cerr << "      Jumping to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
-      if (! bReader.SetRegion(refId, target.left, refId, target.right - 1)) {
+      if (! bReader.SetRegion(refId, target.left - 1, refId, target.right - 1)) {
         badTarget = true;
         if (record) {logFile << "      WARNING: Cannot jump to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
         if (debug) {cerr << "      WARNING: Cannot jump to target start in BAM file. REfId: " << refId << " pos: " << target.left << endl;}	
@@ -1537,20 +1542,6 @@ int main (int argc, char *argv[]) {
         if (record) {logFile << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}
         if (debug) {cerr << "      Jumped to target start in BAM file. RefId: " << refId << " pos: " << target.left << endl;}	
 
-        /* 
-         * Get the number of alignments in this target space, and jump back to
-         * the start.  We do this so that we can properly step through the
-         * positions at the end of the region that do not have reads following
-         * them without having to loop through them one by one.
-         */
-        while (bReader.GetNextAlignment(ba)) {
-            ++numReadsInTarget;
-        }
-        //if (!bReader.Jump(refId, target.left)) { // jump back
-        if (! bReader.SetRegion(refId, target.left, refId, target.right - 1)) {
-            cerr << "ERROR: Could not jump to target " << refId << " " << target.left << endl;
-            exit(1);
-        }
       }
 
       //------------------------------------------------------------------
@@ -1560,13 +1551,6 @@ int main (int argc, char *argv[]) {
         if (record) {logFile << "    Target not OK... adding default stats" << endl;}
         if (debug) {cerr << "    Target not OK... adding default stats" << endl;}
         cerr << "    Warning: Bad target starting at position " << target.left << endl;
-      if (numReadsInTarget == 0) {
- 
-        if (record) {logFile << "    No reads in target... not processing" << endl;}
-        if (debug) {cerr << "    No reads in target... not processing" << endl;}
-      }
-
-
       } 
       // otherwise analyze target
        else {
@@ -1586,7 +1570,7 @@ int main (int argc, char *argv[]) {
 
 	  // only process if mapped
 	  if (! ba.IsMapped()) {
-          cerr << "read is not mapped" << endl;
+          //cerr << "read is not mapped" << endl;
 	    continue;
 	  }
 	  
@@ -1669,7 +1653,8 @@ int main (int argc, char *argv[]) {
 		
 		// get reference allele
         string sb;
-		TRY { sb = refseqDna[refName].substr(sp-1, 1); } CATCH;
+		//TRY { sb = refseqDna[refName].substr(sp-1, 1); } CATCH;
+		TRY { sb = targetDna.substr(sp - 1 - targetStart, 1); } CATCH;
 
 		// register mismatch
 		if (b != sb && q >= BQL2) {mru++;}
@@ -1835,12 +1820,10 @@ int main (int argc, char *argv[]) {
 	  int refPosLeft = refPosLast + 1;
 	  if (refPosLeft < target.left) {refPosLeft = target.left;}
 
-      if (debug) {
-          if (processedReadsInTarget >= numReadsInTarget) { cerr << "at last read in target region" << endl; }
-      }
       // check if we are at the last read
       // if so set the refPosRight to the target right
-	  int refPosRight = (processedReadsInTarget < numReadsInTarget) ? min((int)ba.Position, target.right) : target.right;
+	  //int refPosRight = (processedReadsInTarget < numReadsInTarget) ? min((int)ba.Position, target.right) : target.right;
+      int refPosRight = min((int)ba.Position, target.right);
 	  for (int p = refPosLeft; p <= refPosRight; p++) {
 	    
 	    // report progress if necessary
@@ -2004,16 +1987,19 @@ int main (int argc, char *argv[]) {
 	    if (useRefAllele) {
 	      
 	      // fill real values
-	      TRY { sb = refseqDna[refName].substr(p-1, 1); } CATCH;
+	     // TRY { sb = refseqDna[refName].substr(p-1, 1); } CATCH;
+          TRY { sb = targetDna.substr(p - targetStart - 1, 1); } CATCH;
 
 	      //	      sb = RefFastaData[refName].sequence.substr(p-1, 1);	      
 	      if (p > 1 ) {
-            TRY { sbPrev = refseqDna[refName].substr(p-2, 1); } CATCH;
+            //TRY { sbPrev = refseqDna[refName].substr(p-2, 1); } CATCH;
+          TRY { sbPrev = targetDna.substr(p - targetStart - 2, 1); } CATCH;
 		//		sbPrev = RefFastaData[refName].sequence.substr(p-2, 1);
 	      }
 	      if (p < refLength) {
 		//		sbNext = RefFastaData[refName].sequence.substr(p, 1);
-            TRY { sbNext = refseqDna[refName].substr(p, 1); } CATCH;
+            //TRY { sbNext = refseqDna[refName].substr(p, 1); } CATCH;
+            TRY { sbNext = targetDna.substr(p - targetStart, 1); } CATCH;
 	      }
 	      
 	      // only use ref allele if real base
