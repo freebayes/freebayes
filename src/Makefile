@@ -26,7 +26,7 @@ C=gcc
 #CFLAGS=-g # debugging
 #CFLAGS=-O3 #-pg #profiling
 #CFLAGS=-pg -O3
-#CFLAGS=-O3
+CFLAGS=-O3
 
 ################################################################################
 # Program builds
