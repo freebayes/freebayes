@@ -94,7 +94,7 @@ void BamWriter::BamWriterPrivate::CreatePackedCigar(const vector<CigarOp>& cigar
 
     unsigned int cigarOp;
     vector<CigarOp>::const_iterator coIter;
-    for(coIter = cigarOperations.begin(); coIter != cigarOperations.end(); coIter++) {
+    for(coIter = cigarOperations.begin(); coIter != cigarOperations.end(); ++coIter) {
 
         switch(coIter->Type) {
             case 'M':
@@ -206,17 +206,16 @@ void BamWriter::BamWriterPrivate::Open(const string& filename, const string& sam
 
     // write the SAM header text length
     uint32_t samHeaderLen = samHeader.size();
-    if ( IsBigEndian ) { SwapEndian_32(samHeaderLen); }
+    if (IsBigEndian) SwapEndian_32(samHeaderLen);
     mBGZF.Write((char*)&samHeaderLen, BT_SIZEOF_INT);
 
     // write the SAM header text
-    if(samHeaderLen > 0) {
+    if(samHeaderLen > 0) 
         mBGZF.Write(samHeader.data(), samHeaderLen);
-    }
 
     // write the number of reference sequences
     uint32_t numReferenceSequences = referenceSequences.size();
-    if ( IsBigEndian ) { SwapEndian_32(numReferenceSequences); }
+    if (IsBigEndian) SwapEndian_32(numReferenceSequences);
     mBGZF.Write((char*)&numReferenceSequences, BT_SIZEOF_INT);
 
     // =============================
@@ -228,7 +227,7 @@ void BamWriter::BamWriterPrivate::Open(const string& filename, const string& sam
 
         // write the reference sequence name length
         uint32_t referenceSequenceNameLen = rsIter->RefName.size() + 1;
-        if ( IsBigEndian ) { SwapEndian_32(referenceSequenceNameLen); }
+        if (IsBigEndian) SwapEndian_32(referenceSequenceNameLen);
         mBGZF.Write((char*)&referenceSequenceNameLen, BT_SIZEOF_INT);
 
         // write the reference sequence name
@@ -236,7 +235,7 @@ void BamWriter::BamWriterPrivate::Open(const string& filename, const string& sam
 
         // write the reference sequence length
         int32_t referenceLength = rsIter->RefLength;
-        if ( IsBigEndian ) { SwapEndian_32(referenceLength); }
+        if (IsBigEndian) SwapEndian_32(referenceLength);
         mBGZF.Write((char*)&referenceLength, BT_SIZEOF_INT);
     }
 }
@@ -257,14 +256,13 @@ void BamWriter::BamWriterPrivate::SaveAlignment(const BamAlignment& al) {
 
     // write the block size
     unsigned int blockSize = al.SupportData.BlockLength;
-    if ( IsBigEndian ) { SwapEndian_32(blockSize); }
+    if (IsBigEndian) SwapEndian_32(blockSize);
     mBGZF.Write((char*)&blockSize, BT_SIZEOF_INT);
 
     // swap BAM core endian-ness, if necessary
     if ( IsBigEndian ) { 
-        for ( int i = 0; i < 8; ++i ) { 
+        for ( int i = 0; i < 8; ++i )
             SwapEndian_32(buffer[i]); 
-        } 
     }
     
     // write the BAM core
@@ -279,9 +277,9 @@ void BamWriter::BamWriterPrivate::SaveAlignment(const BamAlignment& al) {
     else {
       
         // initialize
-        const unsigned int nameLen            = al.Name.size() + 1;
-        const unsigned int queryLen           = al.QueryBases.size();
-        const unsigned int tagDataLength      = al.TagData.size();
+        const unsigned int nameLen       = al.Name.size() + 1;
+        const unsigned int queryLen      = al.QueryBases.size();
+        const unsigned int tagDataLength = al.TagData.size();
         
         // create our packed cigar string
         string packedCigar;
@@ -303,25 +301,25 @@ void BamWriter::BamWriterPrivate::SaveAlignment(const BamAlignment& al) {
             memcpy(cigarData, packedCigar.data(), packedCigarLen);
             
             for (unsigned int i = 0; i < packedCigarLen; ++i) {
-                if ( IsBigEndian ) { 
+                if ( IsBigEndian )
                   SwapEndian_32p(&cigarData[i]); 
-                }
             }
             
             mBGZF.Write(cigarData, packedCigarLen);
-            free(cigarData);
-            
-        } else { 
+            free(cigarData);    
+        } 
+        else 
             mBGZF.Write(packedCigar.data(), packedCigarLen);
-        }
 
         // write the encoded query sequence
         mBGZF.Write(encodedQuery.data(), encodedQueryLen);
 
         // write the base qualities
-        string baseQualities = al.Qualities;
+        string baseQualities(al.Qualities);
         char* pBaseQualities = (char*)al.Qualities.data();
-        for(unsigned int i = 0; i < queryLen; i++) { pBaseQualities[i] -= 33; }
+        for(unsigned int i = 0; i < queryLen; i++) { 
+            pBaseQualities[i] -= 33; 
+        }
         mBGZF.Write(pBaseQualities, queryLen);
 
         // write the read group tag
@@ -375,8 +373,8 @@ void BamWriter::BamWriterPrivate::SaveAlignment(const BamAlignment& al) {
             
             mBGZF.Write(tagData, tagDataLength);
             free(tagData);
-        } else {
-            mBGZF.Write(al.TagData.data(), tagDataLength);
-        }      
+        } 
+        else 
+            mBGZF.Write(al.TagData.data(), tagDataLength);      
     }
 }

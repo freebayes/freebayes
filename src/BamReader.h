@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 16 June 2010 (DB)
+// Last modified: 22 June 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -41,7 +41,7 @@ class BamReader {
         // performs random-access jump to reference, position
         bool Jump(int refID, int position = 0);
         // opens BAM file (and optional BAM index file, if provided)
-        void Open(const std::string& filename, const std::string& indexFilename = "");
+        bool Open(const std::string& filename, const std::string& indexFilename = "");
         // returns file pointer to beginning of alignments
         bool Rewind(void);
         // sets a region of interest (with left & right bound reference/position)

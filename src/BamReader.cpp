@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 17 June 2010 (DB)
+// Last modified: 22 June 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -77,7 +77,7 @@ struct BamReader::BamReaderPrivate {
     // file operations
     void Close(void);
     bool Jump(int refID, int position = 0);
-    void Open(const string& filename, const string& indexFilename = "");
+    bool Open(const string& filename, const string& indexFilename = "");
     bool Rewind(void);
     bool SetRegion(const BamRegion& region);
 
@@ -154,7 +154,7 @@ bool BamReader::Jump(int refID, int position) {
     d->IsRightBoundSpecified = false;
     return d->Jump(refID, position); 
 }
-void BamReader::Open(const string& filename, const string& indexFilename) { d->Open(filename, indexFilename); }
+bool BamReader::Open(const string& filename, const string& indexFilename) { return d->Open(filename, indexFilename); }
 bool BamReader::Rewind(void) { return d->Rewind(); }
 bool BamReader::SetRegion(const BamRegion& region) { return d->SetRegion(region); }
 bool BamReader::SetRegion(const int& leftRefID, const int& leftBound, const int& rightRefID, const int& rightBound) {
@@ -244,7 +244,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
     const char* allCharData = bAlignment.SupportData.AllCharData.data();
     const char* seqData     = ((const char*)allCharData) + seqDataOffset;
     const char* qualData    = ((const char*)allCharData) + qualDataOffset;
-    char* tagData     = ((char*)allCharData) + tagDataOffset;
+          char* tagData     = ((char*)allCharData) + tagDataOffset;
   
     // save query sequence
     bAlignment.QueryBases.clear();
@@ -982,14 +982,15 @@ bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment) {
         bAlignment.SupportData.AllCharData.assign((const char*)allCharData, dataLength);
         
         // save CigarOps for BamAlignment
+        CigarOp op;
         bAlignment.CigarData.clear();
+        bAlignment.CigarData.reserve(bAlignment.SupportData.NumCigarOperations);
         for (unsigned int i = 0; i < bAlignment.SupportData.NumCigarOperations; ++i) {
 
             // swap if necessary
             if ( IsBigEndian ) { SwapEndian_32(cigarData[i]); }
           
             // build CigarOp structure
-            CigarOp op;
             op.Length = (cigarData[i] >> BAM_CIGAR_SHIFT);
             op.Type   = CIGAR_LOOKUP[ (cigarData[i] & BAM_CIGAR_MASK) ];
 
@@ -1097,13 +1098,16 @@ void BamReader::BamReaderPrivate::MergeChunks(void) {
 }
 
 // opens BAM file (and index)
-void BamReader::BamReaderPrivate::Open(const string& filename, const string& indexFilename) {
+bool BamReader::BamReaderPrivate::Open(const string& filename, const string& indexFilename) {
 
     Filename = filename;
     IndexFilename = indexFilename;
 
-    // open the BGZF file for reading, retrieve header text & reference data
-    mBGZF.Open(filename, "rb");
+    // open the BGZF file for reading, return false on failure
+    if ( !mBGZF.Open(filename, "rb") ) 
+        return false;
+    
+    // retrieve header text & reference data
     LoadHeaderData();
     LoadReferenceData();
 
@@ -1114,6 +1118,9 @@ void BamReader::BamReaderPrivate::Open(const string& filename, const string& ind
     if ( !IndexFilename.empty() ) {
         LoadIndex();
     }
+    
+    // return success
+    return true;
 }
 
 // returns BAM file pointer to beginning of alignment data

@@ -179,19 +179,18 @@ bool BamMultiReader::SetRegion(const BamRegion& region) {
 
     Region = region;
 
-    bool result = true;
+    // NB: While it may make sense to track readers in which we can
+    // successfully SetRegion, In practice a failure of SetRegion means "no
+    // alignments here."  It makes sense to simply accept the failure,
+    // UpdateAlignments(), and continue.
+
     for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        BamReader* reader = it->first;
-        result &= reader->SetRegion(region);
-        if (!result) {
-            cerr << "ERROR: could not set region " << reader->GetFilename() << " to " 
-                << region.LeftRefID << ":" << region.LeftPosition << ".." << region.RightRefID << ":" << region.RightPosition
-                << endl;
-            exit(1);
-        }
+        it->first->SetRegion(region);
     }
-    if (result) UpdateAlignments();
-    return result;
+
+    UpdateAlignments();
+
+    return true;
 
 }
 
@@ -217,20 +216,29 @@ void BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool
     for (vector<string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it) {
         string filename = *it;
         BamReader* reader = new BamReader;
+
+        // TODO; change Open to return success/failure so we can report errors here
         if (openIndexes) {
             reader->Open(filename, filename + ".bai");
         } else {
             reader->Open(filename); // for merging, jumping is disallowed
         }
+
+        bool fileOK = true;
         BamAlignment* alignment = new BamAlignment;
         if (coreMode) {
-            reader->GetNextAlignmentCore(*alignment);
+            fileOK &= reader->GetNextAlignmentCore(*alignment);
         } else {
-            reader->GetNextAlignment(*alignment);
+            fileOK &= reader->GetNextAlignment(*alignment);
         }
-        readers.push_back(make_pair(reader, alignment)); // store pointers to our readers for cleanup
-        alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
-                                    make_pair(reader, alignment)));
+        if (fileOK) {
+            readers.push_back(make_pair(reader, alignment)); // store pointers to our readers for cleanup
+            alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
+                                        make_pair(reader, alignment)));
+        } else {
+            cerr << "WARNING: could not read first alignment in " << filename << ", ignoring file" << endl;
+        }
+
     }
     ValidateReaders();
 }
