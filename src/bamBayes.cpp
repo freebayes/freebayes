@@ -1825,7 +1825,7 @@ int main (int argc, char *argv[]) {
 	  //int refPosRight = (processedReadsInTarget < numReadsInTarget) ? min((int)ba.Position, target.right) : target.right;
       int refPosRight = min((int)ba.Position, target.right);
 	  for (int p = refPosLeft; p <= refPosRight; p++) {
-	    
+
 	    // report progress if necessary
 	    if (record && (p % I == 0)) {
 	      logFile << "    Processing refseq:" << refName << " position: " << p << endl;
@@ -2077,6 +2077,10 @@ int main (int argc, char *argv[]) {
 	    // if ref allele is to be used make sure that is one of the alleles
 	    if (useRefAllele && forceRefAllele) {
           if (sb == "N") {
+              // erase allele data for this position, then...
+              individualBasecallsAll.erase(p);
+              individualBasecallsNondup.erase(p);
+              individualBasecalls.erase(p);
               continue; // skip this position if the reference is N
           }
 	      if (sb != allele1 && sb != allele2) {
