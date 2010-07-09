@@ -94,7 +94,7 @@ int main (int argc, char *argv[]) {
                 sampleAlleles != sampleGroups.end(); ++sampleAlleles) {
 
             vector<pair<Genotype, long double> > probs = 
-                caller->probObservedAllelesGivenGenotypes(sampleAlleles->second, genotypes);
+                caller->probObservedAllelesGivenGenotypes_huge(sampleAlleles->second, genotypes);
             
             normalizeGenotypeProbabilitiesln(probs);  // self-normalizes genotype probs
             // NB: if we were doing straight genotyping, this is where we would incorporate priors
@@ -146,11 +146,14 @@ int main (int argc, char *argv[]) {
         //
         vector<vector<int> > bandedIndexes = multichoose(results.size(), indexBands);
 
-        vector<map<Genotype, long double> > marginals;  // track the marginal contribution of individual genotypes, indexed by individual 
+        map<string, map<Genotype, long double> > marginals;  // track the marginal contribution of individual genotypes, indexed by genotype
 
-        pair<vector<Genotype>, long double> bestGenotypeCombo;  // track the best genotype combo and its probability
+        // unclear what i meant to do here
+        //pair<vector<Genotype>, long double> bestGenotypeCombo;  // track the best genotype combo and its probability
 
         long double posteriorNormalizer = 0;  // our posterior normalizer sum
+
+        if (false) {
 
         for (vector<vector<int> >::iterator b = bandedIndexes.begin(); b != bandedIndexes.end(); ++b) {
             
@@ -162,24 +165,34 @@ int main (int argc, char *argv[]) {
             //      in the previous version the banded approximation only mixed a single 2nd index at a time
             //      ... also, this could be recast as a generator to avoid memcpys
 
+            cerr << "permutations size " << permutations.size() << endl;
+
             for (vector<vector<int> >::iterator p = permutations.begin(); p != permutations.end(); ++p) {
             //
             //     1) get a genotype combo from the permutation
             // 
                 vector<int>& indexes = *p;
-                Results::iterator sampleResult = results.begin();
                 map<Allele, int> alleleFrequencies;
                 int totalCopiesAtLocus = 0; // total number of copies at this locus
                 int totalGenotypePermutationsInCombo = 0;
 
+                // the current combination
+                vector<pair<string, Genotype > > combo;
+
                 // for each individual
-                for (vector<int>::const_iterator i = indexes.begin(); i != indexes.end(); ++i) {
+                Results::iterator sampleResult = results.begin();
+                for (vector<int>::const_iterator i = indexes.begin(); 
+                        i != indexes.end();
+                        ++i, ++sampleResult) {
                     // use the index to get a reference the Nth best genotype
                     map<Allele, int> currentGenotypeAlleleFrequencies;
                     pair<Genotype, long double>& nthBest = sampleResult->get<1>().at(*i);
-                    ++sampleResult;
+                    // XXX you should get the sample ID here for marginals...
+                    string sampleID = sampleResult->get<0>();
                     Genotype& genotype = nthBest.first;
                     long double& prob = nthBest.second;
+                    combo.push_back(make_pair(sampleID, genotype));  // store a record of this genotype/individual combination
+
                     // get the log probability of that genotype from results, multiply our normalizer by it
                     posteriorNormalizer += prob;
                     // sum genotype into allele frequency (af) for this combo
@@ -227,8 +240,16 @@ int main (int argc, char *argv[]) {
                 //   sampling probability,
                 
                 int lnFrequencyFactProd = 0;
+                // also, convert from allele frequencies to frequency counts
+                map<int, int> alleleFrequencyCounts;
                 for (map<Allele, int>::const_iterator c = alleleFrequencies.begin(); c != alleleFrequencies.end(); ++c) {
                     lnFrequencyFactProd += factorialln(c->second);
+                    map<int, int>::iterator fc = alleleFrequencyCounts.find(c->second);
+                    if (fc == alleleFrequencyCounts.end()) {
+                        alleleFrequencyCounts.insert(fc, pair<int, int>(c->second, 1));
+                    } else {
+                        ++(fc->second);
+                    }
                 }
                 long double lnGenotypeComboSamplingProb = 1 - factorialln(totalCopiesAtLocus) + lnFrequencyFactProd + log(totalGenotypePermutationsInCombo);
             
@@ -237,22 +258,51 @@ int main (int argc, char *argv[]) {
                 long double theta = caller->parameters.TH;
                 long double lnAlleleFrequencyProb;
 
-                // TODO ....
-                // convert from allele frequencies to frequency counts
-                // apply ESF
-            
+                // apply Ewens' Sampling Formula
 
+                // we do this in two components...
+                // the 'theta scaling' component
+                long double lnThetaScalar = log(theta);
+                for (int h = 1; h < totalCopiesAtLocus; ++h) {
+                    lnThetaScalar += log(theta + h);
+                }
+
+                // and the frequency scaling one
+                long double lnFreqScalar = 0;
+                for (map<int, int>::const_iterator fc = alleleFrequencyCounts.begin(); fc != alleleFrequencyCounts.end(); ++fc) {
+                    int j = fc->first;
+                    int alleleCount = fc->second;
+                    lnFreqScalar += log(pow(theta, alleleCount)) - log(pow(j, alleleCount)) + log(factorial(alleleCount));
+                }
+
+                long double lnEwensSamplingProbability = log(factorial(totalCopiesAtLocus) - lnThetaScalar) + lnFreqScalar;
+
+                long double lnComboProb = lnGenotypeComboSamplingProb + lnEwensSamplingProbability;
+                
             //     3) sum marginals into marginals data structure
             //
                 // now, for each individual genotype,
                 // add the result to the marginal for the individual genotypes which are represented in this combination
+                for (vector<pair<string, Genotype> >::const_iterator i = combo.begin(); i != combo.end(); ++i) {
+                //map<string, map<Genotype, long double> > marginals;  // track the marginal contribution of individual genotypes, indexed by genotype
+                    Genotype genotype = i->second;
+                    map<Genotype, long double>& sampleMarginals = marginals[i->first];
+                    map<Genotype, long double>::iterator g = sampleMarginals.find(genotype);
+                    if (g == sampleMarginals.end()) {
+                        sampleMarginals.insert(make_pair(genotype, exp(lnComboProb)));
+                    } else {
+                        g->second += exp(lnComboProb);
+                    }
+                }
+
             }
         
         }
         // normalize marginals
-        // get best genotype combo
+        // report best genotype combo
         // normalize
 
+        }
 
 
         // report in json-formatted stream

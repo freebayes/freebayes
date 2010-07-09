@@ -121,6 +121,7 @@ public:
     void loadReferenceSequence(string seqName, int start, int length);
     void loadReferenceSequence(BedData*);
     void loadReferenceSequence(BedData*, int, int);
+    void extendReferenceSequence(int);
     void loadTargets(void);
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
@@ -140,6 +141,7 @@ public:
     // TODO clean these up...
     // p( observedAlleles | genotype ) for all genotypes
     vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes_huge(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
     vector<pair<Genotype, long double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
     long double probObservedAllelesGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
     long double probObservedAllelesGivenGenotype(vector<tuple<long double, long double, vector<Allele*> > > &alleleComboProbs, 

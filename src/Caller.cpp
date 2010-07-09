@@ -261,6 +261,15 @@ void Caller::loadReferenceSequence(BedData* target) {
     loadReferenceSequence(target->seq, target->left, target->right - target->left);
 }
 
+// used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
+void Caller::extendReferenceSequence(int rightExtension) {
+    LOG("extending reference subsequence right by " << rightExtension << " bp");
+    currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
+                                                 currentTarget->right + basesAfterCurrentTarget,
+                                                 rightExtension);
+    basesAfterCurrentTarget += rightExtension;
+}
+
 // intended to load all the sequence covered by reads which overlap our current target
 // this lets us process the reads fully, checking for suspicious reads, etc.
 // but does not require us to load the whole sequence
@@ -560,6 +569,9 @@ void Caller::updateAlignmentQueue(void) {
                 // such as mismatches
                 // filter low mapping quality (what happens if MapQuality is not in the file)
                 if (currentAlignment.MapQuality > parameters.MQL0) {
+                    // checks if we should grab and cache more sequence in order to process this alignment
+                    int rightgap = currentAlignment.AlignedBases.size() + currentAlignment.Position - currentTarget->right + basesAfterCurrentTarget;
+                    if (rightgap > 0) { extendReferenceSequence(rightgap); }
                     RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
                     // TODO filters to implement:
                     // duplicates --- tracked via each BamAlignment
@@ -647,7 +659,8 @@ bool Caller::toNextTarget(void) {
     if (currentTarget == &targets.back()) {
         return false;
     } else {
-        return loadTarget(++currentTarget);
+        loadTarget(++currentTarget);
+        return true;
     }
 
 }
@@ -663,39 +676,24 @@ bool Caller::loadTarget(BedData* target) {
     registeredAlignmentQueue.clear(); // clear our alignment deque on jumps
 
     LOG2("loading target reference subsequence");
-    BamAlignment alignment;
     int refSeqID = referenceSequenceNameToID[currentTarget->seq];
     LOG2("reference sequence id " << refSeqID);
 
-    bool r = bamMultiReader.Jump(refSeqID, currentTarget->left);
+    bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right);
+    if (!r) { return r; }
+    LOG2("set region");
+    BamAlignment alignment;
     r &= bamMultiReader.GetNextAlignment(alignment);
+    if (!r) { return r; }
+    LOG2("got first alignment in target region");
     int left_gap = currentTarget->left - alignment.Position;
 
-    r &= bamMultiReader.Jump(refSeqID, currentTarget->right - 1);
-
-    int maxPos = 0;
-    do {
-        r &= bamMultiReader.GetNextAlignment(alignment);
-        int newPos = alignment.Position + alignment.AlignedBases.size();
-        maxPos = (newPos > maxPos) ? newPos : maxPos;
-    } while (alignment.Position <= currentTarget->right);
-    // NB ^^^ if all bed files were 0-based start 1-based end, then the above could be
-    //        alignment.Position < currentTarget->right
-    //        However, with the 'Marth Lab' BED format and other potentially variant formats this may not be the case.
-    //        Reading in slightly more data here is not a serious problem, so this quirk allows it.
-
-    int right_gap = maxPos - currentTarget->right;
-    //cerr << "left_gap " << left_gap << " right gap " << right_gap << endl;
-    loadReferenceSequence(currentTarget,
-            (left_gap > 0) ? left_gap : 0,
-            (right_gap > 0) ? right_gap : 0);
+    //int right_gap = maxPos - currentTarget->right;
+    // XXX the above is deprecated, as we now update as we read
+    loadReferenceSequence(currentTarget, (left_gap > 0) ? left_gap : 0, 0);
 
     LOG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left; // bed targets are always 0-based at the left
-
-    LOG2("jumping to first alignment in new target");
-    r &= bamMultiReader.Jump(refSeqID, currentTarget->left);
-    r &= bamMultiReader.GetNextAlignment(currentAlignment);
 
     LOG2("clearing registered alignments and alleles");
     registeredAlignmentQueue.clear();
@@ -846,7 +844,6 @@ vector<pair<Genotype, long double> > Caller::probObservedAllelesGivenPossibleGen
 
 }
 
-/*
 vector<pair<Genotype, long double> > 
 Caller::probObservedAllelesGivenGenotypes(
         vector<Allele*> &observedAlleles,
@@ -867,7 +864,6 @@ Caller::probObservedAllelesGivenGenotypes(
     return results;
 
 }
-*/
 
 // caches in and out probabilities per allele grouping in alleleGroups
 // results are pushed into alleleGroupsAndQualities
@@ -893,7 +889,7 @@ void Caller::calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleG
 }
 
 vector<pair<Genotype, long double> > 
-Caller::probObservedAllelesGivenGenotypes(
+Caller::probObservedAllelesGivenGenotypes_huge(
         vector<Allele*> &observedAlleles,
         vector<Genotype> &genotypes) {
 
@@ -903,7 +899,7 @@ Caller::probObservedAllelesGivenGenotypes(
     calculateAlleleBinaryProbabilities(observedAlleles, observedAllelesAndProbs); // in and out probability in log space for each allele at this position
 
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        // XXX this following statement is where you should target pruning optimizations:
+        // XXX this is unbelievably huge
         vector<vector<Allele*> > trueCombos = trueAlleleCombinations(observedAlleles.size(), *g);
         vector<long double> probs;
         for (vector<vector<Allele*> >::iterator combo = trueCombos.begin(); combo != trueCombos.end(); ++combo) {
