@@ -1642,6 +1642,11 @@ int main (int argc, char *argv[]) {
 	    }
 	    else if (t == 'M') { // match or mismatch
 	      for (int i=1; i<=l; i++) {
+
+              // if we are going to step outside of the target, break out of the loop
+              if (sp > target.right) {
+                  break;
+              }
 		
 		// extract aligned base
         string b;
