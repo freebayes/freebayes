@@ -141,7 +141,7 @@ public:
     // TODO clean these up...
     // p( observedAlleles | genotype ) for all genotypes
     vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
-    vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes_huge(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
+    vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes_approx(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
     vector<pair<Genotype, long double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
     long double probObservedAllelesGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
     long double probObservedAllelesGivenGenotype(vector<tuple<long double, long double, vector<Allele*> > > &alleleComboProbs, 

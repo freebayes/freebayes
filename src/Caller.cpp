@@ -548,7 +548,12 @@ void Caller::updateAlignmentQueue(void) {
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
     int i = 0;
-    if (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition) {
+    // XXX BUG!!!! you can have a situation where you can keep stepping alignments ahead of your current position...
+    // when this happens you never register any alignments
+    // you should be stepping your position and checking the 'currentAlignment'
+    // ... 
+    LOG2("currentAlignment.Position == " << currentAlignment.Position << ", currentPosition == " << currentPosition);
+    if (currentAlignment.Position <= currentPosition) {
         do {
             // get read group, and map back to a sample name
             string readGroup;
@@ -682,11 +687,13 @@ bool Caller::loadTarget(BedData* target) {
     bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right);
     if (!r) { return r; }
     LOG2("set region");
-    BamAlignment alignment;
-    r &= bamMultiReader.GetNextAlignment(alignment);
+    r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) { return r; }
     LOG2("got first alignment in target region");
-    int left_gap = currentTarget->left - alignment.Position;
+    int left_gap = currentTarget->left - currentAlignment.Position;
+
+    // step back
+    bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right);
 
     //int right_gap = maxPos - currentTarget->right;
     // XXX the above is deprecated, as we now update as we read
@@ -889,7 +896,7 @@ void Caller::calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleG
 }
 
 vector<pair<Genotype, long double> > 
-Caller::probObservedAllelesGivenGenotypes_huge(
+Caller::probObservedAllelesGivenGenotypes_approx(
         vector<Allele*> &observedAlleles,
         vector<Genotype> &genotypes) {
 
@@ -897,6 +904,10 @@ Caller::probObservedAllelesGivenGenotypes_huge(
 
     vector<tuple<long double, long double, Allele* > > observedAllelesAndProbs;
     calculateAlleleBinaryProbabilities(observedAlleles, observedAllelesAndProbs); // in and out probability in log space for each allele at this position
+
+    // new approach
+    // only calculate for all best, all 2nd-best, all 3rd-best, etc.
+    // then estimate the integral over all the combination/permutations that lie between each
 
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         // XXX this is unbelievably huge
