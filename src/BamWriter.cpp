@@ -23,7 +23,6 @@ struct BamWriter::BamWriterPrivate {
     BgzfData mBGZF;
     bool IsBigEndian;
     
-    
     // constructor / destructor
     BamWriterPrivate(void) { 
       IsBigEndian = SystemIsBigEndian();  

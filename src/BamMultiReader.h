@@ -59,7 +59,7 @@ class BamMultiReader {
         // indexes.
         // @coreMode - setup our first alignments using GetNextAlignmentCore();
         // also useful for merging
-        void Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false);
+        void Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool useDefaultIndex = true);
 
         // performs random-access jump to reference, position
         bool Jump(int refID, int position = 0);
@@ -106,7 +106,7 @@ class BamMultiReader {
         // ----------------------
 
         // creates index for BAM files which lack them, saves to files (default = bamFilename + ".bai")
-        bool CreateIndexes(void);
+        bool CreateIndexes(bool useDefaultIndex = true);
 
         //const int GetReferenceID(const string& refName) const;
 

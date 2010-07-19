@@ -210,36 +210,52 @@ void BamMultiReader::UpdateAlignments(void) {
 }
 
 // opens BAM files
-void BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode) {
+void BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
+    
     // for filename in filenames
     fileNames = filenames; // save filenames in our multireader
     for (vector<string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it) {
         string filename = *it;
         BamReader* reader = new BamReader;
 
-        // TODO; change Open to return success/failure so we can report errors here
+        bool openedOK = true;
         if (openIndexes) {
-            reader->Open(filename, filename + ".bai");
+            if (useDefaultIndex)
+                openedOK = reader->Open(filename, filename + ".bai");
+            else 
+                openedOK = reader->Open(filename, filename + ".bti");
         } else {
-            reader->Open(filename); // for merging, jumping is disallowed
+            openedOK = reader->Open(filename); // for merging, jumping is disallowed
         }
-
-        bool fileOK = true;
-        BamAlignment* alignment = new BamAlignment;
-        if (coreMode) {
-            fileOK &= reader->GetNextAlignmentCore(*alignment);
-        } else {
-            fileOK &= reader->GetNextAlignment(*alignment);
+        
+        // if file opened ok, check that it can be read
+        if ( openedOK ) {
+           
+            bool fileOK = true;
+            BamAlignment* alignment = new BamAlignment;
+            if (coreMode) {
+                fileOK &= reader->GetNextAlignmentCore(*alignment);
+            } else {
+                fileOK &= reader->GetNextAlignment(*alignment);
+            }
+            
+            if (fileOK) {
+                readers.push_back(make_pair(reader, alignment)); // store pointers to our readers for cleanup
+                alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
+                                            make_pair(reader, alignment)));
+            } else {
+                cerr << "WARNING: could not read first alignment in " << filename << ", ignoring file" << endl;
+            }
+        
+        } 
+       
+        // TODO; error handling on openedOK == false
+        else {
+          
+          
         }
-        if (fileOK) {
-            readers.push_back(make_pair(reader, alignment)); // store pointers to our readers for cleanup
-            alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
-                                        make_pair(reader, alignment)));
-        } else {
-            cerr << "WARNING: could not read first alignment in " << filename << ", ignoring file" << endl;
-        }
-
     }
+    
     ValidateReaders();
 }
 
@@ -268,11 +284,11 @@ bool BamMultiReader::Rewind(void) {
 }
 
 // saves index data to BAM index files (".bai") where necessary, returns success/fail
-bool BamMultiReader::CreateIndexes(void) {
+bool BamMultiReader::CreateIndexes(bool useDefaultIndex) {
     bool result = true;
     for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
         BamReader* reader = it->first;
-        result &= reader->CreateIndex();
+        result &= reader->CreateIndex(useDefaultIndex);
     }
     return result;
 }

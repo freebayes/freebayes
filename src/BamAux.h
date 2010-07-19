@@ -229,46 +229,6 @@ struct BamRegion {
 };
 
 // ----------------------------------------------------------------
-// Indexing structs & typedefs
-
-struct Chunk {
-
-    // data members
-    uint64_t Start;
-    uint64_t Stop;
-
-    // constructor
-    Chunk(const uint64_t& start = 0, 
-          const uint64_t& stop = 0)
-        : Start(start)
-        , Stop(stop)
-    { }
-};
-
-inline
-bool ChunkLessThan(const Chunk& lhs, const Chunk& rhs) {
-    return lhs.Start < rhs.Start;
-}
-
-typedef std::vector<Chunk> ChunkVector;
-typedef std::map<uint32_t, ChunkVector> BamBinMap;
-typedef std::vector<uint64_t> LinearOffsetVector;
-
-struct ReferenceIndex {
-    // data members
-    BamBinMap Bins;
-    LinearOffsetVector Offsets;
-    // constructor
-    ReferenceIndex(const BamBinMap& binMap = BamBinMap(),
-                   const LinearOffsetVector& offsets = LinearOffsetVector())
-        : Bins(binMap)
-        , Offsets(offsets)
-    { }
-};
-
-typedef std::vector<ReferenceIndex> BamIndex;
-
-// ----------------------------------------------------------------
 // BamAlignment member methods
 
 // constructors & destructor

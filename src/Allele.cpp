@@ -107,7 +107,52 @@ string json(vector<Allele*> &alleles) {
     return out.str();
 }
 
+string json(vector<Allele*> &alleles, long unsigned int &position) {
+    stringstream out;
+    vector<Allele*>::iterator a = alleles.begin();
+    out << "[" << json(**a++, position);
+    while (a != alleles.end())
+        out << "," << json(**a++, position);
+    out << "]";
+    return out.str();
+}
+
 string json(Allele*& allele) { return json(*allele); }
+
+string json(Allele& allele, long unsigned int &position) {
+    int referenceOffset = position - allele.position;
+    stringstream out;
+    if (!allele.genotypeAllele) {
+        out << "{\"id\":\"" << allele.readID << "\""
+            << ",\"type\":\"" << allele.Type() << "\""
+            << ",\"length\":" << allele.length 
+            << ",\"position\":" << allele.position 
+            << ",\"strand\":\"" << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\"";
+        if (allele.type == ALLELE_REFERENCE ) {
+            out << ",\"alt\":\"" << allele.alternateSequence.at(referenceOffset) << "\""
+                << ",\"reference\":\"" << allele.referenceSequence.at(referenceOffset) << "\""
+                << ",\"quality\":" << allele.Quality(position);
+        } else {
+            out << ",\"alt\":\"" << allele.alternateSequence << "\""
+                << ",\"reference\":\"" << allele.referenceSequence << "\""
+                << ",\"quality\":" << allele.quality;
+        }
+        out << "}";
+
+    } else {
+        out << "{\"type\":\"" << allele.Type() << "\"";
+        switch (allele.type) {
+            case ALLELE_REFERENCE:
+                out << "}";
+                break;
+            default:
+                out << "\",\"length\":" << allele.length 
+                    << ",\"alt\":\"" << allele.alternateSequence << "\"}";
+                break;
+        }
+    }
+    return out.str();
+}
 
 string json(Allele& allele) {
     stringstream out;

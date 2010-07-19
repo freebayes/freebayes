@@ -263,7 +263,7 @@ void Caller::loadReferenceSequence(BedData* target) {
 
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void Caller::extendReferenceSequence(int rightExtension) {
-    LOG("extending reference subsequence right by " << rightExtension << " bp");
+    LOG2("extending reference subsequence right by " << rightExtension << " bp");
     currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
                                                  currentTarget->right + basesAfterCurrentTarget,
                                                  rightExtension);
@@ -547,11 +547,6 @@ void Caller::updateAlignmentQueue(void) {
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
-    int i = 0;
-    // XXX BUG!!!! you can have a situation where you can keep stepping alignments ahead of your current position...
-    // when this happens you never register any alignments
-    // you should be stepping your position and checking the 'currentAlignment'
-    // ... 
     LOG2("currentAlignment.Position == " << currentAlignment.Position << ", currentPosition == " << currentPosition);
     if (currentAlignment.Position <= currentPosition) {
         do {

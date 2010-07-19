@@ -73,7 +73,9 @@ class Allele {
     friend ostream &operator<<(ostream &out, Allele* &a);
     friend bool operator==(Allele &a, Allele &b);
 
+    friend string json(vector<Allele*> &alleles, long unsigned int &position);
     friend string json(vector<Allele*> &alleles);
+    friend string json(Allele &allele, long unsigned int &position);
     friend string json(Allele* &allele);
     friend string json(Allele &allele);
 
