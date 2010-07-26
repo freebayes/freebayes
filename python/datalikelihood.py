@@ -8,6 +8,7 @@ import json
 import math
 import operator
 from logsumexp import logsumexp
+from dirichlet import dirichlet_maximum_likelihood_ratio, dirichlet
 
 """
 This module attempts to find the best method to approximate the integration of
@@ -106,20 +107,29 @@ def observed_alleles_in_genotype(genotype, allele_groups):
 #        * observation_product
 #
 
+
+# TODO XXX
+# Yes, this is the sampling probability.  It is the multinomial sampling
+# probability, which is the specific probability of a specific set of
+# categorical outcomes.  Unfortunately, this is not what we really want here.
+# What we want is the prior probability that a given set of draws come out of a
+# given multiset (genotype, in our case).  I believe that this is given by the
+# Dirichlet distribution.  Investigate.
 def sampling_prob(genotype, alleles):
-    """The probability of drawing the observations in alleles out of the given
+    """The specific probability of drawing the observations in alleles out of the given
     genotype, follows the multinomial probability distribution."""
     allele_groups = group_alleles(alleles)
-    genotype_allele_frequencies = [x[1] for x in genotype]
-    multiplicity = sum(genotype_allele_frequencies)
-    observed_allele_frequencies = [len(x) for x in allele_groups.items()]
-    observation_product = 1
+    multiplicity = sum([x[1] for x in genotype])
+    print genotype, multiplicity, alleles
     for allele, count in genotype:
         if allele_groups.has_key(allele):
-            observation_product *= math.pow(float(count) / multiplicity, len(allele_groups[allele]))
-    return float(math.factorial(multiplicity)) \
-        / sum([math.factorial(x) for x in observed_allele_frequencies]) \
-        * observation_product
+            print allele, count, math.pow(float(count) / multiplicity, len(allele_groups[allele]))
+    print product([math.factorial(len(obs)) for obs in allele_groups.values()])
+    print allele_groups.values()
+    return float(math.factorial(len(alleles))) \
+        / product([math.factorial(len(obs)) for obs in allele_groups.values()]) \
+        * product([math.pow(float(count) / multiplicity, len(allele_groups[allele])) \
+                    for allele, count in genotype if allele_groups.has_key(allele)])
 
 def likelihood_given_true_alleles(observed_alleles, true_alleles):
     prob = 0
@@ -134,20 +144,33 @@ def data_likelihood_exact(genotype, observed_alleles):
     """'Exact' data likelihood, sum of sampling probability * join Q score for
     the observed alleles over all possible underlying 'true allele'
     combinations."""
+    #print "probability that observations", [o['alt'] for o in observed_alleles], "arise from genotype", genotype
     observation_count = len(observed_alleles)
+    ploidy = sum([count for allele, count in genotype])
+    allele_probs = [count / float(ploidy) for allele, count in genotype]
     probs = []
     # for all true allele combinations X permutations
     for true_allele_combination in multiset.multichoose(observation_count, [x[0] for x in genotype]):
         for true_allele_permutation in multiset.permutations(true_allele_combination):
             # this mapping allows us to use sampling_prob the same way as we do when we use JSON allele observation records
             true_alleles = [{'alt':allele} for allele in true_allele_permutation]
-            sprob = sampling_prob(genotype, true_alleles)
+            allele_groups = group_alleles(true_alleles)
+            observations = []
+            for allele, count in genotype:
+                if allele_groups.has_key(allele):
+                    observations.append(len(allele_groups[allele]))
+                else:
+                    observations.append(0)
+            sprob = dirichlet_maximum_likelihood_ratio(allele_probs, observations)
             lnsampling_prob = math.log(sprob)
             prob = lnsampling_prob + likelihood_given_true_alleles(observed_alleles, true_alleles)
+            #print math.exp(prob), sprob, genotype, true_allele_permutation
             #print genotype, math.exp(prob), sprob, true_allele_permutation, [o['alt'] for o in observed_alleles]
             probs.append(prob)
     # sum the individual probability of all combinations
-    return logsumexp(probs)
+    p = logsumexp(probs)
+    #print math.exp(p)
+    return p
 
 def data_likelihood_estimate(genotype, alleles):
     """Estimates the data likelihood, which is a sum over all possible error
@@ -185,7 +208,7 @@ def count_frequencies(genotype_combo):
             counts[count] = 1
     return counts
 
-def allele_frequency_probability(allele_frequency_counts, theta=0.01):
+def allele_frequency_probability(allele_frequency_counts, theta=0.001):
     """Implements Ewens' Sampling Formula.  allele_frequency_counts is a
     dictionary mapping count -> number of alleles with this count in the
     population."""
@@ -213,17 +236,24 @@ def genotype_probabilities_heuristic(genotypes, alleles):
 def multiset_banded_genotype_combinations(sample_genotypes, bandwidth):
     for index_combo in multiset.multichoose(len(samples), range(bandwidth)):
         for index_permutation in multiset.permutations(index_combo):
-            yield [genotypes[index] for index, genotypes in zip(index_combo, sample_genotypes)]
+            yield [genotypes[index] for index, genotypes in zip(index_permutation, sample_genotypes)]
 
 # TODO you should implement gabor's banding solution; the above multiset method
 # is comically large and produces incorrect results despite the computational load
-def banded_genotype_combinations(sample_genotypes, bandwidth):
-    for i in range(bandwidth):
-        pass
+def banded_genotype_combinations(sample_genotypes, bandwidth, band_depth):
+    # always provide the 'best' case
+    yield [genotypes[0] for genotypes in sample_genotypes]
+    for i in range(1, bandwidth):
+        #for j in range(1, band_depth + 1):  # band_depth is the depth to which we explore the bandwith... TODO explain better
+        indexes = [i] + (len(sample_genotypes) - 1) * [0]
+        for index_permutation in multiset.permutations(indexes):
+            yield [genotypes[index] for index, genotypes in zip(index_permutation, sample_genotypes)]
+
 
 if __name__ == '__main__':
     for line in sys.stdin:
         position = cjson.decode(line)
+        #print position['position']
         samples = position['samples']
         for samplename, sample in samples.items():
             # only process snps and reference alleles
@@ -237,28 +267,31 @@ if __name__ == '__main__':
         sample_genotypes = [sorted(sample['genotypes'], key=lambda genotype: genotype[1], reverse=True) for sample in samples.values()]
         genotype_combo_probs = []
         #for combo in multiset_banded_genotype_combinations(sample_genotypes, 2):
-        for combo in banded_genotype_combinations(sample_genotypes, 2):
+        for combo in banded_genotype_combinations(sample_genotypes, 2, 2):
             #print combo
-            probability_observations_given_genotypes = logsumexp([prob for genotype, prob in combo])
+            probability_observations_given_genotypes = sum([prob for genotype, prob in combo])
             prior_probability_of_genotype = allele_frequency_probability(count_frequencies([genotype for genotype, prob in combo]))
             genotype_combo_probs.append([combo, math.log(prior_probability_of_genotype) + probability_observations_given_genotypes])
+
+        genotype_combo_probs = sorted(genotype_combo_probs, key=lambda c: c[1], reverse=True)
+        #for line in [json.dumps({'prob':prior_probability_of_genotype, 'combo':combo}) for combo, prior_probability_of_genotype in genotype_combo_probs]:
+        #    print line
+
         # sum, use to normalize
         # apply bayes rule
         posterior_normalizer = logsumexp([prob for combo, prob in genotype_combo_probs])
-        # XXX incorrect... this depends on the priors
-        #best_genotype_combo = [s[0] for s in sample_genotypes]
-        best_genotype_combo_prob = None
-        best_genotype_combo = []
-        for combo, prob in genotype_combo_probs:
-            if not best_genotype_combo_prob:
-                best_genotype_combo_prob = prob
-            if prob <= best_genotype_combo_prob:
-                best_genotype_combo_prob = prob
-                best_genotype_combo = combo
-        best_genotype_probability = math.exp(logsumexp([prob for genotype, prob in best_genotype_combo]) - posterior_normalizer)
+
+        best_genotype_combo = genotype_combo_probs[0][0]
+        best_genotype_combo_prob = genotype_combo_probs[0][1]
+
+        best_genotype_probability = math.exp(sum([prob for genotype, prob in best_genotype_combo]) \
+                + math.log(allele_frequency_probability(count_frequencies([genotype for genotype, prob in best_genotype_combo]))) \
+                - posterior_normalizer)
         position['genotyping'] = {'prob':best_genotype_probability, 'best_combo':[[str(genotype), math.exp(prob)] for genotype, prob in best_genotype_combo]}
+        position['genotyping']['posterior_normalizer'] = math.exp(posterior_normalizer)
         # TODO estimate marginal probabilities of genotypings
         # here we cast everything into float-space
         for samplename, sample in samples.items():
             sample['genotypes'] = [[str(genotype), math.exp(prob)] for genotype, prob in sample['genotypes']]
+
         print cjson.encode(position)
