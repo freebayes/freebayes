@@ -94,7 +94,7 @@ int main (int argc, char *argv[]) {
                 sampleAlleles != sampleGroups.end(); ++sampleAlleles) {
 
             vector<pair<Genotype, long double> > probs = 
-                caller->probObservedAllelesGivenGenotypes_huge(sampleAlleles->second, genotypes);
+                caller->probObservedAllelesGivenGenotypes(sampleAlleles->second, genotypes);
             
             normalizeGenotypeProbabilitiesln(probs);  // self-normalizes genotype probs
             // NB: if we were doing straight genotyping, this is where we would incorporate priors
