@@ -1,95 +1,22 @@
+Now that the algorithm is completed and has undergone some testing in python,
+I'd like to move it to C++ and then apply a number of heuristic optimizations.
 
+The plan is as follows:
 
-restructuring
+1) Note algorithm as it stands in python, write out the changes as they apply
+to esfbayes.cpp; comments.
 
-discrete elements of analysis
+2) Update data structures in C++ to better reflect what I found to be easiest
+in Python; specifically the encoding of genotypes as counts of alleles; the
+removal of the bogus concept of a 'snp' versus 'reference' allele (which just
+confuses computation).
 
-1) fasta reference
-2) bam file(s) over samples / samples
-3) per-individual base calls (incl cigar)
-4) priors
+3) Implement the algorithm as it stands.
 
-sets of data per individual
-and sets of data per position
+4) Apply heuristic optimizations, specifically to speed the calculation of
+different data likelihoods.  In some cases we can classify data likelihoods on
+the basis of how many observed alleles are considered to be erroneous.  This
+grouping will allow us to remove a large fraction of the calculations.  More
+intensive optimization here may be required, and should be reviewed as the
+performance of the system in C++ is better understood.
 
-for each position in the target regions (which is provided by a bed file)
-calculate the basecalls for each sample
-then, for samples for which we meet certain criteria (filters):
-    number of mismatches
-    data sufficiency (number of individual basecalls aka reads?)
-    (readmask ?)
-... establish the probability of a snp for each possible genotype
-(which is ~ the data likelihood * the prior probablity of a snp for each sample)
-and report the top (configurable) number of possible genotypes
-
-
-
-high level overview of progression:
-
-for each region in region list
-    for each position in region
-        for each read overlapping position
-            for each base in read
-                register base
-        evaluate prob(variation | all bases)
-        if prob(variation) >= reporting threshold
-            report variation
-
-
-
-registration of bases:
-
-    skip clips (soft and hard)
-    presently, skip indels and only analyze aligned bases, but open development
-        to working with them in the future
-    preadmask: when we encounter a indel alignment, mask out bases in that read
-        because we are concerned about the semantics of processing it.
-    
-    we keep data on the bases, the basecall struct contains this information
-
-
-probability estimation
-
-    p ( snp ) ~= ...
-
-    p ( individual genotype | reads ) ~= ...
-
-    p ( genotypes | basecalls ) ~= p( basecalls | genotype ) * prior( genotype ) / probability ( basecalls )
-
-
-
-algorithmic core overview:
-
-(1) individual data likelihoods
-
-for each sample in the sample list
-    get basecalls corresponding to sample
-        for each genotype from the fixed genotype list
-            calculate the data likelihoods of p ( basecalls | genotype )  * "data likelihood" 
-
-(2) total genotype likelhoods for dominant genotype combinations
-
-for each genotype combo in dominant genotype combo list
-    data likelhood p ( basecall combo | genotype combo )
-
-
-(3) calculate priors for dominant genotype combinations
-
-for each genotype combo in dominant genotype combo list
-    calculate priors of that genotype combo  (well defined)
-
-(4) calculate posterior probability of dominant genotype combinations
-
-for each genotype combo in dominant genotype combo list
-    multiply results of corresponding (2) * (3)
-normalize  (could be a separate step)
-
-(5) probability that of a variation given all basecalls
-
-sum over probability of all dominant variants
-
-(6) calculate individual sample genotype posterior marginals
-
-for each sample
-    for each genotypen
-        sum of p(genotype | reads) for fixed genotype <-- (4)
