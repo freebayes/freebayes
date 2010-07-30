@@ -8,7 +8,7 @@ import json
 import math
 import operator
 from logsumexp import logsumexp
-from dirichlet import dirichlet_maximum_likelihood_ratio, dirichlet
+from dirichlet import dirichlet_maximum_likelihood_ratio, dirichlet, multinomial, multinomialln
 from factorialln import factorialln
 
 """
@@ -164,8 +164,8 @@ def data_likelihood_exact(genotype, observed_alleles):
                     observations.append(len(allele_groups[allele]))
                 else:
                     observations.append(0)
-            sprob = dirichlet_maximum_likelihood_ratio(allele_probs, observations) # distribution parameter here
-            lnsampling_prob = math.log(sprob)
+            #sprob = dirichlet_maximum_likelihood_ratio(allele_probs, observations) # distribution parameter here
+            lnsampling_prob = multinomialln(allele_probs, observations)
             prob = lnsampling_prob + likelihood_given_true_alleles(observed_alleles, true_alleles)
             #print math.exp(prob), sprob, genotype, true_allele_permutation
             #print genotype, math.exp(prob), sprob, true_allele_permutation, [o['alt'] for o in observed_alleles]

@@ -2,6 +2,7 @@ from scipy.special import gamma, gammaln
 import operator
 import math
 from logsumexp import logsumexp
+from factorialln import factorialln
 
 def product(l):
     return reduce(operator.mul, l)
@@ -28,6 +29,9 @@ def dirichlet_maximum_likelihood_ratio(probs, obs, s=1):
 
 def multinomial(probs, obs):
     return math.factorial(sum(obs)) / product(map(math.factorial, obs)) * product([math.pow(p, x) for p,x in zip(probs, obs)])
+
+def multinomialln(probs, obs):
+    return factorialln(sum(obs)) - sum(map(factorialln, obs)) + sum([math.log(math.pow(p, x)) for p,x in zip(probs, obs)])
 
 def multinomial_dirichlet(probs, obs): return multinomial(probs, obs) * dirichlet(probs, obs)
 
