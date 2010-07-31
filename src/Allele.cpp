@@ -3,19 +3,19 @@
 #include "TryCatch.h"
 
 
-int Allele::referenceOffset(Position referencePosition) {
+int Allele::referenceOffset(void) {
     /*cout << readID << " offset checked " << referencePosition - position << " against position " << position 
         << " allele length " << length << " str length " << referenceSequence.size() << " qstr size " << qualityString.size() << endl;
         */
-    return referencePosition - position;
+    return *currentReferencePosition - position;
 }
 
 // quality at a given reference position
-short Allele::Quality(Position referencePosition) {
+short Allele::currentQuality(void) {
     switch (this->type) {
         case ALLELE_REFERENCE:
             TRY {
-            return qualityChar2ShortInt(qualityString.at(referenceOffset(referencePosition)));
+            return qualityChar2ShortInt(qualityString.at(referenceOffset()));
             } CATCH;
             break;
         case ALLELE_INSERTION:
@@ -26,7 +26,11 @@ short Allele::Quality(Position referencePosition) {
     }
 }
 
-string Allele::Type(void) {
+long double Allele::lncurrentQuality(void) {
+    return phred2ln(currentQuality());
+}
+
+string Allele::typeStr(void) {
 
     string t;
 
@@ -58,6 +62,16 @@ string Allele::Type(void) {
 
 }
 
+string Allele::currentBase(void) {
+
+    if (type == ALLELE_INSERTION || type == ALLELE_DELETION) {
+        return "";
+    } else {
+        return alternateSequence.substr(referenceOffset(), 1);
+    }
+
+}
+
 string stringForAllele(Allele &allele) {
 
     stringstream out;
@@ -65,7 +79,7 @@ string stringForAllele(Allele &allele) {
         out 
             << allele.sampleID << "\t"
             << allele.readID << "\t"
-            << allele.Type() << "\t" 
+            << allele.typeStr() << "\t" 
             << allele.position << "\t"
             << allele.length << "\t"
             << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\t"
@@ -74,7 +88,7 @@ string stringForAllele(Allele &allele) {
             << allele.qualityString << "\t"
             << allele.quality << "\t" << endl;
     } else {
-        out << allele.Type() << "\t";
+        out << allele.typeStr() << "\t";
         switch (allele.type) {
             case ALLELE_REFERENCE:
                 break;
@@ -107,31 +121,21 @@ string json(vector<Allele*> &alleles) {
     return out.str();
 }
 
-string json(vector<Allele*> &alleles, long unsigned int &position) {
-    stringstream out;
-    vector<Allele*>::iterator a = alleles.begin();
-    out << "[" << json(**a++, position);
-    while (a != alleles.end())
-        out << "," << json(**a++, position);
-    out << "]";
-    return out.str();
-}
-
 string json(Allele*& allele) { return json(*allele); }
 
-string json(Allele& allele, long unsigned int &position) {
-    int referenceOffset = position - allele.position;
+string json(Allele& allele) {
+    int referenceOffset = allele.referenceOffset();
     stringstream out;
     if (!allele.genotypeAllele) {
         out << "{\"id\":\"" << allele.readID << "\""
-            << ",\"type\":\"" << allele.Type() << "\""
+            << ",\"type\":\"" << allele.typeStr() << "\""
             << ",\"length\":" << allele.length 
             << ",\"position\":" << allele.position 
             << ",\"strand\":\"" << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\"";
         if (allele.type == ALLELE_REFERENCE ) {
             out << ",\"alt\":\"" << allele.alternateSequence.at(referenceOffset) << "\""
                 << ",\"reference\":\"" << allele.referenceSequence.at(referenceOffset) << "\""
-                << ",\"quality\":" << allele.Quality(position);
+                << ",\"quality\":" << allele.currentQuality();
         } else {
             out << ",\"alt\":\"" << allele.alternateSequence << "\""
                 << ",\"reference\":\"" << allele.referenceSequence << "\""
@@ -140,34 +144,7 @@ string json(Allele& allele, long unsigned int &position) {
         out << "}";
 
     } else {
-        out << "{\"type\":\"" << allele.Type() << "\"";
-        switch (allele.type) {
-            case ALLELE_REFERENCE:
-                out << "}";
-                break;
-            default:
-                out << "\",\"length\":" << allele.length 
-                    << ",\"alt\":\"" << allele.alternateSequence << "\"}";
-                break;
-        }
-    }
-    return out.str();
-}
-
-string json(Allele& allele) {
-    stringstream out;
-    if (!allele.genotypeAllele) {
-            // << &allele << ":" 
-            out << "{\"id\":\"" << allele.readID 
-                << "\",\"type\":\"" << allele.Type() 
-                << "\",\"length\":" << allele.length 
-                << ",\"position\":" << allele.position 
-                << ",\"strand\":\"" << (allele.strand == STRAND_FORWARD ? "+" : "-")
-                << "\",\"alt\":\"" << allele.alternateSequence
-                << "\",\"reference\":\"" << allele.referenceSequence
-                << "\",\"quality\":" << allele.quality << "}";
-    } else {
-        out << "{\"type\":\"" << allele.Type() << "\"";
+        out << "{\"type\":\"" << allele.typeStr() << "\"";
         switch (allele.type) {
             case ALLELE_REFERENCE:
                 out << "}";
@@ -215,7 +192,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
     if (!allele.genotypeAllele) {
             // << &allele << ":" 
             out << allele.readID 
-                << ":" << allele.Type() 
+                << ":" << allele.typeStr() 
                 << ":" << allele.length 
                 << ":" << allele.position 
                 << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
@@ -223,7 +200,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
                 << ":" << allele.referenceSequence
                 << ":" << allele.quality;
     } else {
-        out << allele.Type();
+        out << allele.typeStr();
         switch (allele.type) {
             case ALLELE_REFERENCE:
                 break;
@@ -240,30 +217,13 @@ bool operator<(const Allele &a, const Allele &b) {
     return a.type < b.type;
 }
 
-// for sorting pairs of genotype, probs
-bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b) {
-    return a.second > b.second;
-}
-
-// impossible:
-/*
-bool operator<(Allele* &a, Allele* &b) {
-    return a->type < b->type;
-}
-
-// possible...
-bool allelePtrCmp(Allele* &a, Allele* &b) {
-    return a->type < b->type;
-}
-*/
-
 bool operator==(Allele &a, Allele &b) {
 
-    return a.type == b.type 
-        && a.referenceName == b.referenceName 
-        && a.position == b.position 
-        && a.length == b.length
-        && a.alternateSequence == b.alternateSequence;
+    // simple case of ALLELE_GENOTYPE, as is used in genotype alleles
+    return ((a.type == ALLELE_GENOTYPE || b.type == ALLELE_GENOTYPE) && a.alternateSequence == b.alternateSequence)
+        || (a.type == b.type 
+            && a.length == b.length
+            && a.alternateSequence == b.alternateSequence);
 
 }
 
@@ -287,7 +247,8 @@ bool Allele::equivalent(Allele &b) {
                     return true;
                 break;
             case ALLELE_REFERENCE:
-                return true;
+                if (alternateSequence == b.alternateSequence)
+                    return true;
                 break;
             default:
                 break;
@@ -295,6 +256,21 @@ bool Allele::equivalent(Allele &b) {
     }
 
     return false;
+}
+
+// counts alleles which satisfy operator==
+map<Allele, int> countAlleles(vector<Allele*>& alleles) {
+    map<Allele, int> counts;
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& allele = **a;
+        map<Allele, int>::iterator f = counts.find(allele);
+        if (f == counts.end()) {
+            counts[allele] = 1;
+        } else {
+            counts[allele] += 1;
+        }
+    }
+    return counts;
 }
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles) {

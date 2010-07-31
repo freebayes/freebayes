@@ -33,7 +33,7 @@
 #include "TryCatch.h"
 #include "Parameters.h"
 #include "Allele.h"
-#include "Caller.h"
+#include "AlleleParser.h"
 
 #include "multichoose.h"
 #include "multipermute.h"
@@ -55,10 +55,10 @@ AlleleFreeList Allele::_freeList;
 
 int main (int argc, char *argv[]) {
 
-    Caller* caller = new Caller(argc, argv);
+    AlleleParser* parser = new AlleleParser(argc, argv);
     list<Allele*> alleles;
 
-    while (caller->getNextAlleles(alleles)) {
+    while (parser->getNextAlleles(alleles)) {
         // skips 0-coverage regions
         if (alleles.size() == 0)
             continue;
@@ -67,9 +67,9 @@ int main (int argc, char *argv[]) {
 
         // report in json-formatted stream
         //
-        cout << "{\"sequence\":\"" << caller->currentTarget->seq << "\","
-            << "\"position\":" << caller->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
-            //<< "\"raDepth\":" << caller->registeredAlleles.size() << ","
+        cout << "{\"sequence\":\"" << parser->currentTarget->seq << "\","
+            << "\"position\":" << parser->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
+            //<< "\"raDepth\":" << parser->registeredAlleles.size() << ","
             << "\"samples\":{";  // TODO ... quality (~pSnp)
 
         bool suppressComma = true; // output flag
@@ -81,7 +81,7 @@ int main (int argc, char *argv[]) {
 
             cout << "\"" << sample->first << "\":{"
                 << "\"coverage\":" << sample->second.size()
-                << ",\"alleles\":" << json(sample->second, caller->currentPosition)
+                << ",\"alleles\":" << json(sample->second)
                 << "}";
 
         }
@@ -90,7 +90,7 @@ int main (int argc, char *argv[]) {
 
     }
 
-    delete caller;
+    delete parser;
 
     return 0;
 

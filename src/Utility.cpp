@@ -1,6 +1,8 @@
 // utility functions
 //
 #include "Utility.h"
+#include "Sum.h"
+#include "Product.h"
 
 using namespace std;
 
@@ -22,6 +24,14 @@ long double phred2float(int qual) {
 
 int float2phred(long double prob) {
     return std::min(-10 * (long double) log10(prob), (long double) 99);
+}
+
+long double powln(long double m, int n) {
+    long double r = 0;
+    for (int i = 0; i < n; ++i) {
+        r += m;
+    }
+    return r;
 }
 
 // TODO do the following in phred (log) space for perf boost
@@ -178,4 +188,14 @@ long double logsumexp(const vector<long double>& lnv) {
         sum += exp(*i - c);
     }
     return c + log(sum);
+}
+
+long double betaln(const vector<long double>& alphas) {
+    vector<long double> gammalnAlphas;
+    transform(alphas.begin(), alphas.end(), gammalnAlphas.begin(), gammaln);
+    return sum(gammalnAlphas) - gammaln(sum(alphas));
+}
+
+long double beta(const vector<long double>& alphas) {
+    return exp(betaln(alphas));
 }

@@ -18,6 +18,7 @@ long double phred2ln(int qual);
 int ln2phred(long double prob);
 long double phred2float(int qual);
 int float2phred(long double prob);
+long double powln(long double m, int n);
 // here 'joint' means 'probability that we have a vector entirely composed of true bases'
 short jointQuality(const std::vector<short>& quals);
 short jointQuality(const std::string& qualstr);
@@ -33,5 +34,10 @@ long double cofactor( int n, int i);
 long double cofactorln( int n, int i);
 
 long double logsumexp(const vector<long double>& lnv);
+
+long double betaln(const vector<long double>& alphas);
+long double beta(const vector<long double>& alphas);
+
+
 
 #endif

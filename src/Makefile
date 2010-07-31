@@ -33,11 +33,11 @@ CFLAGS=-O3
 ################################################################################
 all: esfbayes alleles
 
-esfbayes: esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o Caller.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o Caller.o Utility.o  -o esfbayes -lz -lboost_regex -lpthread -Wno-deprecated
+esfbayes: esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o
+	$(CC) $(CFLAGS) esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o -o esfbayes -lz -lboost_regex -lpthread -Wno-deprecated
 
-alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o Caller.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o Caller.o Utility.o  -o alleles -lz -lboost_regex -lpthread -Wno-deprecated
+alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o alleles -lz -lboost_regex -lpthread -Wno-deprecated
 
 ################################################################################
 # Compilation
@@ -47,10 +47,10 @@ alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReade
 Fasta.o: Fasta.cpp
 	$(CC) $(CFLAGS) -c Fasta.cpp -Wno-deprecated
 
-alleles.o: alleles.cpp Caller.o Allele.o
+alleles.o: alleles.cpp AlleleParser.o Allele.o
 	$(CC) $(CFLAGS) -c alleles.cpp -Wno-deprecated
 
-esfbayes.o: esfbayes.cpp TryCatch.h Caller.o
+esfbayes.o: esfbayes.cpp TryCatch.h
 	$(CC) $(CFLAGS) -c esfbayes.cpp -Wno-deprecated
 
 
@@ -73,20 +73,33 @@ BamIndex.o: BamIndex.cpp BamIndex.h BamAux.h
 BGZF.o: BGZF.cpp BGZF.h
 	$(CC) $(CFLAGS) -c BGZF.cpp -Wno-deprecated
 
-Class-BedReader.o: Class-BedReader.cpp Class-BedReader.h Function-Generic.h
-	$(CC) $(CFLAGS) -c Class-BedReader.cpp -Wno-deprecated
-
 Parameters.o: Parameters.cpp Parameters.h
 	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
 
-Allele.o: Allele.cpp Allele.h multichoose.h
+Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
 	$(CC) $(CFLAGS) -c Allele.cpp -Wno-deprecated
 
-Caller.o: Caller.cpp Caller.h multichoose.h Parameters.cpp Parameters.h
-	$(CC) $(CFLAGS) -c Caller.cpp -Wno-deprecated
+Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
+	$(CC) $(CFLAGS) -c Genotype.cpp -Wno-deprecated
 
-Utility.o: Utility.cpp Utility.h
+AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.cpp Parameters.h
+	$(CC) $(CFLAGS) -c AlleleParser.cpp -Wno-deprecated
+
+Utility.o: Utility.cpp Utility.h Sum.h Product.h
 	$(CC) $(CFLAGS) -c Utility.cpp -Wno-deprecated
+
+Dirichlet.o: Dirichlet.h Dirichlet.cpp Sum.h Product.h
+	$(CC) $(CFLAGS) -c Dirichlet.cpp -Wno-deprecated
+
+Multinomial.o: Multinomial.h Multinomial.cpp Sum.h Product.h Utility.h
+	$(CC) $(CFLAGS) -c Multinomial.cpp -Wno-deprecated
+
+DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
+	$(CC) $(CFLAGS) -c DataLikelihood.cpp -Wno-deprecated
+
+# ...
+Class-BedReader.o: Class-BedReader.cpp Class-BedReader.h Function-Generic.h
+	$(CC) $(CFLAGS) -c Class-BedReader.cpp -Wno-deprecated
 
 # Function compilations
 Function-Sequence.o: Function-Sequence.cpp Function-Sequence.h

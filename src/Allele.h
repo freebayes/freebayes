@@ -1,3 +1,6 @@
+#ifndef _ALLELE_H
+#define _ALLELE_H
+
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -11,8 +14,6 @@
 #include "Utility.h"
 #include <boost/pool/object_pool.hpp>
 
-#ifndef _ALLELE_H
-#define _ALLELE_H
 
 using namespace std;
 
@@ -40,7 +41,7 @@ private:
 // a structure describing an allele
 
 enum AlleleType {
-    ALLELE_NONE,
+    ALLELE_GENOTYPE,
     ALLELE_REFERENCE,
     ALLELE_MISMATCH, 
     ALLELE_SNP, 
@@ -85,7 +86,8 @@ public:
     string referenceName;   // reference name, for sanity checking
     string referenceSequence; // reference sequence or "" (in case of insertions)
     string alternateSequence; // alternate sequence or "" (in case of deletions and reference alleles)
-    Position position;      // position 0-based against reference
+    long unsigned int position;      // position 0-based against reference
+    long unsigned int *currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
@@ -98,7 +100,8 @@ public:
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
                 string refname, 
-                Position pos, 
+                long unsigned int pos, 
+                long unsigned int *crefpos,
                 unsigned int len, 
                 string refallele, 
                 string alt, 
@@ -111,6 +114,7 @@ public:
         : type(t)
         , referenceName(refname)
         , position(pos)
+        , currentReferencePosition(crefpos)
         , length(len)
         , referenceSequence(refallele)
         , alternateSequence(alt)
@@ -127,7 +131,7 @@ public:
     Allele(AlleleType t,
             string alt,
             unsigned int len,
-            Position pos=0,
+            long unsigned int pos=0,
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
@@ -138,25 +142,15 @@ public:
     { }
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
-    string Type(void); // return a string representation of the allele type, for output
-    int referenceOffset(Position referencePosition);
-    short Quality(Position referencePosition);  // for getting the quality of a given position in multi-bp alleles
+    string typeStr(void); // return a string representation of the allele type, for output
+    int referenceOffset();
+    short currentQuality(void);  // for getting the quality of a given position in multi-bp alleles
+    long double lncurrentQuality(void);
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
+    string currentBase(void);
 
 
-    // overload new and delete for object pool
-
-    /*
-    void* operator new (size_t size) {
-        assert (size == sizeof(Allele));
-        return Pool.malloc();
-    }
-
-    void operator delete (void* allele) {
-       // cerr << "removing allele" << endl;
-        Pool.free((Allele*)allele);
-    }
-    */
+    // overload new and delete for object recycling pool
 
     void* operator new (size_t size) {
         assert (size == sizeof(Allele));
@@ -178,31 +172,32 @@ private:
 
 };
 
-typedef vector<Allele> Genotype;
-bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b);
-
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
-// is there a way to template these?  difficult as the syntax for pointer-based comparisons is different
-vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));
-vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
-vector<vector<Allele*> > groupAlleles(vector<Allele*> &alleles, bool (*fncompare)(Allele &a, Allele &b));
-vector<vector<Allele*> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
-vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
-vector<vector<Allele> > groupAlleles_copy(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+map<Allele, int> countAlleles(vector<Allele*>& alleles);
+
 bool allelesSameType(Allele* &a, Allele* &b);
 bool allelesEquivalent(Allele* &a, Allele* &b);
 bool allelesSameSample(Allele* &a, Allele* &b);
 bool allelesSameType(Allele &a, Allele &b);
 bool allelesEquivalent(Allele &a, Allele &b);
 bool allelesSameSample(Allele &a, Allele &b);
+
+// is there a way to template these?  difficult as the syntax for pointer-based comparisons is different than non-pointer
+vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));
+vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele*> > groupAlleles(vector<Allele*> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele*> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b) = allelesEquivalent);
+vector<vector<Allele> > groupAlleles_copy(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele> > &groups);
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
 Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0);
+
 
 //AlleleFreeList Allele::_freeList;
 

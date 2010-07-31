@@ -21,6 +21,7 @@
 //#include "Function-Math.h"
 #include "Function-Sequence.h"
 #include "BamMultiReader.h"
+#include "Genotype.h"
 
 using namespace std;
 using namespace BamTools;
@@ -74,14 +75,14 @@ public:
 };
 
 
-class Caller {
+class AlleleParser {
 
 public:
 
     Parameters parameters; // holds operational parameters passed at program invocation
     
-    Caller(int argc, char** argv);
-    ~Caller(void); 
+    AlleleParser(int argc, char** argv);
+    ~AlleleParser(void); 
 
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
@@ -181,27 +182,6 @@ private:
     BamAlignment currentAlignment;
 
 };
-
-
-// helper functions:
-
-// probability of drawing an allele from the set of alleles
-long double probChooseAlleleFromAlleles(Allele &allele, vector<Allele> &alleles);
-int observationsInAlleleCombo(vector<vector<Allele> > &combo);
-long double approximateBayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
-        vector<vector<long double> > &probGenotypesGivenSampleObs,
-        vector<vector<Allele> > &sampleGroups);
-long double bayesianNormalizationFactor(vector<vector<Allele> > &genotypes, 
-        vector<vector<long double> > &probGenotypesGivenSampleObs,
-        vector<vector<Allele> > &sampleGroups);
-vector<pair<long double, vector<Allele> > > mostLikelyGenotypesGivenObservations(vector<vector<Allele> > &genotypeCombos, 
-                vector<vector<long double> > &probsBySample, bool normalize = false);
-void normalizeGenotypeProbabilities(vector<pair<Genotype, long double> >& genotypeProbabilities);
-void normalizeGenotypeProbabilitiesln(vector<pair<Genotype, long double> >& genotypeProbabilities);
-
-// provides the potential 'true combinations' which could underly n observations
-// aka: all multiset permutations of all multiset combinations of size n of Genotype& g
-vector<vector<Allele*> > trueAlleleCombinations(int n, Genotype& g);
 
 
 #endif

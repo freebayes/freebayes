@@ -2,14 +2,37 @@
 #include "multichoose.h"
 #include "multipermute.h"
 
+
+
+// log probability of a given matching of true and observed alleles
+// true alleles are the 'real' alleles
+// observed alleles are whet we observe
+// a mismatch between these two sets implies an error, which is scored accordingly here
+long double likelihoodGivenTrueAlleles(vector<Allele*>& observedAlleles, vector<Allele*>& trueAlleles) {
+    long double prob = 0;
+    vector<Allele*>::iterator o = observedAlleles.begin();
+    vector<Allele*>::iterator t = trueAlleles.begin();
+    for ( ; o != observedAlleles.end() && t != trueAlleles.end(); ++o, ++t)
+    {
+        Allele* observedAllele = *o;
+        Allele* trueAllele = *t;
+        if (observedAllele == trueAllele) {
+            prob += log(1 - exp(observedAllele->lncurrentQuality()));
+        } else {
+            prob += observedAllele->lncurrentQuality();
+        }
+    }
+    return prob;
+}
+
 /*
   'Exact' data likelihood, sum of sampling probability * joint Q score for the
   observed alleles over all possible underlying 'true allele' combinations."""
 */
 long double
-probObservedAllelesGivenGenotypeExact(
-        Genotype& genotype,
-        vector<Allele*>& observedAlleles) {
+probObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype) {
 
     int observationCount = observedAlleles.size();
     vector<long double> alleleProbs = genotype.alleleProbabilities();
@@ -35,23 +58,13 @@ probObservedAllelesGivenGenotypeExact(
     return logsumexp(probs);
 }
 
-// log probability of a given matching of true and observed alleles
-// true alleles are the 'real' alleles
-// observed alleles are whet we observe
-// a mismatch between these two sets implies an error, which is scored accordingly here
-long double likelihoodGivenTrueAlleles(vector<Allele*>& observedAlleles, vector<Allele*>& trueAlleles) {
-    long double prob = 0;
-    vector<Allele*>::iterator o = observedAlleles.begin();
-    vector<Allele*>::iterator t = trueAlleles.begin();
-    for ( ; o != observedAlleles.end() && t != trueAlleles.end(); ++o, ++t)
-    {
-        Allele* observedAllele = *o;
-        Allele* trueAllele = *t;
-        if (observedAllele == trueAllele) {
-            prob += log(1 - exp(observedAllele->lncurrentQuality()));
-        } else {
-            prob += observedAllele->lncurrentQuality();
-        }
+vector<pair<Genotype, long double> >
+probObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotypes) {
+    vector<pair<Genotype, long double> > results;
+    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        results.push_back(make_pair(*g, probObservedAllelesGivenGenotype(observedAlleles, *g)));
     }
-    return prob;
+    return results;
 }

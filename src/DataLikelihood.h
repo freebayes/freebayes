@@ -1,3 +1,6 @@
+#ifndef __DATALIKELIHOOD_H
+#define __DATALIKELIHOOD_H
+
 #include <iostream>
 #include <vector>
 #include <utility> // pair
@@ -12,12 +15,18 @@
 
 
 long double
-probObservedAllelesGivenGenotypeExact(
-        Genotype& genotype,
-        vector<Allele*>& observedAlleles);
+probObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype);
 
+vector<pair<Genotype, long double> >
+probObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotype);
 
 long double
 likelihoodGivenTrueAlleles(
         const vector<Allele*>& observedAlleles,
         const vector<Allele*>& trueAlleles);
+
+#endif

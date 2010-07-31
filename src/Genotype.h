@@ -1,3 +1,6 @@
+#ifndef __GENOTYPE_H
+#define __GENOTYPE_H
+
 #include <iostream>
 #include <vector>
 #include <utility> // pair
@@ -37,9 +40,10 @@ public:
 };
 
 // for sorting pairs of genotype, probs
-bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b) {
+/*bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b) {
     return a.second > b.second;
 }
+*/
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
@@ -48,3 +52,4 @@ bandedGenotypeCombinations(vector<pair<string, vector<Genotype> > > sampleGenoty
         int bandwidth, int banddepth);
 
 
+#endif
