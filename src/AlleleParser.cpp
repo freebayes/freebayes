@@ -180,6 +180,42 @@ void AlleleParser::getSampleNames(void) {
     }
 }
 
+void AlleleParser::writeVcfHeader(ostream& out) {
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    char datestr [80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(datestr, 80, "%Y%m%d %X", timeinfo);
+
+    out << "##format=VCFv4.0" << endl
+            << "##fileDate=" << datestr << endl
+            << "##source=bambayes" << endl
+            << "##reference=" << parameters.fasta << endl
+            << "##phasing=none" << endl
+            << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
+
+            << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
+            << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
+            << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
+            << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
+            //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
+
+            // these are req'd
+            << "##FORMAT=GT,1,String,\"Genotype\"" << endl // g
+            << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl // phred prob of genotype
+            << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl // NiBAll[ind]
+            << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
+            << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
+            << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
+            << boost::algorithm::join(sampleList, "\t")
+            << endl;
+
+}
+
 void AlleleParser::loadBamReferenceSequenceNames(void) {
 
     //--------------------------------------------------------------------------
@@ -258,16 +294,7 @@ void AlleleParser::loadReferenceSequence(string seqName, int start, int length) 
 }
 
 void AlleleParser::loadReferenceSequence(BedData* target) {
-    loadReferenceSequence(target->seq, target->left, target->right - target->left);
-}
-
-// used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
-void AlleleParser::extendReferenceSequence(int rightExtension) {
-    DEBUG2("extending reference subsequence right by " << rightExtension << " bp");
-    currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
-                                                 currentTarget->right + basesAfterCurrentTarget,
-                                                 rightExtension);
-    basesAfterCurrentTarget += rightExtension;
+    loadReferenceSequence(target->seq, target->left - 1, target->right - target->left + 1);
 }
 
 // intended to load all the sequence covered by reads which overlap our current target
@@ -277,7 +304,16 @@ void AlleleParser::loadReferenceSequence(BedData* target, int before, int after)
     basesBeforeCurrentTarget = before;
     basesAfterCurrentTarget = after;
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
-    loadReferenceSequence(target->seq, target->left - before, target->right - target->left + after + before);
+    loadReferenceSequence(target->seq, target->left - 1 - before, target->right - target->left + after + before);
+}
+
+// used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
+void AlleleParser::extendReferenceSequence(int rightExtension) {
+    DEBUG2("extending reference subsequence right by " << rightExtension << " bp");
+    currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
+                                                 currentTarget->right + basesAfterCurrentTarget,
+                                                 rightExtension);
+    basesAfterCurrentTarget += rightExtension;
 }
 
 void AlleleParser::loadTargets(void) {
@@ -365,7 +401,7 @@ AlleleParser::~AlleleParser(void) {
 
 // position of alignment relative to current sequence
 int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
-    return (alignment.Position - currentTarget->left) + basesBeforeCurrentTarget;
+    return (alignment.Position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
 }
 
 // registeredalignment friend
@@ -659,8 +695,8 @@ bool AlleleParser::toNextTarget(void) {
     if (currentTarget == &targets.back()) {
         return false;
     } else {
-        loadTarget(++currentTarget);
-        return true;
+        return loadTarget(++currentTarget);
+        //return true;
     }
 
 }
@@ -679,23 +715,25 @@ bool AlleleParser::loadTarget(BedData* target) {
     int refSeqID = referenceSequenceNameToID[currentTarget->seq];
     DEBUG2("reference sequence id " << refSeqID);
 
-    bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right);
+    DEBUG2("setting new position " << currentTarget->left);
+    currentPosition = currentTarget->left - 1; // our bed targets are always 1-based at the left
+
+    // XXX should check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
+    bool r = bamMultiReader.SetRegion(refSeqID, currentPosition, refSeqID, currentTarget->right);
     if (!r) { return r; }
     DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) { return r; }
     DEBUG2("got first alignment in target region");
-    int left_gap = currentTarget->left - currentAlignment.Position;
+    int left_gap = currentPosition - currentAlignment.Position;
 
+    DEBUG2("left gap: " << left_gap << " currentAlignment.Position: " << currentAlignment.Position);
     // step back
-    bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right);
+    //bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right);
 
     //int right_gap = maxPos - currentTarget->right;
     // XXX the above is deprecated, as we now update as we read
     loadReferenceSequence(currentTarget, (left_gap > 0) ? left_gap : 0, 0);
-
-    DEBUG2("setting new position " << currentTarget->left);
-    currentPosition = currentTarget->left; // bed targets are always 0-based at the left
 
     DEBUG2("clearing registered alignments and alleles");
     registeredAlignmentQueue.clear();
@@ -713,7 +751,10 @@ bool AlleleParser::loadTarget(BedData* target) {
 bool AlleleParser::toNextTargetPosition(void) {
 
     if (currentTarget == NULL) {
-        toFirstTargetPosition();
+        if (!toFirstTargetPosition()) {
+            ERROR("failed to load first target");
+            return false;
+        }
     } else {
         ++currentPosition;
     }

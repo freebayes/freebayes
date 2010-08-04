@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <boost/regex.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <time.h>
 #include "BamReader.h"
 #include "Class-BedReader.h"
 #include "Parameters.h"
@@ -83,6 +85,8 @@ public:
     
     AlleleParser(int argc, char** argv);
     ~AlleleParser(void); 
+
+    void writeVcfHeader(ostream& out);
 
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
