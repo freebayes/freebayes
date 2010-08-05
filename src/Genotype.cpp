@@ -3,17 +3,24 @@
 #include "multipermute.h"
 
 
+vector<Allele> Genotype::uniqueAlleles(void) {
+    vector<Allele> uniques;
+    for (Genotype::iterator g = this->begin(); g != this->end(); ++g)
+        uniques.push_back(g->first);
+    return uniques;
+}
+
 int Genotype::getPloidy(void) {
     int result = 0;
     for (Genotype::const_iterator i = this->begin(); i != this->end(); ++i) {
-        result += i->first;
+        result += i->second;
     }
     return result;
 }
 
 bool Genotype::containsAllele(Allele& allele) {
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        Allele& b = i->second;
+        Allele& b = i->first;
         if (allele == b)
             return true;
     }
@@ -23,24 +30,52 @@ bool Genotype::containsAllele(Allele& allele) {
 // the probability of drawing each allele out of the genotype, ordered by allele
 vector<long double> Genotype::alleleProbabilities(void) {
     vector<long double> probs;
-    for (vector<pair<int, Allele> >::const_iterator a = this->begin(); a != this->end(); ++a) {
-        probs.push_back((long double) a->first / (long double) ploidy);
+    for (vector<pair<Allele, int> >::const_iterator a = this->begin(); a != this->end(); ++a) {
+        probs.push_back((long double) a->second / (long double) ploidy);
     }
     return probs;
 }
 
-ostream& operator<<(ostream& out, pair<int, Allele>& rhs) {
-    out << rhs.first << rhs.second.alternateSequence;
+string Genotype::str(void) {
+    string s;
+    for (Genotype::const_iterator allele = this->begin(); allele != this->end(); ++allele) {
+        for (int i = 0; i < allele->second; ++i)
+            s += allele->first.alternateSequence;
+    }
+    return s;
+}
+
+ostream& operator<<(ostream& out, const pair<Allele, int>& rhs) {
+    out << rhs.first.alternateSequence << rhs.second;
     return out;
 }
 
-ostream& operator<<(ostream& out, Genotype& g) {
-    Genotype::iterator i = g.begin(); ++i;
+ostream& operator<<(ostream& out, const Genotype& g) {
+    Genotype::const_iterator i = g.begin(); ++i;
     out << g.front();
     for (;i != g.end(); ++i) {
         out << " " << *i;
     }
     return out;
+}
+
+bool operator<(Genotype& a, Genotype& b) {
+    // genotypes of different ploidy are evaluated according to their relative ploidy
+    if (a.ploidy != b.ploidy)
+        return a.ploidy < b.ploidy;
+    // because our constructor sorts each Genotype.alleles, we assume that we
+    // have two equivalently sorted vectors to work with
+    Genotype::iterator ai = a.begin();
+    Genotype::iterator bi = b.begin();
+    // step through each genotype, and if we find a difference between either
+    // their allele or count return a<b
+    for (; ai != a.end() && bi != b.end(); ++ai, ++bi) {
+        if (ai->first != bi->first)
+            return ai->first < bi->first;
+        else if (ai->second != bi->second)
+            return ai->second < bi->second;
+    }
+    return false; // if the two are equal, then we return false per C++ convention
 }
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles) {
@@ -63,14 +98,15 @@ def banded_genotype_combinations(sample_genotypes, bandwidth, band_depth):
                 yield [(sample, genotypes[index]) for index, (sample, genotypes) in zip(index_permutation, sample_genotypes)] 
 */
 
-vector<vector<pair<string, Genotype> > >
-bandedGenotypeCombinations(vector<pair<string, vector<Genotype> > > sampleGenotypes,
+vector<GenotypeCombo>
+bandedGenotypeCombinations(
+        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth) {
 
     int nsamples = sampleGenotypes.size();
-    vector<vector<pair<string, Genotype> > > combos;
-    vector<pair<string, Genotype> > firstcombo;
-    for (vector<pair<string, vector<Genotype> > >::const_iterator s = sampleGenotypes.begin();
+    vector<GenotypeCombo> combos;
+    GenotypeCombo firstcombo;
+    for (vector<pair<string, vector<pair<Genotype, long double> > > >::const_iterator s = sampleGenotypes.begin();
             s != sampleGenotypes.end(); ++s) {
         firstcombo.push_back(make_pair(s->first, s->second.at(0)));
     }
@@ -84,9 +120,9 @@ bandedGenotypeCombinations(vector<pair<string, vector<Genotype> > > sampleGenoty
                 indexes.push_back(0);
             vector<vector<int> > indexPermutations = multipermute(indexes);
             for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
-                vector<pair<string, Genotype> > combo;
+                GenotypeCombo combo;
                 vector<int>::const_iterator n = p->begin();
-                for (vector<pair<string, vector<Genotype> > >::const_iterator s = sampleGenotypes.begin();
+                for (vector<pair<string, vector<pair<Genotype, long double> > > >::const_iterator s = sampleGenotypes.begin();
                         s != sampleGenotypes.end(); ++s, ++n) {
                     combo.push_back(make_pair(s->first, s->second.at(*n)));
                 }

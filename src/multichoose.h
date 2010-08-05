@@ -99,7 +99,7 @@ std::vector< std::vector<T*> > multichoose_ptr(int k, std::vector<T>& objects) {
             multiset.push_back(a[i]);
         choices.push_back(multiset);
         j=k;
-        while(a[j]==b[j])j--;
+        do { j--; } while(a[j]==b[j]);
         if (j<0) break;
         j_1=j;
         while(j_1<=k-1){
@@ -116,4 +116,3 @@ std::vector< std::vector<T*> > multichoose_ptr(int k, std::vector<T>& objects) {
     
     return choices;
 }
-

@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 23 Februrary 2010 (EG)
+// Last modified: 20 July 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -210,7 +210,7 @@ void BamMultiReader::UpdateAlignments(void) {
 }
 
 // opens BAM files
-void BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
+bool BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
     
     // for filename in filenames
     fileNames = filenames; // save filenames in our multireader
@@ -245,18 +245,21 @@ void BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool
                                             make_pair(reader, alignment)));
             } else {
                 cerr << "WARNING: could not read first alignment in " << filename << ", ignoring file" << endl;
+                // if only file available & could not be read, return failure
+                if ( filenames.size() == 1 ) return false;
             }
         
         } 
        
-        // TODO; error handling on openedOK == false
-        else {
-          
-          
-        }
+        // TODO; any more error handling on openedOK ??
+        else 
+            return false;
     }
-    
+
+    // files opened ok, at least one alignment could be read,
+    // now need to check that all files use same reference data
     ValidateReaders();
+    return true;
 }
 
 void BamMultiReader::PrintFilenames(void) {
@@ -283,7 +286,7 @@ bool BamMultiReader::Rewind(void) {
     return result;
 }
 
-// saves index data to BAM index files (".bai") where necessary, returns success/fail
+// saves index data to BAM index files (".bai"/".bti") where necessary, returns success/fail
 bool BamMultiReader::CreateIndexes(bool useDefaultIndex) {
     bool result = true;
     for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {

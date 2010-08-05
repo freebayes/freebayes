@@ -33,8 +33,8 @@ CFLAGS=-O3
 ################################################################################
 all: esfbayes alleles
 
-esfbayes: esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o
-	$(CC) $(CFLAGS) esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o -o esfbayes -lz -lboost_regex -lpthread -Wno-deprecated
+esfbayes: esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o
+	$(CC) $(CFLAGS) esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o -o esfbayes -lz -lboost_regex -lpthread -Wno-deprecated
 
 alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
 	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o alleles -lz -lboost_regex -lpthread -Wno-deprecated
@@ -82,6 +82,9 @@ Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
 Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 	$(CC) $(CFLAGS) -c Genotype.cpp -Wno-deprecated
 
+GenotypePriors.o: GenotypePriors.cpp GenotypePriors.h Allele.h
+	$(CC) $(CFLAGS) -c GenotypePriors.cpp -Wno-deprecated
+
 AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.cpp Parameters.h
 	$(CC) $(CFLAGS) -c AlleleParser.cpp -Wno-deprecated
 
@@ -96,6 +99,9 @@ Multinomial.o: Multinomial.h Multinomial.cpp Sum.h Product.h Utility.h
 
 DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
 	$(CC) $(CFLAGS) -c DataLikelihood.cpp -Wno-deprecated
+
+ResultData.o: ResultData.cpp ResultData.h
+	$(CC) $(CFLAGS) -c ResultData.cpp -Wno-deprecated
 
 # ...
 Class-BedReader.o: Class-BedReader.cpp Class-BedReader.h Function-Generic.h

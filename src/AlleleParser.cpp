@@ -37,7 +37,7 @@ void AlleleParser::openBams(void) {
             DEBUG2(*b);
         }
     }
-    bamMultiReader.Open(parameters.bams);
+    bamMultiReader.Open(parameters.bams, true);
     DEBUG(" done");
 
 }
@@ -293,9 +293,11 @@ void AlleleParser::loadReferenceSequence(string seqName, int start, int length) 
     currentSequence = reference->getSubSequence(name, start, length);
 }
 
+/*
 void AlleleParser::loadReferenceSequence(BedData* target) {
     loadReferenceSequence(target->seq, target->left - 1, target->right - target->left + 1);
 }
+*/
 
 // intended to load all the sequence covered by reads which overlap our current target
 // this lets us process the reads fully, checking for suspicious reads, etc.
@@ -304,14 +306,16 @@ void AlleleParser::loadReferenceSequence(BedData* target, int before, int after)
     basesBeforeCurrentTarget = before;
     basesAfterCurrentTarget = after;
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
-    loadReferenceSequence(target->seq, target->left - 1 - before, target->right - target->left + after + before);
+    string name = reference->sequenceNameStartingWith(target->seq);
+    currentSequence = reference->getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before);
+    //loadReferenceSequence(name, target->left - 1 - before, target->right - target->left + after + before);
 }
 
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
     DEBUG2("extending reference subsequence right by " << rightExtension << " bp");
     currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
-                                                 currentTarget->right + basesAfterCurrentTarget,
+                                                 (currentTarget->right - 1) + basesAfterCurrentTarget,
                                                  rightExtension);
     basesAfterCurrentTarget += rightExtension;
 }
@@ -606,7 +610,8 @@ void AlleleParser::updateAlignmentQueue(void) {
                 // filter low mapping quality (what happens if MapQuality is not in the file)
                 if (currentAlignment.MapQuality > parameters.MQL0) {
                     // checks if we should grab and cache more sequence in order to process this alignment
-                    int rightgap = currentAlignment.AlignedBases.size() + currentAlignment.Position - currentTarget->right + basesAfterCurrentTarget;
+                    int rightgap = (currentAlignment.AlignedBases.size() + currentAlignment.Position) 
+                        - (currentTarget->right - 1 + basesAfterCurrentTarget);
                     if (rightgap > 0) { extendReferenceSequence(rightgap); }
                     RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
                     // TODO filters to implement:
@@ -798,8 +803,9 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
                  && currentPosition < allele->position + allele->length) // 0-based, means position + length - 1 is the last included base
                 || (allele->position == currentPosition)) 
                 && allele->currentQuality() >= parameters.BQL0
-                )
+                ) {
             alleles.push_back(allele);
+        }
     }
 
     alleles.sort();

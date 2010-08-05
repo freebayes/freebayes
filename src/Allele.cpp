@@ -35,6 +35,9 @@ string Allele::typeStr(void) {
     string t;
 
     switch (this->type) {
+        case ALLELE_GENOTYPE:
+            t = "genotype";
+            break;
         case ALLELE_REFERENCE:
             t = "reference";
             break;
@@ -217,14 +220,24 @@ bool operator<(const Allele &a, const Allele &b) {
     return a.type < b.type;
 }
 
+// alleles are equal if they represent the same reference-relative variation or sequence
+// nb
+// two deletions will be equal if they are the same length because their alternate sequence is always ""
+// two insertions will be equal if they have the same alternate sequences
+// two reference, genotype, and snp alleles will be equivalent if they have the same alternate base at the current position
 bool operator==(Allele &a, Allele &b) {
 
-    // simple case of ALLELE_GENOTYPE, as is used in genotype alleles
-    return ((a.type == ALLELE_GENOTYPE || b.type == ALLELE_GENOTYPE) && a.alternateSequence == b.alternateSequence)
-        || (a.type == b.type 
-            && a.length == b.length
-            && a.alternateSequence == b.alternateSequence);
+    return // we check that the alternate sequences are the same, handling the special case of reference alleles
+        (a.type == ALLELE_REFERENCE ? a.currentBase() : a.alternateSequence) 
+        ==
+        (b.type == ALLELE_REFERENCE ? b.currentBase() : b.alternateSequence) 
+        || // otherwise, if we are comparing a pair of deletions, we just check if they have the same length
+        (a.type == ALLELE_DELETION && b.type == ALLELE_DELETION && a.length == b.length);
 
+}
+
+bool operator!=(Allele& a, Allele& b) {
+    return ! (a == b);
 }
 
 bool Allele::equivalent(Allele &b) {
@@ -272,6 +285,21 @@ map<Allele, int> countAlleles(vector<Allele*>& alleles) {
     }
     return counts;
 }
+
+map<Allele, int> countAlleles(vector<Allele>& alleles) {
+    map<Allele, int> counts;
+    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& allele = *a;
+        map<Allele, int>::iterator f = counts.find(allele);
+        if (f == counts.end()) {
+            counts[allele] = 1;
+        } else {
+            counts[allele] += 1;
+        }
+    }
+    return counts;
+}
+
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles) {
     map<string, vector<Allele*> > groups;
@@ -392,6 +420,26 @@ vector<vector<Allele> >  groupAlleles_copy(vector<Allele> &alleles, bool (*fncom
         bool unique = true;
         for (vector<vector<Allele> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
             if ((*fncompare)(*oa, ag->front())) {
+                ag->push_back(*oa);
+                unique = false;
+                break;
+            }
+        }
+        if (unique) {
+            vector<Allele> trueAlleleGroup;
+            trueAlleleGroup.push_back(*oa);
+            groups.push_back(trueAlleleGroup);
+        }
+    }
+    return groups;
+}
+
+vector<vector<Allele> >  groupAlleles_copy(vector<Allele> &alleles) {
+    vector<vector<Allele> > groups;
+    for (vector<Allele>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+        bool unique = true;
+        for (vector<vector<Allele> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+            if (*oa == ag->front()) {
                 ag->push_back(*oa);
                 unique = false;
                 break;

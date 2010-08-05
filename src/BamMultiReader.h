@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 22 February 2010 (EG)
+// Last modified: 20 July 2010 (DB)
 // ---------------------------------------------------------------------------
 // Functionality for simultaneously reading multiple BAM files
 // ***************************************************************************
@@ -59,7 +59,7 @@ class BamMultiReader {
         // indexes.
         // @coreMode - setup our first alignments using GetNextAlignmentCore();
         // also useful for merging
-        void Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool useDefaultIndex = true);
+        bool Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool useDefaultIndex = true);
 
         // performs random-access jump to reference, position
         bool Jump(int refID, int position = 0);

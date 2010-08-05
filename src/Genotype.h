@@ -13,10 +13,29 @@
 using namespace std;
 
 
-class Genotype : public vector<pair<int, Allele> > {
+// TODO
+// Develop this stub to clean up leaky abstraction caused by direct use of
+// a pair as a complex datatype.
+// It's clearer to write things like 'genotypeelement->allele' and
+// 'genotypeelement->count' than ..->first and ..->second
+/*
+class GenotypeElement : public pair<Allele, int> {
 
-    friend ostream& operator<<(ostream& out, pair<int, Allele>& rhs);
-    friend ostream& operator<<(ostream& out, Genotype& g);
+    friend ostream& operator<<(ostream& out, GenotypeElement& rhs);
+
+public:
+    Allele& allele(void) { return this->first; }
+    int& count(void) { return this->second; }
+
+};
+*/
+
+
+class Genotype : public vector<pair<Allele, int> > {
+
+    friend ostream& operator<<(ostream& out, const pair<Allele, int>& rhs);
+    friend ostream& operator<<(ostream& out, const Genotype& g);
+    friend bool operator<(Genotype& a, Genotype& b);
 
 public:
     
@@ -25,17 +44,20 @@ public:
 
     Genotype(vector<Allele>& ungroupedAlleles) {
         alleles = ungroupedAlleles;
+        sort(alleles.begin(), alleles.end());
         vector<vector<Allele> > groups = groupAlleles_copy(alleles);
         for (vector<vector<Allele> >::const_iterator group = groups.begin(); group != groups.end(); ++group) {
-            this->push_back(make_pair(group->size(), group->front()));
+            this->push_back(make_pair(group->front(), group->size()));
         }
         ploidy = getPloidy();
     }
 
+    vector<Allele> uniqueAlleles(void);
     int getPloidy(void);
     bool containsAllele(Allele& allele);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
+    string str(void);
 
 };
 
@@ -47,8 +69,11 @@ public:
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
-vector<vector<pair<string, Genotype> > >
-bandedGenotypeCombinations(vector<pair<string, vector<Genotype> > > sampleGenotypes,
+typedef vector<pair<string, pair<Genotype, long double> > > GenotypeCombo;
+
+vector<GenotypeCombo>
+bandedGenotypeCombinations(
+        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth);
 
 

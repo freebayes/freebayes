@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 9 July 2010 (DB)
+// Last modified: 15 July 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -350,8 +350,8 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
     bAlignment.TagData.resize(tagDataLength);
     memcpy((char*)bAlignment.TagData.data(), tagData, tagDataLength);
     
-    // set support data parsed flag
-    bAlignment.SupportData.IsParsed = true;
+    // clear the core-only flag
+    bAlignment.SupportData.HasCoreOnly = false;
     
     // return success
     return true;
@@ -423,6 +423,9 @@ bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment)
     // if valid alignment available
     if ( LoadNextAlignment(bAlignment) ) {
 
+        // set core-only flag
+        bAlignment.SupportData.HasCoreOnly = true;
+      
         // if region not specified, return success
         if ( !IsLeftBoundSpecified ) return true;
 
@@ -537,8 +540,10 @@ bool BamReader::BamReaderPrivate::Jump(int refID, int position) {
         
         // if this alignment corresponds to desired position
         // return success of seeking back to 'current offset'
-        if ( (bAlignment.RefID == refID && bAlignment.Position + bAlignment.Length > position) || (bAlignment.RefID > refID) )
+        if ( (bAlignment.RefID == refID && bAlignment.Position + bAlignment.Length > position) || (bAlignment.RefID > refID) ) {
+            if ( o != offsets.begin() ) --o;
             return mBGZF.Seek(*o);
+        }
     }
     
     return result;
@@ -729,23 +734,23 @@ bool BamReader::BamReaderPrivate::Open(const string& filename, const string& ind
 // returns BAM file pointer to beginning of alignment data
 bool BamReader::BamReaderPrivate::Rewind(void) {
    
-    // find first reference that has alignments in the BAM file
-    int refID = 0;
-    int refCount = References.size();
-    for ( ; refID < refCount; ++refID ) {
-        if ( References.at(refID).RefHasAlignments ) 
-            break;
-    }
+    // rewind to first alignment
+    if ( !mBGZF.Seek(AlignmentsBeginOffset) ) return false;
+  
+    // retrieve first alignment data
+    BamAlignment al;
+    if ( !LoadNextAlignment(al) ) return false;
+      
+    // reset default region info using first alignment in file
+    Region.LeftRefID      = al.RefID;
+    Region.LeftPosition   = al.Position;
+    Region.RightRefID     = -1;
+    Region.RightPosition  = -1;
+    IsLeftBoundSpecified  = false;
+    IsRightBoundSpecified = false; 
 
-    // reset default region info
-    Region.LeftRefID = refID;
-    Region.LeftPosition = 0;
-    Region.RightRefID = -1;
-    Region.RightPosition = -1;
-    IsLeftBoundSpecified = false;
-    IsRightBoundSpecified = false;
-
-    // return success/failure of seek
+    // rewind back to before first alignment
+    // return success/fail of seek
     return mBGZF.Seek(AlignmentsBeginOffset);
 }
 

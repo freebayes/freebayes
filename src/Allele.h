@@ -65,6 +65,8 @@ class Allele {
     friend string stringForAlleles(vector<Allele> &av);
 
     friend bool operator<(const Allele &a, const Allele &b);
+    friend bool operator==(Allele &a, Allele &b);
+    friend bool operator!=(Allele &a, Allele &b);
 
     friend ostream &operator<<(ostream &out, vector<Allele> &a);
     friend ostream &operator<<(ostream &out, vector<Allele*> &a);
@@ -72,7 +74,6 @@ class Allele {
 
     friend ostream &operator<<(ostream &out, Allele &a);
     friend ostream &operator<<(ostream &out, Allele* &a);
-    friend bool operator==(Allele &a, Allele &b);
 
     friend string json(vector<Allele*> &alleles, long unsigned int &position);
     friend string json(vector<Allele*> &alleles);
@@ -176,6 +177,7 @@ map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
+map<Allele, int> countAlleles(vector<Allele>& alleles);
 
 bool allelesSameType(Allele* &a, Allele* &b);
 bool allelesEquivalent(Allele* &a, Allele* &b);
@@ -189,8 +191,9 @@ vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)
 vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele*> > groupAlleles(vector<Allele*> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele*> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
-vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b) = allelesEquivalent);
+vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles_copy(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele> > &groups);
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);

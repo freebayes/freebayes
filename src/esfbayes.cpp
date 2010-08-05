@@ -38,7 +38,18 @@
 #include "multipermute.h"
 
 #include "Genotype.h"
+#include "GenotypePriors.h"
 #include "DataLikelihood.h"
+#include "ResultData.h"
+
+#include <boost/foreach.hpp>
+
+/*
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
+*/
+
+
 
 using namespace std; 
 
@@ -54,38 +65,6 @@ using boost::make_tuple;
 // although it exists as a static member of the Allele class.
 //
 AlleleFreeList Allele::_freeList;
-
-
-
-class ResultData
-{
-public:
-    string name;
-    vector<pair<Genotype, long double> > dataLikelihoods;
-    map<Genotype, long double> marginals;
-    vector<Allele*> observations;
-
-    ResultData(string s,
-        vector<pair<Genotype, long double> > d,
-        map<Genotype, long double>  m,
-        vector<Allele*> o)
-            : name(s)
-            , dataLikelihoods(d)
-            , marginals(m)
-            , observations(o)
-    { }
-
-    void sortDataLikelihoods(void) {
-        sort(dataLikelihoods.begin(), 
-                dataLikelihoods.end(), 
-                boost::bind(&pair<Genotype, long double>::second, _1) 
-                    > boost::bind(&pair<Genotype, long double>::second, _2));
-    }
-
-};
-
-// maps sample names to results
-typedef map<string, ResultData> Results;
 
 
 int main (int argc, char *argv[]) {
@@ -104,6 +83,7 @@ int main (int argc, char *argv[]) {
 
 
     while (parser->getNextAlleles(alleles)) {
+
         // skips 0-coverage regions
         if (alleles.size() == 0)
             continue;
@@ -122,54 +102,100 @@ int main (int argc, char *argv[]) {
 
             vector<pair<Genotype, long double> > probs = 
                 probObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+            /*
+            for (vector<pair<Genotype, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
+                cout << p->first << " " << p->second << endl;
+            }
+            */
             
             map<Genotype, long double> marginals;
+            map<Genotype, vector<long double> > rawMarginals;
 
-            results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, observedAlleles)));
+            results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, rawMarginals, observedAlleles)));
 
         }
 
-        // sort genotype data likelihoods
+        // sort genotype data likelihoods and accumulate into 
         
+        vector<pair<string, vector<pair<Genotype, long double> > > > sampleGenotypes;
         for (Results::iterator s = results.begin(); s != results.end(); ++s) {
             s->second.sortDataLikelihoods();
+            /*
+            for (vector<pair<Genotype, long double> >::iterator p = s->second.dataLikelihoods.begin(); p != s->second.dataLikelihoods.end(); ++p) {
+                cout << p->first << " " << p->second << endl;
+            }
+            cout << endl;
+            */
+
+            sampleGenotypes.push_back(make_pair(s->first, s->second.dataLikelihoods));
         }
 
 
+        // calculate genotype combo likelihoods, integral over nearby genotypes
+        // calculate marginals
+        // and determine best genotype combination
 
-        // report in json-formatted stream
-        //
-        if (parameters.suppressOutput) {
-            cout << "{\"sequence\":\"" << parser->currentTarget->seq << "\","
-                << "\"position\":" << parser->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
-                //<< "\"raDepth\":" << parser->registeredAlleles.size() << ","
-                << "\"samples\":{";  // TODO ... quality (~pSnp)
+        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
+        vector<pair<GenotypeCombo, long double> > genotypeComboProbs;
 
-            bool suppressComma = true; // output flag
-            for (Results::iterator p = results.begin(); p != results.end(); ++p) {
+        for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
-                ResultData& sample = p->second;
+            long double probabilityObservationsGivenGenotypes = 0;
+            vector<Genotype> genotypeCombo;
 
-                if (!suppressComma) { cout << ","; } else { suppressComma = false; }
-
-                cout << "\"" << sample.name << "\":{"
-                    << "\"coverage\":" << sample.observations.size() << ","
-                    << "\"genotypes\":[";
-
-                for (map<Genotype, long double>::iterator g = sample.marginals.begin(); 
-                        g != sample.marginals.end(); ++g) {
-                    if (g != sample.marginals.begin()) cout << ",";
-                    Genotype genotype = g->first;
-                    cout << "[\"" << genotype << "\"," << float2phred(1 - exp(g->second)) << "]";
-                }
-                cout << "]";
-                if (parser->parameters.outputAlleles)
-                    cout << ",\"alleles\":" << json(sample.observations);
-                cout << "}";
-
+            for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
+                genotypeCombo.push_back(i->second.first);
+                probabilityObservationsGivenGenotypes += i->second.second;
             }
 
-            cout << "}}" << endl;
+            long double priorProbabilityOfGenotypeCombo = alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH);
+            long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
+
+            for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
+                map<Genotype, vector<long double> >& marginals = results[i->first].rawMarginals;
+                Genotype& genotype = i->second.first;
+                long double& prob = i->second.second;
+                map<Genotype, vector<long double> >::iterator marginal = marginals.find(genotype);
+                if (marginal == marginals.end()) {
+                    vector<long double> probs;
+                    probs.push_back(prob);
+                    marginals.insert(make_pair(genotype, probs));
+                } else {
+                    marginals[genotype].push_back(prob);
+                }
+            }
+
+            genotypeComboProbs.push_back(make_pair(*combo, comboProb));
+
+        }
+        // genotype_combo_probs = sorted(genotype_combo_probs, key=lambda c: c[1], reverse=True)
+        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(),
+                boost::bind(&pair<GenotypeCombo, long double>::second, _1) 
+                    > boost::bind(&pair<GenotypeCombo, long double>::second, _2));
+
+        vector<long double> comboProbs;
+        comboProbs.resize(genotypeComboProbs.size());
+        transform(genotypeComboProbs.begin(), genotypeComboProbs.end(),
+                comboProbs.begin(), boost::bind(&pair<GenotypeCombo, long double>::second, _1));
+
+        long double posteriorNormalizer = logsumexp(comboProbs);
+
+        // normalize marginals
+        for (Results::iterator r = results.begin(); r != results.end(); ++r) {
+            ResultData& d = r->second;
+            for (map<Genotype, vector<long double> >::iterator m = d.rawMarginals.begin(); m != d.rawMarginals.end(); ++m) {
+                d.marginals[m->first] = logsumexp(m->second) - posteriorNormalizer;
+            }
+        }
+
+
+        GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().first;
+        long double bestGenotypeComboProb = exp(genotypeComboProbs.front().second - posteriorNormalizer);
+
+        if (!parameters.suppressOutput) {
+            cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
+            //json(cout, results, *parser);
+            //cout << endl;
         }
 
     }
@@ -179,95 +205,3 @@ int main (int argc, char *argv[]) {
     return 0;
 
 }
-
-// discrete elements of analysis
-// 
-// 1) fasta reference
-// 2) bam file(s) over samples / samples
-// 3) per-individual base calls (incl cigar)
-// 4) priors
-// 
-// sets of data per individual
-// and sets of data per position
-// 
-// for each position in the target regions (which is provided by a bed file)
-// calculate the basecalls for each sample
-// then, for samples for which we meet certain criteria (filters):
-//     number of mismatches
-//     data sufficiency (number of individual basecalls aka reads?)
-//     (readmask ?)
-// ... establish the probability of a snp for each possible genotype
-// (which is ~ the data likelihood * the prior probablity of a snp for each sample)
-// and report the top (configurable) number of possible genotypes
-// 
-// 
-// 
-// high level overview of progression:
-// 
-// for each region in region list
-//     for each position in region
-//         for each read overlapping position
-//             for each base in read
-//                 register base
-//         evaluate prob(variation | all bases)
-//         if prob(variation) >= reporting threshold
-//             report variation
-// 
-// 
-// registration of bases:
-// 
-//     skip clips (soft and hard)
-//     presently, skip indels and only analyze aligned bases, but open development
-//         to working with them in the future
-//     preadmask: when we encounter a indel alignment, mask out bases in that read
-//         because we are concerned about the semantics of processing it.
-//     
-//     we keep data on the bases, the basecall struct contains this information
-// 
-// 
-// probability estimation
-// 
-//     p ( snp ) ~= ...
-// 
-//     p ( individual genotype | reads ) ~= ...
-// 
-//     p ( genotypes | basecalls ) ~= p( basecalls | genotype ) * prior( genotype ) / probability ( basecalls )
-// 
-// 
-// 
-// algorithmic core overview:
-// 
-// (1) individual data likelihoods
-// 
-// for each sample in the sample list
-//     get basecalls corresponding to sample
-//         for each genotype from the fixed genotype list
-//             calculate the data likelihoods of p ( basecalls | genotype )   == "data likelihood" 
-//                  this amounts to multiplying the quality scores from all the basecalls in that sample
-// 
-// (2) total genotype likelhoods for dominant genotype combinations
-// 
-// for each genotype combo in dominant genotype combo list
-//     data likelhood p ( basecall combo | genotype combo )
-// 
-// 
-// (3) calculate priors for dominant genotype combinations
-// 
-// for each genotype combo in dominant genotype combo list
-//     calculate priors of that genotype combo  (well defined)
-// 
-// (4) calculate posterior probability of dominant genotype combinations
-// 
-// for each genotype combo in dominant genotype combo list
-//     multiply results of corresponding (2) * (3)
-// normalize  (could be a separate step)
-// 
-// (5) probability that of a variation given all basecalls
-// 
-// sum over probability of all dominant variants
-// 
-// (6) calculate individual sample genotype posterior marginals
-// 
-// for each sample
-//     for each genotype
-//         sum of p(genotype | reads) for fixed genotype <-- (4)

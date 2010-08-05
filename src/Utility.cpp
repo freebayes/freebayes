@@ -173,8 +173,8 @@ long double logsumexp(const vector<long double>& lnv) {
         n = *i;
         if (n > maxN)
             maxN = n;
-        if (abs((int) n) > maxAbs)
-            maxAbs = abs((int) n);
+        if (fabs(n) > maxAbs)
+            maxAbs = fabs(n);
         if (n < minN)
             minN = n;
     }
