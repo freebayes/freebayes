@@ -57,10 +57,10 @@ probObservedAllelesGivenGenotype(
                     + likelihoodGivenTrueAlleles(observedAlleles, trueAlleles));
         }
     }
+    //cout << "l = " << logsumexp(probs) << endl;
     return logsumexp(probs);
 }
 
-/*
 vector<pair<Genotype, long double> >
 probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
@@ -71,8 +71,8 @@ probObservedAllelesGivenGenotypes(
     }
     return results;
 }
-*/
 
+/*
 vector<pair<Genotype, long double> >
 probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
@@ -105,3 +105,4 @@ probObservedAllelesGivenGenotypes(
     }
     return results;
 }
+*/

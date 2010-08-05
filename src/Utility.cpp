@@ -28,7 +28,7 @@ int float2phred(long double prob) {
 
 long double powln(long double m, int n) {
     long double r = 0;
-    for (int i = 0; i < n; ++i) {
+    for (; n > 0; --n) {
         r += m;
     }
     return r;

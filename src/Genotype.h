@@ -76,5 +76,8 @@ bandedGenotypeCombinations(
         vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth);
 
+ostream& operator<<(ostream& out, vector<GenotypeCombo>& combo);
+ostream& operator<<(ostream& out, GenotypeCombo& g);
+
 
 #endif

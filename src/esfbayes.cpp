@@ -140,6 +140,8 @@ int main (int argc, char *argv[]) {
 
         for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
+            //cout << *combo << endl;
+
             long double probabilityObservationsGivenGenotypes = 0;
             vector<Genotype> genotypeCombo;
 
@@ -149,19 +151,21 @@ int main (int argc, char *argv[]) {
             }
 
             long double priorProbabilityOfGenotypeCombo = alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH);
+            //cout << "priorProbabilityOfGenotypeCombo = " << priorProbabilityOfGenotypeCombo << endl;
+            //cout << "probabilityObservationsGivenGenotypes = " << probabilityObservationsGivenGenotypes << endl;
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
 
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
                 map<Genotype, vector<long double> >& marginals = results[i->first].rawMarginals;
                 Genotype& genotype = i->second.first;
-                long double& prob = i->second.second;
+                //long double& prob = i->second.second;
                 map<Genotype, vector<long double> >::iterator marginal = marginals.find(genotype);
                 if (marginal == marginals.end()) {
                     vector<long double> probs;
-                    probs.push_back(prob);
+                    probs.push_back(comboProb);
                     marginals.insert(make_pair(genotype, probs));
                 } else {
-                    marginals[genotype].push_back(prob);
+                    marginals[genotype].push_back(comboProb);
                 }
             }
 
@@ -179,11 +183,25 @@ int main (int argc, char *argv[]) {
                 comboProbs.begin(), boost::bind(&pair<GenotypeCombo, long double>::second, _1));
 
         long double posteriorNormalizer = logsumexp(comboProbs);
+        //cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
+        /*cout << "comboProbs = [";
+        for (vector<long double>::iterator i = comboProbs.begin(); i != comboProbs.end(); ++i)
+            cout << *i << " ";
+        cout << "]" << endl;
+        cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
+        */
 
         // normalize marginals
         for (Results::iterator r = results.begin(); r != results.end(); ++r) {
             ResultData& d = r->second;
             for (map<Genotype, vector<long double> >::iterator m = d.rawMarginals.begin(); m != d.rawMarginals.end(); ++m) {
+                /*
+                cout << "rawMarginals = [";
+                for (vector<long double>::iterator i = m->second.begin(); i != m->second.end(); ++i)
+                    cout << *i << ", ";
+                cout << "]" << endl;
+                cout << logsumexp(m->second) << endl;
+                */
                 d.marginals[m->first] = logsumexp(m->second) - posteriorNormalizer;
             }
         }
@@ -193,9 +211,9 @@ int main (int argc, char *argv[]) {
         long double bestGenotypeComboProb = exp(genotypeComboProbs.front().second - posteriorNormalizer);
 
         if (!parameters.suppressOutput) {
-            cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
-            //json(cout, results, *parser);
-            //cout << endl;
+            //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
+            json(cout, results, *parser);
+            cout << endl;
         }
 
     }

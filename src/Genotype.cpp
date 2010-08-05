@@ -59,6 +59,24 @@ ostream& operator<<(ostream& out, const Genotype& g) {
     return out;
 }
 
+ostream& operator<<(ostream& out, vector<GenotypeCombo>& g) {
+    for (vector<GenotypeCombo>::iterator i = g.begin(); i != g.end(); ++i) {
+        out << *i << endl;
+    }
+    return out;
+}
+
+ostream& operator<<(ostream& out, GenotypeCombo& g) {
+    GenotypeCombo::iterator i = g.begin(); ++i;
+    out << "[ \"" << g.front().first << " " << g.front().second.first << " " << g.front().second.second << "\", ";
+    for (;i != g.end(); ++i) {
+        out << " \"" << i->first << " " << i->second.first << " " << i->second.second << "\", ";
+    }
+    out << "]";
+    return out;
+}
+
+
 bool operator<(Genotype& a, Genotype& b) {
     // genotypes of different ploidy are evaluated according to their relative ploidy
     if (a.ploidy != b.ploidy)
@@ -105,12 +123,14 @@ bandedGenotypeCombinations(
 
     int nsamples = sampleGenotypes.size();
     vector<GenotypeCombo> combos;
+    /*
     GenotypeCombo firstcombo;
     for (vector<pair<string, vector<pair<Genotype, long double> > > >::const_iterator s = sampleGenotypes.begin();
             s != sampleGenotypes.end(); ++s) {
         firstcombo.push_back(make_pair(s->first, s->second.at(0)));
     }
     combos.push_back(firstcombo);
+    */
     for (int i = 0; i < bandwidth; ++i) {
         for (int j = 1; j < banddepth; ++j) {
             vector<int> indexes;
