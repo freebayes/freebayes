@@ -117,9 +117,9 @@ string stringForAlleles(vector<Allele> &alleles) {
 string json(vector<Allele*> &alleles) {
     stringstream out;
     vector<Allele*>::iterator a = alleles.begin();
-    out << "[" << json(**a++);
-    while (a != alleles.end())
-        out << "," << json(**a++);
+    out << "[" << json(**a); ++a;
+    for (; a != alleles.end(); ++a)
+        out << "," << json(**a);
     out << "]";
     return out.str();
 }
@@ -303,7 +303,10 @@ map<Allele, int> countAlleles(vector<Allele>& alleles) {
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles) {
     map<string, vector<Allele*> > groups;
-    groupAllelesBySample(alleles, groups);
+    for (list<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele*& allele = *a;
+        groups[allele->sampleID].push_back(allele);
+    }
     return groups;
 }
 

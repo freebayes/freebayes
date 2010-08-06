@@ -24,7 +24,7 @@ long double multinomialln(vector<long double> probs, vector<int> obs) {
     vector<long double>::const_iterator p = probs.begin();
     vector<int>::const_iterator o = obs.begin();
     for (; p != probs.end() && o != obs.end(); ++p, ++o) {
-        probsPowObs.push_back(log(pow(*p, *o)));
+        probsPowObs.push_back(powln(log(*p), *o));
     }
     return factorialln(sum(obs)) - sum(factorials) + sum(probsPowObs);
 }

@@ -68,11 +68,11 @@ ostream& operator<<(ostream& out, vector<GenotypeCombo>& g) {
 
 ostream& operator<<(ostream& out, GenotypeCombo& g) {
     GenotypeCombo::iterator i = g.begin(); ++i;
-    out << "[ \"" << g.front().first << " " << g.front().second.first << " " << g.front().second.second << "\", ";
+    out << "{\"" << g.front().first << "\":[\"" << g.front().second.first << "\"," << exp(g.front().second.second) << "]";
     for (;i != g.end(); ++i) {
-        out << " \"" << i->first << " " << i->second.first << " " << i->second.second << "\", ";
+        out << ", \"" << i->first << "\":[\"" << i->second.first << "\"," << exp(i->second.second) << "]";
     }
-    out << "]";
+    out << "}";
     return out;
 }
 

@@ -285,7 +285,7 @@ if __name__ == '__main__':
         #print position['position']
         samples = position['samples']
 
-        position['coverage'] = reduce(operator.add, [len(alleles) for samplename, alleles in samples.iteritems()])
+        position['coverage'] = sum([len(sample['alleles']) for samplename, sample in samples.iteritems()])
 
         #potential_alleles = ['A','T','G','C']
         potential_alleles = set()
@@ -296,7 +296,7 @@ if __name__ == '__main__':
             sample['alleles'] = alleles
             potential_alleles = potential_alleles.union(set([allele['alt'] for allele in alleles]))
 
-        position['filtered coverage'] = reduce(operator.add, [len(alleles) for samplename, alleles in samples.iteritems()])
+        position['filtered coverage'] = sum([len(sample['alleles']) for samplename, sample in samples.iteritems()])
 
         # genotypes are expressed as sets of allele frequencies
         #genotypes = list_genotypes_to_count_genotypes(list(multiset.multichoose(ploidy, list(potential_alleles))))
@@ -317,10 +317,13 @@ if __name__ == '__main__':
         for name, sample in samples.iteritems():
             marginals[name] = {}
 
+        combos_tested = 0
         for combo in banded_genotype_combinations(sample_genotypes, min(len(genotypes), 2), 2):
+            combos_tested += 1
             probability_observations_given_genotypes = sum([prob for name, (genotype, prob) in combo])
-            prior_probability_of_genotype = math.exp(allele_frequency_probabilityln(count_frequencies([genotype for name, (genotype, prob) in combo])))
-            combo_prob = math.log(prior_probability_of_genotype) + probability_observations_given_genotypes
+            frequency_counts = count_frequencies([genotype for name, (genotype, prob) in combo])
+            prior_probability_of_genotype = allele_frequency_probabilityln(frequency_counts)
+            combo_prob = prior_probability_of_genotype + probability_observations_given_genotypes
             for name, (genotype, prob) in combo:
                 gstr = genotype_str(genotype)
                 if marginals[name].has_key(gstr):
@@ -338,6 +341,8 @@ if __name__ == '__main__':
 
         #print genotype_combo_probs
         #print [prob for combo, prob in genotype_combo_probs]
+        #for combo, prob in genotype_combo_probs:
+        #    print prob
         posterior_normalizer = logsumexp([prob for combo, prob in genotype_combo_probs])
 
         # handle marginals
@@ -348,13 +353,16 @@ if __name__ == '__main__':
         best_genotype_combo = genotype_combo_probs[0][0]
         best_genotype_combo_prob = genotype_combo_probs[0][1]
 
-        best_genotype_probability = math.exp(sum([prob for name, (genotype, prob) in best_genotype_combo]) \
-                + allele_frequency_probabilityln(count_frequencies([genotype for name, (genotype, prob) in best_genotype_combo])) \
-                - posterior_normalizer)
-        position['genotyping'] = {'prob':best_genotype_probability, 
-                                  'best_combo':[[name, genotype_str(genotype), math.exp(marginals[name][genotype_str(genotype)])] 
-                                                  for name, (genotype, prob) in best_genotype_combo]}
-        position['genotyping']['posterior_normalizer'] = math.exp(posterior_normalizer)
+        #best_genotype_probability = math.exp(sum([prob for name, (genotype, prob) in best_genotype_combo]) \
+        #        + allele_frequency_probabilityln(count_frequencies([genotype for name, (genotype, prob) in best_genotype_combo])) \
+        #        - posterior_normalizer)
+        best_genotype_probability = math.exp(best_genotype_combo_prob - posterior_normalizer)
+        position['best_genotype_combo'] = [[name, genotype_str(genotype), math.exp(marginals[name][genotype_str(genotype)])] 
+                                                  for name, (genotype, prob) in best_genotype_combo]
+        position['best_genotype_combo_prob'] = best_genotype_probability
+        position['posterior_normalizer'] = math.exp(posterior_normalizer)
+        position['combos_tested'] = combos_tested
+        #position['genotype_combo_probs'] = genotype_combo_probs
         # TODO estimate marginal probabilities of genotypings
         # here we cast everything into float-space
         for samplename, sample in samples.items():

@@ -142,6 +142,26 @@ public:
         , genotypeAllele(true)
     { }
 
+    // I'm not sure if this explicit copy constructor is necessary
+    /*
+    Allele(const Allele& other) 
+        : type(other.type)
+        , referenceName(other.referenceName)
+        , position(other.position)
+        , currentReferencePosition(other.currentReferencePosition)
+        , length(other.length)
+        , referenceSequence(other.referenceSequence)
+        , alternateSequence(other.alternateSequence)
+        , sampleID(other.sampleID)
+        , readID(other.readID)
+        , strand(other.strand)
+        , quality(other.quality) // passing -1 as quality triggers this calculation
+        , qualityString(other.qualityString)
+        , mapQuality(other.mapQuality) 
+        , genotypeAllele(other.genotypeAllele)
+    { }
+    */
+
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void); // return a string representation of the allele type, for output
     int referenceOffset();

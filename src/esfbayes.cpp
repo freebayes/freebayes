@@ -42,12 +42,10 @@
 #include "DataLikelihood.h"
 #include "ResultData.h"
 
-#include <boost/foreach.hpp>
+//#include <boost/foreach.hpp>
 
-/*
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
-*/
 
 
 
@@ -80,6 +78,10 @@ int main (int argc, char *argv[]) {
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     vector<Genotype> genotypes = allPossibleGenotypes(2, genotypeAlleles); // generate all possible genotypes of ploidy 2
+
+    // TODO
+    // ... only process potential genotypes for which we have some number of observations
+    // ... optionally provide a threshold of some kind to ignore low-frequency observations that are most likely errors
 
 
     while (parser->getNextAlleles(alleles)) {
@@ -140,8 +142,6 @@ int main (int argc, char *argv[]) {
 
         for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
-            //cout << *combo << endl;
-
             long double probabilityObservationsGivenGenotypes = 0;
             vector<Genotype> genotypeCombo;
 
@@ -182,6 +182,11 @@ int main (int argc, char *argv[]) {
         transform(genotypeComboProbs.begin(), genotypeComboProbs.end(),
                 comboProbs.begin(), boost::bind(&pair<GenotypeCombo, long double>::second, _1));
 
+        /*
+        for (vector<pair<GenotypeCombo, long double> >::iterator c = genotypeComboProbs.begin(); c != genotypeComboProbs.end(); ++c) {
+            cout << "prob:" << c->second << endl;
+        }
+        */
         long double posteriorNormalizer = logsumexp(comboProbs);
         //cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
         /*cout << "comboProbs = [";
@@ -212,8 +217,17 @@ int main (int argc, char *argv[]) {
 
         if (!parameters.suppressOutput) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
-            json(cout, results, *parser);
-            cout << endl;
+
+            cout << "{ \"position\": " << parser->currentPosition 
+                << ", \"sequence\": " << parser->currentTarget->seq
+                << ", \"best_genotype_combo\":" << bestGenotypeCombo
+                << ", \"combos_tested\":" << bandedCombos.size()
+                << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
+                << ", \"coverage\":" << alleles.size()
+                << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
+                << ", \"samples\":";
+            json(cout, results, parser);
+            cout << "}" << endl;
         }
 
     }

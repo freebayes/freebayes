@@ -8,6 +8,7 @@
 #include <numeric>
 #include <vector>
 #include <iterator>
+#include <math.h>
 #include "Allele.h"
 
 using namespace std;

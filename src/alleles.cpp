@@ -68,6 +68,7 @@ int main (int argc, char *argv[]) {
         // report in json-formatted stream
         //
         cout << "{\"sequence\":\"" << parser->currentTarget->seq << "\","
+            << "\"total coverage\":" << alleles.size() << ","
             << "\"position\":" << parser->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
             //<< "\"raDepth\":" << parser->registeredAlleles.size() << ","
             << "\"samples\":{";  // TODO ... quality (~pSnp)
