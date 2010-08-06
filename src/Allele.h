@@ -65,8 +65,8 @@ class Allele {
     friend string stringForAlleles(vector<Allele> &av);
 
     friend bool operator<(const Allele &a, const Allele &b);
-    friend bool operator==(Allele &a, Allele &b);
-    friend bool operator!=(Allele &a, Allele &b);
+    friend bool operator==(const Allele &a, const Allele &b);
+    friend bool operator!=(const Allele &a, const Allele &b);
 
     friend ostream &operator<<(ostream &out, vector<Allele> &a);
     friend ostream &operator<<(ostream &out, vector<Allele*> &a);
@@ -164,11 +164,11 @@ public:
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void); // return a string representation of the allele type, for output
-    int referenceOffset();
+    int referenceOffset(void) const;
     short currentQuality(void);  // for getting the quality of a given position in multi-bp alleles
     long double lncurrentQuality(void);
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
-    string currentBase(void);
+    string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
 
 
     // overload new and delete for object recycling pool

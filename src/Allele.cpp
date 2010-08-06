@@ -3,7 +3,7 @@
 #include "TryCatch.h"
 
 
-int Allele::referenceOffset(void) {
+int Allele::referenceOffset(void) const {
     /*cout << readID << " offset checked " << referencePosition - position << " against position " << position 
         << " allele length " << length << " str length " << referenceSequence.size() << " qstr size " << qualityString.size() << endl;
         */
@@ -65,12 +65,28 @@ string Allele::typeStr(void) {
 
 }
 
-string Allele::currentBase(void) {
+string Allele::base(void) const { // the base of this allele
 
-    if (type == ALLELE_INSERTION || type == ALLELE_DELETION) {
-        return "";
-    } else {
-        return alternateSequence.substr(referenceOffset(), 1);
+    switch (this->type) {
+        case ALLELE_GENOTYPE:
+            return alternateSequence;
+            break;
+        case ALLELE_REFERENCE:
+            return alternateSequence.substr(referenceOffset(), 1);
+            break;
+        //case ALLELE_MISMATCH:
+            //break;
+        case ALLELE_SNP:
+            return alternateSequence;
+            break;
+        case ALLELE_INSERTION:
+            return "I" + length; // unclear what to do here
+            break;
+        case ALLELE_DELETION:
+            return "D" + length;
+            break;
+        default:
+            break;
     }
 
 }
@@ -217,26 +233,16 @@ ostream &operator<<(ostream &out, Allele &allele) {
 
 // for sorting alleles by type
 bool operator<(const Allele &a, const Allele &b) {
-    return a.type < b.type;
+    return a.base() < b.base();
 }
 
-// alleles are equal if they represent the same reference-relative variation or sequence
-// nb
-// two deletions will be equal if they are the same length because their alternate sequence is always ""
-// two insertions will be equal if they have the same alternate sequences
-// two reference, genotype, and snp alleles will be equivalent if they have the same alternate base at the current position
-bool operator==(Allele &a, Allele &b) {
-
-    return // we check that the alternate sequences are the same, handling the special case of reference alleles
-        (a.type == ALLELE_REFERENCE ? a.currentBase() : a.alternateSequence) 
-        ==
-        (b.type == ALLELE_REFERENCE ? b.currentBase() : b.alternateSequence) 
-        || // otherwise, if we are comparing a pair of deletions, we just check if they have the same length
-        (a.type == ALLELE_DELETION && b.type == ALLELE_DELETION && a.length == b.length);
-
+// alleles are equal if they represent the same reference-relative variation or
+// sequence, which we encode as a string and compare here
+bool operator==(const Allele &a, const Allele &b) {
+    return a.base() == b.base();
 }
 
-bool operator!=(Allele& a, Allele& b) {
+bool operator!=(const Allele& a, const Allele& b) {
     return ! (a == b);
 }
 
