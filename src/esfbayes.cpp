@@ -229,7 +229,8 @@ int main (int argc, char *argv[]) {
         if (!parameters.suppressOutput) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
 
-            cout << "{ \"position\": " << parser->currentPosition 
+            /*
+            cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
                 << ", \"sequence\": " << parser->currentTarget->seq
                 << ", \"best_genotype_combo\":" << bestGenotypeCombo
                 << ", \"combos_tested\":" << bandedCombos.size()
@@ -239,6 +240,28 @@ int main (int argc, char *argv[]) {
                 << ", \"samples\":";
             json(cout, results, parser);
             cout << "}" << endl;
+            */
+            bool hasVariant = false;
+            string alternateBase;
+            string referenceBase = parser->currentReferenceBase();
+            for (Results::iterator r = results.begin(); r != results.end(); ++r) {
+                // todo FIXME
+                // this will only print yhe first alternate
+                // tri-allelics do happen....
+                ResultData& sample = r->second; 
+                Genotype g = sample.bestMarginalGenotype().first;
+                vector<Allele> alternates = g.alternateAlleles(referenceBase);
+                if (alternates.size() > 0) {
+                    vcf(cout, 
+                        bestGenotypeComboProb,
+                        alternates.front().base(),
+                        parser->sampleList, 
+                        alleles, results, parser);
+                    cout << endl;
+                    break;
+                }
+            }
+            
         }
 
     }

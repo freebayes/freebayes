@@ -408,6 +408,10 @@ int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
     return (alignment.Position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
 }
 
+string AlleleParser::currentReferenceBase(void) {
+    return currentSequence.substr((currentPosition - (currentTarget->left - 1)) + basesBeforeCurrentTarget, 1);
+}
+
 // registeredalignment friend
 ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
     out << ra.alignment.Name << " " << ra.alignment.Position << endl

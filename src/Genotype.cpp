@@ -18,6 +18,40 @@ int Genotype::getPloidy(void) {
     return result;
 }
 
+vector<Allele> Genotype::alternateAlleles(string& base) {
+    vector<Allele> alleles;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        Allele& b = i->first;
+        if (base != b.base())
+            alleles.push_back(b);
+    }
+    return alleles;
+}
+
+string Genotype::relativeGenotype(string& refbase) {
+    string rg;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        Allele& b = i->first;
+        if (refbase != b.base()) {
+            for (int j = 0; j < i->second; ++j)
+                rg += "1/";
+        } else {
+            for (int j = 0; j < i->second; ++j)
+                rg += "0/";
+        }
+    }
+    return rg.substr(0, rg.size() - 1); // chop trailing '/'
+}
+
+bool Genotype::containsAlleleOtherThan(string& base) {
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        Allele& b = i->first;
+        if (base != b.base())
+            return true;
+    }
+    return false;
+}
+
 bool Genotype::containsAllele(Allele& allele) {
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;

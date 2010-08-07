@@ -56,9 +56,12 @@ public:
     vector<Allele> uniqueAlleles(void);
     int getPloidy(void);
     bool containsAllele(Allele& allele);
+    bool containsAlleleOtherThan(string& base);
+    vector<Allele> alternateAlleles(string& refbase);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
     string str(void);
+    string relativeGenotype(string& refbase);
 
 };
 

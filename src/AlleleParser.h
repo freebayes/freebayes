@@ -173,6 +173,7 @@ public:
     int fastaReferenceSequenceCount; // number of reference sequences
     BedData* currentTarget;
     long unsigned int currentPosition;  // 0-based current position
+    string currentReferenceBase();
 
 private:
     // output files
