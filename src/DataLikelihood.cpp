@@ -72,6 +72,8 @@ probObservedAllelesGivenGenotypes(
     return results;
 }
 
+// TODO resurrect caching
+
 /*
 vector<pair<Genotype, long double> >
 probObservedAllelesGivenGenotypes(
