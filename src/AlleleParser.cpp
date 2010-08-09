@@ -767,7 +767,7 @@ bool AlleleParser::toNextTargetPosition(void) {
     } else {
         ++currentPosition;
     }
-    if (currentPosition >= currentTarget->right) { // time to move to a new target
+    if (currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             DEBUG("no more valid targets, finishing");

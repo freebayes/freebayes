@@ -25,7 +25,13 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
     out << "}";
 }
 
-void vcf(ostream& out, long double comboProb, string alternateBase, vector<string>& samples, list<Allele*> observedAlleles, Results& results, AlleleParser* parser) {
+void vcf(ostream& out,
+        long double comboProb,
+        string alternateBase,
+        vector<string>& samples,
+        list<Allele*> observedAlleles,
+        Results& results,
+        AlleleParser* parser) {
 
     string refbase = parser->currentReferenceBase();
     // positional information
