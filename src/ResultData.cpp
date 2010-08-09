@@ -27,6 +27,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
 
 void vcf(ostream& out,
         long double comboProb,
+        long double alleleSamplingProb,
         string alternateBase,
         vector<string>& samples,
         list<Allele*> observedAlleles,
@@ -43,7 +44,7 @@ void vcf(ostream& out,
         << alternateBase << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
-        << "NS=" << results.size() << ":" << "DP=" << observedAlleles.size() << ":" << "\t" // positional information
+        << "NS=" << results.size() << ":" << "DP=" << observedAlleles.size() << ":" << "ESF=" << alleleSamplingProb << "\t" // positional information
         << "GT:GQ:DP";
 
     // samples

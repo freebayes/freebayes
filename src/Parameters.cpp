@@ -245,7 +245,7 @@ Parameters::Parameters (int argc, char** argv) {
     arg.longId = "output"; 
     arg.description = "Output option: output format, json or vcf";
     arg.required = false; 
-    arg.defaultValueString = "json"; 
+    arg.defaultValueString = "vcf"; 
     arg.type = "string"; 
     arg.multi = false;
     my.ArgList.push_back(arg);

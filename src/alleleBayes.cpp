@@ -229,6 +229,10 @@ int main (int argc, char *argv[]) {
 
         GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().first;
         long double bestGenotypeComboProb = exp(genotypeComboProbs.front().second - posteriorNormalizer);
+        vector<Genotype> bestComboGenotypes;
+        for (GenotypeCombo::iterator g = bestGenotypeCombo.begin(); g != bestGenotypeCombo.end(); ++g)
+            bestComboGenotypes.push_back(g->second.first);
+        long double bestAlleleSamplingProb = exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
 
         if (!parameters.suppressOutput) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
@@ -241,6 +245,7 @@ int main (int argc, char *argv[]) {
                     << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
                     << ", \"coverage\":" << alleles.size()
                     << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
+                    << ", \"ewens_sampling_probability\":" << bestAlleleSamplingProb
                     << ", \"samples\":";
                 json(cout, results, parser);
                 cout << "}" << endl;
@@ -251,7 +256,7 @@ int main (int argc, char *argv[]) {
                 string referenceBase = parser->currentReferenceBase();
                 for (Results::iterator r = results.begin(); r != results.end(); ++r) {
                     // todo FIXME
-                    // this will only print yhe first alternate
+                    // this will only print the first alternate
                     // tri-allelics do happen....
                     ResultData& sample = r->second; 
                     Genotype g = sample.bestMarginalGenotype().first;
@@ -259,6 +264,7 @@ int main (int argc, char *argv[]) {
                     if (alternates.size() > 0) {
                         vcf(cout, 
                             bestGenotypeComboProb,
+                            bestAlleleSamplingProb,
                             alternates.front().base(),
                             parser->sampleList, 
                             alleles, results, parser);

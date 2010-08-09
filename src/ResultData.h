@@ -58,7 +58,14 @@ public:
     }
 
     friend void json(ostream& out, Results& results, AlleleParser* parser);
-    friend void vcf(ostream& out, long double comboProb, string alternateBase, vector<string>& samples, list<Allele*> observedAlleles, Results& results, AlleleParser* parser);
+    friend void vcf(ostream& out,
+            long double comboProb,
+            long double alleleSamplingProb,
+            string alternateBase,
+            vector<string>& samples,
+            list<Allele*> observedAlleles,
+            Results& results,
+            AlleleParser* parser);
     pair<Genotype, long double> bestMarginalGenotype(void);
 
 };
