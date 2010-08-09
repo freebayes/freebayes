@@ -31,10 +31,10 @@ CFLAGS=-O3
 ################################################################################
 # Program builds
 ################################################################################
-all: esfbayes alleles
+all: alleleBayes alleles
 
-esfbayes: esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o
-	$(CC) $(CFLAGS) esfbayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o -o esfbayes -lz -lboost_regex -lpthread -Wno-deprecated
+alleleBayes: alleleBayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o
+	$(CC) $(CFLAGS) alleleBayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o -o alleleBayes -lz -lboost_regex -lpthread -Wno-deprecated
 
 alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
 	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o alleles -lz -lboost_regex -lpthread -Wno-deprecated
@@ -50,8 +50,8 @@ Fasta.o: Fasta.cpp
 alleles.o: alleles.cpp AlleleParser.o Allele.o
 	$(CC) $(CFLAGS) -c alleles.cpp -Wno-deprecated
 
-esfbayes.o: esfbayes.cpp TryCatch.h
-	$(CC) $(CFLAGS) -c esfbayes.cpp -Wno-deprecated
+alleleBayes.o: alleleBayes.cpp TryCatch.h
+	$(CC) $(CFLAGS) -c alleleBayes.cpp -Wno-deprecated
 
 
 # Class compilations
@@ -130,7 +130,7 @@ Function-Math.o: Function-Math.cpp Function-Math.h Type-Hash.h
 # House-keeping
 ################################################################################
 clean:
-	rm -rf *.o *.cgh *~ esfbayes alleles 
+	rm -rf *.o *.cgh *~ alleleBayes alleles 
 
 cleanEmacs:
 	rm -rf *~
