@@ -239,6 +239,19 @@ Parameters::Parameters (int argc, char** argv) {
     ValueArg<string> cmd_samples(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
     // output option: output information about all alleles contributing to a given genotyping position
+    ArgStruct argOutput;
+    arg = argOutput; 
+    arg.shortId = ""; 
+    arg.longId = "output"; 
+    arg.description = "Output option: output format, json or vcf";
+    arg.required = false; 
+    arg.defaultValueString = "json"; 
+    arg.type = "string"; 
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    ValueArg<string> cmd_output(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+
+    // output option: output information about all alleles contributing to a given genotyping position
     ArgStruct argOutputAlleles;
     arg = argOutputAlleles; 
     arg.shortId = ""; 
@@ -682,6 +695,7 @@ Parameters::Parameters (int argc, char** argv) {
     targets = cmd_targets.getValue();
     samples = cmd_samples.getValue();
     log = cmd_log.getValue();
+    output = cmd_output.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
     suppressOutput = cmd_suppressOutput.getValue();
 

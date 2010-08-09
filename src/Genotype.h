@@ -62,6 +62,7 @@ public:
     vector<long double> alleleProbabilities(void);
     string str(void);
     string relativeGenotype(string& refbase);
+    bool homozygous(void);
 
 };
 
@@ -77,6 +78,11 @@ typedef vector<pair<string, pair<Genotype, long double> > > GenotypeCombo;
 
 vector<GenotypeCombo>
 bandedGenotypeCombinations(
+        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
+        int bandwidth, int banddepth);
+
+vector<GenotypeCombo>
+bandedGenotypeCombinationsIncludingBestHomozygousCombo(
         vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth);
 

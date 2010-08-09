@@ -65,7 +65,8 @@ string Allele::typeStr(void) {
 
 }
 
-string Allele::base(void) const { // the base of this allele
+inline
+const string Allele::base(void) const { // the base of this allele
 
     switch (this->type) {
         case ALLELE_GENOTYPE:
@@ -231,7 +232,6 @@ ostream &operator<<(ostream &out, Allele &allele) {
     return out;
 }
 
-// for sorting alleles by type
 bool operator<(const Allele &a, const Allele &b) {
     return a.base() < b.base();
 }
@@ -292,10 +292,41 @@ map<Allele, int> countAlleles(vector<Allele*>& alleles) {
     return counts;
 }
 
+// counts alleles which satisfy operator==
+map<string, int> countAllelesString(vector<Allele*>& alleles) {
+    map<string, int> counts;
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& thisAllele = **a;
+        const string& allele = thisAllele.base();
+        map<string, int>::iterator f = counts.find(allele);
+        if (f == counts.end()) {
+            counts[allele] = 1;
+        } else {
+            counts[allele] += 1;
+        }
+    }
+    return counts;
+}
+
+
 map<Allele, int> countAlleles(vector<Allele>& alleles) {
     map<Allele, int> counts;
     for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele& allele = *a;
+        map<Allele, int>::iterator f = counts.find(allele);
+        if (f == counts.end()) {
+            counts[allele] = 1;
+        } else {
+            counts[allele] += 1;
+        }
+    }
+    return counts;
+}
+
+map<Allele, int> countAlleles(list<Allele*>& alleles) {
+    map<Allele, int> counts;
+    for (list<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& allele = **a;
         map<Allele, int>::iterator f = counts.find(allele);
         if (f == counts.end()) {
             counts[allele] = 1;
@@ -314,6 +345,15 @@ map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles) {
         groups[allele->sampleID].push_back(allele);
     }
     return groups;
+}
+
+vector<Allele> uniqueAlleles(list<Allele*>& alleles) {
+    vector<Allele> uniques;
+    map<Allele, int> counts = countAlleles(alleles);
+    for (map<Allele, int>::iterator c = counts.begin(); c != counts.end(); ++c) {
+        uniques.push_back(c->first);
+    }
+    return uniques;
 }
 
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups) {

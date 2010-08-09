@@ -168,7 +168,7 @@ public:
     short currentQuality(void);  // for getting the quality of a given position in multi-bp alleles
     long double lncurrentQuality(void);
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
-    string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
+    const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
 
 
     // overload new and delete for object recycling pool
@@ -197,7 +197,11 @@ map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
+map<string, int> countAllelesString(vector<Allele*>& alleles);
 map<Allele, int> countAlleles(vector<Allele>& alleles);
+map<Allele, int> countAlleles(list<Allele*>& alleles);
+
+vector<Allele> uniqueAlleles(list<Allele*>& alleles);
 
 bool allelesSameType(Allele* &a, Allele* &b);
 bool allelesEquivalent(Allele* &a, Allele* &b);

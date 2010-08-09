@@ -61,6 +61,10 @@ bool Genotype::containsAllele(Allele& allele) {
     return false;
 }
 
+bool Genotype::homozygous(void) {
+    return this->size() == 1;
+}
+
 // the probability of drawing each allele out of the genotype, ordered by allele
 vector<long double> Genotype::alleleProbabilities(void) {
     vector<long double> probs;
@@ -188,3 +192,42 @@ bandedGenotypeCombinations(
 }
 
 
+vector<GenotypeCombo>
+bandedGenotypeCombinationsIncludingBestHomozygousCombo(
+        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
+        int bandwidth, int banddepth) {
+
+    vector<GenotypeCombo> combos = bandedGenotypeCombinations(sampleGenotypes, bandwidth, banddepth);
+    // is there already a homozygous combo?
+    bool hasHomozygousCombo = false;
+    for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
+        bool allhomozygous = true;
+        for (GenotypeCombo::iterator gc = c->begin(); gc != c->end(); ++gc) {
+            if (!gc->second.first.homozygous()) {
+                allhomozygous = false;
+                break;
+            }
+        }
+        if (allhomozygous) {
+            hasHomozygousCombo = true;
+            break;
+        }
+    }
+    if (!hasHomozygousCombo) {
+        GenotypeCombo homozygousCombo;
+        // push back the best homozygous combo
+        for(vector<pair<string, vector<pair<Genotype, long double> > > >::iterator s = sampleGenotypes.begin();
+                s != sampleGenotypes.end(); ++s) {
+            for (vector<pair<Genotype, long double> >::iterator g = s->second.begin(); g != s->second.end(); ++g) {
+                if (g->first.homozygous()) {
+                    homozygousCombo.push_back(make_pair(s->first, *g));
+                    break;
+                }
+            }
+        }
+        combos.push_back(homozygousCombo);
+    }
+
+    return combos;
+
+}

@@ -43,6 +43,44 @@ probObservedAllelesGivenGenotype(
         vector<vector<Allele*> > trueAllelePermutations = multipermute(*combo);
         for (vector<vector<Allele*> >::iterator perm = trueAllelePermutations.begin(); perm != trueAllelePermutations.end(); ++perm) {
             vector<Allele*>& trueAlleles = *perm;
+            map<string, int> trueAlleleCounts = countAllelesString(trueAlleles);
+            vector<int> observationCounts; // counts of 'observations' of true alleles, ordered according to the genotype's internal ordering
+            for (Genotype::const_iterator g = genotype.begin(); g != genotype.end(); ++g) {
+                map<string, int>::const_iterator count = trueAlleleCounts.find(g->first.base());
+                if (count != trueAlleleCounts.end()) {
+                    observationCounts.push_back(count->second);
+                } else {
+                    observationCounts.push_back(0);
+                }
+            }
+            probs.push_back(multinomialln(alleleProbs, observationCounts) 
+                    + likelihoodGivenTrueAlleles(observedAlleles, trueAlleles));
+        }
+    }
+    //cout << "l = " << logsumexp(probs) << endl;
+    return logsumexp(probs);
+}
+
+/*
+ Approximate data likelihoods.
+ */
+long double
+approxProbObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype) {
+
+    // approach
+    // calculate best, worst error profile
+    //
+    int observationCount = observedAlleles.size();
+    vector<long double> alleleProbs = genotype.alleleProbabilities();
+    vector<long double> probs;
+    vector<Allele> uniqueAlleles = genotype.uniqueAlleles();
+    vector<vector<Allele*> > combos = multichoose_ptr(observationCount, uniqueAlleles);
+    for (vector<vector<Allele*> >::iterator combo = combos.begin(); combo != combos.end(); ++combo) {
+        vector<vector<Allele*> > trueAllelePermutations = multipermute(*combo);
+        for (vector<vector<Allele*> >::iterator perm = trueAllelePermutations.begin(); perm != trueAllelePermutations.end(); ++perm) {
+            vector<Allele*>& trueAlleles = *perm;
             map<Allele, int> trueAlleleCounts = countAlleles(trueAlleles);
             vector<int> observationCounts; // counts of 'observations' of true alleles, ordered according to the genotype's internal ordering
             for (Genotype::const_iterator g = genotype.begin(); g != genotype.end(); ++g) {
@@ -61,6 +99,8 @@ probObservedAllelesGivenGenotype(
     return logsumexp(probs);
 }
 
+
+/*
 vector<pair<Genotype, long double> >
 probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
@@ -71,10 +111,10 @@ probObservedAllelesGivenGenotypes(
     }
     return results;
 }
+*/
 
-// TODO resurrect caching
+// uses caching to reduce computation while generating the exact correct result
 
-/*
 vector<pair<Genotype, long double> >
 probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
@@ -87,7 +127,7 @@ probObservedAllelesGivenGenotypes(
         long double prob;
         Genotype& genotype = *g;
         if (allSame) {
-            pair<int, int> alleleRatio = make_pair(0,genotype.ploidy);
+            pair<int, int> alleleRatio = make_pair(0, genotype.uniqueAlleles().size());
             //alleleRatio(observedAlleles, genotype);
             for (Genotype::iterator a = genotype.begin(); a != genotype.end(); ++a) {
                 if (a->first == *(observedAlleles.front()))
@@ -107,4 +147,3 @@ probObservedAllelesGivenGenotypes(
     }
     return results;
 }
-*/

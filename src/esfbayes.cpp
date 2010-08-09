@@ -137,7 +137,8 @@ int main (int argc, char *argv[]) {
         // calculate marginals
         // and determine best genotype combination
 
-        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
+        //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
+        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
         vector<pair<GenotypeCombo, long double> > genotypeComboProbs;
 
         for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
@@ -183,6 +184,9 @@ int main (int argc, char *argv[]) {
             genotypeComboProbs.push_back(make_pair(*combo, comboProb));
 
         }
+        
+
+
         // genotype_combo_probs = sorted(genotype_combo_probs, key=lambda c: c[1], reverse=True)
         sort(genotypeComboProbs.begin(), genotypeComboProbs.end(),
                 boost::bind(&pair<GenotypeCombo, long double>::second, _1) 
@@ -229,36 +233,38 @@ int main (int argc, char *argv[]) {
         if (!parameters.suppressOutput) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
 
-            /*
-            cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
-                << ", \"sequence\": " << parser->currentTarget->seq
-                << ", \"best_genotype_combo\":" << bestGenotypeCombo
-                << ", \"combos_tested\":" << bandedCombos.size()
-                << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
-                << ", \"coverage\":" << alleles.size()
-                << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
-                << ", \"samples\":";
-            json(cout, results, parser);
-            cout << "}" << endl;
-            */
-            bool hasVariant = false;
-            string alternateBase;
-            string referenceBase = parser->currentReferenceBase();
-            for (Results::iterator r = results.begin(); r != results.end(); ++r) {
-                // todo FIXME
-                // this will only print yhe first alternate
-                // tri-allelics do happen....
-                ResultData& sample = r->second; 
-                Genotype g = sample.bestMarginalGenotype().first;
-                vector<Allele> alternates = g.alternateAlleles(referenceBase);
-                if (alternates.size() > 0) {
-                    vcf(cout, 
-                        bestGenotypeComboProb,
-                        alternates.front().base(),
-                        parser->sampleList, 
-                        alleles, results, parser);
-                    cout << endl;
-                    break;
+            if (parameters.output == "json") {
+                cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
+                    << ", \"sequence\": " << parser->currentTarget->seq
+                    << ", \"best_genotype_combo\":" << bestGenotypeCombo
+                    << ", \"combos_tested\":" << bandedCombos.size()
+                    << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
+                    << ", \"coverage\":" << alleles.size()
+                    << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
+                    << ", \"samples\":";
+                json(cout, results, parser);
+                cout << "}" << endl;
+
+            } else if (bestGenotypeComboProb >= parameters.PVL && parameters.output == "vcf") {
+                bool hasVariant = false;
+                string alternateBase;
+                string referenceBase = parser->currentReferenceBase();
+                for (Results::iterator r = results.begin(); r != results.end(); ++r) {
+                    // todo FIXME
+                    // this will only print yhe first alternate
+                    // tri-allelics do happen....
+                    ResultData& sample = r->second; 
+                    Genotype g = sample.bestMarginalGenotype().first;
+                    vector<Allele> alternates = g.alternateAlleles(referenceBase);
+                    if (alternates.size() > 0) {
+                        vcf(cout, 
+                            bestGenotypeComboProb,
+                            alternates.front().base(),
+                            parser->sampleList, 
+                            alleles, results, parser);
+                        cout << endl;
+                        break;
+                    }
                 }
             }
             

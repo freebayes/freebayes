@@ -89,6 +89,7 @@ public:
     bool debug;
     bool debug2;
     bool record;
+    string output;
 
     // functions
     Parameters(int argc, char** argv);
