@@ -35,5 +35,18 @@ def multinomialln(probs, obs):
 
 def multinomial_dirichlet(probs, obs): return multinomial(probs, obs) * dirichlet(probs, obs)
 
+# NOTE:
+# I started exploring the multinomial_maximum_likelihood_ratio to see if the
+# same maximim likelihood estimation approach could be applied to multinomials.
+# It *can't* for the obvious reason that you can't have non-integral
+# observation counts while the dirichlet distribution is defined across
+# non-integral alphas!  I see no clean way to resolve this using the
+# multinomial distribution and now have a better understanding of the use and
+# abuse of the dirichlet distribution as a conjugate prior for multinomial
+# posteriors.
+def multinomial_maximum_likelihood_ratio(probs, obs):
+    maximum_likelihood = multinomial(probs, [float(sum(obs)) / len(obs) for o in obs])
+    return multinomial(probs, obs) / float(maximum_likelihood)
+
 def binomial(successes, trials, prob):
     return math.factorial(trials) / (math.factorial(successes) * math.factorial(trials - successes)) * math.pow(prob, successes) * math.pow(1 - prob, trials - successes)
