@@ -33,8 +33,8 @@ CFLAGS=-O3
 ################################################################################
 all: alleleBayes alleles
 
-alleleBayes: alleleBayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o
-	$(CC) $(CFLAGS) alleleBayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o -o alleleBayes -lz -lboost_regex -lpthread -Wno-deprecated
+alleleBayes: alleleBayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o
+	$(CC) $(CFLAGS) alleleBayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o -o alleleBayes -lz -lboost_regex -lpthread -Wno-deprecated
 
 alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
 	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o alleles -lz -lboost_regex -lpthread -Wno-deprecated
@@ -73,6 +73,7 @@ BamIndex.o: BamIndex.cpp BamIndex.h BamAux.h
 BGZF.o: BGZF.cpp BGZF.h
 	$(CC) $(CFLAGS) -c BGZF.cpp -Wno-deprecated
 
+#Version
 Parameters.o: Parameters.cpp Parameters.h
 	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
 
@@ -116,6 +117,12 @@ Function-Generic.o: Function-Generic.cpp Function-Generic.h Type-Hash.h
 
 Function-Math.o: Function-Math.cpp Function-Math.h Type-Hash.h
 	$(CC) $(CFLAGS) -c Function-Math.cpp -Wno-deprecated
+
+
+# versioning, requires git
+Version:
+	echo \#define GIT_HEAD_COMMIT_ID \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
+	echo \#define COMPILE_DATE \"`date +%F`\" >>Version.h
 
 ################################################################################
 # Archival

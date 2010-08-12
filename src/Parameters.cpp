@@ -32,8 +32,8 @@ public:
 MyOutput::MyOutput(void)
     : ProgramName("alleleBayes")
     , ProgramDescription("Bayesian SNP and short-INDEL polymorphism discovery program.")
-    , ProgramVersion("0.1.0")
-    , ProgramDate("2010-08-09")
+    , ProgramVersion(GIT_HEAD_COMMIT_ID)
+    , ProgramDate(COMPILE_DATE)
     , ProgramDeveloper("Gabor T. Marth, Erik Garrison")
     , ProgramInstitution("Boston College")
     , ProgramCopyrightDates("2007, 2008, 2009, 2010.")
@@ -42,9 +42,12 @@ MyOutput::MyOutput(void)
 void MyOutput::failure(CmdLineInterface& c, ArgException& e)
 {
     cerr << "################################################################################" << endl;
-    cerr << "### Program: " << ProgramName << " Version: " <<  ProgramVersion << " Release date: " << ProgramDate << endl;
+    cerr << "### Program: " << ProgramName << endl;
+    cerr << "### Version: " <<  ProgramVersion << endl;
+    cerr << "### Release date: " << ProgramDate << endl;
     cerr << "### " << ProgramDescription << endl;
-    cerr << "### " << "Copyright: " << ProgramCopyrightDates << " " << ProgramDeveloper << ", " << ProgramInstitution << endl;
+    cerr << "### " << "Copyright: " << ProgramCopyrightDates << endl;
+    cerr << "### " << ProgramDeveloper << ", " << ProgramInstitution << endl;
     cerr << "### All rights reserved." << endl;
     cerr << "###" << endl;
     cerr << "### Command line error:" << e.what() << endl;
@@ -497,6 +500,34 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     ValueArg<double> cmd_RDF(arg.shortId, arg.longId, arg.description, arg.required, 0.9, arg.type, cmd);
 
+    // minAltFraction: filter against positions, don't process
+    // if no sample has less than this fraction of alternate alleles
+    ArgStruct argMinAltFraction;
+    arg = argMinAltFraction;
+    arg.shortId = "";
+    arg.longId = "minAltFraction";
+    arg.description = "skip positions if no sample has >= than this fraction of alternate alleles";
+    arg.required = false;
+    arg.defaultValueString = "0.1";
+    arg.type = "double";
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    ValueArg<double> cmd_minAltFraction(arg.shortId, arg.longId, arg.description, arg.required, 0.1, arg.type, cmd);
+
+    // minAltCount: filter against positions, don't process if no sample has
+    // less than this count of alternate alleles
+    ArgStruct argMinAltCount;
+    arg = argMinAltCount;
+    arg.shortId = "";
+    arg.longId = "minAltCount";
+    arg.description = "skip positions if no sample has >= this count of alternate alleles";
+    arg.required = false;
+    arg.defaultValueString = "2";
+    arg.type = "int";
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    ValueArg<int> cmd_minAltCount(arg.shortId, arg.longId, arg.description, arg.required, 2, arg.type, cmd);
+
     // TH: pairwise nucleotide diversity (theta)
     ArgStruct argTH;
     arg = argTH;
@@ -717,6 +748,8 @@ Parameters::Parameters (int argc, char** argv) {
     PVL = (long double)cmd_PVL.getValue();
     algorithm = cmd_algorithm.getValue();
     RDF = (long double)cmd_RDF.getValue();
+    minAltFraction = (long double) cmd_minAltFraction.getValue();
+    minAltCount = cmd_minAltCount.getValue();
     WB = cmd_WB.getValue();
     TB = cmd_TB.getValue();
     includeMonoB = cmd_includeMonoB.getValue();

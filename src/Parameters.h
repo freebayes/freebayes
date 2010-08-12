@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <boost/algorithm/string.hpp>
+#include "Version.h"
 
 using namespace std;
 
@@ -86,6 +87,8 @@ public:
     bool includeMonoB;
     int TR;
     int I;
+    long double minAltFraction;
+    int minAltCount;
     bool debug;
     bool debug2;
     bool record;

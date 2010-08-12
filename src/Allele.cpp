@@ -595,3 +595,22 @@ void AlleleFreeList::Purge() {
         ::delete [] mem;
     }
 }
+
+bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups, int mincount, float minfraction) {
+
+    for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
+            sample != sampleGroups.end(); ++sample) {
+
+        vector<Allele*>& observedAlleles = sample->second;
+        int alternateCount = 0;
+        for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
+            if ((*a)->type != ALLELE_REFERENCE)
+                ++alternateCount;
+        }
+        if (alternateCount >= mincount && (float) alternateCount / (float) observedAlleles.size() >= minfraction)
+            return true;
+    
+    }
+    return false;
+
+}

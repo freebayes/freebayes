@@ -18,6 +18,47 @@ int Genotype::getPloidy(void) {
     return result;
 }
 
+vector<int> Genotype::alleleCountsInObservations(vector<Allele*> observations) {
+    vector<int> counts;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        int count = 0;
+        Allele& b = i->first;
+        for (vector<Allele*>::iterator o = observations.begin(); o != observations.end(); ++o) {
+            Allele& obs = **o;
+            if (obs.base() == b.base())
+                ++count;
+        }
+        counts.push_back(count);
+    }
+    return counts;
+}
+
+/*
+void inOutObservationCounts(vector<Allele*> observations,
+        map<Allele, int>& inCounts, 
+        map<Allele, int>& outCounts) {
+    vector<Allele> uniques = uniqueAlleles();
+    for (vector<Allele>::iterator a = uniques.begin(); a != uniques.end(); ++a) {
+        inCounts.insert(make_pair(*a, 0));
+    }
+    map<Allele, int>::iterator count;
+    for (vector<Allele*>::iterator o = observations.begin(); o != observations.end(); ++o) {
+        Allele& a = **o;
+        count = inCounts.find(a);
+        if (count != inCounts.end()) {
+            count->second += 1;
+        } else {
+            count = outCounts.find(a);
+            if (count != outCounts.end()) {
+                count->second += 1;
+            } else {
+                outCounts.insert(make_pair(a, 1));
+            }
+        }
+    }
+}
+*/
+
 vector<Allele> Genotype::alternateAlleles(string& base) {
     vector<Allele> alleles;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
@@ -106,9 +147,9 @@ ostream& operator<<(ostream& out, vector<GenotypeCombo>& g) {
 
 ostream& operator<<(ostream& out, GenotypeCombo& g) {
     GenotypeCombo::iterator i = g.begin(); ++i;
-    out << "{\"" << g.front().first << "\":[\"" << g.front().second.first << "\"," << exp(g.front().second.second) << "]";
+    out << "{\"" << g.front().first << "\":[\"" << *(g.front().second.first) << "\"," << exp(g.front().second.second) << "]";
     for (;i != g.end(); ++i) {
-        out << ", \"" << i->first << "\":[\"" << i->second.first << "\"," << exp(i->second.second) << "]";
+        out << ", \"" << i->first << "\":[\"" << *(i->second.first) << "\"," << exp(i->second.second) << "]";
     }
     out << "}";
     return out;
@@ -156,7 +197,7 @@ def banded_genotype_combinations(sample_genotypes, bandwidth, band_depth):
 
 vector<GenotypeCombo>
 bandedGenotypeCombinations(
-        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
+        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth) {
 
     int nsamples = sampleGenotypes.size();
@@ -180,7 +221,7 @@ bandedGenotypeCombinations(
             for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
                 GenotypeCombo combo;
                 vector<int>::const_iterator n = p->begin();
-                for (vector<pair<string, vector<pair<Genotype, long double> > > >::const_iterator s = sampleGenotypes.begin();
+                for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
                         s != sampleGenotypes.end(); ++s, ++n) {
                     combo.push_back(make_pair(s->first, s->second.at(*n)));
                 }
@@ -191,10 +232,73 @@ bandedGenotypeCombinations(
     return combos;
 }
 
+// TODO we have to evaluate all homozygous combos
+
+vector<GenotypeCombo>
+bandedGenotypeCombinationsIncludingAllHomozygousCombos(
+        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+        vector<Genotype>& genotypes,
+        int bandwidth, int banddepth) {
+
+    // obtain the combos
+
+    vector<GenotypeCombo> combos = bandedGenotypeCombinations(sampleGenotypes, bandwidth, banddepth);
+
+    // determine which homozygous combos we already have
+
+    map<Genotype*, bool> genotypesWithHomozygousCombos;
+
+    for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
+        bool allSameAndHomozygous = true;
+        GenotypeCombo::iterator gc = c->begin();
+        Genotype* genotype;
+        if (gc->second.first->homozygous()) {
+            genotype = gc->second.first;
+        } else {
+            continue;
+        }
+        for (; gc != c->end(); ++gc) {
+            if (! (gc->second.first == genotype) ) {
+                allSameAndHomozygous = false;
+                break;
+            }
+        }
+        if (allSameAndHomozygous) {
+            genotypesWithHomozygousCombos[genotype] == true;
+        }
+    }
+
+    // accumulate the needed homozygous combos
+
+    map<Genotype*, GenotypeCombo> homozygousCombos;
+
+    for (vector<Genotype>::iterator genotype = genotypes.begin(); genotype != genotypes.end(); ++genotype) {
+        if (!genotype->homozygous())
+            continue;
+        map<Genotype*, bool>::iterator g = genotypesWithHomozygousCombos.find(&*genotype);
+        if (g == genotypesWithHomozygousCombos.end()) {
+            for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
+                    s != sampleGenotypes.end(); ++s) {
+                for (vector<pair<Genotype*, long double> >::const_iterator d = s->second.begin(); d != s->second.end(); ++d) {
+                    if (d->first == &*genotype) {
+                        homozygousCombos[d->first].push_back(make_pair(s->first, make_pair(d->first, d->second)));
+                    }
+                }
+            }
+        }
+    }
+
+    for (map<Genotype*, GenotypeCombo>::iterator c = homozygousCombos.begin(); c != homozygousCombos.end(); ++c) {
+        combos.push_back(c->second);
+    }
+    
+    return combos;
+
+}
 
 vector<GenotypeCombo>
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
-        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
+        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth) {
 
     vector<GenotypeCombo> combos = bandedGenotypeCombinations(sampleGenotypes, bandwidth, banddepth);
@@ -203,7 +307,7 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
         bool allhomozygous = true;
         for (GenotypeCombo::iterator gc = c->begin(); gc != c->end(); ++gc) {
-            if (!gc->second.first.homozygous()) {
+            if (!gc->second.first->homozygous()) {
                 allhomozygous = false;
                 break;
             }
@@ -216,10 +320,10 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     if (!hasHomozygousCombo) {
         GenotypeCombo homozygousCombo;
         // push back the best homozygous combo
-        for(vector<pair<string, vector<pair<Genotype, long double> > > >::iterator s = sampleGenotypes.begin();
+        for(vector<pair<string, vector<pair<Genotype*, long double> > > >::iterator s = sampleGenotypes.begin();
                 s != sampleGenotypes.end(); ++s) {
-            for (vector<pair<Genotype, long double> >::iterator g = s->second.begin(); g != s->second.end(); ++g) {
-                if (g->first.homozygous()) {
+            for (vector<pair<Genotype*, long double> >::iterator g = s->second.begin(); g != s->second.end(); ++g) {
+                if (g->first->homozygous()) {
                     homozygousCombo.push_back(make_pair(s->first, *g));
                     break;
                 }
@@ -230,4 +334,16 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
 
     return combos;
 
+}
+
+bool isHomozygousCombo(GenotypeCombo& combo) {
+    GenotypeCombo::iterator g = combo.begin();
+    Genotype* genotype = g->second.first;
+    if (!genotype->homozygous())
+        return false;
+    for (; g != combo.end(); ++g) {
+        if (g->second.first != genotype)
+            return false;
+    }
+    return true;
 }

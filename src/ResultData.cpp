@@ -11,10 +11,10 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
         out << "\"" << sample.name << "\":{"
             << "\"coverage\":" << sample.observations.size() << ","
             << "\"genotypes\":[";
-        for (map<Genotype, long double>::iterator g = sample.marginals.begin(); 
+        for (map<Genotype*, long double>::iterator g = sample.marginals.begin(); 
                 g != sample.marginals.end(); ++g) {
             if (g != sample.marginals.begin()) cout << ",";
-            out << "[\"" << g->first << "\"," << exp(g->second) << "]";
+            out << "[\"" << *(g->first) << "\"," << exp(g->second) << "]";
         }
         out << "]";
         if (parser->parameters.outputAlleles)
@@ -52,11 +52,11 @@ void vcf(ostream& out,
         Results::iterator s = results.find(*sampleName);
         if (s != results.end()) {
             ResultData& sample = s->second;
-            pair<Genotype, long double> bestGenotypeAndProb = sample.bestMarginalGenotype();
-            Genotype& bestGenotype = bestGenotypeAndProb.first;
+            pair<Genotype*, long double> bestGenotypeAndProb = sample.bestMarginalGenotype();
+            Genotype& bestGenotype = *bestGenotypeAndProb.first;
             out << "\t"
                 << bestGenotype.relativeGenotype(refbase)
-               << ":" << float2phred(1 - exp(bestGenotypeAndProb.second))
+               << ":" << ln2phred(log(1 - exp(bestGenotypeAndProb.second)))
                 << ":" << sample.observations.size();
         } else {
             out << "\t.";
@@ -64,9 +64,9 @@ void vcf(ostream& out,
     }
 }
 
-pair<Genotype, long double> ResultData::bestMarginalGenotype(void) {
-    map<Genotype, long double>::iterator g = marginals.begin();
-    pair<Genotype, long double> best = make_pair(g->first, g->second); ++g;
+pair<Genotype*, long double> ResultData::bestMarginalGenotype(void) {
+    map<Genotype*, long double>::iterator g = marginals.begin();
+    pair<Genotype*, long double> best = make_pair(g->first, g->second); ++g;
     for ( ; g != marginals.end() ; ++g) {
         if (g->second > best.second) {
             best = make_pair(g->first, g->second);

@@ -63,6 +63,12 @@ public:
     string str(void);
     string relativeGenotype(string& refbase);
     bool homozygous(void);
+    vector<int> alleleCountsInObservations(vector<Allele*> observations);
+    /*
+    void inOutObservationCounts(vector<Allele*> observations,
+            vector<pair<Allele, int> >& inCounts, 
+            vector<pair<Allele, int> >& outCounts);
+            */
 
 };
 
@@ -74,17 +80,25 @@ public:
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
-typedef vector<pair<string, pair<Genotype, long double> > > GenotypeCombo;
+typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
 
 vector<GenotypeCombo>
 bandedGenotypeCombinations(
-        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
+        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth);
 
 vector<GenotypeCombo>
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
-        vector<pair<string, vector<pair<Genotype, long double> > > >& sampleGenotypes,
+        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
         int bandwidth, int banddepth);
+
+vector<GenotypeCombo>
+bandedGenotypeCombinationsIncludingAllHomozygousCombos(
+    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    vector<Genotype>& genotypes,
+    int bandwidth, int banddepth);
+
+bool isHomozygousCombo(GenotypeCombo& combo);
 
 ostream& operator<<(ostream& out, vector<GenotypeCombo>& combo);
 ostream& operator<<(ostream& out, GenotypeCombo& g);

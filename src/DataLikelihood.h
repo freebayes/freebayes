@@ -12,6 +12,7 @@
 #include "Genotype.h"
 #include "Utility.h"
 #include "Multinomial.h"
+#include "Dirichlet.h"
 
 
 long double
@@ -19,7 +20,12 @@ probObservedAllelesGivenGenotype(
         vector<Allele*>& observedAlleles,
         Genotype& genotype);
 
-vector<pair<Genotype, long double> >
+long double
+approxProbObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype);
+
+vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
         vector<Genotype>& genotype);

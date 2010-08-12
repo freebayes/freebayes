@@ -192,6 +192,7 @@ long double logsumexp(const vector<long double>& lnv) {
 
 long double betaln(const vector<long double>& alphas) {
     vector<long double> gammalnAlphas;
+    gammalnAlphas.resize(alphas.size());
     transform(alphas.begin(), alphas.end(), gammalnAlphas.begin(), gammaln);
     return sum(gammalnAlphas) - gammaln(sum(alphas));
 }

@@ -83,26 +83,31 @@ int main (int argc, char *argv[]) {
     // ... only process potential genotypes for which we have some number of observations
     // ... optionally provide a threshold of some kind to ignore low-frequency observations that are most likely errors
 
-
     while (parser->getNextAlleles(alleles)) {
 
         // skips 0-coverage regions
         if (alleles.size() == 0)
             continue;
 
-        // TODO force calculation for samples not in this list
+        //cout << "next position: " << parser->currentPosition << endl;
+
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
+
+        // continue in the case that no individual has more than some
+        // fraction of alternate allele observations ...  (default is 0.1)
+        if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction))
+            continue;
 
         Results results;
 
         // calculate data likelihoods
-        for (map<string, vector< Allele* > >::iterator sample = sampleGroups.begin();
+        for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
                 sample != sampleGroups.end(); ++sample) {
 
             string sampleName = sample->first;
             vector<Allele*>& observedAlleles = sample->second;
 
-            vector<pair<Genotype, long double> > probs = 
+            vector<pair<Genotype*, long double> > probs = 
                 probObservedAllelesGivenGenotypes(observedAlleles, genotypes);
             /*
             for (vector<pair<Genotype, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
@@ -110,8 +115,8 @@ int main (int argc, char *argv[]) {
             }
             */
             
-            map<Genotype, long double> marginals;
-            map<Genotype, vector<long double> > rawMarginals;
+            map<Genotype*, long double> marginals;
+            map<Genotype*, vector<long double> > rawMarginals;
 
             results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, rawMarginals, observedAlleles)));
 
@@ -119,7 +124,7 @@ int main (int argc, char *argv[]) {
 
         // sort genotype data likelihoods and accumulate into 
         
-        vector<pair<string, vector<pair<Genotype, long double> > > > sampleGenotypes;
+        vector<pair<string, vector<pair<Genotype*, long double> > > > sampleGenotypes;
         for (Results::iterator s = results.begin(); s != results.end(); ++s) {
             s->second.sortDataLikelihoods();
             /*
@@ -137,14 +142,18 @@ int main (int argc, char *argv[]) {
         // calculate marginals
         // and determine best genotype combination
 
+        // TODO add in all-alternate and all-reference
+        // ... or at least very add one which is consistent
         //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
-        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
+        //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
+        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingAllHomozygousCombos(sampleGenotypes, genotypes, 2, 2);
+
         vector<pair<GenotypeCombo, long double> > genotypeComboProbs;
 
         for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
             long double probabilityObservationsGivenGenotypes = 0;
-            vector<Genotype> genotypeCombo;
+            vector<Genotype*> genotypeCombo;
 
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
                 genotypeCombo.push_back(i->second.first);
@@ -167,11 +176,15 @@ int main (int argc, char *argv[]) {
             //cout << "probabilityObservationsGivenGenotypes = " << probabilityObservationsGivenGenotypes << endl;
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
 
+            // XXX hack to prevent underflow
+            if (comboProb < -200)
+                continue;
+
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
-                map<Genotype, vector<long double> >& marginals = results[i->first].rawMarginals;
-                Genotype& genotype = i->second.first;
+                map<Genotype*, vector<long double> >& marginals = results[i->first].rawMarginals;
+                Genotype* genotype = i->second.first;
                 //long double& prob = i->second.second;
-                map<Genotype, vector<long double> >::iterator marginal = marginals.find(genotype);
+                map<Genotype*, vector<long double> >::iterator marginal = marginals.find(genotype);
                 if (marginal == marginals.end()) {
                     vector<long double> probs;
                     probs.push_back(comboProb);
@@ -184,6 +197,9 @@ int main (int argc, char *argv[]) {
             genotypeComboProbs.push_back(make_pair(*combo, comboProb));
 
         }
+        // XXX AWFUL hack
+        if (genotypeComboProbs.size() == 0)
+            continue;
         
 
 
@@ -204,17 +220,20 @@ int main (int argc, char *argv[]) {
         */
         long double posteriorNormalizer = logsumexp(comboProbs);
         //cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
-        /*cout << "comboProbs = [";
+        /*
+        cout << "comboProbs = [";
         for (vector<long double>::iterator i = comboProbs.begin(); i != comboProbs.end(); ++i)
             cout << *i << " ";
         cout << "]" << endl;
-        cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
         */
+        
 
+        // TODO Gabor had a suggestion about this normalization, that we only normalize 'perturbed' cases
+        // ....  but i think that this thought was not asserted as necessary
         // normalize marginals
         for (Results::iterator r = results.begin(); r != results.end(); ++r) {
             ResultData& d = r->second;
-            for (map<Genotype, vector<long double> >::iterator m = d.rawMarginals.begin(); m != d.rawMarginals.end(); ++m) {
+            for (map<Genotype*, vector<long double> >::iterator m = d.rawMarginals.begin(); m != d.rawMarginals.end(); ++m) {
                 /*
                 cout << "rawMarginals = [";
                 for (vector<long double>::iterator i = m->second.begin(); i != m->second.end(); ++i)
@@ -227,9 +246,38 @@ int main (int argc, char *argv[]) {
         }
 
 
+        // TODO XXX
+        // this is wrong.  bestGenotypeComboProb is not what you want.
+        //
+        // we should be providing p(var|data), or the probability that the
+        // location has variation between individuals relative to the
+        // probability that it has no variation
+        //
+        // in other words:
+        // p(var|d) = 1 - p(AA|d) - p(TT|d) - P(GG|d) - P(CC|d)
+        //
+        // the approach is go through all the homozygous combos
+        // and then subtract this from 1... resolving p(var|d)
+
+        long double pVar = 1.0;
+
+        for (vector<pair<GenotypeCombo, long double> >::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
+            /*
+            for (GenotypeCombo::iterator c = gc->first.begin(); c != gc->first.end(); ++c)
+                cout << *c->second.first << " ";
+            cout << endl;
+            cout << (long double) gc->second << endl;
+            */
+            if (isHomozygousCombo(gc->first)) {
+                pVar -= exp(gc->second - posteriorNormalizer);
+            }
+        }
+
+        // this is okay... as we use this to pick our best genotypes
         GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().first;
         long double bestGenotypeComboProb = exp(genotypeComboProbs.front().second - posteriorNormalizer);
-        vector<Genotype> bestComboGenotypes;
+        //cout << bestGenotypeComboProb << endl;
+        vector<Genotype*> bestComboGenotypes;
         for (GenotypeCombo::iterator g = bestGenotypeCombo.begin(); g != bestGenotypeCombo.end(); ++g)
             bestComboGenotypes.push_back(g->second.first);
         long double bestAlleleSamplingProb = exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
@@ -250,7 +298,7 @@ int main (int argc, char *argv[]) {
                 json(cout, results, parser);
                 cout << "}" << endl;
 
-            } else if (bestGenotypeComboProb >= parameters.PVL && parameters.output == "vcf") {
+            } else if (pVar >= parameters.PVL && parameters.output == "vcf") {
                 bool hasVariant = false;
                 string alternateBase;
                 string referenceBase = parser->currentReferenceBase();
@@ -259,11 +307,11 @@ int main (int argc, char *argv[]) {
                     // this will only print the first alternate
                     // tri-allelics do happen....
                     ResultData& sample = r->second; 
-                    Genotype g = sample.bestMarginalGenotype().first;
-                    vector<Allele> alternates = g.alternateAlleles(referenceBase);
+                    Genotype* g = sample.bestMarginalGenotype().first;
+                    vector<Allele> alternates = g->alternateAlleles(referenceBase);
                     if (alternates.size() > 0) {
                         vcf(cout, 
-                            bestGenotypeComboProb,
+                            pVar,
                             bestAlleleSamplingProb,
                             alternates.front().base(),
                             parser->sampleList, 

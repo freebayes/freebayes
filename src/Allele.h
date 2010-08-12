@@ -143,7 +143,7 @@ public:
     { }
 
     // I'm not sure if this explicit copy constructor is necessary
-    /*
+    // but it improves performance slightly
     Allele(const Allele& other) 
         : type(other.type)
         , referenceName(other.referenceName)
@@ -155,12 +155,11 @@ public:
         , sampleID(other.sampleID)
         , readID(other.readID)
         , strand(other.strand)
-        , quality(other.quality) // passing -1 as quality triggers this calculation
+        , quality(other.quality)
         , qualityString(other.qualityString)
         , mapQuality(other.mapQuality) 
         , genotypeAllele(other.genotypeAllele)
     { }
-    */
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void); // return a string representation of the allele type, for output
@@ -225,6 +224,8 @@ vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
 Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0);
 
+// filters... maybe move to its own file?
+bool sufficientAlternateObservations(map<string, vector<Allele*> >& observations, int mincount, float minfraction);
 
 //AlleleFreeList Allele::_freeList;
 

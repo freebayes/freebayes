@@ -23,15 +23,15 @@ class ResultData
 {
 public:
     string name;
-    vector<pair<Genotype, long double> > dataLikelihoods;
-    map<Genotype, vector<long double> > rawMarginals;
-    map<Genotype, long double> marginals;
+    vector<pair<Genotype*, long double> > dataLikelihoods;
+    map<Genotype*, vector<long double> > rawMarginals;
+    map<Genotype*, long double> marginals;
     vector<Allele*> observations;
 
     ResultData(string s,
-        vector<pair<Genotype, long double> > d,
-        map<Genotype, long double>  m,
-        map<Genotype, vector<long double> > rm,
+        vector<pair<Genotype*, long double> > d,
+        map<Genotype*, long double>  m,
+        map<Genotype*, vector<long double> > rm,
         vector<Allele*> o)
             : name(s)
             , dataLikelihoods(d)
@@ -53,8 +53,8 @@ public:
     void sortDataLikelihoods(void) {
         sort(dataLikelihoods.begin(), 
                 dataLikelihoods.end(), 
-                boost::bind(&pair<Genotype, long double>::second, _1) 
-                    > boost::bind(&pair<Genotype, long double>::second, _2));
+                boost::bind(&pair<Genotype*, long double>::second, _1) 
+                    > boost::bind(&pair<Genotype*, long double>::second, _2));
     }
 
     friend void json(ostream& out, Results& results, AlleleParser* parser);
@@ -66,7 +66,7 @@ public:
             list<Allele*> observedAlleles,
             Results& results,
             AlleleParser* parser);
-    pair<Genotype, long double> bestMarginalGenotype(void);
+    pair<Genotype*, long double> bestMarginalGenotype(void);
 
 };
 
