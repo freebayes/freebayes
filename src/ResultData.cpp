@@ -56,7 +56,7 @@ void vcf(ostream& out,
             Genotype& bestGenotype = *bestGenotypeAndProb.first;
             out << "\t"
                 << bestGenotype.relativeGenotype(refbase)
-               << ":" << ln2phred(log(1 - exp(bestGenotypeAndProb.second)))
+               << ":" << float2phred(1 - exp(bestGenotypeAndProb.second))
                 << ":" << sample.observations.size();
         } else {
             out << "\t.";

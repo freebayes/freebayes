@@ -23,6 +23,8 @@ long double phred2float(int qual) {
 }
 
 int float2phred(long double prob) {
+    if (prob == 1)
+        return 99;
     return std::min(-10 * (long double) log10(prob), (long double) 99);
 }
 
