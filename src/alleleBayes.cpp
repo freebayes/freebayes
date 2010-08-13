@@ -79,6 +79,10 @@ int main (int argc, char *argv[]) {
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     vector<Genotype> genotypes = allPossibleGenotypes(2, genotypeAlleles); // generate all possible genotypes of ploidy 2
 
+    // output VCF header
+    // TODO add proper information header fields to this, at present it's just the column and sample names
+    vcfHeader(cout, parser->sampleList);
+
     // TODO
     // ... only process potential genotypes for which we have some number of observations
     // ... optionally provide a threshold of some kind to ignore low-frequency observations that are most likely errors

@@ -70,6 +70,9 @@ public:
 
 };
 
+void vcfHeader(ostream& out, vector<string>& samples);
+
+
 
 // TODO vcf output
 

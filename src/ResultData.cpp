@@ -25,6 +25,17 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
     out << "}";
 }
 
+void vcfHeader(ostream& out,
+        vector<string>& samples) {
+
+    out << "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+    for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
+        out << "\t" << *s;
+    }
+    out << endl;
+
+}
+
 void vcf(ostream& out,
         long double comboProb,
         long double alleleSamplingProb,
