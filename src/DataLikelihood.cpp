@@ -158,18 +158,27 @@ approxProbObservedAllelesGivenGenotype(
 }
 
 
-/*
-vector<pair<Genotype, long double> >
-probObservedAllelesGivenGenotypes(
+vector<pair<Genotype*, long double> >
+exactProbObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
         vector<Genotype>& genotypes) {
-    vector<pair<Genotype, long double> > results;
+    vector<pair<Genotype*, long double> > results;
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        results.push_back(make_pair(*g, approxProbObservedAllelesGivenGenotype(observedAlleles, *g)));
+        results.push_back(make_pair(&*g, probObservedAllelesGivenGenotype(observedAlleles, *g)));
     }
     return results;
 }
-*/
+
+vector<pair<Genotype*, long double> >
+approxProbObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotypes) {
+    vector<pair<Genotype*, long double> > results;
+    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        results.push_back(make_pair(&*g, approxProbObservedAllelesGivenGenotype(observedAlleles, *g)));
+    }
+    return results;
+}
 
 // uses caching to reduce computation while generating the exact correct result
 

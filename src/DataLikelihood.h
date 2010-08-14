@@ -30,6 +30,17 @@ probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
         vector<Genotype>& genotype);
 
+
+vector<pair<Genotype*, long double> >
+exactProbObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotypes);
+
+vector<pair<Genotype*, long double> >
+approxProbObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotypes);
+
 long double
 likelihoodGivenTrueAlleles(
         const vector<Allele*>& observedAlleles,

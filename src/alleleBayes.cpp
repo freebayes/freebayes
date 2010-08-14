@@ -289,39 +289,41 @@ int main (int argc, char *argv[]) {
         if (!parameters.suppressOutput) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
 
-            if (parameters.output == "json") {
-                cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
-                    << ", \"sequence\": " << parser->currentTarget->seq
-                    << ", \"best_genotype_combo\":" << bestGenotypeCombo
-                    << ", \"combos_tested\":" << bandedCombos.size()
-                    << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
-                    << ", \"coverage\":" << alleles.size()
-                    << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
-                    << ", \"ewens_sampling_probability\":" << bestAlleleSamplingProb
-                    << ", \"samples\":";
-                json(cout, results, parser);
-                cout << "}" << endl;
+            if (pVar >= parameters.PVL) {
+                if (parameters.output == "json") {
+                    cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
+                        << ", \"sequence\": " << parser->currentTarget->seq
+                        << ", \"best_genotype_combo\":" << bestGenotypeCombo
+                        << ", \"combos_tested\":" << bandedCombos.size()
+                        << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
+                        << ", \"coverage\":" << alleles.size()
+                        << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
+                        << ", \"ewens_sampling_probability\":" << bestAlleleSamplingProb
+                        << ", \"samples\":";
+                    json(cout, results, parser);
+                    cout << "}" << endl;
 
-            } else if (pVar >= parameters.PVL && parameters.output == "vcf") {
-                bool hasVariant = false;
-                string alternateBase;
-                string referenceBase = parser->currentReferenceBase();
-                for (Results::iterator r = results.begin(); r != results.end(); ++r) {
-                    // todo FIXME
-                    // this will only print the first alternate
-                    // tri-allelics do happen....
-                    ResultData& sample = r->second; 
-                    Genotype* g = sample.bestMarginalGenotype().first;
-                    vector<Allele> alternates = g->alternateAlleles(referenceBase);
-                    if (alternates.size() > 0) {
-                        vcf(cout, 
-                            pVar,
-                            bestAlleleSamplingProb,
-                            alternates.front().base(),
-                            parser->sampleList, 
-                            alleles, results, parser);
-                        cout << endl;
-                        break;
+                } else if (parameters.output == "vcf") {
+                    bool hasVariant = false;
+                    string alternateBase;
+                    string referenceBase = parser->currentReferenceBase();
+                    for (Results::iterator r = results.begin(); r != results.end(); ++r) {
+                        // todo FIXME
+                        // this will only print the first alternate allele
+                        // tri-allelics do happen....
+                        ResultData& sample = r->second; 
+                        Genotype* g = sample.bestMarginalGenotype().first;
+                        vector<Allele> alternates = g->alternateAlleles(referenceBase);
+                        if (alternates.size() > 0) {
+                            vcf(cout, 
+                                pVar,
+                                bestAlleleSamplingProb,
+                                alternates.front().base(),
+                                parser->sampleList, 
+                                alleles, results, parser);
+                            cout << endl;
+                            break;
+                        }
                     }
                 }
             }
