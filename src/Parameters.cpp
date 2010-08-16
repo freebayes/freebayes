@@ -352,16 +352,11 @@ Parameters::Parameters (int argc, char** argv) {
     arg.longId = "ploidy";
     arg.description = "Sample ploidy";
     arg.required = false;
-    arg.defaultValueString = "diploid";
-    arg.type = "string";
+    arg.defaultValueString = "2";
+    arg.type = "int";
     arg.multi = false;
-    vector<string> allowedPloidy;
-    allowedPloidy.push_back("haploid");
-    allowedPloidy.push_back("diploid");
-    arg.constraint = allowedPloidy;
-    ValuesConstraint<string> allowedPloidyVals(allowedPloidy); 
     my.ArgList.push_back(arg);
-    ValueArg<string> cmd_ploidy(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, &allowedPloidyVals, cmd);
+    ValueArg<int> cmd_ploidy(arg.shortId, arg.longId, arg.description, arg.required, 2, arg.type, cmd);
 
     // sample: naming scheme for matching reads to samples
     ArgStruct argSampleNaming;
@@ -771,11 +766,6 @@ Parameters::Parameters (int argc, char** argv) {
     // derived variables
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
-
-    bool diploid = false;
-    if (ploidy == "diploid") {
-        diploid = true;
-    }
 
     bool banded = false;
     if (algorithm == "banded") {

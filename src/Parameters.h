@@ -68,7 +68,7 @@ public:
     bool forceRefAllele;
     int MQR;
     int BQR;
-    string ploidy;
+    int ploidy;
     string sampleNaming;
     string sampleDel;
     int MQL0;

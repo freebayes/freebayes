@@ -77,7 +77,7 @@ int main (int argc, char *argv[]) {
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
-    vector<Genotype> genotypes = allPossibleGenotypes(2, genotypeAlleles); // generate all possible genotypes of ploidy 2
+    vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
     // output VCF header
     // TODO add proper information header fields to this, at present it's just the column and sample names
