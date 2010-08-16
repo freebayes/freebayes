@@ -3,7 +3,6 @@
 #include "multipermute.h"
 
 
-
 // log probability of a given matching of true and observed alleles
 // true alleles are the 'real' alleles
 // observed alleles are whet we observe
@@ -34,16 +33,20 @@ probObservedAllelesGivenGenotype(
         vector<Allele*>& observedAlleles,
         Genotype& genotype) {
 
+    //cout << endl << endl << "genotype: "  << genotype << endl;
     int observationCount = observedAlleles.size();
     vector<long double> alleleProbs = genotype.alleleProbabilities();
     vector<long double> probs;
     vector<Allele> uniqueAlleles = genotype.uniqueAlleles();
     vector<vector<Allele*> > combos = multichoose_ptr(observationCount, uniqueAlleles);
     for (vector<vector<Allele*> >::iterator combo = combos.begin(); combo != combos.end(); ++combo) {
+        //cout << endl << "combo: " << *combo << endl;
         vector<vector<Allele*> > trueAllelePermutations = multipermute(*combo);
         for (vector<vector<Allele*> >::iterator perm = trueAllelePermutations.begin(); perm != trueAllelePermutations.end(); ++perm) {
             vector<Allele*>& trueAlleles = *perm;
+            //cout << "permu: " << *perm << endl;
             map<string, int> trueAlleleCounts = countAllelesString(trueAlleles);
+            long double lnTrueAllelePermutationsCount = log(trueAllelePermutations.size());
             vector<int> observationCounts; // counts of 'observations' of true alleles, ordered according to the genotype's internal ordering
             for (Genotype::const_iterator g = genotype.begin(); g != genotype.end(); ++g) {
                 map<string, int>::const_iterator count = trueAlleleCounts.find(g->first.base());
@@ -53,8 +56,11 @@ probObservedAllelesGivenGenotype(
                     observationCounts.push_back(0);
                 }
             }
+            //cout << "multinomial: " << exp(multinomialln(alleleProbs, observationCounts)) << endl;
+            //cout << "likelihood: " << exp(likelihoodGivenTrueAlleles(observedAlleles, trueAlleles)) << endl;
             probs.push_back(multinomialln(alleleProbs, observationCounts) 
-                    + likelihoodGivenTrueAlleles(observedAlleles, trueAlleles));
+                    + likelihoodGivenTrueAlleles(observedAlleles, trueAlleles)
+                    - lnTrueAllelePermutationsCount);
         }
     }
     //cout << "l = " << logsumexp(probs) << endl;
@@ -62,63 +68,16 @@ probObservedAllelesGivenGenotype(
 }
 
 /*
- Approximate data likelihoods.
-approach: drop lots of terms, normalize
- */
 long double
-approxProbObservedAllelesGivenGenotype(
+badApproxProbObservedAllelesGivenGenotype(
         vector<Allele*>& observedAlleles,
         Genotype& genotype
         ) {
-        //long double fractionCorrect) {
-
-    // approximation approach
-    // condition the probability on a configurable fraction of errors
-    // ... you can establish the probability that a given set of observations
-    // ... has no errors
-    // ... has <N errors
-    // ... has enough errors to support the genotype
-    //
-    // a single term can then be scaled by the dirichlet maximum likelihood
-    // ratio for the given observation draws from the specified genotype
-    //
-    // the gist of this is that we should ask "what is the probability that we
-    // have enough errors to support the specific genotype"?
-    // an example would be the case in which we have no overlap between genotype and observations
-    // then, the only way for the specific genotype to be supported by the observations
-    // is that the observations are all wrong
-    //
-    
-    // 1) how many observations support the genotype?
-    // 2) how many don't
-    // 3) what is the probability that the ones which don't support the genotype 
-    //    are all wrong, and the ones that do have no wrongs?
-    //    ... alternatively the probability that at least one of the ones which
-    //    support is right, which may scale better in accordance with the exact
-    //    data likelihood
-    //
-    // 4) multiply the above by the dirichlet maximum likelihood ratio
     
     int observationCount = observedAlleles.size();
     vector<long double> alleleProbs = genotype.alleleProbabilities();
-    //vector<Allele> uniqueAlleles = genotype.uniqueAlleles();
     vector<int> observationCounts = genotype.alleleCountsInObservations(observedAlleles);
-    //map<Allele, int> inCounts;
-    //map<Allele, int> outCounts;
-    //genotype.inOutObservationCounts(observedAlleles, inCounts, outCounts);
 
-
-    /*
-    cerr << "genotype " << genotype << endl;
-    for (vector<Allele*>::iterator i = observedAlleles.begin(); i != observedAlleles.end(); ++i) {
-        cerr << " " << *i;
-    }
-    cerr << endl;
-    */
-
-    // the approximate observation probability is our rough estimate of the
-    // probability that we have some support for the genotype within our
-    // observations
     long double probInAllWrong = 0; // 
     long double probOutAreAllErrors = 0; // 
     for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
@@ -131,32 +90,45 @@ approxProbObservedAllelesGivenGenotype(
     }
     
     if (sum(observationCounts) == 0) {
-        //cerr << "prob = " << exp(probOutAreAllErrors) << endl;
         return probOutAreAllErrors;
     } else {
-        long double probInAllCorrect = log(1 - exp(probInAllWrong));
-        long double approxObsProbability = log(1 - exp(probInAllWrong)) + probOutAreAllErrors;
-        // this is the probability that we have at least some support for the
-        // genotype among the observations, at least one observation
-        long double dirichlet = log(dirichletMaximumLikelihoodRatio(alleleProbs, observationCounts));
-        /*
-        vector<long double>::iterator g = alleleProbs.begin();
-        vector<int>::iterator q = observationCounts.begin();
-        for (; q != observationCounts.end() && g != alleleProbs.end(); ++q, ++g) {
-            cerr << *g << " " << *q << ", ";
-        }
-        cerr << endl;
-        cerr << "dirichlet maximum likelihood ratio = " << exp(dirichlet) << endl;
-        cerr << "probInAllWrong = " << exp(probInAllWrong) << endl;
-        cerr << "probInAllCorrect = " << exp(probInAllCorrect) << endl;
-        cerr << "probOutAreAllErrors = " << exp(probOutAreAllErrors) << endl;
-        cerr << "data likelihood of " << genotype << " = "  << exp(approxObsProbability + dirichlet) << endl;
-        */
-        return approxObsProbability + dirichlet;
+        long double someInCorrect = log(1 - exp(probInAllWrong));
+        return someInCorrect + (probOutAreAllErrors != 0 ? log(1 - exp(probOutAreAllErrors)) : 0) + log(dirichletMaximumLikelihoodRatio(alleleProbs, observationCounts));
     }
 
 }
+*/
 
+// p(out are wrong) * p(in are correct) * (multinomial(in | genotype))
+// sum(Q)           * sum(1 - Q)        *          ...
+long double
+approxProbObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype
+        ) {
+
+    int observationCount = observedAlleles.size();
+    vector<long double> alleleProbs = genotype.alleleProbabilities();
+    vector<int> observationCounts = genotype.alleleCountsInObservations(observedAlleles);
+
+    long double probInAllCorrect = 0; // 
+    long double probOutAllWrong  = 0; // 
+    for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
+        Allele& observation = **obs;
+        if (genotype.containsAllele(observation)) {
+            probInAllCorrect += log(1 - exp(observation.lncurrentQuality()));
+        } else {
+            probOutAllWrong += observation.lncurrentQuality();
+        }
+    }
+    
+    if (sum(observationCounts) == 0) {
+        return probOutAllWrong;
+    } else {
+        return probInAllCorrect + probOutAllWrong + multinomialln(alleleProbs, observationCounts);
+    }
+
+}
 
 vector<pair<Genotype*, long double> >
 exactProbObservedAllelesGivenGenotypes(

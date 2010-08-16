@@ -308,6 +308,21 @@ map<string, int> countAllelesString(vector<Allele*>& alleles) {
     return counts;
 }
 
+map<string, int> countAllelesString(vector<Allele>& alleles) {
+    map<string, int> counts;
+    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& thisAllele = *a;
+        const string& allele = thisAllele.base();
+        map<string, int>::iterator f = counts.find(allele);
+        if (f == counts.end()) {
+            counts[allele] = 1;
+        } else {
+            counts[allele] += 1;
+        }
+    }
+    return counts;
+}
+
 
 map<Allele, int> countAlleles(vector<Allele>& alleles) {
     map<Allele, int> counts;

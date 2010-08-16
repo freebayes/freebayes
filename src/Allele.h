@@ -197,6 +197,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
 map<string, int> countAllelesString(vector<Allele*>& alleles);
+map<string, int> countAllelesString(vector<Allele>& alleles);
 map<Allele, int> countAlleles(vector<Allele>& alleles);
 map<Allele, int> countAlleles(list<Allele*>& alleles);
 

@@ -113,9 +113,29 @@ int main (int argc, char *argv[]) {
 
             vector<pair<Genotype*, long double> > probs = 
                 probObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+
             /*
-            for (vector<pair<Genotype, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
-                cout << p->first << " " << p->second << endl;
+            vector<pair<Genotype*, long double> > approxprobs = 
+                approxProbObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+            vector<pair<Genotype*, long double> > bambayesapproxprobs = 
+                bamBayesApproxProbObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+            //vector<pair<Genotype*, long double> > exactprobs = 
+                //exactProbObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+
+            cout << sampleName << endl;
+            for (vector<Allele*>::iterator i = observedAlleles.begin(); i != observedAlleles.end(); ++i) {
+                Allele& allele = **i;
+                cout << allele.base() << " ";
+            }
+            cout << endl;
+            vector<pair<Genotype*, long double> >::iterator d = approxprobs.begin();
+            vector<pair<Genotype*, long double> >::iterator b = bambayesapproxprobs.begin();
+            //vector<pair<Genotype*, long double> >::iterator e = exactprobs.begin();
+            for ( ; d != approxprobs.end() && b != bambayesapproxprobs.end(); ++d, ++b) {
+                //cout << "exact  : " << *e->first << " " << e->second << endl;
+                cout << "bapprox: " << *b->first << " " << b->second << endl;
+                cout << "dapprox: " << *d->first << " " << d->second << endl;
+                cout << endl;
             }
             */
             
@@ -201,7 +221,8 @@ int main (int argc, char *argv[]) {
             genotypeComboProbs.push_back(make_pair(*combo, comboProb));
 
         }
-        // XXX AWFUL hack
+
+        // XXX AWFUL hack, but necessary to guard against the case that all our genotype probabilites are <-200 log
         if (genotypeComboProbs.size() == 0)
             continue;
         
