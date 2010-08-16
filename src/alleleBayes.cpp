@@ -81,7 +81,9 @@ int main (int argc, char *argv[]) {
 
     // output VCF header
     // TODO add proper information header fields to this, at present it's just the column and sample names
-    vcfHeader(cout, parser->sampleList);
+    if (parameters.output == "vcf") {
+        vcfHeader(cout, parser->reference->filename, parser->sampleList);
+    }
 
     // TODO
     // ... only process potential genotypes for which we have some number of observations
@@ -225,8 +227,6 @@ int main (int argc, char *argv[]) {
         // XXX AWFUL hack, but necessary to guard against the case that all our genotype probabilites are <-200 log
         if (genotypeComboProbs.size() == 0)
             continue;
-        
-
 
         // genotype_combo_probs = sorted(genotype_combo_probs, key=lambda c: c[1], reverse=True)
         sort(genotypeComboProbs.begin(), genotypeComboProbs.end(),

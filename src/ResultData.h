@@ -7,6 +7,8 @@
 //#include <boost/tuple/tuple.hpp>
 #include <boost/bind.hpp>
 
+#include <time.h>
+
 #include "Genotype.h"
 #include "Allele.h"
 #include "Utility.h"
@@ -70,7 +72,8 @@ public:
 
 };
 
-void vcfHeader(ostream& out, vector<string>& samples);
+string dateStr(void);
+void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples);
 
 
 

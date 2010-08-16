@@ -25,10 +25,40 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
     out << "}";
 }
 
+// current date string in YYYYMMDD format
+string dateStr(void) {
+
+    time_t rawtime;
+    struct tm* timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, 80, "%Y%m%d", timeinfo);
+
+    return string(buffer);
+
+}
+
 void vcfHeader(ostream& out,
+        string referenceName,
         vector<string>& samples) {
 
-    out << "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+    out << "##fileformat=VCFv4.0" << endl
+        << "##fileDate=" << dateStr() << endl
+        << "##source=alleleBayes" << endl
+        << "##reference=" << referenceName << endl
+        << "##phasing=none" << endl
+        << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"number of samples with data\">" << endl
+        << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"total read depth at the locus\">" << endl
+        << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"total number of alternate alleles in called genotypes\">" << endl
+        << "##INFO=<ID=AF,Number=1,Type=Integer,Description=\"total number of alleles in called genotypes\">" << endl
+        << "##INFO=<ID=ESF,Number=1,Type=Float,Description=\"Ewens' sampling formula probability for the called genotype combination\">" << endl
+        << "##FORMAT=GT,1,String,\"Genotype\"" << endl
+        << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl
+        << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl
+        << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
     }
@@ -55,7 +85,7 @@ void vcf(ostream& out,
         << alternateBase << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
-        << "NS=" << results.size() << ":" << "DP=" << observedAlleles.size() << ":" << "ESF=" << alleleSamplingProb << "\t" // positional information
+        << "NS=" << results.size() << ";" << "DP=" << observedAlleles.size() << ";" << "ESF=" << alleleSamplingProb << "\t" // positional information
         << "GT:GQ:DP";
 
     // samples
