@@ -505,18 +505,14 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                                 alignment.MapQuality);
                         ra.alleles.push_back(allele);
                     }
-                    firstMatch = csp + 1;
-                }
-
                 // register mismatch
-                if (b != sb) {
-                    if (qual >= parameters.BQL2) {
+                    //if (qual >= parameters.BQL2) {
                         // record 'reference' allele for last matching region
                         ra.mismatches++;
                         Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, &currentPosition, 1, sb, b,
                                 sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
                         ra.alleles.push_back(allele);
-                    }
+                    //}
                     firstMatch = csp + 1;
                 }
 
@@ -728,7 +724,7 @@ bool AlleleParser::loadTarget(BedData* target) {
     currentPosition = currentTarget->left - 1; // our bed targets are always 1-based at the left
 
     // XXX should check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
-    bool r = bamMultiReader.SetRegion(refSeqID, currentPosition, refSeqID, currentTarget->right);
+    bool r = bamMultiReader.SetRegion(refSeqID, currentPosition, refSeqID, currentTarget->right - 1);
     if (!r) { return r; }
     //DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);

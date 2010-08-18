@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cmath>
 #include <time.h>
+#include <float.h>
 
 // "boost" regular expression library
 #include <boost/regex.hpp>
@@ -33,6 +34,7 @@
 #include "Parameters.h"
 #include "Allele.h"
 #include "AlleleParser.h"
+#include "Utility.h"
 
 #include "multichoose.h"
 #include "multipermute.h"
@@ -203,8 +205,8 @@ int main (int argc, char *argv[]) {
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
 
             // XXX hack to prevent underflow
-            if (comboProb < -200)
-                continue;
+            //if (comboProb < DBL_MIN_EXP)
+                //continue;
 
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
                 map<Genotype*, vector<long double> >& marginals = results[i->first].rawMarginals;
@@ -225,8 +227,8 @@ int main (int argc, char *argv[]) {
         }
 
         // XXX AWFUL hack, but necessary to guard against the case that all our genotype probabilites are <-200 log
-        if (genotypeComboProbs.size() == 0)
-            continue;
+        //if (genotypeComboProbs.size() == 0)
+            //continue;
 
         // genotype_combo_probs = sorted(genotype_combo_probs, key=lambda c: c[1], reverse=True)
         sort(genotypeComboProbs.begin(), genotypeComboProbs.end(),
@@ -243,7 +245,7 @@ int main (int argc, char *argv[]) {
             cout << "prob:" << c->second << endl;
         }
         */
-        long double posteriorNormalizer = logsumexp(comboProbs);
+        long double posteriorNormalizer = logsumexp_probs(comboProbs);
         //cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
         /*
         cout << "comboProbs = [";
@@ -258,25 +260,23 @@ int main (int argc, char *argv[]) {
         // normalize marginals
         for (Results::iterator r = results.begin(); r != results.end(); ++r) {
             ResultData& d = r->second;
+            //cout << r->first << endl;
             for (map<Genotype*, vector<long double> >::iterator m = d.rawMarginals.begin(); m != d.rawMarginals.end(); ++m) {
                 /*
-                cout << "rawMarginals = [";
+                cout << *m->first << " rawMarginals = [";
                 for (vector<long double>::iterator i = m->second.begin(); i != m->second.end(); ++i)
                     cout << *i << ", ";
                 cout << "]" << endl;
-                cout << logsumexp(m->second) << endl;
+                cout << logsumexp_probs(m->second) << endl;
                 */
-                d.marginals[m->first] = logsumexp(m->second) - posteriorNormalizer;
+                d.marginals[m->first] = logsumexp_probs(m->second) - posteriorNormalizer;
             }
         }
 
 
-        // TODO XXX
-        // this is wrong.  bestGenotypeComboProb is not what you want.
-        //
-        // we should be providing p(var|data), or the probability that the
-        // location has variation between individuals relative to the
-        // probability that it has no variation
+        // we provide p(var|data), or the probability that the location has
+        // variation between individuals relative to the probability that it
+        // has no variation
         //
         // in other words:
         // p(var|d) = 1 - p(AA|d) - p(TT|d) - P(GG|d) - P(CC|d)
@@ -294,37 +294,38 @@ int main (int argc, char *argv[]) {
             cout << (long double) gc->second << endl;
             */
             if (isHomozygousCombo(gc->first)) {
-                pVar -= exp(gc->second - posteriorNormalizer);
+                pVar -= safe_exp(gc->second - posteriorNormalizer);
             }
         }
 
         // this is okay... as we use this to pick our best genotypes
         GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().first;
-        long double bestGenotypeComboProb = exp(genotypeComboProbs.front().second - posteriorNormalizer);
+        long double bestGenotypeComboProb = safe_exp(genotypeComboProbs.front().second - posteriorNormalizer);
         //cout << bestGenotypeComboProb << endl;
         vector<Genotype*> bestComboGenotypes;
         for (GenotypeCombo::iterator g = bestGenotypeCombo.begin(); g != bestGenotypeCombo.end(); ++g)
             bestComboGenotypes.push_back(g->second.first);
-        long double bestAlleleSamplingProb = exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
+        long double bestAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
 
         if (!parameters.suppressOutput) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
 
-            if (pVar >= parameters.PVL) {
-                if (parameters.output == "json") {
-                    cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
-                        << ", \"sequence\": " << parser->currentTarget->seq
-                        << ", \"best_genotype_combo\":" << bestGenotypeCombo
-                        << ", \"combos_tested\":" << bandedCombos.size()
-                        << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
-                        << ", \"coverage\":" << alleles.size()
-                        << ", \"posterior_normalizer\":" << exp(posteriorNormalizer)
-                        << ", \"ewens_sampling_probability\":" << bestAlleleSamplingProb
-                        << ", \"samples\":";
-                    json(cout, results, parser);
-                    cout << "}" << endl;
+            if (parameters.output == "json") {
+                cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
+                    << ", \"sequence\": " << parser->currentTarget->seq
+                    << ", \"best_genotype_combo\":" << bestGenotypeCombo
+                    << ", \"combos_tested\":" << bandedCombos.size()
+                    << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
+                    << ", \"coverage\":" << alleles.size()
+                    << ", \"posterior_normalizer\":" << safe_exp(posteriorNormalizer)
+                    << ", \"ewens_sampling_probability\":" << bestAlleleSamplingProb
+                    << ", \"samples\":";
+                json(cout, results, parser);
+                cout << "}" << endl;
 
-                } else if (parameters.output == "vcf") {
+            }
+            if (pVar >= parameters.PVL) {
+                if (parameters.output == "vcf") {
                     bool hasVariant = false;
                     string alternateBase;
                     string referenceBase = parser->currentReferenceBase();

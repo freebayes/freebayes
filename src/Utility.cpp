@@ -169,6 +169,32 @@ long double cofactorln(
   }
 }
 
+// prevent underflows by returning 0 if exponentiation will produce an underflow
+long double safe_exp(long double ln) {
+    if (ln < LDBL_MIN_EXP) {
+        return 0;
+    } else {
+        return exp(ln);
+    }
+}
+
+// 'safe' log summation for probabilities
+long double logsumexp_probs(const vector<long double>& lnv) {
+    vector<long double>::const_iterator i = lnv.begin();
+    long double maxN = *i;
+    ++i;
+    for (; i != lnv.end(); ++i) {
+        if (*i > maxN)
+            maxN = *i;
+    }
+    long double sum = 0;
+    for (vector<long double>::const_iterator i = lnv.begin(); i != lnv.end(); ++i) {
+        sum += safe_exp(*i - maxN);
+    }
+    return maxN + log(sum);
+}
+
+// unsafe, kept for potential future use
 long double logsumexp(const vector<long double>& lnv) {
     long double maxAbs, minN, maxN, c;
     vector<long double>::const_iterator i = lnv.begin();

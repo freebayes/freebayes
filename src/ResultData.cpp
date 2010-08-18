@@ -14,7 +14,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
         for (map<Genotype*, long double>::iterator g = sample.marginals.begin(); 
                 g != sample.marginals.end(); ++g) {
             if (g != sample.marginals.begin()) cout << ",";
-            out << "[\"" << *(g->first) << "\"," << exp(g->second) << "]";
+            out << "[\"" << *(g->first) << "\"," << safe_exp(g->second) << "]";
         }
         out << "]";
         if (parser->parameters.outputAlleles)
@@ -97,7 +97,7 @@ void vcf(ostream& out,
             Genotype& bestGenotype = *bestGenotypeAndProb.first;
             out << "\t"
                 << bestGenotype.relativeGenotype(refbase)
-               << ":" << float2phred(1 - exp(bestGenotypeAndProb.second))
+               << ":" << float2phred(1 - safe_exp(bestGenotypeAndProb.second))
                 << ":" << sample.observations.size();
         } else {
             out << "\t.";
