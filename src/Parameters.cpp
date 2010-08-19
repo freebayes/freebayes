@@ -267,6 +267,19 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     SwitchArg cmd_outputAlleles(arg.shortId, arg.longId, arg.description, cmd, false);
 
+    // ignore duplicate reads
+    ArgStruct argUseDuplicateReads;
+    arg = argUseDuplicateReads; 
+    arg.shortId = ""; 
+    arg.longId = "useDuplicateReads"; 
+    arg.description = "Use alignments which are marked as duplicates in the analysis, default behavior is to drop them.";
+    arg.required = false; 
+    arg.defaultValueString = "false"; 
+    arg.type = "switch"; 
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    SwitchArg cmd_useDuplicateReads(arg.shortId, arg.longId, arg.description, cmd, false);
+
     // output option: output information about all alleles contributing to a given genotyping position
     ArgStruct argSuppressOutput;
     arg = argSuppressOutput; 
@@ -723,6 +736,7 @@ Parameters::Parameters (int argc, char** argv) {
     log = cmd_log.getValue();
     output = cmd_output.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
+    useDuplicateReads = cmd_useDuplicateReads.getValue();
     suppressOutput = cmd_suppressOutput.getValue();
 
     useRefAllele = cmd_useRefAllele.getValue();

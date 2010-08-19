@@ -273,7 +273,6 @@ int main (int argc, char *argv[]) {
             }
         }
 
-
         // we provide p(var|data), or the probability that the location has
         // variation between individuals relative to the probability that it
         // has no variation
