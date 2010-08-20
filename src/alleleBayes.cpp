@@ -73,13 +73,13 @@ int main (int argc, char *argv[]) {
     Parameters& parameters = parser->parameters;
     list<Allele*> alleles;
 
-    // for now, only estimate probabilities for these genotypes
-    vector<Allele> genotypeAlleles;
-    genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
-    genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
-    genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
-    genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
-    vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
+    // this can be uncommented to force operation on a specific set of genotypes
+    //vector<Allele> genotypeAlleles;
+    //genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
+    //genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
+    //genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
+    //genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
+    //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
     vector<AlleleType> allowedAlleles;
     allowedAlleles.push_back(ALLELE_REFERENCE);
@@ -103,7 +103,31 @@ int main (int argc, char *argv[]) {
         if (alleles.size() == 0)
             continue;
 
-        //cout << "next position: " << parser->currentPosition << endl;
+        // establish a set of possible alternate alleles to evaluate at this location
+        // only evaluate alleles with at least one supporting read with mapping
+        // quality (MQL1) and base quality (BQL1)
+
+        vector<Allele> genotypeAlleles;
+
+        vector<vector<Allele*> > alleleGroups = groupAlleles(alleles, &allelesEquivalent);
+
+        for (vector<vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
+            // for each allele that we're going to evaluate, we have to have at least one supporting read with
+            // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
+            for (vector<Allele*>::iterator a = group->begin(); a != group->end(); ++a) {
+                Allele& allele = **a;
+                if (allele.mapQuality >= parameters.MQL1 && allele.currentQuality() >= parameters.BQL1) {
+                    int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
+                    genotypeAlleles.push_back(genotypeAllele(allele.type, allele.base(), length));
+                    break;
+                }
+            }
+        }
+
+        if (genotypeAlleles.size() <= 1)  // if we have only one viable alternate, we don't have evidence for variation at this site
+            continue;
+
+        vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 

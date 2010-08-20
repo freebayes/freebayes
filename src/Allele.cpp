@@ -266,7 +266,7 @@ bool Allele::equivalent(Allele &b) {
                     return true;
                 break;
             case ALLELE_REFERENCE:
-                if (alternateSequence == b.alternateSequence)
+                if (base() == b.base())
                     return true;
                 break;
             default:
