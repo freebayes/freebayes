@@ -70,18 +70,20 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
 }
 
 string Genotype::relativeGenotype(string& refbase) {
-    string rg;
+    vector<string> rg;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;
         if (refbase != b.base()) {
             for (int j = 0; j < i->second; ++j)
-                rg += "1/";
+                rg.push_back("1/");
         } else {
             for (int j = 0; j < i->second; ++j)
-                rg += "0/";
+                rg.push_back("0/");
         }
     }
-    return rg.substr(0, rg.size() - 1); // chop trailing '/'
+    sort(rg.begin(), rg.end()); // enforces the same ordering for all genotypes
+    string result = accumulate(rg.begin(), rg.end(), string(""));
+    return result.substr(0, result.size() - 1); // chop trailing '/'
 }
 
 bool Genotype::containsAlleleOtherThan(string& base) {
@@ -346,4 +348,16 @@ bool isHomozygousCombo(GenotypeCombo& combo) {
             return false;
     }
     return true;
+}
+
+pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string& refbase, string altbase) {
+    int altcount = 0;
+    int refcount = 0;
+    for (vector<Allele*>::iterator allele = observations.begin(); allele != observations.end(); ++allele) {
+        if ((*allele)->base() == refbase)
+            ++refcount;
+        else if ((*allele)->base() == altbase)
+            ++altcount;
+    }
+    return make_pair(altcount, refcount);
 }

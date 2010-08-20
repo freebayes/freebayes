@@ -9,6 +9,7 @@
 #include <vector>
 #include <iterator>
 #include <math.h>
+#include <numeric>
 #include "Allele.h"
 
 using namespace std;
@@ -99,6 +100,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     int bandwidth, int banddepth);
 
 bool isHomozygousCombo(GenotypeCombo& combo);
+
+pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string& refbase, string altbase);
 
 ostream& operator<<(ostream& out, vector<GenotypeCombo>& combo);
 ostream& operator<<(ostream& out, GenotypeCombo& g);

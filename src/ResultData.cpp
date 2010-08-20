@@ -58,6 +58,8 @@ void vcfHeader(ostream& out,
         << "##FORMAT=GT,1,String,\"Genotype\"" << endl
         << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl
         << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl
+        << "##FORMAT=RA,1,Integer,\"Reference allele observations\"" << endl
+        << "##FORMAT=AA,1,Integer,\"Alternate allele observations\"" << endl
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
@@ -86,7 +88,7 @@ void vcf(ostream& out,
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
         << "NS=" << results.size() << ";" << "DP=" << observedAlleles.size() << ";" << "ESF=" << alleleSamplingProb << "\t" // positional information
-        << "GT:GQ:DP";
+        << "GT:GQ:DP:RA:AA";
 
     // samples
     for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
@@ -95,10 +97,13 @@ void vcf(ostream& out,
             ResultData& sample = s->second;
             pair<Genotype*, long double> bestGenotypeAndProb = sample.bestMarginalGenotype();
             Genotype& bestGenotype = *bestGenotypeAndProb.first;
+            pair<int, int> altAndRefCounts = alternateAndReferenceCount(sample.observations, refbase, alternateBase);
             out << "\t"
                 << bestGenotype.relativeGenotype(refbase)
                 << ":" << float2phred(1 - safe_exp(bestGenotypeAndProb.second))
-                << ":" << sample.observations.size();
+                << ":" << sample.observations.size()
+                << ":" << altAndRefCounts.second
+                << ":" << altAndRefCounts.first;
         } else {
             out << "\t.";
         }
