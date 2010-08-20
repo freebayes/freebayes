@@ -81,6 +81,10 @@ int main (int argc, char *argv[]) {
     genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
+    vector<AlleleType> allowedAlleles;
+    allowedAlleles.push_back(ALLELE_REFERENCE);
+    allowedAlleles.push_back(ALLELE_SNP);
+
     // output VCF header
     // TODO add proper information header fields to this, at present it's just the column and sample names
     if (parameters.output == "vcf") {
@@ -92,6 +96,8 @@ int main (int argc, char *argv[]) {
     // ... optionally provide a threshold of some kind to ignore low-frequency observations that are most likely errors
 
     while (parser->getNextAlleles(alleles)) {
+
+        filterAlleles(alleles, allowedAlleles);
 
         // skips 0-coverage regions
         if (alleles.size() == 0)

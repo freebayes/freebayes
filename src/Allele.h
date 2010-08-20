@@ -195,6 +195,8 @@ private:
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
+void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes);
+
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
 map<string, int> countAllelesString(vector<Allele*>& alleles);
 map<string, int> countAllelesString(vector<Allele>& alleles);

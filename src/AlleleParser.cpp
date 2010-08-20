@@ -441,17 +441,15 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
             "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
-    /*
-    cerr << "alignment cigar: ";
-    int cigarLength = 0;
+    int alignedLength = 0;
     for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin(); c != alignment.CigarData.end(); ++c) {
-        cerr << c->Length << c->Type;
-        cigarLength += c->Length;
+        if (c->Type == 'D')
+            alignedLength += c->Length;
+        if (c->Type == 'M')
+            alignedLength += c->Length;
     }
-    cerr << endl;
-    */
 
-    DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
+    DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignedLength));
 
     /*
      * This should be simpler, but isn't because the cigar only records matches
@@ -518,10 +516,11 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                         string qualstr = rQual.substr(rp - length, length);
                         // record 'reference' allele for last matching region
                         Allele* allele = new Allele(ALLELE_REFERENCE,
-                                currentTarget->seq, sp - length - 1, &currentPosition, length, 
+                                currentTarget->seq, sp - length, &currentPosition, length, 
                                 matchingSequence, readSequence, sampleName, alignment.Name,
                                 !alignment.IsReverseStrand(), -1, qualstr,
                                 alignment.MapQuality);
+                        DEBUG2(allele);
                         ra.alleles.push_back(allele);
                     }
                     // register mismatch
@@ -533,6 +532,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     // calling context
                     Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, &currentPosition, 1, sb, b,
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
+                    DEBUG2(allele);
                     ra.alleles.push_back(allele);
                     firstMatch = csp + 1;
                 }
@@ -548,10 +548,11 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 Allele* allele = new Allele(ALLELE_REFERENCE,
-                        currentTarget->seq, sp - length - 1, &currentPosition, length, 
+                        currentTarget->seq, sp - length, &currentPosition, length, 
                         matchingSequence, readSequence, sampleName, alignment.Name,
                         !alignment.IsReverseStrand(), -1, qualstr,
                         alignment.MapQuality);
+                DEBUG2(allele);
                 ra.alleles.push_back(allele);
             }
             // XXX what about 'N' s?
@@ -570,6 +571,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     currentSequence.substr(csp, l), "", sampleName, alignment.Name,
                     !alignment.IsReverseStrand(), qual, qualstr,
                     alignment.MapQuality);
+            DEBUG2(allele);
             ra.alleles.push_back(allele);
 
             sp += l;  // update sample position
@@ -591,6 +593,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     currentTarget->seq, sp, &currentPosition, l, "", rDna.substr(rp, l),
                     sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                     qualstr, alignment.MapQuality);
+            DEBUG2(allele);
             ra.alleles.push_back(allele);
 
             rp += l;
@@ -616,16 +619,12 @@ void AlleleParser::updateAlignmentQueue(void) {
 
     DEBUG2("updating alignment queue");
 
-    int total = 0;
-
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
     DEBUG2("currentAlignment.Position == " << currentAlignment.Position << ", currentPosition == " << currentPosition);
     if (currentAlignment.Position <= currentPosition) {
         do {
-            ++total;
-            cout << "alignmentName: " << currentAlignment.Name << endl;
             // get read group, and map back to a sample name
             string readGroup;
             if (!currentAlignment.GetTag("RG", readGroup)) {
@@ -669,8 +668,6 @@ void AlleleParser::updateAlignmentQueue(void) {
                                                 /// for reasons i don't fully understand, we have to process alignments with starts <= currentPosition + 1
                                                 //  this is confusing because i thought the BamAlignment.Position is 0-based
     }
-
-    DEBUG2("got " << total << " alignments");
 
     DEBUG2("... finished pushing new alignments");
 

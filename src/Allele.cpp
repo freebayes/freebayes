@@ -629,3 +629,21 @@ bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups
     return false;
 
 }
+
+void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes) {
+
+    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        bool allowed = false;
+        for (vector<AlleleType>::const_iterator t = allowedTypes.begin(); t != allowedTypes.end(); ++t) {
+            if ((*allele)->type == *t) {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed)
+            *allele = NULL;
+    }
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+
+}
+
