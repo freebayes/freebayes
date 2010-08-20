@@ -34,7 +34,7 @@ BgzfData::BgzfData(void)
         CompressedBlock   = new char[CompressedBlockSize];
         UncompressedBlock = new char[UncompressedBlockSize];
     } catch( std::bad_alloc& ba ) {
-        printf("BGZF ERROR: unable to allocate memory for our BGZF object.\n");
+        fprintf(stderr, "BGZF ERROR: unable to allocate memory for our BGZF object.\n");
         exit(1);
     }
 }
@@ -103,7 +103,7 @@ int BgzfData::DeflateBlock(void) {
 
         // initialize the zlib compression algorithm
         if ( deflateInit2(&zs, compressionLevel, Z_DEFLATED, GZIP_WINDOW_BITS, Z_DEFAULT_MEM_LEVEL, Z_DEFAULT_STRATEGY) != Z_OK ) {
-            printf("BGZF ERROR: zlib deflate initialization failed.\n");
+            fprintf(stderr, "BGZF ERROR: zlib deflate initialization failed.\n");
             exit(1);
         }
 
@@ -117,26 +117,26 @@ int BgzfData::DeflateBlock(void) {
             if ( status == Z_OK ) {
                 inputLength -= 1024;
                 if( inputLength < 0 ) {
-                    printf("BGZF ERROR: input reduction failed.\n");
+                    fprintf(stderr, "BGZF ERROR: input reduction failed.\n");
                     exit(1);
                 }
                 continue;
             }
 
-            printf("BGZF ERROR: zlib::deflateEnd() failed.\n");
+            fprintf(stderr, "BGZF ERROR: zlib::deflateEnd() failed.\n");
             exit(1);
         }
 
         // finalize the compression routine
         if ( deflateEnd(&zs) != Z_OK ) {
-            printf("BGZF ERROR: zlib::deflateEnd() failed.\n");
+            fprintf(stderr, "BGZF ERROR: zlib::deflateEnd() failed.\n");
             exit(1);
         }
 
         compressedLength = zs.total_out;
         compressedLength += BLOCK_HEADER_LENGTH + BLOCK_FOOTER_LENGTH;
         if ( compressedLength > MAX_BLOCK_SIZE ) {
-            printf("BGZF ERROR: deflate overflow.\n");
+            fprintf(stderr, "BGZF ERROR: deflate overflow.\n");
             exit(1);
         }
 
@@ -156,7 +156,7 @@ int BgzfData::DeflateBlock(void) {
     int remaining = BlockOffset - inputLength;
     if ( remaining > 0 ) {
         if ( remaining > inputLength ) {
-            printf("BGZF ERROR: after deflate, remainder too large.\n");
+            fprintf(stderr, "BGZF ERROR: after deflate, remainder too large.\n");
             exit(1);
         }
         memcpy(UncompressedBlock, UncompressedBlock + inputLength, remaining);
@@ -179,7 +179,7 @@ void BgzfData::FlushBlock(void) {
         int numBytesWritten = fwrite(CompressedBlock, 1, blockLength, Stream);
 
         if ( numBytesWritten != blockLength ) {
-          printf("BGZF ERROR: expected to write %u bytes during flushing, but wrote %u bytes.\n", blockLength, numBytesWritten);
+          fprintf(stderr, "BGZF ERROR: expected to write %u bytes during flushing, but wrote %u bytes.\n", blockLength, numBytesWritten);
           exit(1);
         }
               
@@ -201,20 +201,20 @@ int BgzfData::InflateBlock(const int& blockLength) {
 
     int status = inflateInit2(&zs, GZIP_WINDOW_BITS);
     if ( status != Z_OK ) {
-        printf("BGZF ERROR: could not decompress block - zlib::inflateInit() failed\n");
+        fprintf(stderr, "BGZF ERROR: could not decompress block - zlib::inflateInit() failed\n");
         return -1;
     }
 
     status = inflate(&zs, Z_FINISH);
     if ( status != Z_STREAM_END ) {
         inflateEnd(&zs);
-        printf("BGZF ERROR: could not decompress block - zlib::inflate() failed\n");
+        fprintf(stderr, "BGZF ERROR: could not decompress block - zlib::inflate() failed\n");
         return -1;
     }
 
     status = inflateEnd(&zs);
     if ( status != Z_OK ) {
-        printf("BGZF ERROR: could not decompress block - zlib::inflateEnd() failed\n");
+        fprintf(stderr, "BGZF ERROR: could not decompress block - zlib::inflateEnd() failed\n");
         return -1;
     }
 
@@ -230,7 +230,7 @@ bool BgzfData::Open(const string& filename, const char* mode, bool isWriteUncomp
     else if ( strcmp(mode, "wb") == 0) 
         IsWriteOnly = true;
     else {
-        printf("BGZF ERROR: unknown file mode: %s\n", mode);
+        fprintf(stderr, "BGZF ERROR: unknown file mode: %s\n", mode);
         return false; 
     }
 
@@ -251,7 +251,7 @@ bool BgzfData::Open(const string& filename, const char* mode, bool isWriteUncomp
         Stream = freopen(NULL, mode, stdout);
 
     if ( !Stream ) {
-        printf("BGZF ERROR: unable to open file %s\n", filename.c_str() );
+        fprintf(stderr, "BGZF ERROR: unable to open file %s\n", filename.c_str() );
         return false;
     }
     
@@ -308,12 +308,12 @@ bool BgzfData::ReadBlock(void) {
     }
 
     if ( count != sizeof(header) ) {
-        printf("BGZF ERROR: read block failed - could not read block header\n");
+        fprintf(stderr, "BGZF ERROR: read block failed - could not read block header\n");
         return false;
     }
 
     if ( !BgzfData::CheckBlockHeader(header) ) {
-        printf("BGZF ERROR: read block failed - invalid block header\n");
+        fprintf(stderr, "BGZF ERROR: read block failed - invalid block header\n");
         return false;
     }
 
@@ -324,13 +324,13 @@ bool BgzfData::ReadBlock(void) {
 
     count = fread(&compressedBlock[BLOCK_HEADER_LENGTH], 1, remaining, Stream);
     if ( count != remaining ) {
-        printf("BGZF ERROR: read block failed - could not read data from block\n");
+        fprintf(stderr, "BGZF ERROR: read block failed - could not read data from block\n");
         return false;
     }
 
     count = InflateBlock(blockLength);
     if ( count < 0 ) { 
-      printf("BGZF ERROR: read block failed - could not decompress block data\n");
+      fprintf(stderr, "BGZF ERROR: read block failed - could not decompress block data\n");
       return false;
     }
 
@@ -351,7 +351,7 @@ bool BgzfData::Seek(int64_t position) {
     int64_t blockAddress = (position >> 16) & 0xFFFFFFFFFFFFLL;
 
     if ( fseek64(Stream, blockAddress, SEEK_SET) != 0 ) {
-        printf("BGZF ERROR: unable to seek in file\n");
+        fprintf(stderr, "BGZF ERROR: unable to seek in file\n");
         return false;
     }
 

@@ -213,8 +213,8 @@ bool BamDefaultIndex::Build(void) {
 
         // if lastCoordinate greater than BAM position - file not sorted properly
         else if ( lastCoordinate > bAlignment.Position ) {
-            printf("BAM file not properly sorted:\n");
-            printf("Alignment %s : %d > %d on reference (id = %d)", bAlignment.Name.c_str(), lastCoordinate, bAlignment.Position, bAlignment.RefID);
+            fprintf(stderr, "BAM file not properly sorted:\n");
+            fprintf(stderr, "Alignment %s : %d > %d on reference (id = %d)", bAlignment.Name.c_str(), lastCoordinate, bAlignment.Position, bAlignment.RefID);
             exit(1);
         }
 
@@ -255,7 +255,7 @@ bool BamDefaultIndex::Build(void) {
 
         // make sure that current file pointer is beyond lastOffset
         if ( m_BGZF->Tell() <= (int64_t)lastOffset ) {
-            printf("Error in BGZF offsets.\n");
+            fprintf(stderr, "Error in BGZF offsets.\n");
             exit(1);
         }
 
@@ -397,7 +397,7 @@ bool BamDefaultIndex::Load(const string& filename)  {
     // open index file, abort on error
     FILE* indexStream = fopen(filename.c_str(), "rb");
     if( !indexStream ) {
-        printf("ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
+        fprintf(stderr, "ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
         return false;
     }
 
@@ -408,7 +408,7 @@ bool BamDefaultIndex::Load(const string& filename)  {
     char magic[4];
     elementsRead = fread(magic, 1, 4, indexStream);
     if ( strncmp(magic, "BAI\1", 4) ) {
-        printf("Problem with index file - invalid format.\n");
+        fprintf(stderr, "Problem with index file - invalid format.\n");
         fclose(indexStream);
         return false;
     }
@@ -578,7 +578,7 @@ bool BamDefaultIndex::Write(const std::string& bamFilename) {
     string indexFilename = bamFilename + ".bai";
     FILE* indexStream = fopen(indexFilename.c_str(), "wb");
     if ( indexStream == 0 ) {
-        printf("ERROR: Could not open file to save index.\n");
+        fprintf(stderr, "ERROR: Could not open file to save index.\n");
         return false;
     }
 
@@ -810,7 +810,7 @@ bool BamToolsIndex::Load(const string& filename) {
     // open index file, abort on error
     FILE* indexStream = fopen(filename.c_str(), "rb");
     if( !indexStream ) {
-        printf("ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
+        fprintf(stderr, "ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
         return false;
     }
 
@@ -821,7 +821,7 @@ bool BamToolsIndex::Load(const string& filename) {
     char magic[4];
     elementsRead = fread(magic, 1, 4, indexStream);
     if ( strncmp(magic, "BTI\1", 4) ) {
-        printf("Problem with index file - invalid format.\n");
+        fprintf(stderr, "Problem with index file - invalid format.\n");
         fclose(indexStream);
         return false;
     }
@@ -876,7 +876,7 @@ bool BamToolsIndex::Write(const std::string& bamFilename) {
     string indexFilename = bamFilename + ".bti";
     FILE* indexStream = fopen(indexFilename.c_str(), "wb");
     if ( indexStream == 0 ) {
-        printf("ERROR: Could not open file to save index.\n");
+        fprintf(stderr, "ERROR: Could not open file to save index.\n");
         return false;
     }
 
