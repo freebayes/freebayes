@@ -44,17 +44,29 @@ void AlleleParser::openBams(void) {
 
 void AlleleParser::openLogFile(void) {
 
-    logFile.open(parameters.log.c_str(), ios::out);
     if (parameters.record) {
-        if (parameters.debug) {cerr << "Opening log file: " << parameters.log << " ...";}
-
+        logFile.open(parameters.log.c_str(), ios::out);
+        DEBUG(cerr << "Opening log file: " << parameters.log << " ...");
         if (!logFile) {
             ERROR(" unable to open file: " << parameters.log);
             exit(1);
         }
-        if (parameters.debug) {cerr << " done." << endl;}
     }
-    // previously we wrote the command to the logfile here
+    // NB previously we wrote the program invocation command to the logfile here
+}
+
+void AlleleParser::openOutputFile(void) {
+    if (parameters.outputFile != "") {
+        outputFile.open(parameters.outputFile.c_str(), ios::out);
+        DEBUG("Opening output file: " << parameters.outputFile << " ...");
+        if (!outputFile) {
+            ERROR(" unable to open file: " << parameters.outputFile);
+            exit(1);
+        }
+        output = &outputFile;
+    } else {
+        output = &cout;
+    }
 }
 
 // read sample list file or get sample names from bam file header
@@ -387,6 +399,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // this separation is done to improve legibility and debugging
     // perhaps it will just increase confusion
     openLogFile();
+    openOutputFile();
     openBams();
     getSampleNames();
     loadFastaReference();

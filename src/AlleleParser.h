@@ -119,6 +119,7 @@ public:
  
     void openBams(void);
     void openLogFile(void);
+    void openOutputFile(void);
     void getSampleNames(void);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
@@ -176,9 +177,11 @@ public:
     long unsigned int currentPosition;  // 0-based current position
     string currentReferenceBase();
 
-private:
     // output files
-    ofstream rptFile, vcfFile, logFile;
+    ofstream logFile, outputFile;
+    ostream* output;
+
+private:
 
     string currentSequence;
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target

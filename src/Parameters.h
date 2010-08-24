@@ -61,7 +61,7 @@ public:
     string samples;
     string log;
     string output;
-    string vcf;
+    string outputFile;
 
     // operation parameters
     bool useRefAllele;

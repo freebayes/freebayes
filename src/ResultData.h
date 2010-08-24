@@ -60,7 +60,7 @@ public:
     }
 
     friend void json(ostream& out, Results& results, AlleleParser* parser);
-    friend void vcf(ostream& out,
+    friend string vcf(
             long double comboProb,
             long double alleleSamplingProb,
             string alternateBase,

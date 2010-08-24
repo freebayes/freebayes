@@ -68,7 +68,7 @@ void vcfHeader(ostream& out,
 
 }
 
-void vcf(ostream& out,
+string vcf(
         long double comboProb,
         long double alleleSamplingProb,
         string alternateBase,
@@ -76,6 +76,8 @@ void vcf(ostream& out,
         list<Allele*> observedAlleles,
         Results& results,
         AlleleParser* parser) {
+
+    stringstream out;
 
     // count alternate alleles in the best genotyping
     int alternateCount = 0;
@@ -122,6 +124,8 @@ void vcf(ostream& out,
             out << "\t.";
         }
     }
+
+    return out.str();
 }
 
 pair<Genotype*, long double> ResultData::bestMarginalGenotype(void) {

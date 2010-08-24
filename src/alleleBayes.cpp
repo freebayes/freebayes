@@ -73,6 +73,8 @@ int main (int argc, char *argv[]) {
     Parameters& parameters = parser->parameters;
     list<Allele*> alleles;
 
+    ostream& out = *(parser->output);
+
     // this can be uncommented to force operation on a specific set of genotypes
     //vector<Allele> genotypeAlleles;
     //genotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
@@ -90,7 +92,7 @@ int main (int argc, char *argv[]) {
     // output VCF header
     // TODO add proper information header fields to this, at present it's just the column and sample names
     if (parameters.output == "vcf") {
-        vcfHeader(cout, parser->reference->filename, parser->sampleList);
+        vcfHeader(out, parser->reference->filename, parser->sampleList);
     }
 
     // TODO
@@ -167,7 +169,7 @@ int main (int argc, char *argv[]) {
         if (filteredGenotypeAlleles.size() <= 1)  // if we have only one viable alternate, we don't have evidence for variation at this site
             continue;
 
-        cerr << filteredGenotypeAlleles << endl;
+        //cerr << filteredGenotypeAlleles << endl;
 
         vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, filteredGenotypeAlleles);
 
@@ -380,7 +382,7 @@ int main (int argc, char *argv[]) {
             //cerr << parser->currentPosition << " " << alleles.size() << " " << bestGenotypeComboProb << " " << genotypeComboProbs.front().second << " " <<  posteriorNormalizer << endl;
 
             if (parameters.output == "json") {
-                cout << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
+                out << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
                     << ", \"sequence\": " << parser->currentTarget->seq
                     << ", \"best_genotype_combo\":" << bestGenotypeCombo
                     << ", \"combos_tested\":" << bandedCombos.size()
@@ -389,8 +391,8 @@ int main (int argc, char *argv[]) {
                     << ", \"posterior_normalizer\":" << safe_exp(posteriorNormalizer)
                     << ", \"ewens_sampling_probability\":" << bestAlleleSamplingProb
                     << ", \"samples\":";
-                json(cout, results, parser);
-                cout << "}" << endl;
+                json(out, results, parser);
+                out << "}" << endl;
 
             }
             if (pVar >= parameters.PVL) {
@@ -406,13 +408,13 @@ int main (int argc, char *argv[]) {
                         Genotype* g = sample.bestMarginalGenotype().first;
                         vector<Allele> alternates = g->alternateAlleles(referenceBase);
                         if (alternates.size() > 0) {
-                            vcf(cout, 
+                            out << vcf( 
                                 pVar,
                                 bestAlleleSamplingProb,
                                 alternates.front().base(),
                                 parser->sampleList, 
-                                alleles, results, parser);
-                            cout << endl;
+                                alleles, results, parser)
+                                << endl;
                             break;
                         }
                     }
