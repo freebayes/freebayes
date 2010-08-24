@@ -296,6 +296,7 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     fread(seq, sizeof(char), (off_t) seqlen, file);
     seq[seqlen] = '\0';
     string s = seq;
+    free(seq);
     boost::erase_all(s, "\n");
     return s;
 }
