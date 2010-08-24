@@ -10,6 +10,10 @@ short qualityChar2ShortInt(char c) {
     return static_cast<short>(c) - 33;
 }
 
+char qualityInt2Char(short i) {
+    return static_cast<char>(i + 33);
+}
+
 long double phred2ln(int qual) {
     return M_LN10 * qual * -.1;
 }

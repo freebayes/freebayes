@@ -68,6 +68,9 @@ string Allele::typeStr(void) {
 inline
 const string Allele::base(void) const { // the base of this allele
 
+    if (genotypeAllele)
+        return alternateSequence;
+
     switch (this->type) {
         case ALLELE_GENOTYPE:
             return alternateSequence;
@@ -108,16 +111,10 @@ string stringForAllele(Allele &allele) {
             << allele.qualityString << "\t"
             << allele.quality << "\t" << endl;
     } else {
-        out << allele.typeStr() << "\t";
-        switch (allele.type) {
-            case ALLELE_REFERENCE:
-                break;
-            default:
-                out << allele.length << "\t"
-                    << allele.alternateSequence;
-                break;
-        }
-        out << endl;
+        out << allele.typeStr() << "\t"
+            << allele.length << "\t"
+            << allele.alternateSequence
+            << endl;
     }
 
     return out.str();
@@ -210,24 +207,19 @@ ostream &operator<<(ostream &out, Allele* &allele) {
 ostream &operator<<(ostream &out, Allele &allele) {
 
     if (!allele.genotypeAllele) {
-            // << &allele << ":" 
-            out << allele.readID 
-                << ":" << allele.typeStr() 
-                << ":" << allele.length 
-                << ":" << allele.position 
-                << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
-                << ":" << allele.alternateSequence
-                << ":" << allele.referenceSequence
-                << ":" << allele.quality;
+        // << &allele << ":" 
+        out << allele.readID 
+            << ":" << allele.typeStr() 
+            << ":" << allele.length 
+            << ":" << allele.position 
+            << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
+            << ":" << allele.alternateSequence
+            << ":" << allele.referenceSequence
+            << ":" << allele.quality;
     } else {
-        out << allele.typeStr();
-        switch (allele.type) {
-            case ALLELE_REFERENCE:
-                break;
-            default:
-                out << ":" << allele.length << ":" << (string) allele.alternateSequence;
-                break;
-        }
+        out << allele.typeStr() 
+            << ":" << allele.length 
+            << ":" << (string) allele.alternateSequence;
     }
     return out;
 }

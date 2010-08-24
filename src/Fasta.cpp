@@ -258,7 +258,8 @@ string FastaReference::sequenceNameStartingWith(string seqnameStart) {
                 result = it->name;
             } else {
                 cerr << " is not unique in fasta index" << endl;
-                return "";
+                exit(1);
+                //return "";
             }
         }
     }
@@ -266,7 +267,8 @@ string FastaReference::sequenceNameStartingWith(string seqnameStart) {
         return result;
     } else {
         cerr << "could not find sequence named " << seqnameStart << endl;
-        return ""; // XXX returning an empty string is an unclear result; should raise an error!!!
+        exit(1);
+        //return ""; // XXX returning an empty string is an unclear result; should raise an error!!!
     }
 }
 

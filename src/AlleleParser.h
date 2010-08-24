@@ -1,5 +1,5 @@
-#ifndef _CALLER_H
-#define _CALLER_H
+#ifndef _ALLELE_PARSER_H
+#define _ALLELE_PARSER_H
 
 #include <iostream>
 #include <fstream>
@@ -142,6 +142,7 @@ public:
     int currentSequencePosition(const BamAlignment& alignment);
     bool getNextAlleles(list<Allele*>& alleles);
     void getAlleles(list<Allele*>& alleles);
+    Allele* referenceAllele(int mapQ, int baseQ);
 
     // TODO clean these up...
     // p( observedAlleles | genotype ) for all genotypes

@@ -84,6 +84,8 @@ int main (int argc, char *argv[]) {
     vector<AlleleType> allowedAlleles;
     allowedAlleles.push_back(ALLELE_REFERENCE);
     allowedAlleles.push_back(ALLELE_SNP);
+    //allowedAlleles.push_back(ALLELE_INSERTION);
+    //allowedAlleles.push_back(ALLELE_DELETION);
 
     // output VCF header
     // TODO add proper information header fields to this, at present it's just the column and sample names
@@ -94,6 +96,11 @@ int main (int argc, char *argv[]) {
     // TODO
     // ... only process potential genotypes for which we have some number of observations
     // ... optionally provide a threshold of some kind to ignore low-frequency observations that are most likely errors
+    
+    // we use this to force the reference allele into the analysis, which
+    // allows us to detect rare variants in which the reference allele is the
+    // only instance in our data
+    Allele* referenceAllele;
 
     while (parser->getNextAlleles(alleles)) {
 
@@ -103,6 +110,12 @@ int main (int argc, char *argv[]) {
         if (alleles.size() == 0)
             continue;
 
+        // add the reference allele to the analysis if we are specified to
+        if (parameters.useRefAllele) {
+            referenceAllele = parser->referenceAllele(parameters.MQR, parameters.BQR);
+            alleles.push_back(referenceAllele);
+        }
+
         // establish a set of possible alternate alleles to evaluate at this location
         // only evaluate alleles with at least one supporting read with mapping
         // quality (MQL1) and base quality (BQL1)
@@ -110,6 +123,8 @@ int main (int argc, char *argv[]) {
         vector<Allele> genotypeAlleles;
 
         vector<vector<Allele*> > alleleGroups = groupAlleles(alleles, &allelesEquivalent);
+
+        map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 
         for (vector<vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
             // for each allele that we're going to evaluate, we have to have at least one supporting read with
@@ -124,17 +139,42 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        if (genotypeAlleles.size() <= 1)  // if we have only one viable alternate, we don't have evidence for variation at this site
+        vector<Allele> filteredGenotypeAlleles;
+
+        // remove genotypeAlleles for which we don't have any individuals with sufficient alternate observations
+        for (vector<Allele>::iterator genotypeAllele = genotypeAlleles.begin();
+                genotypeAllele != genotypeAlleles.end(); ++genotypeAllele) {
+
+            for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
+                    sample != sampleGroups.end(); ++sample) {
+
+                vector<Allele*>& observedAlleles = sample->second;
+                int alleleCount = 0;
+                for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
+                    if (**a == *genotypeAllele)
+                        ++alleleCount;
+                    if (alleleCount >= parameters.minAltCount 
+                            && (float) alleleCount / (float) observedAlleles.size() >= parameters.minAltFraction) {
+                        filteredGenotypeAlleles.push_back(*genotypeAllele);
+                        goto hasSufficient;
+                    }
+                }
+            }
+            hasSufficient:
+            ;
+        }
+
+        if (filteredGenotypeAlleles.size() <= 1)  // if we have only one viable alternate, we don't have evidence for variation at this site
             continue;
 
-        vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
+        cerr << filteredGenotypeAlleles << endl;
 
-        map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
+        vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, filteredGenotypeAlleles);
 
         // continue in the case that no individual has more than some
         // fraction of alternate allele observations ...  (default is 0.1)
-        if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction))
-            continue;
+        //if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction))
+         //   continue;
 
         Results results;
 
@@ -380,6 +420,9 @@ int main (int argc, char *argv[]) {
             }
             
         }
+
+        if (parameters.useRefAllele)
+            delete referenceAllele;
 
     }
 

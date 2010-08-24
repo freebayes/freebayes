@@ -15,6 +15,7 @@ using namespace std;
 
 long double factorial(int);
 short qualityChar2ShortInt(char c);
+char qualityInt2Char(short i);
 //long double phred2float(int qual);
 long double phred2ln(int qual);
 int ln2phred(long double prob);

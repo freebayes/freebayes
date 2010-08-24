@@ -856,4 +856,17 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
     // as we always sort them by sample later
 }
 
-
+Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
+    string base = currentReferenceBase();
+    string name = reference->filename;
+    string baseQstr = "";
+    baseQstr += qualityInt2Char(baseQ);
+    return new Allele(ALLELE_REFERENCE, 
+            currentSequence,
+            currentPosition,
+            &currentPosition, 
+            1, base, base, name, name,
+            true, baseQ,
+            baseQstr,
+            mapQ);
+}

@@ -77,6 +77,17 @@ void vcf(ostream& out,
         Results& results,
         AlleleParser* parser) {
 
+    // count alternate alleles in the best genotyping
+    int alternateCount = 0;
+    for (Results::iterator s = results.begin(); s != results.end(); ++s) {
+        ResultData& sample = s->second;
+        Genotype* genotype = sample.bestMarginalGenotype().first;
+        for (Genotype::iterator g = genotype->begin(); g != genotype->end(); ++g) {
+            if (g->first.base() == alternateBase)
+                ++alternateCount;
+        }
+    }
+
     string refbase = parser->currentReferenceBase();
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
@@ -87,7 +98,10 @@ void vcf(ostream& out,
         << alternateBase << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
-        << "NS=" << results.size() << ";" << "DP=" << observedAlleles.size() << ";" << "ESF=" << alleleSamplingProb << "\t" // positional information
+        << "NS=" << results.size() << ";"
+        << "DP=" << observedAlleles.size() << ";"
+        << "AC=" << alternateCount << ";"
+        << "ESF=" << alleleSamplingProb << "\t" // positional information
         << "GT:GQ:DP:RA:AA";
 
     // samples
