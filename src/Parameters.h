@@ -60,6 +60,8 @@ public:
     string targets;
     string samples;
     string log;
+    string output;
+    string vcf;
 
     // operation parameters
     bool useRefAllele;
@@ -93,7 +95,6 @@ public:
     bool debug;
     bool debug2;
     bool record;
-    string output;
 
     // functions
     Parameters(int argc, char** argv);

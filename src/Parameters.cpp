@@ -241,12 +241,25 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_samples(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
+    // output file: VCF output file
+    ArgStruct argVcf;
+    arg = argVcf; 
+    arg.shortId = ""; 
+    arg.longId = "vcf"; 
+    arg.description = "VCF output file";
+    arg.required = false; 
+    arg.defaultValueString = ""; 
+    arg.type = "string"; 
+    arg.multi = false; 
+    my.ArgList.push_back(arg);
+    ValueArg<string> cmd_vcf(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+
     // output option: output information about all alleles contributing to a given genotyping position
     ArgStruct argOutput;
     arg = argOutput; 
     arg.shortId = ""; 
     arg.longId = "output"; 
-    arg.description = "Output option: output format, json or vcf";
+    arg.description = "Output option: stdout output format, json or vcf";
     arg.required = false; 
     arg.defaultValueString = "vcf"; 
     arg.type = "string"; 
@@ -733,6 +746,7 @@ Parameters::Parameters (int argc, char** argv) {
     fasta = cmd_fasta.getValue();
     targets = cmd_targets.getValue();
     samples = cmd_samples.getValue();
+    vcf = cmd_vcf.getValue();
     log = cmd_log.getValue();
     output = cmd_output.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
