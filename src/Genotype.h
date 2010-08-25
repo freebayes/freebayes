@@ -62,7 +62,7 @@ public:
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
     string str(void);
-    string relativeGenotype(string& refbase);
+    string relativeGenotype(string& refbase, string& altbase);
     bool homozygous(void);
     vector<int> alleleCountsInObservations(vector<Allele*> observations);
     /*

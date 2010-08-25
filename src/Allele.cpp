@@ -524,6 +524,8 @@ bool allelesEquivalent(Allele &a, Allele &b) { return a.equivalent(b); }
 
 bool allelesSameSample(Allele &a, Allele &b) { return a.sampleID == b.sampleID; }
 
+bool allelesEqual(Allele &a, Allele &b) { return a == b; }
+
 vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups) {
 
     vector<Allele> results;

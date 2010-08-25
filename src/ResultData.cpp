@@ -115,7 +115,7 @@ string vcf(
             Genotype& bestGenotype = *bestGenotypeAndProb.first;
             pair<int, int> altAndRefCounts = alternateAndReferenceCount(sample.observations, refbase, alternateBase);
             out << "\t"
-                << bestGenotype.relativeGenotype(refbase)
+                << bestGenotype.relativeGenotype(refbase, alternateBase)
                 << ":" << float2phred(1 - safe_exp(bestGenotypeAndProb.second))
                 << ":" << sample.observations.size()
                 << ":" << altAndRefCounts.second

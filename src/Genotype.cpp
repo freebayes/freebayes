@@ -69,11 +69,11 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
     return alleles;
 }
 
-string Genotype::relativeGenotype(string& refbase) {
+string Genotype::relativeGenotype(string& refbase, string& altbase) {
     vector<string> rg;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;
-        if (refbase != b.base()) {
+        if (b.base() == altbase && refbase != b.base()) {
             for (int j = 0; j < i->second; ++j)
                 rg.push_back("1/");
         } else {

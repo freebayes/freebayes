@@ -410,9 +410,11 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     //toNextRefID(); // initializes currentRefID
     //toFirstTargetPosition(); // initializes currentTarget, currentAlignment
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
+    currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
 }
 
 AlleleParser::~AlleleParser(void) {
+    if (currentReferenceAllele != NULL) delete currentReferenceAllele;
     delete reference;
 }
 
@@ -687,7 +689,6 @@ void AlleleParser::updateAlignmentQueue(void) {
     // pop from the back until we get to an alignment that overlaps our current position
     if (registeredAlignmentQueue.size() > 0) {
         BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-        // is indexing (0 or 1 based) oK here?
         while (currentPosition >= alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
             DEBUG2("popping alignment");
             registeredAlignmentQueue.pop_back();
@@ -768,6 +769,7 @@ bool AlleleParser::loadTarget(BedData* target) {
             currentTarget->seq << " " << currentTarget->left << " " <<
             currentTarget->right);
     DEBUG2("clearing alignment queue");
+
     registeredAlignmentQueue.clear(); // clear our alignment deque on jumps
 
     DEBUG2("loading target reference subsequence");
@@ -845,8 +847,16 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
 
     // this is inefficient but no method besides shared_ptr exists to guarantee
     // that we don't end up with corrupted alleles in this structure-- we won't
-    // be able to remove them if we recycle them elsewhere
+    // be able to remove them if we recycle them elsewhere, so it will stay
+    // this way until i can implement shared_ptr...
     alleles.clear();
+
+    // add the reference allele to the analysis
+    if (parameters.useRefAllele) {
+        if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
+        currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
+        alleles.push_back(currentReferenceAllele);
+    }
 
     // get the variant alleles *at* the current position
     // and the reference alleles *overlapping* the current position
@@ -875,7 +885,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string baseQstr = "";
     baseQstr += qualityInt2Char(baseQ);
     return new Allele(ALLELE_REFERENCE, 
-            currentSequence,
+            currentTarget->seq,
             currentPosition,
             &currentPosition, 
             1, base, base, name, name,

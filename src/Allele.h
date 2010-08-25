@@ -211,6 +211,7 @@ bool allelesSameSample(Allele* &a, Allele* &b);
 bool allelesSameType(Allele &a, Allele &b);
 bool allelesEquivalent(Allele &a, Allele &b);
 bool allelesSameSample(Allele &a, Allele &b);
+bool allelesEqual(Allele &a, Allele &b);
 
 // is there a way to template these?  difficult as the syntax for pointer-based comparisons is different than non-pointer
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));

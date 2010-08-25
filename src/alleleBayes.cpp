@@ -112,12 +112,6 @@ int main (int argc, char *argv[]) {
         if (alleles.size() == 0)
             continue;
 
-        // add the reference allele to the analysis if we are specified to
-        if (parameters.useRefAllele) {
-            referenceAllele = parser->referenceAllele(parameters.MQR, parameters.BQR);
-            alleles.push_back(referenceAllele);
-        }
-
         // establish a set of possible alternate alleles to evaluate at this location
         // only evaluate alleles with at least one supporting read with mapping
         // quality (MQL1) and base quality (BQL1)
@@ -155,15 +149,17 @@ int main (int argc, char *argv[]) {
                 for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
                     if (**a == *genotypeAllele)
                         ++alleleCount;
-                    if (alleleCount >= parameters.minAltCount 
-                            && (float) alleleCount / (float) observedAlleles.size() >= parameters.minAltFraction) {
-                        filteredGenotypeAlleles.push_back(*genotypeAllele);
-                        goto hasSufficient;
-                    }
+                }
+                if (alleleCount >= parameters.minAltCount 
+                        && (float) alleleCount / (float) observedAlleles.size() >= parameters.minAltFraction) {
+                    //cerr << *genotypeAllele << " has support of " << alleleCount 
+                    //    << " in individual " << sample->first << " and fraction " 
+                    //    << (float) alleleCount / (float) observedAlleles.size() << endl;
+                    filteredGenotypeAlleles.push_back(*genotypeAllele);
+                    goto hasSufficient;
                 }
             }
-            hasSufficient:
-            ;
+            hasSufficient: ;
         }
 
         if (filteredGenotypeAlleles.size() <= 1)  // if we have only one viable alternate, we don't have evidence for variation at this site
@@ -400,31 +396,30 @@ int main (int argc, char *argv[]) {
                     bool hasVariant = false;
                     string alternateBase;
                     string referenceBase = parser->currentReferenceBase();
+                    // get the set of unique alternate alleles at this site
+                    map<Allele, bool> alternates;
                     for (Results::iterator r = results.begin(); r != results.end(); ++r) {
-                        // todo FIXME
-                        // this will only print the first alternate allele
-                        // tri-allelics do happen....
                         ResultData& sample = r->second; 
                         Genotype* g = sample.bestMarginalGenotype().first;
-                        vector<Allele> alternates = g->alternateAlleles(referenceBase);
-                        if (alternates.size() > 0) {
-                            out << vcf( 
-                                pVar,
+                        vector<Allele> alts = g->alternateAlleles(referenceBase);
+                        for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a)
+                            alternates[*a] = true;
+                    }
+                    // for each unique alternate allele, output a line of vcf
+                    for (map<Allele, bool>::iterator alt = alternates.begin(); alt != alternates.end(); ++alt) {
+                        out << vcf(pVar,
                                 bestAlleleSamplingProb,
-                                alternates.front().base(),
-                                parser->sampleList, 
-                                alleles, results, parser)
-                                << endl;
-                            break;
-                        }
+                                alt->first.base(),
+                                parser->sampleList,
+                                alleles,
+                                results,
+                                parser)
+                            << endl;
                     }
                 }
             }
             
         }
-
-        if (parameters.useRefAllele)
-            delete referenceAllele;
 
     }
 

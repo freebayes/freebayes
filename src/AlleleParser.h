@@ -183,6 +183,8 @@ public:
 
 private:
 
+    Allele* currentReferenceAllele;
+
     string currentSequence;
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
     int basesAfterCurrentTarget;  // ........................................  after ...................
