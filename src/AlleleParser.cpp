@@ -819,7 +819,9 @@ bool AlleleParser::toNextTargetPosition(void) {
     } else {
         ++currentPosition;
     }
-    if (currentPosition >= currentTarget->right - 1) { // time to move to a new target
+    if (currentPosition >= currentTarget->right) { // time to move to a new target
+    //                                        ^^ assumes we are 1-based half-open, e.g. including the end base of the target
+    //                                        ^^ add -1 here to exclude the end base in analysis
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             DEBUG("no more valid targets, finishing");
