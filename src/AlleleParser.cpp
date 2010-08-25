@@ -364,6 +364,11 @@ void AlleleParser::loadTargets(void) {
         targets.push_back(bd);
         targetCount++;
     }
+
+    if (targets.size() == 0) {
+        ERROR("Could not load any targets from " << parameters.targets);
+        exit(1);
+    }
     
     bedReader.close();
 
