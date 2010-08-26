@@ -146,16 +146,16 @@ string json(Allele& allele) {
     if (!allele.genotypeAllele) {
         out << "{\"id\":\"" << allele.readID << "\""
             << ",\"type\":\"" << allele.typeStr() << "\""
-            << ",\"length\":" << allele.length 
+            << ",\"length\":" << ((allele.type == ALLELE_REFERENCE) ? 1 : allele.length)
             << ",\"position\":" << allele.position 
             << ",\"strand\":\"" << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\"";
         if (allele.type == ALLELE_REFERENCE ) {
-            out << ",\"alt\":\"" << allele.alternateSequence.at(referenceOffset) << "\""
-                << ",\"reference\":\"" << allele.referenceSequence.at(referenceOffset) << "\""
+            out << ",\"base\":\"" << allele.alternateSequence.at(referenceOffset) << "\""
+                //<< ",\"reference\":\"" << allele.referenceSequence.at(referenceOffset) << "\""
                 << ",\"quality\":" << allele.currentQuality();
         } else {
-            out << ",\"alt\":\"" << allele.alternateSequence << "\""
-                << ",\"reference\":\"" << allele.referenceSequence << "\""
+            out << ",\"base\":\"" << allele.alternateSequence << "\""
+                //<< ",\"reference\":\"" << allele.referenceSequence << "\""
                 << ",\"quality\":" << allele.quality;
         }
         out << "}";

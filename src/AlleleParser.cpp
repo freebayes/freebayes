@@ -412,9 +412,6 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 {
 
     // initialization
-    // NOTE: these void functions have side effects, and currently have to be called in this order
-    // this separation is done to improve legibility and debugging
-    // perhaps it will just increase confusion
     openLogFile();
     openTraceFile();
     openOutputFile();
@@ -425,14 +422,13 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     loadTargets();
 
     currentRefID = 0; // will get set properly via toNextRefID
-    //toNextRefID(); // initializes currentRefID
-    //toFirstTargetPosition(); // initializes currentTarget, currentAlignment
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
     currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
+
 }
 
 AlleleParser::~AlleleParser(void) {
-    // close?
+    // close trace file?  seems to get closed properly on object deletion...
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
     delete reference;
 }

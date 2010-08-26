@@ -58,7 +58,16 @@ int main (int argc, char *argv[]) {
     AlleleParser* parser = new AlleleParser(argc, argv);
     list<Allele*> alleles;
 
+    vector<AlleleType> allowedAlleles;
+    allowedAlleles.push_back(ALLELE_REFERENCE);
+    allowedAlleles.push_back(ALLELE_SNP);
+    //allowedAlleles.push_back(ALLELE_INSERTION);
+    //allowedAlleles.push_back(ALLELE_DELETION);
+
     while (parser->getNextAlleles(alleles)) {
+
+        filterAlleles(alleles, allowedAlleles);
+
         // skips 0-coverage regions
         if (alleles.size() == 0)
             continue;
@@ -70,6 +79,7 @@ int main (int argc, char *argv[]) {
         cout << "{\"sequence\":\"" << parser->currentTarget->seq << "\","
             << "\"total coverage\":" << alleles.size() << ","
             << "\"position\":" << parser->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
+            << "\"reference base\":\"" << parser->currentReferenceBase() << "\","
             //<< "\"raDepth\":" << parser->registeredAlleles.size() << ","
             << "\"samples\":{";  // TODO ... quality (~pSnp)
 
