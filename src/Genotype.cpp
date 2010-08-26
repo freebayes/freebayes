@@ -127,7 +127,9 @@ string Genotype::str(void) {
 }
 
 ostream& operator<<(ostream& out, const pair<Allele, int>& rhs) {
-    out << rhs.first.alternateSequence << rhs.second;
+    //out << rhs.first.alternateSequence << rhs.second;
+    for (int i = 0; i < rhs.second; ++i)
+        out << rhs.first.alternateSequence;
     return out;
 }
 
@@ -135,7 +137,7 @@ ostream& operator<<(ostream& out, const Genotype& g) {
     Genotype::const_iterator i = g.begin(); ++i;
     out << g.front();
     for (;i != g.end(); ++i) {
-        out << " " << *i;
+        out << *i;
     }
     return out;
 }
