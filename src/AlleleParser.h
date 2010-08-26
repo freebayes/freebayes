@@ -119,6 +119,7 @@ public:
  
     void openBams(void);
     void openLogFile(void);
+    void openTraceFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
     void loadBamReferenceSequenceNames(void);
@@ -179,7 +180,7 @@ public:
     string currentReferenceBase();
 
     // output files
-    ofstream logFile, outputFile;
+    ofstream logFile, outputFile, traceFile;
     ostream* output;
 
 private:

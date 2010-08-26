@@ -62,10 +62,12 @@ public:
     string log;
     string output;
     string outputFile;
+    string traceFile;
 
     // operation parameters
     bool useRefAllele;
     bool outputAlleles;
+    bool trace;
     bool useDuplicateReads;
     bool suppressOutput;
     bool forceRefAllele;

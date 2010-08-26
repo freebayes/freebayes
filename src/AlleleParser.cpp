@@ -46,13 +46,24 @@ void AlleleParser::openLogFile(void) {
 
     if (parameters.record) {
         logFile.open(parameters.log.c_str(), ios::out);
-        DEBUG(cerr << "Opening log file: " << parameters.log << " ...");
+        DEBUG("Opening log file: " << parameters.log << " ...");
         if (!logFile) {
             ERROR(" unable to open file: " << parameters.log);
             exit(1);
         }
     }
     // NB previously we wrote the program invocation command to the logfile here
+}
+
+void AlleleParser::openTraceFile(void) {
+    if (parameters.trace) {
+        traceFile.open(parameters.traceFile.c_str(), ios::out);
+        DEBUG("Opening trace file: " << parameters.traceFile << " ...");
+        if (!traceFile) {
+            ERROR(" unable to open file: " << parameters.traceFile );
+            exit(1);
+        }
+    }
 }
 
 void AlleleParser::openOutputFile(void) {
@@ -100,7 +111,7 @@ void AlleleParser::getSampleNames(void) {
             if (boost::regex_search(line, match, patternSample)) {
                 // assign content
                 string s = match[1];
-                DEBUG("found sample " << s);
+                DEBUG2("found sample " << s);
                 sampleList.push_back(s);
             }
         }
@@ -404,6 +415,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // this separation is done to improve legibility and debugging
     // perhaps it will just increase confusion
     openLogFile();
+    openTraceFile();
     openOutputFile();
     openBams();
     getSampleNames();
@@ -419,6 +431,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 }
 
 AlleleParser::~AlleleParser(void) {
+    // close?
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
     delete reference;
 }
@@ -453,24 +466,26 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
     string readName = alignment.Name;
 
-    DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
-            "alignment readName " << readName << endl <<
-            "alignment isPaired " << alignment.IsPaired() << endl <<
-            "alignment sampleID " << sampleName << endl << 
-            "alignment position " << alignment.Position << endl <<
-            "alignment length " << alignment.Length << endl <<
-            "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
-            "alignment end position " << alignment.Position + alignment.AlignedBases.size());
+    if (parameters.debug2) {
+        DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
+                "alignment readName " << readName << endl <<
+                "alignment isPaired " << alignment.IsPaired() << endl <<
+                "alignment sampleID " << sampleName << endl << 
+                "alignment position " << alignment.Position << endl <<
+                "alignment length " << alignment.Length << endl <<
+                "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
+                "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
-    int alignedLength = 0;
-    for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin(); c != alignment.CigarData.end(); ++c) {
-        if (c->Type == 'D')
-            alignedLength += c->Length;
-        if (c->Type == 'M')
-            alignedLength += c->Length;
+        int alignedLength = 0;
+        for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin(); c != alignment.CigarData.end(); ++c) {
+            if (c->Type == 'D')
+                alignedLength += c->Length;
+            if (c->Type == 'M')
+                alignedLength += c->Length;
+        }
+
+        DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignedLength));
     }
-
-    DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignedLength));
 
     /*
      * This should be simpler, but isn't because the cigar only records matches

@@ -319,6 +319,19 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_log(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
+    // log file
+    ArgStruct argTrace;
+    arg = argTrace; 
+    arg.shortId = ""; 
+    arg.longId = "trace"; 
+    arg.description = "Trace file output algorithmic traces to this file";
+    arg.required = false; 
+    arg.defaultValueString = ""; 
+    arg.type = "string"; 
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    ValueArg<string> cmd_traceFile(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+
     // useRefAllele
     ArgStruct argUseRefAllele;
     arg = argUseRefAllele;
@@ -763,6 +776,7 @@ Parameters::Parameters (int argc, char** argv) {
     log = cmd_log.getValue();
     output = cmd_output.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
+    traceFile = cmd_traceFile.getValue();
     useDuplicateReads = cmd_useDuplicateReads.getValue();
     suppressOutput = cmd_suppressOutput.getValue();
 
@@ -810,14 +824,16 @@ Parameters::Parameters (int argc, char** argv) {
     //----------------------------------------------------------------------------
 
     bool banded = false;
-    if (algorithm == "banded") {
+    if (algorithm == "banded")
         banded = true;
-    }
 
     bool record = false;
-    if (log != "") {
+    if (log != "")
         record = true;
-    }
+
+    bool trace = false;
+    if (traceFile != "")
+        trace = true;
 
 
 }
