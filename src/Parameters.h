@@ -69,6 +69,7 @@ public:
     bool useDuplicateReads;
     bool suppressOutput;
     bool forceRefAllele;
+    bool useAllGenotypes;
     int MQR;
     int BQR;
     int ploidy;

@@ -74,16 +74,18 @@ string vcf(
         string alternateBase,
         vector<string>& samples,
         list<Allele*> observedAlleles,
+        GenotypeCombo& genotypeCombo,
         Results& results,
         AlleleParser* parser) {
 
     stringstream out;
 
+    // TODO make it so you use the genotypeCombo... 
+
     // count alternate alleles in the best genotyping
     int alternateCount = 0;
-    for (Results::iterator s = results.begin(); s != results.end(); ++s) {
-        ResultData& sample = s->second;
-        Genotype* genotype = sample.bestMarginalGenotype().first;
+    for (GenotypeCombo::iterator g = genotypeCombo.begin(); g != genotypeCombo.end(); ++g) {
+        Genotype* genotype = g->second.first;
         for (Genotype::iterator g = genotype->begin(); g != genotype->end(); ++g) {
             if (g->first.base() == alternateBase)
                 ++alternateCount;
@@ -106,17 +108,19 @@ string vcf(
         << "ESF=" << alleleSamplingProb << "\t" // positional information
         << "GT:GQ:DP:RA:AA";
 
+    GenotypeComboMap comboMap = genotypeCombo2Map(genotypeCombo);
+
     // samples
     for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
+        GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
         Results::iterator s = results.find(*sampleName);
-        if (s != results.end()) {
+        if (gc != comboMap.end() && s != results.end()) {
             ResultData& sample = s->second;
-            pair<Genotype*, long double> bestGenotypeAndProb = sample.bestMarginalGenotype();
-            Genotype& bestGenotype = *bestGenotypeAndProb.first;
+            Genotype* genotype = gc->second.first;
             pair<int, int> altAndRefCounts = alternateAndReferenceCount(sample.observations, refbase, alternateBase);
             out << "\t"
-                << bestGenotype.relativeGenotype(refbase, alternateBase)
-                << ":" << float2phred(1 - safe_exp(bestGenotypeAndProb.second))
+                << genotype->relativeGenotype(refbase, alternateBase)
+                << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]))
                 << ":" << sample.observations.size()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first;

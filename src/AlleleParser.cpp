@@ -455,6 +455,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
     DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
             "alignment readName " << readName << endl <<
+            "alignment isPaired " << alignment.IsPaired() << endl <<
             "alignment sampleID " << sampleName << endl << 
             "alignment position " << alignment.Position << endl <<
             "alignment length " << alignment.Length << endl <<
@@ -661,32 +662,32 @@ void AlleleParser::updateAlignmentQueue(void) {
             if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads)  // currently we don't process duplicate-marked reads
                 continue;
 
+            if (!currentAlignment.IsMapped())
+                continue;
+
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
             string sampleName = readGroupToSampleNames[readGroup];
-            if (currentAlignment.IsMapped()) {
-                // we have to register the alignment to acquire some information required by filters
-                // such as mismatches
-                // filter low mapping quality (what happens if MapQuality is not in the file)
-                if (currentAlignment.MapQuality > parameters.MQL0) {
-                    // checks if we should grab and cache more sequence in order to process this alignment
-                    int rightgap = (currentAlignment.AlignedBases.size() + currentAlignment.Position) 
-                        - (currentTarget->right - 1 + basesAfterCurrentTarget);
-                    if (rightgap > 0) { extendReferenceSequence(rightgap); }
-                    RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
-                    // TODO filters to implement:
-                    // duplicates --- tracked via each BamAlignment
-                    if (ra.mismatches <= parameters.RMU) {
-                        registeredAlignmentQueue.push_front(ra);
-                        for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
-                            registeredAlleles.push_back(*allele);
-                        }
+            // we have to register the alignment to acquire some information required by filters
+            // such as mismatches
+            // filter low mapping quality (what happens if MapQuality is not in the file)
+            if (currentAlignment.MapQuality >= parameters.MQL0) {
+                // checks if we should grab and cache more sequence in order to process this alignment
+                int rightgap = (currentAlignment.AlignedBases.size() + currentAlignment.Position) 
+                    - (currentTarget->right - 1 + basesAfterCurrentTarget);
+                if (rightgap > 0) { extendReferenceSequence(rightgap); }
+                RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
+                // TODO filters to implement:
+                // duplicates --- tracked via each BamAlignment
+                if (ra.mismatches <= parameters.RMU) {
+                    registeredAlignmentQueue.push_front(ra);
+                    for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
+                        registeredAlleles.push_back(*allele);
                     }
                 }
-                // TODO collect statistics here...
             }
-        } while (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition + 1);
-                                                /// for reasons i don't fully understand, we have to process alignments with starts <= currentPosition + 1
-                                                //  this is confusing because i thought the BamAlignment.Position is 0-based
+                // TODO collect statistics here...
+        } while (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition);
+                                                //  XXX this is confusing because i thought the BamAlignment.Position is 0-based
     }
 
     DEBUG2("... finished pushing new alignments");
@@ -785,7 +786,7 @@ bool AlleleParser::loadTarget(BedData* target) {
     currentPosition = currentTarget->left - 1; // our bed targets are always 1-based at the left
 
     // XXX should check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
-    bool r = bamMultiReader.SetRegion(refSeqID, currentPosition, refSeqID, currentTarget->right - 1);
+    bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1);
     if (!r) { return r; }
     DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
@@ -824,9 +825,7 @@ bool AlleleParser::toNextTargetPosition(void) {
     } else {
         ++currentPosition;
     }
-    if (currentPosition >= currentTarget->right) { // time to move to a new target
-    //                                        ^^ assumes we are 1-based half-open, e.g. including the end base of the target
-    //                                        ^^ add -1 here to exclude the end base in analysis
+    if (currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             DEBUG("no more valid targets, finishing");
@@ -852,6 +851,7 @@ bool AlleleParser::getNextAlleles(list<Allele*>& alleles) {
 // updates the passed vector with the current alleles at the caller's target position
 void AlleleParser::getAlleles(list<Allele*>& alleles) {
 
+    DEBUG2("getting alleles");
     // this is inefficient but no method besides shared_ptr exists to guarantee
     // that we don't end up with corrupted alleles in this structure-- we won't
     // be able to remove them if we recycle them elsewhere, so it will stay
@@ -881,6 +881,7 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
 
     alleles.sort();
 
+    DEBUG2("done getting alleles");
     // TODO allele sorting by sample on registration
     // for another potential perf boost
     // as we always sort them by sample later
@@ -888,7 +889,8 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
 
 Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string base = currentReferenceBase();
-    string name = reference->filename;
+    //string name = reference->filename;
+    string name = currentTarget->seq; // this behavior matches old bambayes
     string baseQstr = "";
     baseQstr += qualityInt2Char(baseQ);
     return new Allele(ALLELE_REFERENCE, 

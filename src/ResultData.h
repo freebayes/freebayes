@@ -66,6 +66,7 @@ public:
             string alternateBase,
             vector<string>& samples,
             list<Allele*> observedAlleles,
+            GenotypeCombo& genotypeCombo,
             Results& results,
             AlleleParser* parser);
     pair<Genotype*, long double> bestMarginalGenotype(void);

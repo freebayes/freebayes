@@ -82,6 +82,9 @@ public:
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
 typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
+typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;
+
+GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc);
 
 vector<GenotypeCombo>
 bandedGenotypeCombinations(

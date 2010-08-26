@@ -345,6 +345,19 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     SwitchArg cmd_forceRefAllele(arg.shortId, arg.longId, arg.description, cmd, false);
 
+    // allGenotypes
+    ArgStruct argUseAllGenotypes;
+    arg = argUseAllGenotypes;
+    arg.shortId = "";
+    arg.longId = "useAllGenotypes";
+    arg.description = "Consider all possible homozygous genotypes in analysis, even those without evidence.";
+    arg.required = false;
+    arg.defaultValueString = "false";
+    arg.type = "switch";
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    SwitchArg cmd_useAllGenotypes(arg.shortId, arg.longId, arg.description, cmd, false);
+
     // MQR: reference sequence mapping quality value
     ArgStruct argMQR;
     arg = argMQR;
@@ -755,6 +768,7 @@ Parameters::Parameters (int argc, char** argv) {
 
     useRefAllele = cmd_useRefAllele.getValue();
     forceRefAllele = cmd_forceRefAllele.getValue();
+    useAllGenotypes = cmd_useAllGenotypes.getValue();
     MQR = cmd_MQR.getValue();
     BQR = cmd_BQR.getValue();
     ploidy = cmd_ploidy.getValue();

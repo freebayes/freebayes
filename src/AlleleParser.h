@@ -144,6 +144,7 @@ public:
     bool getNextAlleles(list<Allele*>& alleles);
     void getAlleles(list<Allele*>& alleles);
     Allele* referenceAllele(int mapQ, int baseQ);
+    Allele* alternateAllele(int mapQ, int baseQ);
 
     // TODO clean these up...
     // p( observedAlleles | genotype ) for all genotypes
@@ -184,6 +185,7 @@ public:
 private:
 
     Allele* currentReferenceAllele;
+    Allele* currentAlternateAllele;
 
     string currentSequence;
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
