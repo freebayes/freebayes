@@ -86,8 +86,6 @@ int main (int argc, char *argv[]) {
     list<Allele*> alleles;
 
     ostream& out = *(parser->output);
-    ofstream trace;
-    trace.open("allelebayes.trace");
 
     // this can be uncommented to force operation on a specific set of genotypes
     vector<Allele> allGenotypeAlleles;
@@ -116,22 +114,24 @@ int main (int argc, char *argv[]) {
         
         DEBUG2("alleles filtered");
 
-        map<string, vector<Allele*> > sampleGroups1 = groupAllelesBySample(alleles);
-        for (map<string, vector<Allele*> >::iterator g = sampleGroups1.begin(); g != sampleGroups1.end(); ++g) {
-            vector<Allele*>& group = g->second;
-            for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
-                Allele& allele = **a;
-                trace << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
-                    << g->first << "," << allele.readID << "," << allele.base() << "," 
-                    << allele.currentQuality() << "," << allele.mapQuality << endl;
+        if (parameters.trace) {
+            map<string, vector<Allele*> > sampleGroups1 = groupAllelesBySample(alleles);
+            for (map<string, vector<Allele*> >::iterator g = sampleGroups1.begin(); g != sampleGroups1.end(); ++g) {
+                vector<Allele*>& group = g->second;
+                for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
+                    Allele& allele = **a;
+                    parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
+                        << g->first << "," << allele.readID << "," << allele.base() << "," 
+                        << allele.currentQuality() << "," << allele.mapQuality << endl;
+                }
             }
+            DEBUG2("after trace generation");
         }
-        DEBUG2("after trace generation");
 
         // skips 0-coverage regions
         if (alleles.size() == 0) {
             //cerr << "no alleles found at " << parser->currentTarget->seq << ":" << parser->currentPosition << endl;
-            DEBUG2("no alleles left at this site after filtering");
+            DEBUG("no alleles left at this site after filtering");
             continue;
         }
 
@@ -166,52 +166,42 @@ int main (int argc, char *argv[]) {
         vector<Allele> filteredGenotypeAlleles;
 
         // remove genotypeAlleles for which we don't have any individuals with sufficient alternate observations
-        for (vector<Allele>::iterator genotypeAllele = genotypeAlleles.begin();
-                genotypeAllele != genotypeAlleles.end(); ++genotypeAllele) {
-
-            for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
-                    sample != sampleGroups.end(); ++sample) {
-
-                vector<Allele*>& observedAlleles = sample->second;
-                int alleleCount = 0;
-                for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
-                    if (**a == *genotypeAllele)
-                        ++alleleCount;
-                }
-                if (alleleCount >= parameters.minAltCount 
-                        && ((float) alleleCount / (float) observedAlleles.size()) >= parameters.minAltFraction) {
-                    //cerr << *genotypeAllele << " has support of " << alleleCount 
-                    //    << " in individual " << sample->first << " and fraction " 
-                    //    << (float) alleleCount / (float) observedAlleles.size() << endl;
-                    filteredGenotypeAlleles.push_back(*genotypeAllele);
-                    //out << *genotypeAllele << endl;
-                    goto hasSufficient;
-                }
-            }
-            hasSufficient: ;
-        }
-
-        DEBUG2("filtered genotype alleles");
-
         if (parameters.useAllGenotypes) {
-            DEBUG2("using all genotypes, adding alleles to filteredGenotypeAlleles");
+            DEBUG2("evaluating all genotypes, adding all alleles to filteredGenotypeAlleles");
             for (vector<Allele>::iterator a = allGenotypeAlleles.begin(); a != allGenotypeAlleles.end(); ++a) {
-                bool hasAllele = false;
-                for (vector<Allele>::iterator f = filteredGenotypeAlleles.begin(); f != filteredGenotypeAlleles.end(); ++f) {
-                    if (*f == *a) {
-                        hasAllele = true;
+                filteredGenotypeAlleles.push_back(*a);
+            }
+        } else {
+            DEBUG2("filtering genotype alleles which are not supported by at least " << parameters.minAltCount 
+                    << " observations comprising at least " << parameters.minAltFraction << " of the observations in a single individual");
+            for (vector<Allele>::iterator genotypeAllele = genotypeAlleles.begin();
+                    genotypeAllele != genotypeAlleles.end(); ++genotypeAllele) {
+
+                for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
+                        sample != sampleGroups.end(); ++sample) {
+
+                    vector<Allele*>& observedAlleles = sample->second;
+                    int alleleCount = 0;
+                    for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
+                        if (**a == *genotypeAllele)
+                            ++alleleCount;
+                    }
+                    if (alleleCount >= parameters.minAltCount 
+                            && ((float) alleleCount / (float) observedAlleles.size()) >= parameters.minAltFraction) {
+                        //cerr << *genotypeAllele << " has support of " << alleleCount 
+                        //    << " in individual " << sample->first << " and fraction " 
+                        //    << (float) alleleCount / (float) observedAlleles.size() << endl;
+                        filteredGenotypeAlleles.push_back(*genotypeAllele);
+                        //out << *genotypeAllele << endl;
                         break;
                     }
                 }
-                if (!hasAllele) {
-                    DEBUG2("adding allele to filteredGenotypeAlleles " << *a);
-                    filteredGenotypeAlleles.push_back(*a);
-                }
             }
+            DEBUG2("filtered genotype alleles");
         }
 
         if (filteredGenotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
-            DEBUG2("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
         }
         DEBUG2("genotype alleles: " << filteredGenotypeAlleles);
@@ -239,34 +229,15 @@ int main (int argc, char *argv[]) {
             vector<pair<Genotype*, long double> > probs = 
                 probObservedAllelesGivenGenotypes(observedAlleles, genotypes);
 
-            /*
-            vector<pair<Genotype*, long double> > approxprobs = 
-                approxProbObservedAllelesGivenGenotypes(observedAlleles, genotypes);
-            vector<pair<Genotype*, long double> > bambayesapproxprobs = 
-                bamBayesApproxProbObservedAllelesGivenGenotypes(observedAlleles, genotypes);
-            //vector<pair<Genotype*, long double> > exactprobs = 
-                //exactProbObservedAllelesGivenGenotypes(observedAlleles, genotypes);
-
-            cout << sampleName << endl;
-            for (vector<Allele*>::iterator i = observedAlleles.begin(); i != observedAlleles.end(); ++i) {
-                Allele& allele = **i;
-                cout << allele.base() << " ";
-            }
-            cout << endl;
-            vector<pair<Genotype*, long double> >::iterator d = approxprobs.begin();
-            vector<pair<Genotype*, long double> >::iterator b = bambayesapproxprobs.begin();
-            //vector<pair<Genotype*, long double> >::iterator e = exactprobs.begin();
-            for ( ; d != approxprobs.end() && b != bambayesapproxprobs.end(); ++d, ++b) {
-                //cout << "exact  : " << *e->first << " " << e->second << endl;
-                cout << "bapprox: " << *b->first << " " << b->second << endl;
-                cout << "dapprox: " << *d->first << " " << d->second << endl;
-                cout << endl;
-            }
-            */
-            
             map<Genotype*, long double> marginals;
             map<Genotype*, vector<long double> > rawMarginals;
 
+            if (parameters.trace) {
+                for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
+                    parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
+                        << sampleName << "," << "likelihood," << IUPAC(*(p->first)) << "," << p->second << endl;
+                }
+            }
             results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, rawMarginals, observedAlleles)));
 
         }
@@ -489,8 +460,11 @@ int main (int argc, char *argv[]) {
                         for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a)
                             alternates[*a] = true;
                     }
+                    if (alternates.size() == 0)
+                        DEBUG("No alternates at position " << parser->currentPosition);
                     // for each unique alternate allele, output a line of vcf
                     for (map<Allele, bool>::iterator alt = alternates.begin(); alt != alternates.end(); ++alt) {
+                        DEBUG2("writing output " << parser->currentPosition);
                         out << vcf(pVar,
                                 bestHetComboAlleleSamplingProb,
                                 alt->first.base(),
@@ -503,13 +477,10 @@ int main (int argc, char *argv[]) {
                     }
                 }
             }
-            
         }
         DEBUG2("finished position");
 
     }
-
-    trace.close();
 
     delete parser;
 

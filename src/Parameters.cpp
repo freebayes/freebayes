@@ -823,15 +823,11 @@ Parameters::Parameters (int argc, char** argv) {
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
-    bool banded = false;
-    if (algorithm == "banded")
-        banded = true;
-
-    bool record = false;
+    record = false;
     if (log != "")
         record = true;
 
-    bool trace = false;
+    trace = false;
     if (traceFile != "")
         trace = true;
 

@@ -48,7 +48,7 @@ void AlleleParser::openLogFile(void) {
         logFile.open(parameters.log.c_str(), ios::out);
         DEBUG("Opening log file: " << parameters.log << " ...");
         if (!logFile) {
-            ERROR(" unable to open file: " << parameters.log);
+            ERROR(" unable to open log file: " << parameters.log);
             exit(1);
         }
     }
@@ -60,7 +60,7 @@ void AlleleParser::openTraceFile(void) {
         traceFile.open(parameters.traceFile.c_str(), ios::out);
         DEBUG("Opening trace file: " << parameters.traceFile << " ...");
         if (!traceFile) {
-            ERROR(" unable to open file: " << parameters.traceFile );
+            ERROR(" unable to open trace file: " << parameters.traceFile );
             exit(1);
         }
     }
@@ -71,7 +71,7 @@ void AlleleParser::openOutputFile(void) {
         outputFile.open(parameters.outputFile.c_str(), ios::out);
         DEBUG("Opening output file: " << parameters.outputFile << " ...");
         if (!outputFile) {
-            ERROR(" unable to open file: " << parameters.outputFile);
+            ERROR(" unable to open output file: " << parameters.outputFile);
             exit(1);
         }
         output = &outputFile;
@@ -167,11 +167,12 @@ void AlleleParser::getSampleNames(void) {
     if (sampleList.size() == 0) {
         DEBUG("no sample list file given, reading sample names from bam file");
         for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s) {
-            DEBUG("found sample " << *s);
+            DEBUG2("found sample " << *s);
             if (!stringInVector(*s, sampleList)) {
                 sampleList.push_back(*s);
             }
         }
+        DEBUG("found " << sampleList.size() << " samples");
     } else {
         // verify that the samples in the sample list are present in the bam,
         // and raise an error and exit if not
@@ -770,7 +771,7 @@ bool AlleleParser::toFirstTargetPosition(void) {
 
 bool AlleleParser::toNextTarget(void) {
 
-    DEBUG2("seeking to next valid target...");
+    DEBUG2("seeking to next target...");
 
     // if we are at the end of the list of targets in this reference sequence
     if (currentTarget == &targets.back()) {
@@ -843,7 +844,7 @@ bool AlleleParser::toNextTargetPosition(void) {
     if (currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
-            DEBUG("no more valid targets, finishing");
+            DEBUG("no more targets, finishing");
             return false;
         }
     }
