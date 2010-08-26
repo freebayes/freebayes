@@ -126,10 +126,31 @@ string Genotype::str(void) {
     return s;
 }
 
+string IUPAC(Genotype& genotype) {
+    const string g = genotype.str();
+    if (g == "AA") return "A";
+    if (g == "AC") return "M";
+    if (g == "AG") return "R";
+    if (g == "AT") return "W";
+    if (g == "CA") return "M";
+    if (g == "CC") return "C";
+    if (g == "CG") return "S";
+    if (g == "CT") return "Y";
+    if (g == "GA") return "R";
+    if (g == "GC") return "S";
+    if (g == "GG") return "G";
+    if (g == "GT") return "K";
+    if (g == "TA") return "W";
+    if (g == "TC") return "Y";
+    if (g == "TG") return "K";
+    if (g == "TT") return "T";
+    return g;
+}
+
 ostream& operator<<(ostream& out, const pair<Allele, int>& rhs) {
-    //out << rhs.first.alternateSequence << rhs.second;
-    for (int i = 0; i < rhs.second; ++i)
-        out << rhs.first.alternateSequence;
+    out << rhs.first.alternateSequence << rhs.second;
+    //for (int i = 0; i < rhs.second; ++i)
+    //    out << rhs.first.alternateSequence;
     return out;
 }
 

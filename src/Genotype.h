@@ -79,6 +79,8 @@ public:
 }
 */
 
+string IUPAC(Genotype& g);
+
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
 typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
