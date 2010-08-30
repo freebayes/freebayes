@@ -71,6 +71,16 @@ short jointQuality(const std::string& qualstr) {
 
 }
 
+std::vector<short> qualities(const std::string& qualstr) {
+
+    std::vector<short> quals;
+    for (int i=0; i<qualstr.size(); i++)
+        quals.push_back(qualityChar2ShortInt(qualstr.at(i)));
+
+    return quals;
+
+}
+
 short averageQuality(const std::string& qualstr) {
 
     long double q = 0;

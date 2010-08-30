@@ -641,3 +641,14 @@ void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes) {
 
 }
 
+// removes alleles which are indelmasked at position
+void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position) {
+
+    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        if ((*allele)->indelMask[position]) {
+            *allele = NULL;
+        }
+    }
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+
+}

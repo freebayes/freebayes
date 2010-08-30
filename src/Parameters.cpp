@@ -358,18 +358,18 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     SwitchArg cmd_forceRefAllele(arg.shortId, arg.longId, arg.description, cmd, false);
 
-    // allGenotypes
-    ArgStruct argUseAllGenotypes;
-    arg = argUseAllGenotypes;
+    // best N alleles
+    ArgStruct argUseBestNAlleles;
+    arg = argUseBestNAlleles;
     arg.shortId = "";
-    arg.longId = "useAllGenotypes";
-    arg.description = "Consider all possible homozygous genotypes in analysis, even those without evidence.";
+    arg.longId = "useBestNAlleles";
+    arg.description = "Consider this many best possible alleles genotypes in analysis, even those without evidence.";
     arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
+    arg.defaultValueString = "0";
+    arg.type = "int";
     arg.multi = false;
     my.ArgList.push_back(arg);
-    SwitchArg cmd_useAllGenotypes(arg.shortId, arg.longId, arg.description, cmd, false);
+    ValueArg<int> cmd_useBestNAlleles(arg.shortId, arg.longId, arg.description, arg.required, 0, arg.type, cmd);
 
     // MQR: reference sequence mapping quality value
     ArgStruct argMQR;
@@ -782,7 +782,7 @@ Parameters::Parameters (int argc, char** argv) {
 
     useRefAllele = cmd_useRefAllele.getValue();
     forceRefAllele = cmd_forceRefAllele.getValue();
-    useAllGenotypes = cmd_useAllGenotypes.getValue();
+    useBestNAlleles = cmd_useBestNAlleles.getValue();
     MQR = cmd_MQR.getValue();
     BQR = cmd_BQR.getValue();
     ploidy = cmd_ploidy.getValue();

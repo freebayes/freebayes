@@ -157,7 +157,7 @@ void AlleleParser::getSampleNames(void) {
             }
             //string name = nameParts.back();
             //mergedHeader.append(1, '\n');
-            DEBUG("found read group id " << readGroupID << " containing sample " << name);
+            DEBUG2("found read group id " << readGroupID << " containing sample " << name);
             sampleListFromBam.push_back(name);
             readGroupToSampleNames[readGroupID] = name;
         }
@@ -503,6 +503,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
      *
      */
 
+    map<int, bool> indelMask;
+
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
@@ -588,17 +590,24 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 DEBUG2(allele);
                 ra.alleles.push_back(allele);
             }
-            // XXX what about 'N' s?
         } else if (t == 'D') { // deletion
 
             // extract base quality of left and right flanking non-deleted bases
             string qualstr = rQual.substr(rp, 2);
 
             // calculate joint quality of the two flanking qualities
-            short qual = jointQuality(qualstr); // XXX was max, but joint makes more sense, right ?
+            short qual = max(qualityChar2ShortInt(qualstr[0]), qualityChar2ShortInt(qualstr[1]));
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
             }
+            // XXX indel window exclusion
+            //if (qual >= parameters.BQL0) {
+            if (qual >= parameters.BQL2) {
+                for (int i=0; i<l; i++) {
+                    indelMask[sp + i] = true;
+                }
+            }
+            //}
             Allele* allele = new Allele(ALLELE_DELETION,
                     currentTarget->seq, sp, &currentPosition, l,
                     currentSequence.substr(csp, l), "", sampleName, alignment.Name,
@@ -615,9 +624,14 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             string qualstr = rQual.substr(rp, l);
 
             // calculate joint quality, which is the probability that there are no errors in the observed bases
-            short qual = jointQuality(qualstr);
+            vector<short> quals = qualities(qualstr);
+            short qual = *max_element(quals.begin(), quals.end());
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
+            }
+            if (qual >= parameters.BQL2) {
+                indelMask[sp] = true;
+                indelMask[sp + 1] = true;
             }
             // register insertion + base quality with reference sequence
             // XXX this cutoff may not make sense for long indels... the joint
@@ -644,6 +658,16 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
     }
     cerr << endl;
     */
+    for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+        Allele& allele = **a;
+        for (map<int, bool>::iterator im = indelMask.begin(); im != indelMask.end(); ++im) {
+            const int i = im->first;
+            //if (i >= allele.position && i < allele.position + allele.length) {
+            for (int j = i - parameters.IDW; j <= i + parameters.IDW; ++j)
+                allele.indelMask[j] = true;
+            //}
+        }
+    }
     return ra;
 }
 
@@ -801,6 +825,8 @@ bool AlleleParser::loadTarget(BedData* target) {
     bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1);
     if (!r) { return r; }
     DEBUG2("set region");
+    r &= bamMultiReader.GetNextAlignment(currentAlignment);
+    r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) { return r; }
     DEBUG2("got first alignment in target region");

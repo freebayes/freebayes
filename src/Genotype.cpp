@@ -147,6 +147,20 @@ string IUPAC(Genotype& genotype) {
     return g;
 }
 
+string IUPAC2GenotypeStr(string iupac) {
+    if (iupac == "A") return "AA";
+    if (iupac == "M") return "AC";
+    if (iupac == "R") return "AG";
+    if (iupac == "W") return "AT";
+    if (iupac == "C") return "CC";
+    if (iupac == "S") return "CG";
+    if (iupac == "Y") return "CT";
+    if (iupac == "G") return "GG";
+    if (iupac == "K") return "GT";
+    if (iupac == "T") return "TT";
+    return iupac;
+}
+
 ostream& operator<<(ostream& out, const pair<Allele, int>& rhs) {
     out << rhs.first.alternateSequence << rhs.second;
     //for (int i = 0; i < rhs.second; ++i)

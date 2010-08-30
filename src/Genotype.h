@@ -80,6 +80,7 @@ public:
 */
 
 string IUPAC(Genotype& g);
+string IUPAC2GenotypeStr(string iupac);
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 

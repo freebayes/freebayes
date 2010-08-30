@@ -97,6 +97,7 @@ public:
     short quality;          // base quality score associated with this allele
     short mapQuality;       // map quality for the originating read
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
+    map<int, bool> indelMask; // indel mask structure, masks sites within the IDW from indels
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
@@ -196,6 +197,7 @@ map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
 void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes);
+void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
 map<string, int> countAllelesString(vector<Allele*>& alleles);

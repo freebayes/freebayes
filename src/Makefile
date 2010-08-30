@@ -101,7 +101,7 @@ Multinomial.o: Multinomial.h Multinomial.cpp Sum.h Product.h Utility.h
 DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
 	$(CC) $(CFLAGS) -c DataLikelihood.cpp -Wno-deprecated
 
-ResultData.o: ResultData.cpp ResultData.h
+ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AlleleParser.h
 	$(CC) $(CFLAGS) -c ResultData.cpp -Wno-deprecated
 
 # ...

@@ -14,6 +14,7 @@
 #include "Multinomial.h"
 #include "Dirichlet.h"
 
+using namespace std;
 
 long double
 probObservedAllelesGivenGenotype(

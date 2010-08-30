@@ -25,6 +25,7 @@ long double powln(long double m, int n);
 // here 'joint' means 'probability that we have a vector entirely composed of true bases'
 short jointQuality(const std::vector<short>& quals);
 short jointQuality(const std::string& qualstr);
+std::vector<short> qualities(const std::string& qualstr);
 // 
 short averageQuality(const std::string& qualstr);
 //unsigned int factorial(int n);

@@ -71,7 +71,7 @@ public:
     bool useDuplicateReads;
     bool suppressOutput;
     bool forceRefAllele;
-    bool useAllGenotypes;
+    int useBestNAlleles;
     int MQR;
     int BQR;
     int ploidy;
