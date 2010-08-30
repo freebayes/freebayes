@@ -30,7 +30,7 @@ public:
 
 
 MyOutput::MyOutput(void)
-    : ProgramName("alleleBayes")
+    : ProgramName("freebayes")
     , ProgramDescription("Bayesian SNP and short-INDEL polymorphism discovery program.")
     , ProgramVersion(GIT_HEAD_COMMIT_ID)
     , ProgramDate(COMPILE_DATE)
