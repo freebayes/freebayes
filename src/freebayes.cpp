@@ -1,7 +1,7 @@
 // 
-// *Bayes
+// freebayes
 //
-// A bayesian genetic variant parser.
+// A bayesian genetic variant detector.
 // 
 
 // standard includes
@@ -88,11 +88,11 @@ int main (int argc, char *argv[]) {
     ostream& out = *(parser->output);
 
     // this can be uncommented to force operation on a specific set of genotypes
-    vector<Allele> allGenotypeAlleles;
-    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
-    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
-    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
-    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
+    //vector<Allele> allGenotypeAlleles;
+    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
+    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
+    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
+    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
     vector<AlleleType> allowedAlleles;
@@ -185,18 +185,22 @@ int main (int argc, char *argv[]) {
         vector<Allele> filteredGenotypeAlleles;
 
         // remove genotypeAlleles for which we don't have any individuals with sufficient alternate observations
+        sort(genotypeAlleles.begin(), genotypeAlleles.end(),
+                boost::bind(&pair<Allele, long double>::second, _1) 
+                    > boost::bind(&pair<Allele, long double>::second, _2));
+
         if (parameters.useBestNAlleles > 0) {
-            //DEBUG2("evaluating all genotypes, adding all alleles to filteredGenotypeAlleles");
-            //for (vector<Allele>::iterator a = allGenotypeAlleles.begin(); a != allGenotypeAlleles.end(); ++a) {
-            //    filteredGenotypeAlleles.push_back(*a);
-            //}
-            sort(genotypeAlleles.begin(), genotypeAlleles.end(),
-                    boost::bind(&pair<Allele, long double>::second, _1) 
-                        > boost::bind(&pair<Allele, long double>::second, _2));
             for (int i = 0; i < parameters.useBestNAlleles; ++i) {
                 filteredGenotypeAlleles.push_back(genotypeAlleles.at(i).first);
             }
+        } else {
+            for (vector<pair<Allele, long double> >::iterator a = genotypeAlleles.begin();
+                    a != genotypeAlleles.end(); ++a) {
+                filteredGenotypeAlleles.push_back(a->first);
+            }
         }
+
+        // force the evaluation of the reference allele, even if it is not one of our N best alleles or in 
         if (parameters.forceRefAllele) {
             // is the reference allele in the list of filtered alleles?
             string refBase = parser->currentReferenceBase();
