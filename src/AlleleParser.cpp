@@ -940,3 +940,129 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             baseQstr,
             mapQ);
 }
+
+
+vector<Allele> AlleleParser::genotypeAlleles(
+        vector<vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
+        map<string, vector<Allele*> >& sampleGroups, // alleles grouped by sample
+        vector<Allele>& allGenotypeAlleles      // all possible genotype alleles, 
+                                                // to add back alleles if we don't have enough to meet our minimum allele count
+        ) {
+
+    vector<pair<Allele, int> > unfilteredAlleles;
+
+    for (vector<vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
+        // for each allele that we're going to evaluate, we have to have at least one supporting read with
+        // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
+        bool passesFilters = false;
+        int qSum = 0;
+        for (vector<Allele*>::iterator a = group->begin(); a != group->end(); ++a) {
+            Allele& allele = **a;
+            if (!passesFilters && allele.mapQuality >= parameters.MQL1 && allele.currentQuality() >= parameters.BQL1) {
+                passesFilters = true;
+            }
+            qSum += allele.currentQuality();
+        }
+        if (passesFilters) {
+            Allele& allele = *group->front();
+            int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.base(), length), qSum));
+        }
+    }
+    DEBUG2("found genotype alleles");
+
+    map<Allele, int> filteredAlleles;
+
+    DEBUG2("filtering genotype alleles which are not supported by at least " << parameters.minAltCount 
+            << " observations comprising at least " << parameters.minAltFraction << " of the observations in a single individual");
+    for (vector<pair<Allele, int> >::iterator p = unfilteredAlleles.begin();
+            p != unfilteredAlleles.end(); ++p) {
+
+        Allele& genotypeAllele = p->first;
+        int qSum = p->second;
+
+        for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
+                sample != sampleGroups.end(); ++sample) {
+
+            vector<Allele*>& observedAlleles = sample->second;
+            int alleleCount = 0;
+            for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
+                if (**a == genotypeAllele)
+                    ++alleleCount;
+            }
+            if (alleleCount >= parameters.minAltCount 
+                    && ((float) alleleCount / (float) observedAlleles.size()) >= parameters.minAltFraction) {
+                //cerr << genotypeAllele << " has support of " << alleleCount 
+                //    << " in individual " << sample->first << " and fraction " 
+                //    << (float) alleleCount / (float) observedAlleles.size() << endl;
+                filteredAlleles[genotypeAllele] = qSum;
+                //out << *genotypeAllele << endl;
+                break;
+            }
+        }
+    }
+    DEBUG2("filtered genotype alleles");
+
+
+    vector<Allele> resultAlleles;
+
+    if (parameters.useBestNAlleles == 0) {
+        // this means "use everything"
+        for (map<Allele, int>::iterator p = filteredAlleles.begin();
+                p != filteredAlleles.end(); ++p) {
+            resultAlleles.push_back(p->first);
+        }
+    } else {
+        // this means, use the N best
+        vector<pair<Allele, int> > sortedAlleles;
+        for (map<Allele, int>::iterator p = filteredAlleles.begin();
+                p != filteredAlleles.end(); ++p) {
+            sortedAlleles.push_back(make_pair(p->first, p->second));
+        }
+        DEBUG2("sorting alleles to get best alleles");
+        sort(sortedAlleles.begin(), sortedAlleles.end(),
+                boost::bind(&pair<Allele, int>::second, _1) 
+                    > boost::bind(&pair<Allele, int>::second, _2));
+
+        DEBUG2("getting N best alleles");
+        string refBase = currentReferenceBase();
+        bool hasRefAllele = false;
+        vector<pair<Allele, int> >::iterator a = sortedAlleles.begin();
+        while (a != sortedAlleles.end() && resultAlleles.size() < parameters.useBestNAlleles) {
+            if (a->first.base() == refBase)
+                hasRefAllele = true;
+            // if we have reached the limit of allowable alleles, and still
+            // haven't included the reference allele, include it
+            if (parameters.forceRefAllele 
+                && resultAlleles.size() == parameters.useBestNAlleles - 1 
+                && !hasRefAllele) {
+                resultAlleles.push_back(genotypeAllele(ALLELE_REFERENCE, refBase, 1));
+            } else {
+                resultAlleles.push_back(a->first);
+            }
+            ++a;
+        }
+
+        if (resultAlleles.size() < parameters.useBestNAlleles) {
+            DEBUG2("adding dummy genotype alleles for evaluation even though we don't have data to support them");
+            vector<Allele>::iterator allele = allGenotypeAlleles.begin();
+            while (resultAlleles.size() < parameters.useBestNAlleles && allele != allGenotypeAlleles.end()) {
+                bool alreadyHas = false;
+                for (vector<Allele>::iterator f = resultAlleles.begin(); f != resultAlleles.end(); ++f) {
+                    if (*f == *allele) {
+                        ++allele;
+                        alreadyHas = true;
+                        break;
+                    }
+                }
+                if (!alreadyHas) {
+                    resultAlleles.push_back(*allele);
+                    ++allele;
+                }
+            }
+        }
+    }
+
+    return resultAlleles;
+
+}

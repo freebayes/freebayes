@@ -88,11 +88,11 @@ int main (int argc, char *argv[]) {
     ostream& out = *(parser->output);
 
     // this can be uncommented to force operation on a specific set of genotypes
-    //vector<Allele> allGenotypeAlleles;
-    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
-    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
-    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
-    //allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
+    vector<Allele> allGenotypeAlleles;
+    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
+    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
+    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
+    allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
     vector<AlleleType> allowedAlleles;
@@ -151,118 +151,30 @@ int main (int argc, char *argv[]) {
         DEBUG2("grouped alleles by sample");
 
         vector<string> sampleListPlusRef;
-        if (parameters.trace) {
+        //if (parameters.trace) {
             // figure out which samples have no data so we can print ?'s in the genotype combo trace
-            for (vector<string>::iterator s = parser->sampleList.begin(); s != parser->sampleList.end(); ++s) {
-                sampleListPlusRef.push_back(*s);
-            }
-            if (parameters.useRefAllele)
-                sampleListPlusRef.push_back(parser->currentTarget->seq);
+        for (vector<string>::iterator s = parser->sampleList.begin(); s != parser->sampleList.end(); ++s) {
+            sampleListPlusRef.push_back(*s);
         }
+        if (parameters.useRefAllele)
+            sampleListPlusRef.push_back(parser->currentTarget->seq);
+        //}
 
-        vector<pair<Allele, long double> > genotypeAlleles;
+        vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, sampleGroups, allGenotypeAlleles);
 
-        for (vector<vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
-            // for each allele that we're going to evaluate, we have to have at least one supporting read with
-            // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
-            bool passesFilters = false;
-            long double qSum = 0;
-            for (vector<Allele*>::iterator a = group->begin(); a != group->end(); ++a) {
-                Allele& allele = **a;
-                if (!passesFilters && allele.mapQuality >= parameters.MQL1 && allele.currentQuality() >= parameters.BQL1) {
-                    passesFilters = true;
-                }
-                qSum += allele.currentQuality();
-            }
-            if (passesFilters) {
-                Allele& allele = *group->front();
-                int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-                genotypeAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.base(), length), qSum));
-            }
-        }
-        DEBUG2("found genotype alleles");
-
-        vector<Allele> filteredGenotypeAlleles;
-
-        // remove genotypeAlleles for which we don't have any individuals with sufficient alternate observations
-        sort(genotypeAlleles.begin(), genotypeAlleles.end(),
-                boost::bind(&pair<Allele, long double>::second, _1) 
-                    > boost::bind(&pair<Allele, long double>::second, _2));
-
-        if (parameters.useBestNAlleles > 0) {
-            for (int i = 0; i < parameters.useBestNAlleles; ++i) {
-                filteredGenotypeAlleles.push_back(genotypeAlleles.at(i).first);
-            }
-        } else {
-            for (vector<pair<Allele, long double> >::iterator a = genotypeAlleles.begin();
-                    a != genotypeAlleles.end(); ++a) {
-                filteredGenotypeAlleles.push_back(a->first);
-            }
-        }
-
-        // force the evaluation of the reference allele, even if it is not one of our N best alleles or in 
-        if (parameters.forceRefAllele) {
-            // is the reference allele in the list of filtered alleles?
-            string refBase = parser->currentReferenceBase();
-            bool hasRefAllele = false;
-            for (vector<Allele>::iterator a = filteredGenotypeAlleles.begin(); a != filteredGenotypeAlleles.end(); ++a) {
-                if (a->base() == refBase) {
-                    hasRefAllele = true;
-                    break;
-                }
-            }
-            // if not, add it
-            if (!hasRefAllele) {
-                // if we are only using N best alleles, swap it with the worst of those
-                if (parameters.useBestNAlleles > 0) {
-                    filteredGenotypeAlleles.back() = genotypeAllele(ALLELE_REFERENCE, refBase, 1);
-                } else { // otherwise we can just append it to the list of filtered alleles
-                    filteredGenotypeAlleles.push_back(genotypeAllele(ALLELE_REFERENCE, refBase, 1));
-                }
-            }
-        }
-
-        if (parameters.minAltCount > 0 || parameters.minAltFraction > 0.0) {
-            DEBUG2("filtering genotype alleles which are not supported by at least " << parameters.minAltCount 
-                    << " observations comprising at least " << parameters.minAltFraction << " of the observations in a single individual");
-            for (vector<pair<Allele, long double> >::iterator p = genotypeAlleles.begin();
-                    p != genotypeAlleles.end(); ++p) {
-
-                Allele& genotypeAllele = p->first;
-
-                for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
-                        sample != sampleGroups.end(); ++sample) {
-
-                    vector<Allele*>& observedAlleles = sample->second;
-                    int alleleCount = 0;
-                    for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
-                        if (**a == genotypeAllele)
-                            ++alleleCount;
-                    }
-                    if (alleleCount >= parameters.minAltCount 
-                            && ((float) alleleCount / (float) observedAlleles.size()) >= parameters.minAltFraction) {
-                        //cerr << genotypeAllele << " has support of " << alleleCount 
-                        //    << " in individual " << sample->first << " and fraction " 
-                        //    << (float) alleleCount / (float) observedAlleles.size() << endl;
-                        filteredGenotypeAlleles.push_back(genotypeAllele);
-                        //out << *genotypeAllele << endl;
-                        break;
-                    }
-                }
-            }
-            DEBUG2("filtered genotype alleles");
-        }
-
-        if (filteredGenotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
+        if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
             DEBUG("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
         }
-        DEBUG2("genotype alleles: " << filteredGenotypeAlleles);
+        DEBUG2("genotype alleles: " << genotypeAlleles);
 
-        //cerr << filteredGenotypeAlleles << endl;
-
-        vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, filteredGenotypeAlleles);
-        DEBUG2("generated all possible genotypes");
+        vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
+        DEBUG2("generated all possible genotypes:");
+        if (parameters.debug2) {
+            for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+                DEBUG2(*g);
+            }
+        }
 
         // continue in the case that no individual has more than some
         // fraction of alternate allele observations ...  (default is 0.1)
@@ -301,32 +213,29 @@ int main (int argc, char *argv[]) {
         // sort genotype data likelihoods and accumulate into 
         
         // XXX this section is a hack to make output of trace identical to BamBayes
-        vector<pair<string, vector<pair<Genotype*, long double> > > > sampleGenotypes;
+        // and also outputs the list of samples
         vector<bool> samplesWithData;
         if (parameters.trace) parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",samples,";
         for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
             if (parameters.trace) parser->traceFile << *s << ":";
             Results::iterator r = results.find(*s);
             if (r != results.end()) {
-                r->second.sortDataLikelihoods();
-                sampleGenotypes.push_back(make_pair(r->first, r->second.dataLikelihoods));
                 samplesWithData.push_back(true);
             } else {
                 samplesWithData.push_back(false);
             }
         }
         if (parameters.trace) parser->traceFile << endl;
-        /*
-        for (Results::iterator s = results.begin(); s != results.end(); ++s) {
-            s->second.sortDataLikelihoods();
-            for (vector<pair<Genotype*, long double> >::iterator p = s->second.dataLikelihoods.begin(); p != s->second.dataLikelihoods.end(); ++p) {
-                cout << *p->first << " " << p->second << endl;
-            }
-            cout << endl;
 
-            sampleGenotypes.push_back(make_pair(s->first, s->second.dataLikelihoods));
+        vector<pair<string, vector<pair<Genotype*, long double> > > > sampleGenotypes;
+        //for (Results::iterator s = results.begin(); s != results.end(); ++s) {
+        for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
+            Results::iterator r = results.find(*s);
+            if (r != results.end()) {
+                r->second.sortDataLikelihoods();
+                sampleGenotypes.push_back(make_pair(r->first, r->second.dataLikelihoods));
+            }
         }
-        */
 
         DEBUG2("finished sorting data likelihoods");
 
@@ -338,8 +247,8 @@ int main (int argc, char *argv[]) {
         // ... or at least very add one which is consistent
         //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
         //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
-        DEBUG2("generating banded genotype combinations");
-        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingAllHomozygousCombos(sampleGenotypes, genotypes, 2, 2);
+        DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
+        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingAllHomozygousCombos(sampleGenotypes, genotypes, parameters.WB + 1, 2);
         DEBUG2("...done");
 
         vector<pair<GenotypeCombo, long double> > genotypeComboProbs;

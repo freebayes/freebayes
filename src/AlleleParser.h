@@ -12,6 +12,7 @@
 #include <boost/regex.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/bind.hpp>
 #include <time.h>
 #include "BamReader.h"
 #include "Class-BedReader.h"
@@ -146,6 +147,12 @@ public:
     void getAlleles(list<Allele*>& alleles);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
+
+    // gets the genotype alleles we should evaluate among the allele groups and
+    // sample groups at the current position, according to our filters
+    vector<Allele> genotypeAlleles(vector<vector<Allele*> >& alleleGroups,
+            map<string, vector<Allele*> >& sampleGroups,
+            vector<Allele>& allGenotypeAlleles);
 
     // TODO clean these up...
     // p( observedAlleles | genotype ) for all genotypes
