@@ -69,6 +69,15 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
     return alleles;
 }
 
+int Genotype::alleleFrequency(Allele& allele) {
+    int frequency = 0;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        if (allele == i->first)
+            frequency += i->second;;
+    }
+    return frequency;
+}
+
 string Genotype::relativeGenotype(string& refbase, string& altbase) {
     vector<string> rg;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
@@ -406,4 +415,8 @@ GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc) {
         gcm[g->first] = g->second;
     }
     return gcm;
+}
+
+bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2) {
+    return gc1.get<1>() > gc2.get<1>();
 }

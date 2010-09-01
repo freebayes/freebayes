@@ -11,6 +11,9 @@
 #include <math.h>
 #include <numeric>
 #include "Allele.h"
+#include <boost/tuple/tuple.hpp>
+
+using boost::tuple;
 
 using namespace std;
 
@@ -56,6 +59,7 @@ public:
 
     vector<Allele> uniqueAlleles(void);
     int getPloidy(void);
+    int alleleFrequency(Allele& allele);
     bool containsAllele(Allele& allele);
     bool containsAlleleOtherThan(string& base);
     vector<Allele> alternateAlleles(string& refbase);
@@ -85,6 +89,9 @@ string IUPAC2GenotypeStr(string iupac);
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
 typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
+typedef tuple<GenotypeCombo, long double, long double, long double> GenotypeComboResult;
+bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2);
+
 typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;
 
 GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc);

@@ -37,11 +37,7 @@ int float2phred(long double prob) {
 }
 
 long double powln(long double m, int n) {
-    long double r = 0;
-    for (; n > 0; --n) {
-        r += m;
-    }
-    return r;
+    return m * n;
 }
 
 // TODO do the following in phred (log) space for perf boost

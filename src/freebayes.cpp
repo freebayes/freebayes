@@ -251,7 +251,9 @@ int main (int argc, char *argv[]) {
         vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingAllHomozygousCombos(sampleGenotypes, genotypes, parameters.WB + 1, 2);
         DEBUG2("...done");
 
-        vector<pair<GenotypeCombo, long double> > genotypeComboProbs;
+        vector<GenotypeComboResult> genotypeComboProbs;
+
+        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, parser->currentReferenceBase(), 1);
 
         DEBUG2("calculating genotype combination likelihoods");
         for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
@@ -275,7 +277,9 @@ int main (int argc, char *argv[]) {
             map<int, int> frequencyCounts = countFrequencies(genotypeCombo);
             */
 
-            long double priorProbabilityOfGenotypeCombo = alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH);
+            long double priorProbabilityOfGenotypeCombo = 
+                alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH)
+                + probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
             //cout << "priorProbabilityOfGenotypeCombo = " << priorProbabilityOfGenotypeCombo << endl;
             //cout << "probabilityObservationsGivenGenotypes = " << probabilityObservationsGivenGenotypes << endl;
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
@@ -293,25 +297,30 @@ int main (int argc, char *argv[]) {
                 }
             }
 
-            genotypeComboProbs.push_back(make_pair(*combo, comboProb));
+            genotypeComboProbs.push_back(make_tuple(*combo, comboProb, probabilityObservationsGivenGenotypes, priorProbabilityOfGenotypeCombo));
 
         }
 
         DEBUG2("finished calculating genotype combination likelihoods");
 
-        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(),
-                boost::bind(&pair<GenotypeCombo, long double>::second, _1) 
-                    > boost::bind(&pair<GenotypeCombo, long double>::second, _2));
-
-        DEBUG2("sorted genotype combination likelihoods");
-
         // get posterior normalizer
         vector<long double> comboProbs;
-        comboProbs.resize(genotypeComboProbs.size());
-        transform(genotypeComboProbs.begin(), genotypeComboProbs.end(),
-                comboProbs.begin(), boost::bind(&pair<GenotypeCombo, long double>::second, _1));
+        //comboProbs.resize(genotypeComboProbs.size());
+        for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc)
+            comboProbs.push_back(gc->get<1>());
         long double posteriorNormalizer = logsumexp_probs(comboProbs);
         DEBUG2("got posterior normalizer");
+        if (parameters.trace) {
+            parser->traceFile << parser->currentTarget->seq << "," 
+                << parser->currentPosition + 1 << ",posterior_normalizer," << posteriorNormalizer << endl;
+        }
+
+        // sort by the normalized datalikelihood + prior
+        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), genotypeComboResultSorter);
+                //boost::bind(&GenotypeComboResult::get<1>, _1) 
+                //    > boost::bind(&GenotypeComboResult::get<1>, _2));
+
+        DEBUG2("sorted genotype combination likelihoods");
 
         /*
         for (vector<pair<GenotypeCombo, long double> >::iterator c = genotypeComboProbs.begin(); c != genotypeComboProbs.end(); ++c) {
@@ -358,32 +367,31 @@ int main (int argc, char *argv[]) {
 
         long double pVar = 1.0;
 
-        for (vector<pair<GenotypeCombo, long double> >::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
+        for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
             /*
             for (GenotypeCombo::iterator c = gc->first.begin(); c != gc->first.end(); ++c)
                 cout << *c->second.first << " ";
             cout << endl;
             cout << (long double) gc->second << endl;
             */
-            if (isHomozygousCombo(gc->first)) {
-                pVar -= safe_exp(gc->second - posteriorNormalizer);
+            if (isHomozygousCombo(gc->get<0>())) {
+                pVar -= safe_exp(gc->get<1>() - posteriorNormalizer);
             }
         }
         DEBUG2("calculated pVar");
 
-        // TODO as we only ever report heterozygous combos, we must get the best non-homozygous case here...
-        // .... even if the best case is fully homozygous
-        //GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().first;
-        //long double bestGenotypeComboProb = safe_exp(genotypeComboProbs.front().second - posteriorNormalizer);
-        //cout << bestGenotypeComboProb << endl;
+        // TODO as we only ever report heterozygous combos, we must get the
+        // best non-homozygous case here even if the best case is fully
+        // homozygous
 
         GenotypeCombo* besthc = NULL;
         long double bestHetGenotypeComboProb;
         // these are sorted according to probability, so we just step through until we find the first het
-        for (vector<pair<GenotypeCombo, long double> >::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
-            if (!isHomozygousCombo(gc->first)) {
-                besthc = &(gc->first);
-                bestHetGenotypeComboProb = safe_exp(gc->second - posteriorNormalizer);
+        for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
+            //if (!isHomozygousCombo(gc->first)) {
+            if (!isHomozygousCombo(gc->get<0>())) {
+                besthc = &(gc->get<0>());
+                bestHetGenotypeComboProb = safe_exp(gc->get<1>() - posteriorNormalizer);
                 break;
             }
         }
@@ -398,23 +406,24 @@ int main (int argc, char *argv[]) {
         long double bestHetComboAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
 
         if (parameters.trace) {
-            for (vector<pair<GenotypeCombo, long double> >::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
+            for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
                 vector<Genotype*> comboGenotypes;
-                for (GenotypeCombo::iterator g = gc->first.begin(); g != gc->first.end(); ++g)
+                for (GenotypeCombo::iterator g = gc->get<0>().begin(); g != gc->get<0>().end(); ++g)
                     comboGenotypes.push_back(g->second.first);
-                long double dataLikelihoodln = gc->second;
-                long double priorln = alleleFrequencyProbabilityln(countFrequencies(comboGenotypes), parameters.TH);
+                long double comboProb = gc->get<1>();
+                long double dataLikelihoodln = gc->get<2>();
+                long double priorln = gc->get<3>();
 
                 parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",genotypecombo,";
 
                 int j = 0;
-                for (GenotypeCombo::iterator i = gc->first.begin(); i != gc->first.end(); ++i) {
-                    if (!samplesWithData.at(j)) {
-                        parser->traceFile << "?" << IUPAC(*i->second.first);
-                        j += 2;
-                    } else {
+                GenotypeCombo::iterator i = gc->get<0>().begin();
+                for (vector<bool>::iterator d = samplesWithData.begin(); d != samplesWithData.end(); ++d) {
+                    if (*d) {
                         parser->traceFile << IUPAC(*i->second.first);
-                        ++j;
+                        ++i;
+                    } else {
+                        parser->traceFile << "?";
                     }
                 }
                     //<< "," << gc->first
@@ -422,7 +431,7 @@ int main (int argc, char *argv[]) {
                     << "," << dataLikelihoodln
                     << "," << priorln
                     << "," << dataLikelihoodln + priorln
-                    << "," << safe_exp(gc->second - posteriorNormalizer)
+                    << "," << safe_exp(dataLikelihoodln + priorln - posteriorNormalizer)
                     << endl;
             }
         }
