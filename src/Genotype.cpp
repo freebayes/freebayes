@@ -69,6 +69,16 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
     return alleles;
 }
 
+int Genotype::alleleCount(string& base) {
+    int alleleCount = 0;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        Allele& b = i->first;
+        if (base == b.base())
+            alleleCount += i->second;
+    }
+    return alleleCount;
+}
+
 int Genotype::alleleFrequency(Allele& allele) {
     int frequency = 0;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
@@ -419,4 +429,37 @@ GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc) {
 
 bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2) {
     return gc1.get<1>() > gc2.get<1>();
+}
+
+
+// returns a list of the alternate alleles represented by the given genotype
+// combo sorted by frequency
+vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase) {
+
+    map<Allele, int> alternates;
+
+    for (GenotypeCombo::iterator g = combo.begin(); g != combo.end(); ++g) {
+        Genotype* genotype = g->second.first;
+        vector<Allele> alts = genotype->alternateAlleles(referenceBase);
+        for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a) {
+            if (alternates.find(*a) == alternates.end()) {
+                alternates[*a] = 1;
+            } else {
+                alternates[*a] += 1;
+            }
+        }
+    }
+
+    vector<pair<Allele, int> > sortedAlternates;
+
+    for (map<Allele, int>::iterator a = alternates.begin(); a != alternates.end(); ++a) {
+        sortedAlternates.push_back(make_pair(a->first, a->second));
+    }
+
+    sort(sortedAlternates.begin(), sortedAlternates.end(),
+            boost::bind(&pair<Allele,int>::second, _1) 
+            > boost::bind(&pair<Allele,int>::second, _2));
+
+    return sortedAlternates;
+
 }

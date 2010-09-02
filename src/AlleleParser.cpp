@@ -958,16 +958,16 @@ vector<Allele> AlleleParser::genotypeAlleles(
         int qSum = 0;
         for (vector<Allele*>::iterator a = group->begin(); a != group->end(); ++a) {
             Allele& allele = **a;
-            if (!passesFilters && allele.mapQuality >= parameters.MQL1 && allele.currentQuality() >= parameters.BQL1) {
-                passesFilters = true;
-            }
+            //if (!passesFilters && allele.mapQuality >= parameters.MQL1 && allele.currentQuality() >= parameters.BQL1) {
+            //    passesFilters = true;
+            //}
             qSum += allele.currentQuality();
         }
-        if (passesFilters) {
-            Allele& allele = *group->front();
-            int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.base(), length), qSum));
-        }
+        //if (passesFilters) {
+        Allele& allele = *group->front();
+        int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
+        unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.base(), length), qSum));
+        //}
     }
     DEBUG2("found genotype alleles");
 

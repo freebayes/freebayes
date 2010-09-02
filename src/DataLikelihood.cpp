@@ -152,6 +152,7 @@ bamBayesApproxProbObservedAllelesGivenGenotype(
 
     if (countOut > 1) {
         sumQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+        //cerr << "dependencefactor," << observedAlleles.front()->sampleID << "," << IUPAC2GenotypeStr(IUPAC(genotype)) << "," << (1 + (countOut - 1) * dependenceFactor) / countOut << endl;
     }
 
     long double lnprob = sumQout - countOut * log(3);

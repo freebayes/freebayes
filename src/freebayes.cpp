@@ -144,11 +144,14 @@ int main (int argc, char *argv[]) {
         // only evaluate alleles with at least one supporting read with mapping
         // quality (MQL1) and base quality (BQL1)
 
-        vector<vector<Allele*> > alleleGroups = groupAlleles(alleles, &allelesEquivalent);
-        DEBUG2("grouped alleles by equivalence");
-
         map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
         DEBUG2("grouped alleles by sample");
+
+        if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction))
+            continue;
+
+        vector<vector<Allele*> > alleleGroups = groupAlleles(alleles, &allelesEquivalent);
+        DEBUG2("grouped alleles by equivalence");
 
         vector<string> sampleListPlusRef;
         //if (parameters.trace) {
@@ -163,7 +166,7 @@ int main (int argc, char *argv[]) {
         vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, sampleGroups, allGenotypeAlleles);
 
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
-            DEBUG("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG2("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
         }
         DEBUG2("genotype alleles: " << genotypeAlleles);
@@ -391,26 +394,29 @@ int main (int argc, char *argv[]) {
         // best non-homozygous case here even if the best case is fully
         // homozygous
 
+        /*
         GenotypeCombo* besthc = NULL;
-        long double bestHetGenotypeComboProb;
+        //long double bestHetGenotypeComboProb;
         // these are sorted according to probability, so we just step through until we find the first het
         for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
-            //if (!isHomozygousCombo(gc->first)) {
             if (!isHomozygousCombo(gc->get<0>())) {
                 besthc = &(gc->get<0>());
-                bestHetGenotypeComboProb = safe_exp(gc->get<1>() - posteriorNormalizer);
+                //bestHetGenotypeComboProb = safe_exp(gc->get<1>() - posteriorNormalizer);
                 break;
             }
         }
         if (besthc == NULL) {
             ERROR("could not find a heterozygous genotype combo at " << parser->currentTarget->seq << ":" << parser->currentPosition);
-            continue; // just raise error and continue
+            continue; // weird situation which suggests an implementation bug, just raise error and continue
         }
-        GenotypeCombo& bestHetGenotypeCombo = *besthc;
+        GenotypeCombo& bestHetGenotypeCombo = *besthc; // for establishing the best alternate
+        */
+        GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().get<0>(); //*besthc;
+        long double bestGenotypeComboProb = genotypeComboProbs.front().get<1>();
         vector<Genotype*> bestComboGenotypes;
-        for (GenotypeCombo::iterator g = bestHetGenotypeCombo.begin(); g != bestHetGenotypeCombo.end(); ++g)
+        for (GenotypeCombo::iterator g = bestGenotypeCombo.begin(); g != bestGenotypeCombo.end(); ++g)
             bestComboGenotypes.push_back(g->second.first);
-        long double bestHetComboAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
+        long double bestGenotypeComboAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
 
         if (parameters.trace) {
             for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
@@ -456,9 +462,9 @@ int main (int argc, char *argv[]) {
             if (parameters.output == "json") {
                 out << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
                     << ", \"sequence\": " << parser->currentTarget->seq
-                    << ", \"best_genotype_combo\":" << bestHetGenotypeCombo
-                    << ", \"best_genotype_combo_prob\":" << bestHetGenotypeComboProb 
-                    << ", \"best_genotype_combo_ewens_sampling_probability\":" << bestHetComboAlleleSamplingProb
+                    << ", \"best_genotype_combo\":" << bestGenotypeCombo
+                    << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
+                    << ", \"best_genotype_combo_ewens_sampling_probability\":" << bestGenotypeComboAlleleSamplingProb
                     << ", \"combos_tested\":" << bandedCombos.size()
                     << ", \"coverage\":" << alleles.size()
                     << ", \"posterior_normalizer\":" << safe_exp(posteriorNormalizer)
@@ -466,32 +472,22 @@ int main (int argc, char *argv[]) {
                 json(out, results, parser);
                 out << "}" << endl;
             }
-            if (pVar >= parameters.PVL) {
+            if (pVar >= parameters.PVL && !isHomozygousCombo(bestGenotypeCombo)) {
                 if (parameters.output == "vcf") {
                     string referenceBase = parser->currentReferenceBase();
-                    // get the set of unique alternate alleles at this site
-                    map<Allele, bool> alternates;
-                    for (GenotypeCombo::iterator g = bestHetGenotypeCombo.begin(); g != bestHetGenotypeCombo.end(); ++g) {
-                        Genotype* genotype = g->second.first;
-                        vector<Allele> alts = genotype->alternateAlleles(referenceBase);
-                        for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a)
-                            alternates[*a] = true;
-                    }
-                    if (alternates.size() == 0)
-                        DEBUG("No alternates at position " << parser->currentPosition);
-                    // for each unique alternate allele, output a line of vcf
-                    for (map<Allele, bool>::iterator alt = alternates.begin(); alt != alternates.end(); ++alt) {
-                        DEBUG2("writing output " << parser->currentPosition);
-                        out << vcf(pVar,
-                                bestHetComboAlleleSamplingProb,
-                                alt->first.base(),
-                                parser->sampleList,
-                                alleles,
-                                bestHetGenotypeCombo,
-                                results,
-                                parser)
-                            << endl;
-                    }
+                    // get the unique alternate alleles in this combo, sorted by frequency in the combo
+                    vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
+                    Allele& bestAlt = alternates.front().first;
+                    // TODO update the vcf output function to handle the reporting of multiple alternate alleles
+                    out << vcf(pVar,
+                            referenceBase,
+                            bestAlt.base(),
+                            parser->sampleList,
+                            alleles,
+                            bestGenotypeCombo,
+                            results,
+                            parser)
+                        << endl;
                 }
             }
         }

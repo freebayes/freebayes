@@ -70,7 +70,8 @@ void vcfHeader(ostream& out,
 
 string vcf(
         long double comboProb,
-        long double alleleSamplingProb,
+        //long double alleleSamplingProb,
+        string refbase,
         string alternateBase,
         vector<string>& samples,
         list<Allele*> observedAlleles,
@@ -82,17 +83,20 @@ string vcf(
 
     // TODO make it so you use the genotypeCombo... 
 
+    GenotypeComboMap comboMap = genotypeCombo2Map(genotypeCombo);
+
     // count alternate alleles in the best genotyping
     int alternateCount = 0;
-    for (GenotypeCombo::iterator g = genotypeCombo.begin(); g != genotypeCombo.end(); ++g) {
-        Genotype* genotype = g->second.first;
-        for (Genotype::iterator g = genotype->begin(); g != genotype->end(); ++g) {
-            if (g->first.base() == alternateBase)
-                ++alternateCount;
+    for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
+        GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
+        //cerr << "alternate count for " << alternateBase << " and " << *genotype << " is " << genotype->alleleCount(alternateBase) << endl;
+        if (gc != comboMap.end()) {
+            Genotype* genotype = gc->second.first;
+            alternateCount += genotype->alleleCount(alternateBase);
         }
     }
 
-    string refbase = parser->currentReferenceBase();
+    //string refbase = parser->currentReferenceBase();
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
     out << parser->currentTarget->seq << "\t"
@@ -102,13 +106,11 @@ string vcf(
         << alternateBase << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
-        << "NS=" << results.size() << ";"
+        << "NS=" << samples.size() << ";"
         << "DP=" << observedAlleles.size() << ";"
-        << "AC=" << alternateCount << ";"
-        << "ESF=" << alleleSamplingProb << "\t" // positional information
+        << "AC=" << alternateCount << "\t"
+        //<< "ESF=" << alleleSamplingProb << "\t" // positional information
         << "GT:GQ:DP:RA:AA";
-
-    GenotypeComboMap comboMap = genotypeCombo2Map(genotypeCombo);
 
     // samples
     for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {

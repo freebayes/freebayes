@@ -12,6 +12,7 @@
 #include <numeric>
 #include "Allele.h"
 #include <boost/tuple/tuple.hpp>
+#include <boost/bind.hpp>
 
 using boost::tuple;
 
@@ -63,6 +64,7 @@ public:
     bool containsAllele(Allele& allele);
     bool containsAlleleOtherThan(string& base);
     vector<Allele> alternateAlleles(string& refbase);
+    int alleleCount(string& base);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
     string str(void);
@@ -113,6 +115,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     int bandwidth, int banddepth);
 
 bool isHomozygousCombo(GenotypeCombo& combo);
+vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);
 
 pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string& refbase, string altbase);
 

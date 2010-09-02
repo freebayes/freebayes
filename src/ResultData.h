@@ -62,7 +62,8 @@ public:
     friend void json(ostream& out, Results& results, AlleleParser* parser);
     friend string vcf(
             long double comboProb,
-            long double alleleSamplingProb,
+            //long double alleleSamplingProb,
+            string referenceBase,
             string alternateBase,
             vector<string>& samples,
             list<Allele*> observedAlleles,
