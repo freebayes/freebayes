@@ -176,11 +176,6 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        // continue in the case that no individual has more than some
-        // fraction of alternate allele observations ...  (default is 0.1)
-        //if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction))
-         //   continue;
-
         Results results;
 
         DEBUG2("calculating data likelihoods");
@@ -191,8 +186,12 @@ int main (int argc, char *argv[]) {
             string sampleName = sample->first;
             vector<Allele*>& observedAlleles = sample->second;
 
-            vector<pair<Genotype*, long double> > probs = 
-                probObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+            vector<pair<Genotype*, long double> > probs;
+            if (parameters.bamBayesDataLikelihoods) {
+                 probs = bamBayesProbObservedAllelesGivenGenotypes(observedAlleles, genotypes, parameters.RDF);
+            } else {
+                 probs = probObservedAllelesGivenGenotypes(observedAlleles, genotypes);
+            }
 
             map<Genotype*, long double> marginals;
             map<Genotype*, vector<long double> > rawMarginals;
@@ -277,9 +276,12 @@ int main (int argc, char *argv[]) {
             map<int, int> frequencyCounts = countFrequencies(genotypeCombo);
             */
 
+            long double priorProbabilityOfGenotypeComboG_Af = 
+                probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+            long double priorProbabilityOfGenotypeComboAf = 
+                alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH);
             long double priorProbabilityOfGenotypeCombo = 
-                alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH)
-                + probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+                priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
             //cout << "priorProbabilityOfGenotypeCombo = " << priorProbabilityOfGenotypeCombo << endl;
             //cout << "probabilityObservationsGivenGenotypes = " << probabilityObservationsGivenGenotypes << endl;
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
@@ -297,7 +299,12 @@ int main (int argc, char *argv[]) {
                 }
             }
 
-            genotypeComboProbs.push_back(make_tuple(*combo, comboProb, probabilityObservationsGivenGenotypes, priorProbabilityOfGenotypeCombo));
+            genotypeComboProbs.push_back(make_tuple(*combo,
+                        comboProb,
+                        probabilityObservationsGivenGenotypes,
+                        priorProbabilityOfGenotypeCombo,
+                        priorProbabilityOfGenotypeComboG_Af,
+                        priorProbabilityOfGenotypeComboAf));
 
         }
 
@@ -413,6 +420,8 @@ int main (int argc, char *argv[]) {
                 long double comboProb = gc->get<1>();
                 long double dataLikelihoodln = gc->get<2>();
                 long double priorln = gc->get<3>();
+                long double priorlnG_Af = gc->get<4>();
+                long double priorlnAf = gc->get<5>();
 
                 parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",genotypecombo,";
 
@@ -430,6 +439,8 @@ int main (int argc, char *argv[]) {
                 parser->traceFile 
                     << "," << dataLikelihoodln
                     << "," << priorln
+                    << "," << priorlnG_Af
+                    << "," << priorlnAf
                     << "," << dataLikelihoodln + priorln
                     << "," << safe_exp(dataLikelihoodln + priorln - posteriorNormalizer)
                     << endl;

@@ -22,6 +22,12 @@ probObservedAllelesGivenGenotype(
         Genotype& genotype);
 
 long double
+bamBayesProbObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype,
+        long double dependenceFactor);
+
+long double
 approxProbObservedAllelesGivenGenotype(
         vector<Allele*>& observedAlleles,
         Genotype& genotype);
@@ -31,6 +37,11 @@ probObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
         vector<Genotype>& genotype);
 
+vector<pair<Genotype*, long double> >
+bamBayesProbObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotype,
+        long double dependenceFactor);
 
 vector<pair<Genotype*, long double> >
 exactProbObservedAllelesGivenGenotypes(

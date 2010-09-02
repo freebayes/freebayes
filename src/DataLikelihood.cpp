@@ -130,6 +130,43 @@ approxProbObservedAllelesGivenGenotype(
 
 }
 
+long double
+bamBayesApproxProbObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype,
+        long double dependenceFactor
+        ) {
+
+    int observationCount = observedAlleles.size();
+
+    long double sumQout = 0;
+    int countOut = 0;
+
+    for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
+        Allele& observation = **obs;
+        if (!genotype.containsAllele(observation)) {
+            sumQout += observation.lncurrentQuality();
+            ++countOut;
+        }
+    }
+
+    if (countOut > 1) {
+        sumQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+    }
+
+    long double lnprob = sumQout - countOut * log(3);
+
+    if (!genotype.homozygous()) {
+        long double lnBinomialfactor = observationCount * log(0.5);
+        //cerr << "lnprob," << observedAlleles.front()->sampleID << "," << IUPAC2GenotypeStr(IUPAC(genotype)) << "," << lnprob + lnBinomialfactor << endl;
+        return lnprob + lnBinomialfactor;
+    } else {
+        //cerr << "lnprob," << observedAlleles.front()->sampleID << "," << IUPAC2GenotypeStr(IUPAC(genotype)) << "," << lnprob << endl;
+        return lnprob;
+    }
+
+}
+
 vector<pair<Genotype*, long double> >
 exactProbObservedAllelesGivenGenotypes(
         vector<Allele*>& observedAlleles,
@@ -182,6 +219,42 @@ probObservedAllelesGivenGenotypes(
             results.push_back(make_pair(&genotype, prob));
         } else {
             results.push_back(make_pair(&genotype, approxProbObservedAllelesGivenGenotype(observedAlleles, genotype)));
+        }
+    }
+    return results;
+}
+
+
+// bambayes style data likelihoods
+vector<pair<Genotype*, long double> >
+bamBayesProbObservedAllelesGivenGenotypes(
+        vector<Allele*>& observedAlleles,
+        vector<Genotype>& genotypes,
+        long double dependenceFactor) {
+    vector<pair<Genotype*, long double> > results;
+    // cache the results on the basis of number of alleles in the genotype as a fraction of the genotype
+    map<pair<int, int>, long double> cachedProbsGivenAllelesInGenotype;
+    bool allSame = (countAlleles(observedAlleles).size() == 1);
+    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        long double prob;
+        Genotype& genotype = *g;
+        if (allSame) {
+            pair<int, int> alleleRatio = make_pair(0, genotype.uniqueAlleles().size());
+            //alleleRatio(observedAlleles, genotype);
+            for (Genotype::iterator a = genotype.begin(); a != genotype.end(); ++a) {
+                if (a->first == *(observedAlleles.front()))
+                    alleleRatio.first += 1;
+            }
+            map<pair<int, int>, long double>::iterator c = cachedProbsGivenAllelesInGenotype.find(alleleRatio);
+            if (c != cachedProbsGivenAllelesInGenotype.end()) {
+                prob = c->second;
+            } else {
+                prob = bamBayesApproxProbObservedAllelesGivenGenotype(observedAlleles, genotype, dependenceFactor);
+                cachedProbsGivenAllelesInGenotype[alleleRatio] = prob;
+            }
+            results.push_back(make_pair(&genotype, prob));
+        } else {
+            results.push_back(make_pair(&genotype, bamBayesApproxProbObservedAllelesGivenGenotype(observedAlleles, genotype, dependenceFactor)));
         }
     }
     return results;

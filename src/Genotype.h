@@ -89,7 +89,7 @@ string IUPAC2GenotypeStr(string iupac);
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
 typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
-typedef tuple<GenotypeCombo, long double, long double, long double> GenotypeComboResult;
+typedef tuple<GenotypeCombo, long double, long double, long double, long double, long double> GenotypeComboResult;
 bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2);
 
 typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;

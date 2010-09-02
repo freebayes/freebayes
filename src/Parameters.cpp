@@ -280,6 +280,19 @@ Parameters::Parameters (int argc, char** argv) {
     my.ArgList.push_back(arg);
     SwitchArg cmd_outputAlleles(arg.shortId, arg.longId, arg.description, cmd, false);
 
+    // algorithm, use gigabayes method for calculating data likelihoods
+    ArgStruct argBamBayesDataLikelihoods;
+    arg = argBamBayesDataLikelihoods; 
+    arg.shortId = ""; 
+    arg.longId = "bamBayesDataLikelihoods"; 
+    arg.description = "algorithm, use GigaBayes method for calculating data likelihoods";
+    arg.required = false; 
+    arg.defaultValueString = "false"; 
+    arg.type = "switch"; 
+    arg.multi = false;
+    my.ArgList.push_back(arg);
+    SwitchArg cmd_bamBayesDataLikelihoods(arg.shortId, arg.longId, arg.description, cmd, false);
+
     // ignore duplicate reads
     ArgStruct argUseDuplicateReads;
     arg = argUseDuplicateReads; 
@@ -776,6 +789,7 @@ Parameters::Parameters (int argc, char** argv) {
     log = cmd_log.getValue();
     output = cmd_output.getValue();
     outputAlleles = cmd_outputAlleles.getValue();
+    bamBayesDataLikelihoods = cmd_bamBayesDataLikelihoods.getValue();
     traceFile = cmd_traceFile.getValue();
     useDuplicateReads = cmd_useDuplicateReads.getValue();
     suppressOutput = cmd_suppressOutput.getValue();

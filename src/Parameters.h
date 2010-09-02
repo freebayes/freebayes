@@ -71,6 +71,7 @@ public:
     bool useDuplicateReads;
     bool suppressOutput;
     bool forceRefAllele;
+    bool bamBayesDataLikelihoods;
     int useBestNAlleles;
     int MQR;
     int BQR;
