@@ -672,7 +672,7 @@ void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes) {
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position) {
 
     for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        cerr << *allele << " " << (*allele)->indelMask.size() << " " << (*allele)->referenceOffset() << endl;
+        //cerr << *allele << " " << (*allele)->indelMask.size() << " " << (*allele)->referenceOffset() << endl;
         if ((*allele)->masked()) {
             *allele = NULL;
         }
