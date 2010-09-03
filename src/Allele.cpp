@@ -95,6 +95,33 @@ const string Allele::base(void) const { // the base of this allele
 
 }
 
+const bool Allele::masked(void) const {
+
+    if (genotypeAllele)
+        return false;
+
+    switch (this->type) {
+        case ALLELE_GENOTYPE:
+            return false;
+            break;
+        case ALLELE_REFERENCE:
+            return indelMask.at(referenceOffset());
+            break;
+        case ALLELE_SNP:
+            return indelMask.at(0);
+            break;
+        case ALLELE_INSERTION: // XXX presently these are masked by default...
+            return true;
+            break;
+        case ALLELE_DELETION:
+            return true;
+            break;
+        default:
+            break;
+    }
+
+}
+
 string stringForAllele(Allele &allele) {
 
     stringstream out;
@@ -645,7 +672,8 @@ void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes) {
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position) {
 
     for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if ((*allele)->indelMask[position]) {
+        cerr << *allele << " " << (*allele)->indelMask.size() << " " << (*allele)->referenceOffset() << endl;
+        if ((*allele)->masked()) {
             *allele = NULL;
         }
     }

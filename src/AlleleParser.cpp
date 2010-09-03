@@ -503,7 +503,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
      *
      */
 
-    map<int, bool> indelMask;
+    vector<bool> indelMask (alignment.AlignedBases.size(), false);
 
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
@@ -601,10 +601,11 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 ra.mismatches += l;
             }
             // XXX indel window exclusion
+            // XXX this only excludes after the deletion
             //if (qual >= parameters.BQL0) {
             if (qual >= parameters.BQL2) {
                 for (int i=0; i<l; i++) {
-                    indelMask[sp + i] = true;
+                    indelMask[sp - alignment.Position + i] = true;
                 }
             }
             //}
@@ -630,8 +631,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 ra.mismatches += l;
             }
             if (qual >= parameters.BQL2) {
-                indelMask[sp] = true;
-                indelMask[sp + 1] = true;
+                indelMask[sp - alignment.Position] = true;
+                indelMask[sp - alignment.Position + 1] = true;
             }
             // register insertion + base quality with reference sequence
             // XXX this cutoff may not make sense for long indels... the joint
@@ -658,17 +659,33 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
     }
     cerr << endl;
     */
-    for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-        Allele& allele = **a;
-        for (map<int, bool>::iterator im = indelMask.begin(); im != indelMask.end(); ++im) {
-            const int i = im->first;
-            //if (i >= allele.position && i < allele.position + allele.length) {
-            for (int j = i - parameters.IDW; j <= i + parameters.IDW; ++j)
-                allele.indelMask[j] = true;
-            //}
+    /*
+    for (vector<bool>::iterator i = indelMask.begin(); i != indelMask.end(); ++i)
+        cerr << (*i ? "t" : "f");
+    cerr << endl;
+    */
+    for (vector<bool>::iterator m = indelMask.begin(); m < indelMask.end(); ++m) {
+        if (*m) {
+            vector<bool>::iterator q = m - parameters.IDW;
+            if (q < indelMask.begin()) q = indelMask.begin();
+            for (; q <= m + parameters.IDW && q != indelMask.end(); ++q) {
+                *q = true;
+            }
+            m += parameters.IDW + 1;
         }
     }
+    for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+        Allele& allele = **a;
+        int start = (allele.position - alignment.Position);
+        int end = start + allele.length;
+        allele.indelMask.resize(allele.length);
+        vector<bool>::iterator im = indelMask.begin();
+        copy(im + start, im + end, allele.indelMask.begin());
+        // here apply the indel exclusion window to the allele
+    }
+
     return ra;
+
 }
 
 
@@ -931,7 +948,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string name = currentTarget->seq; // this behavior matches old bambayes
     string baseQstr = "";
     baseQstr += qualityInt2Char(baseQ);
-    return new Allele(ALLELE_REFERENCE, 
+    Allele* allele = new Allele(ALLELE_REFERENCE, 
             currentTarget->seq,
             currentPosition,
             &currentPosition, 
@@ -939,6 +956,8 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             true, baseQ,
             baseQstr,
             mapQ);
+    allele->genotypeAllele = true;
+    return allele;
 }
 
 

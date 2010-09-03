@@ -97,7 +97,8 @@ public:
     short quality;          // base quality score associated with this allele
     short mapQuality;       // map quality for the originating read
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
-    map<int, bool> indelMask; // indel mask structure, masks sites within the IDW from indels
+    vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
+    const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
