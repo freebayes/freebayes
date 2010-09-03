@@ -568,11 +568,11 @@ Parameters::Parameters (int argc, char** argv) {
     arg.longId = "minAltFraction";
     arg.description = "skip positions if no sample has >= than this fraction of alternate alleles";
     arg.required = false;
-    arg.defaultValueString = "0.1";
+    arg.defaultValueString = "0.0";
     arg.type = "double";
     arg.multi = false;
     my.ArgList.push_back(arg);
-    ValueArg<double> cmd_minAltFraction(arg.shortId, arg.longId, arg.description, arg.required, 0.1, arg.type, cmd);
+    ValueArg<double> cmd_minAltFraction(arg.shortId, arg.longId, arg.description, arg.required, 0.0, arg.type, cmd);
 
     // minAltCount: filter against positions, don't process if no sample has
     // less than this count of alternate alleles
