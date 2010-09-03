@@ -582,11 +582,11 @@ Parameters::Parameters (int argc, char** argv) {
     arg.longId = "minAltCount";
     arg.description = "skip positions if no sample has >= this count of alternate alleles";
     arg.required = false;
-    arg.defaultValueString = "2";
+    arg.defaultValueString = "1";
     arg.type = "int";
     arg.multi = false;
     my.ArgList.push_back(arg);
-    ValueArg<int> cmd_minAltCount(arg.shortId, arg.longId, arg.description, arg.required, 2, arg.type, cmd);
+    ValueArg<int> cmd_minAltCount(arg.shortId, arg.longId, arg.description, arg.required, 1, arg.type, cmd);
 
     // TH: pairwise nucleotide diversity (theta)
     ArgStruct argTH;
