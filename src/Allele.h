@@ -14,7 +14,6 @@
 #include "Utility.h"
 #include <boost/pool/object_pool.hpp>
 
-
 using namespace std;
 
 class Allele;
@@ -41,14 +40,17 @@ private:
 // a structure describing an allele
 
 enum AlleleType {
-    ALLELE_GENOTYPE,
-    ALLELE_REFERENCE,
-    ALLELE_MISMATCH, 
-    ALLELE_SNP, 
-    ALLELE_INSERTION, 
-    ALLELE_DELETION,
-    ALLELE_CNV
+    ALLELE_GENOTYPE = 0,
+    ALLELE_REFERENCE = 1,
+    ALLELE_MISMATCH = 2, 
+    ALLELE_SNP = 3, 
+    ALLELE_INSERTION = 4, 
+    ALLELE_DELETION = 5,
+    ALLELE_CNV = 6
 };
+
+// used in making allele type filter vectors
+const int numberOfPossibleAlleleTypes = 7;
 
 enum AlleleStrand {
     STRAND_FORWARD,
@@ -94,6 +96,7 @@ public:
     string sampleID;        // representative sample ID
     string readID;          // id of the read which the allele is drawn from
     string qualityString;   // quality string drawn from sequencer
+    vector<short> baseQualities;
     short quality;          // base quality score associated with this allele
     short mapQuality;       // map quality for the originating read
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
@@ -119,7 +122,7 @@ public:
         , position(pos)
         , currentReferencePosition(crefpos)
         , length(len)
-        , referenceSequence(refallele)
+        //, referenceSequence(refallele)
         , alternateSequence(alt)
         , sampleID(sampleid)
         , readID(readid)
@@ -128,7 +131,10 @@ public:
         , qualityString(qstr)
         , mapQuality(mapqual) 
         , genotypeAllele(false)
-    { }
+    { 
+        baseQualities.resize(qstr.size()); // cache qualities
+        transform(qstr.begin(), qstr.end(), baseQualities.begin(), qualityChar2ShortInt);
+    }
 
     // for constructing genotype alleles
     Allele(AlleleType t,
@@ -159,6 +165,7 @@ public:
         , strand(other.strand)
         , quality(other.quality)
         , qualityString(other.qualityString)
+        , baseQualities(other.baseQualities)
         , mapQuality(other.mapQuality) 
         , genotypeAllele(other.genotypeAllele)
     { }
@@ -166,8 +173,8 @@ public:
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void); // return a string representation of the allele type, for output
     int referenceOffset(void) const;
-    short currentQuality(void);  // for getting the quality of a given position in multi-bp alleles
-    long double lncurrentQuality(void);
+    const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
+    const long double lncurrentQuality(void) const;
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
     const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
 
@@ -197,7 +204,8 @@ private:
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
-void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes);
+vector<bool> allowedAlleleTypesVector(vector<AlleleType>& allowedEnumeratedTypes);
+void filterAlleles(list<Allele*>& alleles, vector<bool>& allowedTypes);
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);

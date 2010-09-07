@@ -140,11 +140,14 @@ public:
     bool loadTarget(BedData*);
     bool toFirstTargetPosition(void);
     bool toNextTargetPosition(void);
+    bool dummyProcessNextTarget(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
     bool getNextAlleles(list<Allele*>& alleles);
+    bool getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes);
     void getAlleles(list<Allele*>& alleles);
+    void getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
 

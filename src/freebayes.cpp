@@ -85,6 +85,8 @@ int main (int argc, char *argv[]) {
     Parameters& parameters = parser->parameters;
     list<Allele*> alleles;
 
+    map<string, vector<Allele*> > sampleGroups;
+
     ostream& out = *(parser->output);
 
     // this can be uncommented to force operation on a specific set of genotypes
@@ -98,6 +100,7 @@ int main (int argc, char *argv[]) {
     vector<AlleleType> allowedAlleles;
     allowedAlleles.push_back(ALLELE_REFERENCE);
     allowedAlleles.push_back(ALLELE_SNP);
+    vector<bool> allowedAlleleTypes = allowedAlleleTypesVector(allowedAlleles);
     //allowedAlleles.push_back(ALLELE_INSERTION);
     //allowedAlleles.push_back(ALLELE_DELETION);
 
@@ -106,20 +109,19 @@ int main (int argc, char *argv[]) {
         vcfHeader(out, parser->reference->filename, parser->sampleList);
     }
 
-    while (parser->getNextAlleles(alleles)) {
+    while (parser->getNextAlleles(alleles, sampleGroups, allowedAlleleTypes)) {
 
         DEBUG2("position: " << parser->currentTarget->seq << ":" << parser->currentPosition);
 
         DEBUG2("at start of main loop");
 
-        filterAlleles(alleles, allowedAlleles);
-        removeIndelMaskedAlleles(alleles, parser->currentPosition);
+        //filterAlleles(alleles, allowedAlleles);
+        //removeIndelMaskedAlleles(alleles, parser->currentPosition);
         
         DEBUG2("alleles filtered");
 
         if (parameters.trace) {
-            map<string, vector<Allele*> > sampleGroups1 = groupAllelesBySample(alleles);
-            for (map<string, vector<Allele*> >::iterator g = sampleGroups1.begin(); g != sampleGroups1.end(); ++g) {
+            for (map<string, vector<Allele*> >::iterator g = sampleGroups.begin(); g != sampleGroups.end(); ++g) {
                 vector<Allele*>& group = g->second;
                 for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
                     Allele& allele = **a;
@@ -144,11 +146,13 @@ int main (int argc, char *argv[]) {
         // only evaluate alleles with at least one supporting read with mapping
         // quality (MQL1) and base quality (BQL1)
 
-        map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
+        //map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
         DEBUG2("grouped alleles by sample");
 
-        if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction))
+        if (!sufficientAlternateObservations(sampleGroups, parameters.minAltCount, parameters.minAltFraction)) {
+            DEBUG2("insufficient observations at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
+        }
 
         vector<vector<Allele*> > alleleGroups = groupAlleles(alleles, &allelesEquivalent);
         DEBUG2("grouped alleles by equivalence");

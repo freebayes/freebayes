@@ -11,11 +11,11 @@ int Allele::referenceOffset(void) const {
 }
 
 // quality at a given reference position
-short Allele::currentQuality(void) {
+const short Allele::currentQuality(void) const {
     switch (this->type) {
         case ALLELE_REFERENCE:
             TRY {
-            return qualityChar2ShortInt(qualityString.at(referenceOffset()));
+            return baseQualities.at(referenceOffset());
             } CATCH;
             break;
         case ALLELE_INSERTION:
@@ -26,7 +26,7 @@ short Allele::currentQuality(void) {
     }
 }
 
-long double Allele::lncurrentQuality(void) {
+const long double Allele::lncurrentQuality(void) const {
     return phred2ln(currentQuality());
 }
 
@@ -96,6 +96,10 @@ const string Allele::base(void) const { // the base of this allele
 }
 
 const bool Allele::masked(void) const {
+
+    // guard against uninitialized indelMask
+    if (indelMask.size() == 0)
+        return false;
 
     if (genotypeAllele)
         return false;
@@ -241,7 +245,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << allele.position 
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence
-            << ":" << allele.referenceSequence
+            //<< ":" << allele.referenceSequence
             << ":" << allele.quality;
     } else {
         out << allele.typeStr() 
@@ -651,17 +655,26 @@ bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups
 
 }
 
-void filterAlleles(list<Allele*>& alleles, vector<AlleleType>& allowedTypes) {
-
-    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+vector<bool> allowedAlleleTypesVector(vector<AlleleType>& allowedEnumeratedTypes) {
+    vector<bool> allowedTypes;// (numberOfPossibleAlleleTypes, false);
+    for (int i = 0; i < numberOfPossibleAlleleTypes; ++i) {
         bool allowed = false;
-        for (vector<AlleleType>::const_iterator t = allowedTypes.begin(); t != allowedTypes.end(); ++t) {
-            if ((*allele)->type == *t) {
+        for (vector<AlleleType>::iterator t = allowedEnumeratedTypes.begin(); t != allowedEnumeratedTypes.end(); ++t) {
+            if (i == *t) {
                 allowed = true;
                 break;
             }
         }
-        if (!allowed)
+        allowedTypes.push_back(allowed);
+    }
+    return allowedTypes;
+}
+
+void filterAlleles(list<Allele*>& alleles, vector<bool>& allowedTypes) {
+
+    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        bool allowed = false;
+        if (!allowedTypes.at((*allele)->type))
             *allele = NULL;
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());

@@ -678,9 +678,17 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
         Allele& allele = **a;
         int start = (allele.position - alignment.Position);
         int end = start + allele.length;
-        allele.indelMask.resize(allele.length);
         vector<bool>::iterator im = indelMask.begin();
-        copy(im + start, im + end, allele.indelMask.begin());
+        // if there is anything masked, store it, otherwise just leave the
+        // indelMask on this alignment empty, which means, "no masking" in
+        // Allele::masked()
+        for (vector<bool>::iterator q = im + start; q != im + end; ++q) {
+            if (*q) { // there is a masked element
+                allele.indelMask.resize(allele.length);
+                copy(im + start, im + end, allele.indelMask.begin());
+                break;
+            }
+        }
         // here apply the indel exclusion window to the allele
     }
 
@@ -894,9 +902,40 @@ bool AlleleParser::toNextTargetPosition(void) {
     return true;
 }
 
+// XXX for testing only, steps targets but does nothing
+bool AlleleParser::dummyProcessNextTarget(void) {
+
+    if (currentTarget == NULL) {
+        if (!toFirstTargetPosition()) {
+            ERROR("failed to load first target");
+            return false;
+        }
+    } else {
+        if (!toNextTarget()) {
+            DEBUG("no more targets, finishing");
+            return false;
+        }
+    }
+
+    while (bamMultiReader.GetNextAlignment(currentAlignment)) {
+    }
+
+    //DEBUG2("processing position " << currentPosition + 1 << " in sequence " << currentTarget->seq);
+    return true;
+}
+
 bool AlleleParser::getNextAlleles(list<Allele*>& alleles) {
     if (toNextTargetPosition()) {
         getAlleles(alleles);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool AlleleParser::getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes) {
+    if (toNextTargetPosition()) {
+        getAlleles(alleles, allelesBySample, allowedAlleleTypes);
         return true;
     } else {
         return false;
@@ -934,7 +973,52 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
         }
     }
 
-    alleles.sort();
+    //alleles.sort();
+
+    DEBUG2("done getting alleles");
+    // TODO allele sorting by sample on registration
+    // for another potential perf boost
+    // as we always sort them by sample later
+}
+
+void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes) {
+
+    DEBUG2("getting alleles");
+
+    alleles.clear();
+    for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
+        s->second.clear();
+    }
+
+    // add the reference allele to the analysis
+    if (parameters.useRefAllele) {
+        if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
+        currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
+        allelesBySample[currentTarget->seq].push_back(currentReferenceAllele);
+        alleles.push_back(currentReferenceAllele);
+    }
+
+    // get the variant alleles *at* the current position
+    // and the reference alleles *overlapping* the current position
+    for (vector<Allele*>::const_iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
+        Allele* allele = *a;
+        if (allowedAlleleTypes[allele->type]
+                && (
+                    (allele->type == ALLELE_REFERENCE 
+                      && currentPosition >= allele->position 
+                      && currentPosition < allele->position + allele->length) // 0-based, means position + length - 1 is the last included base
+                  || 
+                    (allele->position == currentPosition)
+                    ) 
+                && allele->currentQuality() >= parameters.BQL0
+                && !allele->masked()
+                ) {
+            allelesBySample[allele->sampleID].push_back(allele);
+            alleles.push_back(allele);
+        }
+    }
+
+    //alleles.sort();
 
     DEBUG2("done getting alleles");
     // TODO allele sorting by sample on registration

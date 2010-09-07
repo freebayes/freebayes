@@ -61,12 +61,13 @@ int main (int argc, char *argv[]) {
     vector<AlleleType> allowedAlleles;
     allowedAlleles.push_back(ALLELE_REFERENCE);
     allowedAlleles.push_back(ALLELE_SNP);
+    vector<bool> allowedAlleleTypes = allowedAlleleTypesVector(allowedAlleles);
     //allowedAlleles.push_back(ALLELE_INSERTION);
     //allowedAlleles.push_back(ALLELE_DELETION);
 
     while (parser->getNextAlleles(alleles)) {
 
-        filterAlleles(alleles, allowedAlleles);
+        filterAlleles(alleles, allowedAlleleTypes);
 
         // skips 0-coverage regions
         if (alleles.size() == 0)

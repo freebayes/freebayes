@@ -25,8 +25,8 @@ C=gcc
 # Compiler flags
 #CFLAGS=-g # debugging
 #CFLAGS=-O3 #-pg #profiling
-#CFLAGS=-pg -O3
-CFLAGS=-O3
+CFLAGS=-pg -O3
+#CFLAGS=-O3
 
 ################################################################################
 # Program builds
@@ -39,6 +39,9 @@ freebayes: freebayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedR
 alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
 	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o alleles -lz -lboost_regex -lpthread -Wno-deprecated
 
+dummy: dummy.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) dummy.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o dummy -lz -lboost_regex -lpthread -Wno-deprecated
+
 ################################################################################
 # Compilation
 ################################################################################
@@ -49,6 +52,9 @@ Fasta.o: Fasta.cpp
 
 alleles.o: alleles.cpp AlleleParser.o Allele.o
 	$(CC) $(CFLAGS) -c alleles.cpp -Wno-deprecated
+
+dummy.o: dummy.cpp AlleleParser.o Allele.o
+	$(CC) $(CFLAGS) -c dummy.cpp -Wno-deprecated
 
 freebayes.o: freebayes.cpp TryCatch.h
 	$(CC) $(CFLAGS) -c freebayes.cpp -Wno-deprecated
