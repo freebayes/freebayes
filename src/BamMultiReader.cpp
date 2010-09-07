@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 20 July 2010 (DB)
+// Last modified: 3 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -18,11 +18,12 @@
 
 // C++ includes
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <iostream>
-#include <sstream>
 
 // BamTools includes
 #include "BGZF.h"
@@ -42,248 +43,34 @@ BamMultiReader::BamMultiReader(void)
 
 // destructor
 BamMultiReader::~BamMultiReader(void) {
-    Close(); // close the bam files
-    // clean up reader objects
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        delete it->first;
-        delete it->second;
-    }
+    Close(); 
 }
 
 // close the BAM files
 void BamMultiReader::Close(void) {
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        BamReader* reader = it->first;
-        reader->Close();  // close the reader
-    }
-}
-
-// updates the reference id stored in the BamMultiReader
-// to reflect the current state of the readers
-void BamMultiReader::UpdateReferenceID(void) {
-    // the alignments are sorted by position, so the first alignment will always have the lowest reference ID
-    if (alignments.begin()->second.second->RefID != CurrentRefID) {
-        // get the next reference id
-        // while there aren't any readers at the next ref id
-        // increment the ref id
-        int nextRefID = CurrentRefID;
-        while (alignments.begin()->second.second->RefID != nextRefID) {
-            ++nextRefID;
-        }
-        //cerr << "updating reference id from " << CurrentRefID << " to " << nextRefID << endl;
-        CurrentRefID = nextRefID;
-    }
-}
-
-// checks if any readers still have alignments
-bool BamMultiReader::HasOpenReaders() {
-    return alignments.size() > 0;
-}
-
-// get next alignment among all files
-bool BamMultiReader::GetNextAlignment(BamAlignment& nextAlignment) {
-
-    // bail out if we are at EOF in all files, means no more alignments to process
-    if (!HasOpenReaders())
-        return false;
-
-    // when all alignments have stepped into a new target sequence, update our
-    // current reference sequence id
-    UpdateReferenceID();
-
-    // our lowest alignment and reader will be at the front of our alignment index
-    BamAlignment* alignment = alignments.begin()->second.second;
-    BamReader* reader = alignments.begin()->second.first;
-
-    // now that we have the lowest alignment in the set, save it by copy to our argument
-    nextAlignment = BamAlignment(*alignment);
-
-    // remove this alignment index entry from our alignment index
-    alignments.erase(alignments.begin());
-
-    // and add another entry if we can get another alignment from the reader
-    if (reader->GetNextAlignment(*alignment)) {
-        alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
-                                    make_pair(reader, alignment)));
-    } else { // do nothing
-        //cerr << "reached end of file " << lowestReader->GetFilename() << endl;
-    }
-
-    return true;
-
-}
-
-// get next alignment among all files without parsing character data from alignments
-bool BamMultiReader::GetNextAlignmentCore(BamAlignment& nextAlignment) {
-
-    // bail out if we are at EOF in all files, means no more alignments to process
-    if (!HasOpenReaders())
-        return false;
-
-    // when all alignments have stepped into a new target sequence, update our
-    // current reference sequence id
-    UpdateReferenceID();
-
-    // our lowest alignment and reader will be at the front of our alignment index
-    BamAlignment* alignment = alignments.begin()->second.second;
-    BamReader* reader = alignments.begin()->second.first;
-
-    // now that we have the lowest alignment in the set, save it by copy to our argument
-    nextAlignment = BamAlignment(*alignment);
-    //memcpy(&nextAlignment, alignment, sizeof(BamAlignment));
-
-    // remove this alignment index entry from our alignment index
-    alignments.erase(alignments.begin());
-
-    // and add another entry if we can get another alignment from the reader
-    if (reader->GetNextAlignmentCore(*alignment)) {
-        alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position), 
-                                    make_pair(reader, alignment)));
-    } else { // do nothing
-        //cerr << "reached end of file " << lowestReader->GetFilename() << endl;
-    }
-
-    return true;
-
-}
-
-// jumps to specified region(refID, leftBound) in BAM files, returns success/fail
-bool BamMultiReader::Jump(int refID, int position) {
-
-    //if ( References.at(refID).RefHasAlignments && (position <= References.at(refID).RefLength) ) {
-    CurrentRefID = refID;
-    CurrentLeft  = position;
-
-    bool result = true;
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        BamReader* reader = it->first;
-        result &= reader->Jump(refID, position);
-        if (!result) {
-            cerr << "ERROR: could not jump " << reader->GetFilename() << " to " << refID << ":" << position << endl;
-            exit(1);
-        }
-    }
-    if (result) UpdateAlignments();
-    return result;
-}
-
-bool BamMultiReader::SetRegion(const int& leftRefID, const int& leftPosition, const int& rightRefID, const int& rightPosition) {
-
-    BamRegion region(leftRefID, leftPosition, rightRefID, rightPosition);
-
-    return SetRegion(region);
-
-}
-
-bool BamMultiReader::SetRegion(const BamRegion& region) {
-
-    Region = region;
-
-    // NB: While it may make sense to track readers in which we can
-    // successfully SetRegion, In practice a failure of SetRegion means "no
-    // alignments here."  It makes sense to simply accept the failure,
-    // UpdateAlignments(), and continue.
-
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        it->first->SetRegion(region);
-    }
-
-    UpdateAlignments();
-
-    return true;
-
-}
-
-void BamMultiReader::UpdateAlignments(void) {
-    // Update Alignments
-    alignments.clear();
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        BamReader* br = it->first;
-        BamAlignment* ba = it->second;
-        if (br->GetNextAlignment(*ba)) {
-            alignments.insert(make_pair(make_pair(ba->RefID, ba->Position), 
-                                        make_pair(br, ba)));
-        } else {
-            // assume BamReader end of region / EOF
-        }
-    }
-}
-
-// opens BAM files
-bool BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
-    
-    // for filename in filenames
-    fileNames = filenames; // save filenames in our multireader
-    for (vector<string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it) {
-        string filename = *it;
-        BamReader* reader = new BamReader;
-
-        bool openedOK = true;
-        if (openIndexes) {
-            if (useDefaultIndex)
-                openedOK = reader->Open(filename, filename + ".bai");
-            else 
-                openedOK = reader->Open(filename, filename + ".bti");
-        } else {
-            openedOK = reader->Open(filename); // for merging, jumping is disallowed
-        }
+  
+    // close all BAM readers and clean up pointers
+    vector<pair<BamReader*, BamAlignment*> >::iterator readerIter = readers.begin();
+    vector<pair<BamReader*, BamAlignment*> >::iterator readerEnd  = readers.end();
+    for ( ; readerIter != readerEnd; ++readerIter) {
+      
+        BamReader* reader = (*readerIter).first;
+        BamAlignment* alignment = (*readerIter).second;
         
-        // if file opened ok, check that it can be read
-        if ( openedOK ) {
-           
-            bool fileOK = true;
-            BamAlignment* alignment = new BamAlignment;
-            if (coreMode) {
-                fileOK &= reader->GetNextAlignmentCore(*alignment);
-            } else {
-                fileOK &= reader->GetNextAlignment(*alignment);
-            }
-            
-            if (fileOK) {
-                readers.push_back(make_pair(reader, alignment)); // store pointers to our readers for cleanup
-                alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
-                                            make_pair(reader, alignment)));
-            } else {
-                cerr << "WARNING: could not read first alignment in " << filename << ", ignoring file" << endl;
-                // if only file available & could not be read, return failure
-                if ( filenames.size() == 1 ) return false;
-            }
+        // close the reader
+        if ( reader) reader->Close();  
         
-        } 
-       
-        // TODO; any more error handling on openedOK ??
-        else 
-            return false;
+        // delete reader pointer
+        delete reader;
+        reader = 0;
+
+        // delete alignment pointer
+        delete alignment;
+        alignment = 0;
     }
 
-    // files opened ok, at least one alignment could be read,
-    // now need to check that all files use same reference data
-    ValidateReaders();
-    return true;
-}
-
-void BamMultiReader::PrintFilenames(void) {
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        BamReader* reader = it->first;
-        cout << reader->GetFilename() << endl;
-    }
-}
-
-// for debugging
-void BamMultiReader::DumpAlignmentIndex(void) {
-    for (AlignmentIndex::const_iterator it = alignments.begin(); it != alignments.end(); ++it) {
-        cerr << it->first.first << ":" << it->first.second << " " << it->second.first->GetFilename() << endl;
-    }
-}
-
-// returns BAM file pointers to beginning of alignment data
-bool BamMultiReader::Rewind(void) { 
-    bool result = true;
-    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
-        BamReader* reader = it->first;
-        result &= reader->Rewind();
-    }
-    return result;
+    // clear out the container
+    readers.clear();
 }
 
 // saves index data to BAM index files (".bai"/".bti") where necessary, returns success/fail
@@ -294,6 +81,13 @@ bool BamMultiReader::CreateIndexes(bool useDefaultIndex) {
         result &= reader->CreateIndex(useDefaultIndex);
     }
     return result;
+}
+
+// for debugging
+void BamMultiReader::DumpAlignmentIndex(void) {
+    for (AlignmentIndex::const_iterator it = alignments.begin(); it != alignments.end(); ++it) {
+        cerr << it->first.first << ":" << it->first.second << " " << it->second.first->GetFilename() << endl;
+    }
 }
 
 // makes a virtual, unified header for all the bam files in the multireader
@@ -363,6 +157,260 @@ const string BamMultiReader::GetHeaderText(void) const {
     return mergedHeader;
 }
 
+// get next alignment among all files
+bool BamMultiReader::GetNextAlignment(BamAlignment& nextAlignment) {
+
+    // bail out if we are at EOF in all files, means no more alignments to process
+    if (!HasOpenReaders())
+        return false;
+
+    // when all alignments have stepped into a new target sequence, update our
+    // current reference sequence id
+    UpdateReferenceID();
+
+    // our lowest alignment and reader will be at the front of our alignment index
+    BamAlignment* alignment = alignments.begin()->second.second;
+    BamReader* reader = alignments.begin()->second.first;
+
+    // now that we have the lowest alignment in the set, save it by copy to our argument
+    nextAlignment = BamAlignment(*alignment);
+
+    // remove this alignment index entry from our alignment index
+    alignments.erase(alignments.begin());
+
+    // and add another entry if we can get another alignment from the reader
+    if (reader->GetNextAlignment(*alignment)) {
+        alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
+                                    make_pair(reader, alignment)));
+    } else { // do nothing
+        //cerr << "reached end of file " << lowestReader->GetFilename() << endl;
+    }
+
+    return true;
+
+}
+
+// get next alignment among all files without parsing character data from alignments
+bool BamMultiReader::GetNextAlignmentCore(BamAlignment& nextAlignment) {
+
+    // bail out if we are at EOF in all files, means no more alignments to process
+    if (!HasOpenReaders())
+        return false;
+
+    // when all alignments have stepped into a new target sequence, update our
+    // current reference sequence id
+    UpdateReferenceID();
+
+    // our lowest alignment and reader will be at the front of our alignment index
+    BamAlignment* alignment = alignments.begin()->second.second;
+    BamReader* reader = alignments.begin()->second.first;
+
+    // now that we have the lowest alignment in the set, save it by copy to our argument
+    nextAlignment = BamAlignment(*alignment);
+    //memcpy(&nextAlignment, alignment, sizeof(BamAlignment));
+
+    // remove this alignment index entry from our alignment index
+    alignments.erase(alignments.begin());
+
+    // and add another entry if we can get another alignment from the reader
+    if (reader->GetNextAlignmentCore(*alignment)) {
+        alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position), 
+                                    make_pair(reader, alignment)));
+    } else { // do nothing
+        //cerr << "reached end of file " << lowestReader->GetFilename() << endl;
+    }
+
+    return true;
+
+}
+
+// ---------------------------------------------------------------------------------------
+//
+// NB: The following GetReferenceX() functions assume that we have identical 
+// references for all BAM files.  We enforce this by invoking the above 
+// validation function (ValidateReaders) to verify that our reference data 
+// is the same across all files on Open, so we will not encounter a situation 
+// in which there is a mismatch and we are still live.
+//
+// ---------------------------------------------------------------------------------------
+
+// returns the number of reference sequences
+const int BamMultiReader::GetReferenceCount(void) const {
+    return readers.front().first->GetReferenceCount();
+}
+
+// returns vector of reference objects
+const BamTools::RefVector BamMultiReader::GetReferenceData(void) const {
+    return readers.front().first->GetReferenceData();
+}
+
+// returns refID from reference name
+const int BamMultiReader::GetReferenceID(const string& refName) const { 
+    return readers.front().first->GetReferenceID(refName);
+}
+
+// ---------------------------------------------------------------------------------------
+
+// checks if any readers still have alignments
+bool BamMultiReader::HasOpenReaders() {
+    return alignments.size() > 0;
+}
+
+// returns whether underlying BAM readers ALL have an index loaded
+// this is useful to indicate whether Jump() or SetRegion() are possible
+bool BamMultiReader::IsIndexLoaded(void) const {
+    bool ok = true;
+    vector<pair<BamReader*, BamAlignment*> >::const_iterator readerIter = readers.begin();
+    vector<pair<BamReader*, BamAlignment*> >::const_iterator readerEnd  = readers.end();
+    for ( ; readerIter != readerEnd; ++readerIter ) {
+        const BamReader* reader = (*readerIter).first;
+        if ( reader ) ok &= reader->IsIndexLoaded();
+    }
+    return ok;
+}
+
+// jumps to specified region(refID, leftBound) in BAM files, returns success/fail
+bool BamMultiReader::Jump(int refID, int position) {
+
+    //if ( References.at(refID).RefHasAlignments && (position <= References.at(refID).RefLength) ) {
+    CurrentRefID = refID;
+    CurrentLeft  = position;
+
+    bool result = true;
+    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
+        BamReader* reader = it->first;
+        result &= reader->Jump(refID, position);
+        if (!result) {
+            cerr << "ERROR: could not jump " << reader->GetFilename() << " to " << refID << ":" << position << endl;
+            exit(1);
+        }
+    }
+    if (result) UpdateAlignments();
+    return result;
+}
+
+// opens BAM files
+bool BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
+    
+    // for filename in filenames
+    fileNames = filenames; // save filenames in our multireader
+    for (vector<string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it) {
+        
+        const string filename = *it;
+        BamReader* reader = new BamReader;
+
+        bool openedOK = true;
+        if (openIndexes) {
+            
+            // leave index filename empty 
+            // this allows BamReader & BamIndex to search for any available
+            // useDefaultIndex gives hint to prefer BAI over BTI
+            openedOK = reader->Open(filename, "", true, useDefaultIndex);
+        } 
+        
+        // ignoring index file(s)
+        else openedOK = reader->Open(filename); 
+        
+        // if file opened ok, check that it can be read
+        if ( openedOK ) {
+           
+            bool fileOK = true;
+            BamAlignment* alignment = new BamAlignment;
+            fileOK &= ( coreMode ? reader->GetNextAlignmentCore(*alignment) : reader->GetNextAlignment(*alignment) );
+            
+            if (fileOK) {
+                readers.push_back(make_pair(reader, alignment)); // store pointers to our readers for cleanup
+                alignments.insert(make_pair(make_pair(alignment->RefID, alignment->Position),
+                                            make_pair(reader, alignment)));
+            } else {
+                cerr << "WARNING: could not read first alignment in " << filename << ", ignoring file" << endl;
+                // if only file available & could not be read, return failure
+                if ( filenames.size() == 1 ) return false;
+            }
+        } 
+       
+        // TODO; any further error handling when openedOK is false ??
+        else 
+            return false;
+    }
+
+    // files opened ok, at least one alignment could be read,
+    // now need to check that all files use same reference data
+    ValidateReaders();
+    return true;
+}
+
+void BamMultiReader::PrintFilenames(void) {
+    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
+        BamReader* reader = it->first;
+        cout << reader->GetFilename() << endl;
+    }
+}
+
+// returns BAM file pointers to beginning of alignment data
+bool BamMultiReader::Rewind(void) { 
+    bool result = true;
+    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
+        BamReader* reader = it->first;
+        result &= reader->Rewind();
+    }
+    return result;
+}
+
+bool BamMultiReader::SetRegion(const int& leftRefID, const int& leftPosition, const int& rightRefID, const int& rightPosition) {
+    BamRegion region(leftRefID, leftPosition, rightRefID, rightPosition);
+    return SetRegion(region);
+}
+
+bool BamMultiReader::SetRegion(const BamRegion& region) {
+
+    Region = region;
+
+    // NB: While it may make sense to track readers in which we can
+    // successfully SetRegion, In practice a failure of SetRegion means "no
+    // alignments here."  It makes sense to simply accept the failure,
+    // UpdateAlignments(), and continue.
+
+    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
+        it->first->SetRegion(region);
+    }
+
+    UpdateAlignments();
+    return true;
+}
+
+void BamMultiReader::UpdateAlignments(void) {
+    // Update Alignments
+    alignments.clear();
+    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
+        BamReader* br = it->first;
+        BamAlignment* ba = it->second;
+        if (br->GetNextAlignment(*ba)) {
+            alignments.insert(make_pair(make_pair(ba->RefID, ba->Position), 
+                                        make_pair(br, ba)));
+        } else {
+            // assume BamReader end of region / EOF
+        }
+    }
+}
+
+// updates the reference id stored in the BamMultiReader
+// to reflect the current state of the readers
+void BamMultiReader::UpdateReferenceID(void) {
+    // the alignments are sorted by position, so the first alignment will always have the lowest reference ID
+    if (alignments.begin()->second.second->RefID != CurrentRefID) {
+        // get the next reference id
+        // while there aren't any readers at the next ref id
+        // increment the ref id
+        int nextRefID = CurrentRefID;
+        while (alignments.begin()->second.second->RefID != nextRefID) {
+            ++nextRefID;
+        }
+        //cerr << "updating reference id from " << CurrentRefID << " to " << nextRefID << endl;
+        CurrentRefID = nextRefID;
+    }
+}
+
 // ValidateReaders checks that all the readers point to BAM files representing
 // alignments against the same set of reference sequences, and that the
 // sequences are identically ordered.  If these checks fail the operation of
@@ -397,24 +445,4 @@ void BamMultiReader::ValidateReaders(void) const {
             ++f; ++c;
         }
     }
-}
-
-// NB: The following functions assume that we have identical references for all
-// BAM files.  We enforce this by invoking the above validation function
-// (ValidateReaders) to verify that our reference data is the same across all
-// files on Open, so we will not encounter a situation in which there is a
-// mismatch and we are still live.
-
-// returns the number of reference sequences
-const int BamMultiReader::GetReferenceCount(void) const {
-    return readers.front().first->GetReferenceCount();
-}
-
-// returns vector of reference objects
-const BamTools::RefVector BamMultiReader::GetReferenceData(void) const {
-    return readers.front().first->GetReferenceData();
-}
-
-const int BamMultiReader::GetReferenceID(const string& refName) const { 
-    return readers.front().first->GetReferenceID(refName);
 }

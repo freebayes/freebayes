@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 17 August 2010 (DB)
+// Last modified: 3 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides index functionality - both for the default (standardized) BAM 
 // index format (.bai) as well as a BamTools-specific (nonstandard) index 
@@ -13,7 +13,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <algorithm>
-// #include <iostream>
 #include <map>
 #include "BamIndex.h"
 #include "BamReader.h"
@@ -48,12 +47,12 @@ bool BamIndex::HasAlignments(const int& referenceID) {
 // #########################################################################################
 
 // -------------------------------
-// BamDefaultIndex structs & typedefs 
+// BamStandardIndex structs & typedefs 
  
 namespace BamTools { 
 
 // --------------------------------------------------
-// BamDefaultIndex data structures & typedefs
+// BamStandardIndex data structures & typedefs
 struct Chunk {
 
     // data members
@@ -90,26 +89,26 @@ struct ReferenceIndex {
     { }
 };
 
-typedef vector<ReferenceIndex> BamDefaultIndexData;
+typedef vector<ReferenceIndex> BamStandardIndexData;
 
 } // namespace BamTools
  
 // -------------------------------
-// BamDefaultIndex implementation
+// BamStandardIndex implementation
   
-struct BamDefaultIndex::BamDefaultIndexPrivate { 
+struct BamStandardIndex::BamStandardIndexPrivate { 
   
     // -------------------------
     // data members
     
-    BamDefaultIndexData m_indexData;
-    BamDefaultIndex*    m_parent;
+    BamStandardIndexData m_indexData;
+    BamStandardIndex*    m_parent;
     
     // -------------------------
     // ctor & dtor
     
-    BamDefaultIndexPrivate(BamDefaultIndex* parent) : m_parent(parent) { }
-    ~BamDefaultIndexPrivate(void) { }
+    BamStandardIndexPrivate(BamStandardIndex* parent) : m_parent(parent) { }
+    ~BamStandardIndexPrivate(void) { m_indexData.clear(); }
     
     // -------------------------
     // internal methods
@@ -125,20 +124,19 @@ struct BamDefaultIndex::BamDefaultIndexPrivate {
     
 };
  
-BamDefaultIndex::BamDefaultIndex(BgzfData* bgzf, BamReader* reader, bool isBigEndian)
+BamStandardIndex::BamStandardIndex(BgzfData* bgzf, BamReader* reader, bool isBigEndian)
     : BamIndex(bgzf, reader, isBigEndian)
 {
-    d = new BamDefaultIndexPrivate(this);
+    d = new BamStandardIndexPrivate(this);
 }    
 
-BamDefaultIndex::~BamDefaultIndex(void) {
-    d->m_indexData.clear();
+BamStandardIndex::~BamStandardIndex(void) {
     delete d;
     d = 0;
 }
 
 // calculate bins that overlap region
-int BamDefaultIndex::BamDefaultIndexPrivate::BinsFromRegion(const BamRegion& region, const bool isRightBoundSpecified, uint16_t bins[MAX_BIN]) {
+int BamStandardIndex::BamStandardIndexPrivate::BinsFromRegion(const BamRegion& region, const bool isRightBoundSpecified, uint16_t bins[MAX_BIN]) {
   
     // get region boundaries
     uint32_t begin = (unsigned int)region.LeftPosition;
@@ -169,7 +167,7 @@ int BamDefaultIndex::BamDefaultIndexPrivate::BinsFromRegion(const BamRegion& reg
     return i;
 }
 
-bool BamDefaultIndex::Build(void) { 
+bool BamStandardIndex::Build(void) { 
   
     // be sure reader & BGZF file are valid & open for reading
     if ( m_reader == 0 || m_BGZF == 0 || !m_BGZF->IsOpen ) 
@@ -213,8 +211,8 @@ bool BamDefaultIndex::Build(void) {
 
         // if lastCoordinate greater than BAM position - file not sorted properly
         else if ( lastCoordinate > bAlignment.Position ) {
-            fprintf(stderr, "BAM file not properly sorted:\n");
-            fprintf(stderr, "Alignment %s : %d > %d on reference (id = %d)", bAlignment.Name.c_str(), lastCoordinate, bAlignment.Position, bAlignment.RefID);
+            printf("BAM file not properly sorted:\n");
+            printf("Alignment %s : %d > %d on reference (id = %d)", bAlignment.Name.c_str(), lastCoordinate, bAlignment.Position, bAlignment.RefID);
             exit(1);
         }
 
@@ -249,13 +247,13 @@ bool BamDefaultIndex::Build(void) {
             // update saveRefID
             saveRefID = bAlignment.RefID;
 
-            // if invalid RefID, break out (why?)
-            if ( saveRefID < 0 ) { break; }
+            // if invalid RefID, break out 
+            if ( saveRefID < 0 ) break; 
         }
 
         // make sure that current file pointer is beyond lastOffset
         if ( m_BGZF->Tell() <= (int64_t)lastOffset ) {
-            fprintf(stderr, "Error in BGZF offsets.\n");
+            printf("Error in BGZF offsets.\n");
             exit(1);
         }
 
@@ -280,8 +278,8 @@ bool BamDefaultIndex::Build(void) {
     // iterate through references in index
     // store whether reference has data &
     // sort offsets in linear offset vector
-    BamDefaultIndexData::iterator indexIter = d->m_indexData.begin();
-    BamDefaultIndexData::iterator indexEnd  = d->m_indexData.end();
+    BamStandardIndexData::iterator indexIter = d->m_indexData.begin();
+    BamStandardIndexData::iterator indexEnd  = d->m_indexData.end();
     for ( int i = 0; indexIter != indexEnd; ++indexIter, ++i ) {
 
         // get reference index data
@@ -300,7 +298,7 @@ bool BamDefaultIndex::Build(void) {
     return m_reader->Rewind();
 }
 
-bool BamDefaultIndex::GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets) { 
+bool BamStandardIndex::GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets) { 
   
     // calculate which bins overlap this region
     uint16_t* bins = (uint16_t*)calloc(MAX_BIN, 2);
@@ -321,6 +319,7 @@ bool BamDefaultIndex::GetOffsets(const BamRegion& region, const bool isRightBoun
         map<uint32_t, ChunkVector>::const_iterator binIter = binMap.find(binKey);
         if ( (binIter != binMap.end()) && ((*binIter).first == binKey) ) {
 
+            // iterate over chunks
             const ChunkVector& chunks = (*binIter).second;
             std::vector<Chunk>::const_iterator chunksIter = chunks.begin();
             std::vector<Chunk>::const_iterator chunksEnd  = chunks.end();
@@ -345,7 +344,7 @@ bool BamDefaultIndex::GetOffsets(const BamRegion& region, const bool isRightBoun
 }
 
 // saves BAM bin entry for index
-void BamDefaultIndex::BamDefaultIndexPrivate::InsertBinEntry(BamBinMap&      binMap,
+void BamStandardIndex::BamStandardIndexPrivate::InsertBinEntry(BamBinMap&      binMap,
                                      const uint32_t& saveBin,
                                      const uint64_t& saveOffset,
                                      const uint64_t& lastOffset)
@@ -371,7 +370,7 @@ void BamDefaultIndex::BamDefaultIndexPrivate::InsertBinEntry(BamBinMap&      bin
 }
 
 // saves linear offset entry for index
-void BamDefaultIndex::BamDefaultIndexPrivate::InsertLinearOffset(LinearOffsetVector& offsets,
+void BamStandardIndex::BamStandardIndexPrivate::InsertLinearOffset(LinearOffsetVector& offsets,
                                         const BamAlignment& bAlignment,
                                         const uint64_t&     lastOffset)
 {
@@ -392,12 +391,12 @@ void BamDefaultIndex::BamDefaultIndexPrivate::InsertLinearOffset(LinearOffsetVec
     }
 }      
 
-bool BamDefaultIndex::Load(const string& filename)  { 
+bool BamStandardIndex::Load(const string& filename)  { 
     
     // open index file, abort on error
     FILE* indexStream = fopen(filename.c_str(), "rb");
     if( !indexStream ) {
-        fprintf(stderr, "ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
+        printf("ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
         return false;
     }
 
@@ -408,7 +407,7 @@ bool BamDefaultIndex::Load(const string& filename)  {
     char magic[4];
     elementsRead = fread(magic, 1, 4, indexStream);
     if ( strncmp(magic, "BAI\1", 4) ) {
-        fprintf(stderr, "Problem with index file - invalid format.\n");
+        printf("Problem with index file - invalid format.\n");
         fclose(indexStream);
         return false;
     }
@@ -416,9 +415,9 @@ bool BamDefaultIndex::Load(const string& filename)  {
     // get number of reference sequences
     uint32_t numRefSeqs;
     elementsRead = fread(&numRefSeqs, 4, 1, indexStream);
-    if ( m_isBigEndian ) { SwapEndian_32(numRefSeqs); }
+    if ( m_isBigEndian ) SwapEndian_32(numRefSeqs);
     
-    // intialize space for BamDefaultIndexData data structure
+    // intialize space for BamStandardIndexData data structure
     d->m_indexData.reserve(numRefSeqs);
 
     // iterate over reference sequences
@@ -427,7 +426,7 @@ bool BamDefaultIndex::Load(const string& filename)  {
         // get number of bins for this reference sequence
         int32_t numBins;
         elementsRead = fread(&numBins, 4, 1, indexStream);
-        if ( m_isBigEndian ) { SwapEndian_32(numBins); }
+        if ( m_isBigEndian ) SwapEndian_32(numBins);
 
         if ( numBins > 0 ) {
             RefData& refEntry = m_references[i];
@@ -482,12 +481,13 @@ bool BamDefaultIndex::Load(const string& filename)  {
             binMap.insert( pair<uint32_t, ChunkVector>(binID, regionChunks) );
         }
 
+        // -----------------------------------------------------
         // load linear index for this reference sequence
 
         // get number of linear offsets
         int32_t numLinearOffsets;
         elementsRead = fread(&numLinearOffsets, 4, 1, indexStream);
-        if ( m_isBigEndian ) { SwapEndian_32(numLinearOffsets); }
+        if ( m_isBigEndian ) SwapEndian_32(numLinearOffsets);
 
         // intialize LinearOffsetVector
         LinearOffsetVector offsets;
@@ -498,7 +498,7 @@ bool BamDefaultIndex::Load(const string& filename)  {
         for ( int j = 0; j < numLinearOffsets; ++j ) {
             // read a linear offset & store
             elementsRead = fread(&linearOffset, 8, 1, indexStream);
-            if ( m_isBigEndian ) { SwapEndian_64(linearOffset); }
+            if ( m_isBigEndian ) SwapEndian_64(linearOffset);
             offsets.push_back(linearOffset);
         }
 
@@ -515,11 +515,11 @@ bool BamDefaultIndex::Load(const string& filename)  {
 }
 
 // merges 'alignment chunks' in BAM bin (used for index building)
-void BamDefaultIndex::BamDefaultIndexPrivate::MergeChunks(void) {
+void BamStandardIndex::BamStandardIndexPrivate::MergeChunks(void) {
 
     // iterate over reference enties
-    BamDefaultIndexData::iterator indexIter = m_indexData.begin();
-    BamDefaultIndexData::iterator indexEnd  = m_indexData.end();
+    BamStandardIndexData::iterator indexIter = m_indexData.begin();
+    BamStandardIndexData::iterator indexEnd  = m_indexData.end();
     for ( ; indexIter != indexEnd; ++indexIter ) {
 
         // get BAM bin map for this reference
@@ -533,7 +533,7 @@ void BamDefaultIndex::BamDefaultIndexPrivate::MergeChunks(void) {
 
             // get chunk vector for this bin
             ChunkVector& binChunks = (*binIter).second;
-            if ( binChunks.size() == 0 ) { continue; }
+            if ( binChunks.size() == 0 ) continue; 
 
             ChunkVector mergedChunks;
             mergedChunks.push_back( binChunks[0] );
@@ -573,12 +573,12 @@ void BamDefaultIndex::BamDefaultIndexPrivate::MergeChunks(void) {
 
 // writes in-memory index data out to file 
 // N.B. - (this is the original BAM filename, method will modify it to use applicable extension)
-bool BamDefaultIndex::Write(const std::string& bamFilename) { 
+bool BamStandardIndex::Write(const std::string& bamFilename) { 
 
     string indexFilename = bamFilename + ".bai";
     FILE* indexStream = fopen(indexFilename.c_str(), "wb");
     if ( indexStream == 0 ) {
-        fprintf(stderr, "ERROR: Could not open file to save index.\n");
+        printf("ERROR: Could not open file to save index.\n");
         return false;
     }
 
@@ -587,12 +587,12 @@ bool BamDefaultIndex::Write(const std::string& bamFilename) {
 
     // write number of reference sequences
     int32_t numReferenceSeqs = d->m_indexData.size();
-    if ( m_isBigEndian ) { SwapEndian_32(numReferenceSeqs); }
+    if ( m_isBigEndian ) SwapEndian_32(numReferenceSeqs);
     fwrite(&numReferenceSeqs, 4, 1, indexStream);
 
     // iterate over reference sequences
-    BamDefaultIndexData::const_iterator indexIter = d->m_indexData.begin();
-    BamDefaultIndexData::const_iterator indexEnd  = d->m_indexData.end();
+    BamStandardIndexData::const_iterator indexIter = d->m_indexData.begin();
+    BamStandardIndexData::const_iterator indexEnd  = d->m_indexData.end();
     for ( ; indexIter != indexEnd; ++ indexIter ) {
 
         // get reference index data
@@ -602,7 +602,7 @@ bool BamDefaultIndex::Write(const std::string& bamFilename) {
 
         // write number of bins
         int32_t binCount = binMap.size();
-        if ( m_isBigEndian ) { SwapEndian_32(binCount); }
+        if ( m_isBigEndian ) SwapEndian_32(binCount);
         fwrite(&binCount, 4, 1, indexStream);
 
         // iterate over bins
@@ -615,12 +615,12 @@ bool BamDefaultIndex::Write(const std::string& bamFilename) {
             const ChunkVector& binChunks = (*binIter).second;
 
             // save BAM bin key
-            if ( m_isBigEndian ) { SwapEndian_32(binKey); }
+            if ( m_isBigEndian ) SwapEndian_32(binKey);
             fwrite(&binKey, 4, 1, indexStream);
 
             // save chunk count
             int32_t chunkCount = binChunks.size();
-            if ( m_isBigEndian ) { SwapEndian_32(chunkCount); }
+            if ( m_isBigEndian ) SwapEndian_32(chunkCount); 
             fwrite(&chunkCount, 4, 1, indexStream);
 
             // iterate over chunks
@@ -646,7 +646,7 @@ bool BamDefaultIndex::Write(const std::string& bamFilename) {
 
         // write linear offsets size
         int32_t offsetSize = offsets.size();
-        if ( m_isBigEndian ) { SwapEndian_32(offsetSize); }
+        if ( m_isBigEndian ) SwapEndian_32(offsetSize);
         fwrite(&offsetSize, 4, 1, indexStream);
 
         // iterate over linear offsets
@@ -656,7 +656,7 @@ bool BamDefaultIndex::Write(const std::string& bamFilename) {
 
             // write linear offset value
             uint64_t linearOffset = (*offsetIter);
-            if ( m_isBigEndian ) { SwapEndian_64(linearOffset); }
+            if ( m_isBigEndian ) SwapEndian_64(linearOffset);
             fwrite(&linearOffset, 8, 1, indexStream);
         }
     }
@@ -760,7 +760,6 @@ bool BamToolsIndex::Build(void) {
         
         // if block is full, get offset for next block, reset currentBlockCount
         if ( currentBlockCount == d->m_blockSize ) {
-          
             d->m_indexData.push_back( BamToolsIndexEntry(blockStartOffset, blockStartId, blockStartPosition) );
             blockStartOffset = m_BGZF->Tell();
             currentBlockCount = 0;
@@ -797,8 +796,7 @@ bool BamToolsIndex::GetOffsets(const BamRegion& region, const bool isRightBoundS
     }
   
     // no index was found
-    if ( previousOffset == -1 ) 
-        return false;
+    if ( previousOffset == -1 ) return false;
     
     // store offset & return success
     offsets.push_back(previousOffset);
@@ -810,7 +808,7 @@ bool BamToolsIndex::Load(const string& filename) {
     // open index file, abort on error
     FILE* indexStream = fopen(filename.c_str(), "rb");
     if( !indexStream ) {
-        fprintf(stderr, "ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
+        printf("ERROR: Unable to open the BAM index file %s for reading.\n", filename.c_str());
         return false;
     }
 
@@ -821,19 +819,19 @@ bool BamToolsIndex::Load(const string& filename) {
     char magic[4];
     elementsRead = fread(magic, 1, 4, indexStream);
     if ( strncmp(magic, "BTI\1", 4) ) {
-        fprintf(stderr, "Problem with index file - invalid format.\n");
+        printf("Problem with index file - invalid format.\n");
         fclose(indexStream);
         return false;
     }
 
     // read in block size
     elementsRead = fread(&d->m_blockSize, sizeof(d->m_blockSize), 1, indexStream);
-    if ( m_isBigEndian ) { SwapEndian_32(d->m_blockSize); }
+    if ( m_isBigEndian ) SwapEndian_32(d->m_blockSize);
     
     // read in number of offsets
     uint32_t numOffsets;
     elementsRead = fread(&numOffsets, sizeof(numOffsets), 1, indexStream);
-    if ( m_isBigEndian ) { SwapEndian_32(numOffsets); }
+    if ( m_isBigEndian ) SwapEndian_32(numOffsets);
     
     // reserve space for index data
     d->m_indexData.reserve(numOffsets);
@@ -876,7 +874,7 @@ bool BamToolsIndex::Write(const std::string& bamFilename) {
     string indexFilename = bamFilename + ".bti";
     FILE* indexStream = fopen(indexFilename.c_str(), "wb");
     if ( indexStream == 0 ) {
-        fprintf(stderr, "ERROR: Could not open file to save index.\n");
+        printf("ERROR: Could not open file to save index.\n");
         return false;
     }
 
@@ -885,12 +883,12 @@ bool BamToolsIndex::Write(const std::string& bamFilename) {
 
     // write block size
     int32_t blockSize = d->m_blockSize;
-    if ( m_isBigEndian ) { SwapEndian_32(blockSize); }
+    if ( m_isBigEndian ) SwapEndian_32(blockSize);
     fwrite(&blockSize, sizeof(blockSize), 1, indexStream);
     
     // write number of offset entries
     uint32_t numOffsets = d->m_indexData.size();
-    if ( m_isBigEndian ) { SwapEndian_32(numOffsets); }
+    if ( m_isBigEndian ) SwapEndian_32(numOffsets);
     fwrite(&numOffsets, sizeof(numOffsets), 1, indexStream);
     
     // iterate over offset entries

@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 15 July 2010 (DB)
+// Last modified: 3 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -81,8 +81,11 @@ struct BamReader::BamReaderPrivate {
 
     // file operations
     void Close(void);
-    bool Jump(int refID, int position = 0);
-    bool Open(const string& filename, const string& indexFilename = "");
+    bool Jump(int refID, int position);
+    bool Open(const std::string& filename, 
+              const std::string& indexFilename, 
+              const bool lookForIndex, 
+              const bool preferStandardIndex);
     bool Rewind(void);
     bool SetRegion(const BamRegion& region);
 
@@ -94,7 +97,7 @@ struct BamReader::BamReaderPrivate {
     int GetReferenceID(const string& refName) const;
 
     // index operations
-    bool CreateIndex(bool useDefaultIndex);
+    bool CreateIndex(bool useStandardIndex);
 
     // -------------------------------
     // internal methods
@@ -118,7 +121,7 @@ struct BamReader::BamReaderPrivate {
     // clear out inernal index data structure
     void ClearIndex(void);
     // loads index from BAM index file
-    bool LoadIndex(void);
+    bool LoadIndex(const bool lookForIndex, const bool preferStandardIndex);
 };
 
 // -----------------------------------------------------
@@ -137,15 +140,23 @@ BamReader::~BamReader(void) {
 
 // file operations
 void BamReader::Close(void) { d->Close(); }
+bool BamReader::IsIndexLoaded(void) const { return d->IsIndexLoaded; }
 bool BamReader::IsOpen(void) const { return d->mBGZF.IsOpen; }
-bool BamReader::Jump(int refID, int position) { 
+bool BamReader::Jump(int refID, int position) 
+{ 
     d->Region.LeftRefID = refID;
     d->Region.LeftPosition = position;
     d->IsLeftBoundSpecified = true;
     d->IsRightBoundSpecified = false;
     return d->Jump(refID, position); 
 }
-bool BamReader::Open(const string& filename, const string& indexFilename) { return d->Open(filename, indexFilename); }
+bool BamReader::Open(const std::string& filename, 
+                     const std::string& indexFilename, 
+                     const bool lookForIndex, 
+                     const bool preferStandardIndex) 
+{ 
+    return d->Open(filename, indexFilename, lookForIndex, preferStandardIndex); 
+}
 bool BamReader::Rewind(void) { return d->Rewind(); }
 bool BamReader::SetRegion(const BamRegion& region) { return d->SetRegion(region); }
 bool BamReader::SetRegion(const int& leftRefID, const int& leftBound, const int& rightRefID, const int& rightBound) {
@@ -164,7 +175,7 @@ int BamReader::GetReferenceID(const string& refName) const { return d->GetRefere
 const std::string BamReader::GetFilename(void) const { return d->Filename; }
 
 // index operations
-bool BamReader::CreateIndex(bool useDefaultIndex) { return d->CreateIndex(useDefaultIndex); }
+bool BamReader::CreateIndex(bool useStandardIndex) { return d->CreateIndex(useStandardIndex); }
 
 // -----------------------------------------------------
 // BamReaderPrivate implementation
@@ -196,7 +207,6 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
   
     // calculate character lengths/offsets
     const unsigned int dataLength      = bAlignment.SupportData.BlockLength - BAM_CORE_SIZE;
-    const unsigned int cigarDataOffset = bAlignment.SupportData.QueryNameLength;
     const unsigned int seqDataOffset   = bAlignment.SupportData.QueryNameLength + (bAlignment.SupportData.NumCigarOperations * 4);
     const unsigned int qualDataOffset  = seqDataOffset + (bAlignment.SupportData.QuerySequenceLength+1)/2;
     const unsigned int tagDataOffset   = qualDataOffset + bAlignment.SupportData.QuerySequenceLength;
@@ -204,32 +214,13 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
       
     // set up char buffers
     const char*     allCharData = bAlignment.SupportData.AllCharData.data();
-          uint32_t* cigarData   = (uint32_t*)(allCharData + cigarDataOffset);
     const char*     seqData     = ((const char*)allCharData) + seqDataOffset;
     const char*     qualData    = ((const char*)allCharData) + qualDataOffset;
           char*     tagData     = ((char*)allCharData) + tagDataOffset;
   
-    // store alignment name (depends on null char as terminator)
+    // store alignment name (relies on null char in name as terminator)
     bAlignment.Name.assign((const char*)(allCharData));    
-          
-    // save CigarOps 
-    CigarOp op;
-    bAlignment.CigarData.clear();
-    bAlignment.CigarData.reserve(bAlignment.SupportData.NumCigarOperations);
-    for (unsigned int i = 0; i < bAlignment.SupportData.NumCigarOperations; ++i) {
 
-        // swap if necessary
-        if ( IsBigEndian ) { SwapEndian_32(cigarData[i]); }
-      
-        // build CigarOp structure
-        op.Length = (cigarData[i] >> BAM_CIGAR_SHIFT);
-        op.Type   = CIGAR_LOOKUP[ (cigarData[i] & BAM_CIGAR_MASK) ];
-
-        // save CigarOp
-        bAlignment.CigarData.push_back(op);
-    }
-          
-          
     // save query sequence
     bAlignment.QueryBases.clear();
     bAlignment.QueryBases.reserve(bAlignment.SupportData.QuerySequenceLength);
@@ -291,7 +282,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
                     break;  // for 'H' - hard clip, do nothing to AlignedBases, move to next op
                     
                 default:
-                    fprintf(stderr, "ERROR: Invalid Cigar op type\n"); // shouldn't get here
+                    printf("ERROR: Invalid Cigar op type\n"); // shouldn't get here
                     exit(1);
             }
         }
@@ -339,7 +330,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
                     break;
                 
                 default : 
-                    fprintf(stderr, "ERROR: Invalid tag value type\n"); // shouldn't get here
+                    printf("ERROR: Invalid tag value type\n"); // shouldn't get here
                     exit(1);
             }
         }
@@ -361,6 +352,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
 void BamReader::BamReaderPrivate::ClearIndex(void) {
     delete NewIndex;
     NewIndex = 0;
+    IsIndexLoaded = false;
 }
 
 // closes the BAM file
@@ -381,24 +373,30 @@ void BamReader::BamReaderPrivate::Close(void) {
     IsRegionSpecified     = false;
 }
 
-// create BAM index from BAM file (keep structure in memory) and write to default index output file
-bool BamReader::BamReaderPrivate::CreateIndex(bool useDefaultIndex) {
+// creates index for BAM file, saves to file
+// default behavior is to create the BAM standard index (".bai")
+// set flag to false to create the BamTools-specific index (".bti")
+bool BamReader::BamReaderPrivate::CreateIndex(bool useStandardIndex) {
 
     // clear out prior index data
     ClearIndex();
     
-    // create default index
-    if ( useDefaultIndex )
-        NewIndex = new BamDefaultIndex(&mBGZF, Parent, IsBigEndian);
+    // create index based on type requested
+    if ( useStandardIndex )
+        NewIndex = new BamStandardIndex(&mBGZF, Parent, IsBigEndian);
     // create BamTools 'custom' index
     else
         NewIndex = new BamToolsIndex(&mBGZF, Parent, IsBigEndian);
     
+    // build new index
     bool ok = true;
     ok &= NewIndex->Build();
+    IsIndexLoaded = ok;
+    
+    // attempt to save index data to file
     ok &= NewIndex->Write(Filename); 
     
-    // return success/fail
+    // return success/fail of both building & writing index
     return ok;
 }
 
@@ -433,16 +431,14 @@ bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment)
         BamReader::BamReaderPrivate::RegionState state = IsOverlap(bAlignment);
       
         // if alignment lies after region, return false
-        if ( state == AFTER_REGION ) 
-            return false;
+        if ( state == AFTER_REGION ) return false;
 
         while ( state != WITHIN_REGION ) {
             // if no valid alignment available (likely EOF) return failure
             if ( !LoadNextAlignment(bAlignment) ) return false;
             // if alignment lies after region, return false (no available read within region)
             state = IsOverlap(bAlignment);
-            if ( state == AFTER_REGION) return false;
-            
+            if ( state == AFTER_REGION ) return false;
         }
 
         // return success (alignment found that overlaps region)
@@ -461,9 +457,8 @@ int BamReader::BamReaderPrivate::GetReferenceID(const string& refName) const {
     vector<string> refNames;
     RefVector::const_iterator refIter = References.begin();
     RefVector::const_iterator refEnd  = References.end();
-    for ( ; refIter != refEnd; ++refIter) {
+    for ( ; refIter != refEnd; ++refIter) 
         refNames.push_back( (*refIter).RefName );
-    }
 
     // return 'index-of' refName ( if not found, returns refNames.size() )
     return distance(refNames.begin(), find(refNames.begin(), refNames.end(), refName));
@@ -516,7 +511,7 @@ bool BamReader::BamReaderPrivate::Jump(int refID, int position) {
 
     // -----------------------------------------------------------------------
     // check for existing index 
-    if ( NewIndex == 0 ) return false; 
+    if ( !IsIndexLoaded || NewIndex == 0 ) return false; 
     // see if reference has alignments
     if ( !NewIndex->HasAlignments(refID) ) return false; 
     // make sure position is valid
@@ -525,7 +520,7 @@ bool BamReader::BamReaderPrivate::Jump(int refID, int position) {
     // determine possible offsets
     vector<int64_t> offsets;
     if ( !NewIndex->GetOffsets(Region, IsRightBoundSpecified, offsets) ) {
-        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
+        printf("ERROR: Could not jump: unable to calculate offset for specified region.\n");
         return false;
     }
       
@@ -555,19 +550,19 @@ void BamReader::BamReaderPrivate::LoadHeaderData(void) {
     // check to see if proper BAM header
     char buffer[4];
     if (mBGZF.Read(buffer, 4) != 4) {
-        fprintf(stderr, "Could not read header type\n");
+        printf("Could not read header type\n");
         exit(1);
     }
 
     if (strncmp(buffer, "BAM\001", 4)) {
-        fprintf(stderr, "wrong header type!\n");
+        printf("wrong header type!\n");
         exit(1);
     }
 
     // get BAM header text length
     mBGZF.Read(buffer, 4);
     unsigned int headerTextLength = BgzfData::UnpackUnsignedInt(buffer);
-    if ( IsBigEndian ) { SwapEndian_32(headerTextLength); }
+    if ( IsBigEndian ) SwapEndian_32(headerTextLength); 
     
     // get BAM header text
     char* headerText = (char*)calloc(headerTextLength + 1, 1);
@@ -578,36 +573,38 @@ void BamReader::BamReaderPrivate::LoadHeaderData(void) {
     free(headerText);
 }
 
-// load existing index data from BAM index file (".bai"), return success/fail
-bool BamReader::BamReaderPrivate::LoadIndex(void) {
+// load existing index data from BAM index file (".bti" OR ".bai"), return success/fail
+bool BamReader::BamReaderPrivate::LoadIndex(const bool lookForIndex, const bool preferStandardIndex) {
 
     // clear out any existing index data
     ClearIndex();
 
-    // skip if index file empty
-    if ( IndexFilename.empty() )
-        return false;
-
-    // check supplied filename for index type
-    size_t defaultExtensionFound = IndexFilename.find(".bai");
-    size_t customExtensionFound  = IndexFilename.find(".bti");
-    
-    // if SAM/BAM default (".bai")
-    if ( defaultExtensionFound != string::npos )
-        NewIndex = new BamDefaultIndex(&mBGZF, Parent, IsBigEndian);
-    
-    // if BamTools custom index (".bti")
-    else if ( customExtensionFound != string::npos )
-        NewIndex = new BamToolsIndex(&mBGZF, Parent, IsBigEndian);
-    
-    // else unknown
-    else {
-        fprintf(stderr, "ERROR: Unknown index file extension.\n");
-        return false;
+    // if no index filename provided, so we need to look for available index files
+    if ( IndexFilename.empty() ) {
+      
+        // attempt to load BamIndex based on current Filename provided & preferStandardIndex flag
+        const BamIndex::PreferredIndexType type = (preferStandardIndex ? BamIndex::STANDARD : BamIndex::BAMTOOLS);
+        NewIndex = BamIndex::FromBamFilename(Filename, &mBGZF, Parent, IsBigEndian, type);
+        
+        // if null, return failure
+        if ( NewIndex == 0 ) return false;
+        
+        // generate proper IndexFilename based on type of index created
+        IndexFilename = Filename + NewIndex->Extension();
     }
     
-    // return success of loading index data
-    return NewIndex->Load(IndexFilename);
+    else {
+        // attempt to load BamIndex based on IndexFilename provided by client
+        NewIndex = BamIndex::FromIndexFilename(IndexFilename, &mBGZF, Parent, IsBigEndian);
+        
+        // if null, return failure
+        if ( NewIndex == 0 ) return false; 
+    }
+    
+    // an index file was found
+    // return success of loading the index data from file
+    IsIndexLoaded = NewIndex->Load(IndexFilename);
+    return IsIndexLoaded;
 }
 
 // populates BamAlignment with alignment data under file pointer, returns success/fail
@@ -618,16 +615,15 @@ bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment) {
     mBGZF.Read(buffer, 4);
     bAlignment.SupportData.BlockLength = BgzfData::UnpackUnsignedInt(buffer);
     if ( IsBigEndian ) { SwapEndian_32(bAlignment.SupportData.BlockLength); }
-    if ( bAlignment.SupportData.BlockLength == 0 ) { return false; }
+    if ( bAlignment.SupportData.BlockLength == 0 ) return false;
 
     // read in core alignment data, make sure the right size of data was read
     char x[BAM_CORE_SIZE];
-    if ( mBGZF.Read(x, BAM_CORE_SIZE) != BAM_CORE_SIZE ) { return false; }
+    if ( mBGZF.Read(x, BAM_CORE_SIZE) != BAM_CORE_SIZE ) return false; 
 
     if ( IsBigEndian ) {
-        for ( int i = 0; i < BAM_CORE_SIZE; i+=sizeof(uint32_t) ) { 
-          SwapEndian_32p(&x[i]); 
-        }
+        for ( int i = 0; i < BAM_CORE_SIZE; i+=sizeof(uint32_t) ) 
+            SwapEndian_32p(&x[i]); 
     }
     
     // set BamAlignment 'core' and 'support' data
@@ -663,6 +659,27 @@ bool BamReader::BamReaderPrivate::LoadNextAlignment(BamAlignment& bAlignment) {
         
         // set success flag
         readCharDataOK = true;
+        
+        // save CIGAR ops 
+        // need to calculate this here so that  BamAlignment::GetEndPosition() performs correctly, 
+        // even when BamReader::GetNextAlignmentCore() is called 
+        const unsigned int cigarDataOffset = bAlignment.SupportData.QueryNameLength;
+        uint32_t* cigarData = (uint32_t*)(allCharData + cigarDataOffset);
+        CigarOp op;
+        bAlignment.CigarData.clear();
+        bAlignment.CigarData.reserve(bAlignment.SupportData.NumCigarOperations);
+        for (unsigned int i = 0; i < bAlignment.SupportData.NumCigarOperations; ++i) {
+
+            // swap if necessary
+            if ( IsBigEndian ) SwapEndian_32(cigarData[i]);
+          
+            // build CigarOp structure
+            op.Length = (cigarData[i] >> BAM_CIGAR_SHIFT);
+            op.Type   = CIGAR_LOOKUP[ (cigarData[i] & BAM_CIGAR_MASK) ];
+
+            // save CigarOp
+            bAlignment.CigarData.push_back(op);
+        }
     }
 
     free(allCharData);
@@ -676,8 +693,8 @@ void BamReader::BamReaderPrivate::LoadReferenceData(void) {
     char buffer[4];
     mBGZF.Read(buffer, 4);
     unsigned int numberRefSeqs = BgzfData::UnpackUnsignedInt(buffer);
-    if ( IsBigEndian ) { SwapEndian_32(numberRefSeqs); }
-    if (numberRefSeqs == 0) { return; }
+    if ( IsBigEndian ) SwapEndian_32(numberRefSeqs);
+    if ( numberRefSeqs == 0 ) return;
     References.reserve((int)numberRefSeqs);
 
     // iterate over all references in header
@@ -686,14 +703,14 @@ void BamReader::BamReaderPrivate::LoadReferenceData(void) {
         // get length of reference name
         mBGZF.Read(buffer, 4);
         unsigned int refNameLength = BgzfData::UnpackUnsignedInt(buffer);
-        if ( IsBigEndian ) { SwapEndian_32(refNameLength); }
+        if ( IsBigEndian ) SwapEndian_32(refNameLength);
         char* refName = (char*)calloc(refNameLength, 1);
 
         // get reference name and reference sequence length
         mBGZF.Read(refName, refNameLength);
         mBGZF.Read(buffer, 4);
         int refLength = BgzfData::UnpackSignedInt(buffer);
-        if ( IsBigEndian ) { SwapEndian_32(refLength); }
+        if ( IsBigEndian ) SwapEndian_32(refLength); 
 
         // store data for reference
         RefData aReference;
@@ -707,14 +724,14 @@ void BamReader::BamReaderPrivate::LoadReferenceData(void) {
 }
 
 // opens BAM file (and index)
-bool BamReader::BamReaderPrivate::Open(const string& filename, const string& indexFilename) {
+bool BamReader::BamReaderPrivate::Open(const string& filename, const string& indexFilename, const bool lookForIndex, const bool preferStandardIndex) {
 
+    // store filenames
     Filename = filename;
     IndexFilename = indexFilename;
 
     // open the BGZF file for reading, return false on failure
-    if ( !mBGZF.Open(filename, "rb") ) 
-        return false;
+    if ( !mBGZF.Open(filename, "rb") ) return false; 
     
     // retrieve header text & reference data
     LoadHeaderData();
@@ -723,12 +740,20 @@ bool BamReader::BamReaderPrivate::Open(const string& filename, const string& ind
     // store file offset of first alignment
     AlignmentsBeginOffset = mBGZF.Tell();
 
-    // open index file & load index data (if exists)
-    if ( !IndexFilename.empty() )
-        LoadIndex();
+    // if no index filename provided 
+    if ( IndexFilename.empty() ) {
+     
+        // client did not specify that index SHOULD be found
+        // useful for cases where sequential access is all that is required
+        if ( !lookForIndex ) return true; 
+          
+        // otherwise, look for index file, return success/fail
+        return LoadIndex(lookForIndex, preferStandardIndex) ;
+    }
     
-    // return success
-    return true;
+    // client supplied an index filename
+    // attempt to load index data, return success/fail
+    return LoadIndex(lookForIndex, preferStandardIndex);    
 }
 
 // returns BAM file pointer to beginning of alignment data
@@ -763,10 +788,8 @@ bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
     Region = region;
     
     // set flags
-    if ( region.LeftRefID >= 0 && region.LeftPosition >= 0 ) 
-        IsLeftBoundSpecified = true;
-    if ( region.RightRefID >= 0 && region.RightPosition >= 0 ) 
-        IsRightBoundSpecified = true;
+    if ( region.LeftRefID  >= 0 && region.LeftPosition  >= 0 ) IsLeftBoundSpecified  = true;
+    if ( region.RightRefID >= 0 && region.RightPosition >= 0 ) IsRightBoundSpecified = true;
     
     // attempt jump to beginning of region, return success/fail of Jump()
     return Jump( Region.LeftRefID, Region.LeftPosition );

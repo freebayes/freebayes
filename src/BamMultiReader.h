@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 20 July 2010 (DB)
+// Last modified: 3 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Functionality for simultaneously reading multiple BAM files
 // ***************************************************************************
@@ -59,8 +59,14 @@ class BamMultiReader {
         // indexes.
         // @coreMode - setup our first alignments using GetNextAlignmentCore();
         // also useful for merging
-        bool Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool useDefaultIndex = true);
+        // @preferStandardIndex - look for standard BAM index ".bai" first.  If false, 
+        // will look for BamTools index ".bti".  
+        bool Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool preferStandardIndex = true);
 
+        // returns whether underlying BAM readers ALL have an index loaded
+        // this is useful to indicate whether Jump() or SetRegion() are possible
+        bool IsIndexLoaded(void) const;
+        
         // performs random-access jump to reference, position
         bool Jump(int refID, int position = 0);
 
