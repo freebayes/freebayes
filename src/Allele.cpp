@@ -657,7 +657,7 @@ void AlleleFreeList::Recycle(void* mem) {
     Allele* allele = static_cast<Allele*> (mem);
     allele->_pNext = _p;
     _p = allele;
-    ++_allocs;
+    //++_allocs;
 }
 
 AlleleFreeList::~AlleleFreeList() {
@@ -674,19 +674,33 @@ void AlleleFreeList::Purge() {
 
 bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups, int mincount, float minfraction) {
 
+    int totalAlternateCount = 0;
+    int totalReferenceCount = 0;
+
     for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
             sample != sampleGroups.end(); ++sample) {
 
         vector<Allele*>& observedAlleles = sample->second;
         int alternateCount = 0;
         for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
-            if ((*a)->type != ALLELE_REFERENCE)
+            if ((*a)->type != ALLELE_REFERENCE) {
                 ++alternateCount;
+            } else {
+                ++totalReferenceCount;
+            }
         }
-        if (alternateCount >= mincount && (float) alternateCount / (float) observedAlleles.size() >= minfraction)
+        if (alternateCount >= mincount && ((float) alternateCount / (float) observedAlleles.size()) >= minfraction)
             return true;
+        totalAlternateCount += alternateCount;
     
     }
+
+    // always analyze if we have more alternate observations than reference observations
+    // this is meant to catch the case in which the reference is the rare allele
+    if (totalReferenceCount < totalAlternateCount) {
+        return true;
+    }
+
     return false;
 
 }
