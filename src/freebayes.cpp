@@ -256,7 +256,7 @@ int main (int argc, char *argv[]) {
 
         vector<GenotypeComboResult> genotypeComboProbs;
 
-        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, parser->currentReferenceBase(), 1);
+        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1);
 
         DEBUG2("calculating genotype combination likelihoods");
         for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
@@ -475,7 +475,7 @@ int main (int argc, char *argv[]) {
             }
             if (pVar >= parameters.PVL && !isHomozygousCombo(bestGenotypeCombo)) {
                 if (parameters.output == "vcf") {
-                    string referenceBase = parser->currentReferenceBase();
+                    string referenceBase(1, parser->currentReferenceBase);
                     // get the unique alternate alleles in this combo, sorted by frequency in the combo
                     vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
                     Allele& bestAlt = alternates.front().first;

@@ -438,8 +438,16 @@ int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
     return (alignment.Position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
 }
 
-string AlleleParser::currentReferenceBase(void) {
+char AlleleParser::currentReferenceBaseChar(void) {
+    return *currentReferenceBaseIterator();
+}
+
+string AlleleParser::currentReferenceBaseString(void) {
     return currentSequence.substr((currentPosition - (currentTarget->left - 1)) + basesBeforeCurrentTarget, 1);
+}
+
+string::iterator AlleleParser::currentReferenceBaseIterator(void) {
+    return currentSequence.begin() + (currentPosition - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
 }
 
 // registeredalignment friend
@@ -551,7 +559,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                         string qualstr = rQual.substr(rp - length, length);
                         // record 'reference' allele for last matching region
                         Allele* allele = new Allele(ALLELE_REFERENCE,
-                                currentTarget->seq, sp - length, &currentPosition, length, 
+                                currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
                                 matchingSequence, readSequence, sampleName, alignment.Name,
                                 !alignment.IsReverseStrand(), -1, qualstr,
                                 alignment.MapQuality);
@@ -565,7 +573,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     // always emit a snp, if we have too many mismatches over
                     // BQL2 then we will discard the registered allele in the
                     // calling context
-                    Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, &currentPosition, 1, sb, b,
+                    Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, &currentPosition, &currentReferenceBase, 1, sb, b,
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
                     DEBUG2(allele);
                     ra.alleles.push_back(allele);
@@ -583,7 +591,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 Allele* allele = new Allele(ALLELE_REFERENCE,
-                        currentTarget->seq, sp - length, &currentPosition, length, 
+                        currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
                         matchingSequence, readSequence, sampleName, alignment.Name,
                         !alignment.IsReverseStrand(), -1, qualstr,
                         alignment.MapQuality);
@@ -610,7 +618,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             }
             //}
             Allele* allele = new Allele(ALLELE_DELETION,
-                    currentTarget->seq, sp, &currentPosition, l,
+                    currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l,
                     currentSequence.substr(csp, l), "", sampleName, alignment.Name,
                     !alignment.IsReverseStrand(), qual, qualstr,
                     alignment.MapQuality);
@@ -638,7 +646,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             // XXX this cutoff may not make sense for long indels... the joint
             // quality is much lower than the 'average' quality
             Allele* allele = new Allele(ALLELE_INSERTION,
-                    currentTarget->seq, sp, &currentPosition, l, "", rDna.substr(rp, l),
+                    currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l, "", rDna.substr(rp, l),
                     sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                     qualstr, alignment.MapQuality);
             DEBUG2(allele);
@@ -884,6 +892,7 @@ bool AlleleParser::loadTarget(BedData* target) {
     //int right_gap = maxPos - currentTarget->right;
     // XXX the above is deprecated, as we now update as we read
     loadReferenceSequence(currentTarget, (left_gap > 0) ? left_gap : 0, 0);
+    currentReferenceBase = currentReferenceBaseChar();
 
     DEBUG2("clearing registered alignments and alleles");
     registeredAlignmentQueue.clear();
@@ -907,6 +916,7 @@ bool AlleleParser::toNextTargetPosition(void) {
         }
     } else {
         ++currentPosition;
+        currentReferenceBase = currentReferenceBaseChar();
     }
     if (currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
@@ -1008,6 +1018,7 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
     //removeNonOverlappingAlleles(alleles);
     for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
         removeNonOverlappingAlleles(s->second);
+        updateAllelesCachedData(s->second);
     }
 
     // add the reference allele to the analysis
@@ -1037,6 +1048,7 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
             allelesBySample[allele->sampleID].push_back(allele);
             //alleles.push_back(allele);
             allele->processed = true;
+            allele->update();
         }
     }
 
@@ -1049,7 +1061,7 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
 }
 
 Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
-    string base = currentReferenceBase();
+    string base = string(1, currentReferenceBase);
     //string name = reference->filename;
     string name = currentTarget->seq; // this behavior matches old bambayes
     string baseQstr = "";
@@ -1058,6 +1070,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             currentTarget->seq,
             currentPosition,
             &currentPosition, 
+            &currentReferenceBase,
             1, base, base, name, name,
             true, baseQ,
             baseQstr,
@@ -1150,7 +1163,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
                     > boost::bind(&pair<Allele, int>::second, _2));
 
         DEBUG2("getting N best alleles");
-        string refBase = currentReferenceBase();
+        string refBase = string(1, currentReferenceBase);
         bool hasRefAllele = false;
         vector<pair<Allele, int> >::iterator a = sortedAlleles.begin();
         while (a != sortedAlleles.end() && resultAlleles.size() < parameters.useBestNAlleles) {

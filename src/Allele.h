@@ -90,14 +90,16 @@ public:
     string referenceSequence; // reference sequence or "" (in case of insertions)
     string alternateSequence; // alternate sequence or "" (in case of deletions and reference alleles)
     long unsigned int position;      // position 0-based against reference
-    long unsigned int *currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
+    long unsigned int* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
+    char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
     string readID;          // id of the read which the allele is drawn from
     string qualityString;   // quality string drawn from sequencer
     vector<short> baseQualities;
-    short quality;          // base quality score associated with this allele
+    short quality;          // base quality score associated with this allele, updated every position in the case of reference alleles
+    string currentBase;       // current base, meant to be updated every position
     short mapQuality;       // map quality for the originating read
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
     vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
@@ -108,7 +110,8 @@ public:
     Allele(AlleleType t, 
                 string refname, 
                 long unsigned int pos, 
-                long unsigned int *crefpos,
+                long unsigned int* crefpos,
+                char* crefbase,
                 unsigned int len, 
                 string refallele, 
                 string alt, 
@@ -122,6 +125,7 @@ public:
         , referenceName(refname)
         , position(pos)
         , currentReferencePosition(crefpos)
+        , currentReferenceBase(crefbase)
         , length(len)
         //, referenceSequence(refallele)
         , alternateSequence(alt)
@@ -159,6 +163,7 @@ public:
         , referenceName(other.referenceName)
         , position(other.position)
         , currentReferencePosition(other.currentReferencePosition)
+        , currentReferenceBase(other.currentReferenceBase)
         , length(other.length)
         , referenceSequence(other.referenceSequence)
         , alternateSequence(other.alternateSequence)
@@ -180,6 +185,7 @@ public:
     const long double lncurrentQuality(void) const;
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
     const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
+    void update(void); // for reference alleles, updates currentBase and quality
 
 
     // overload new and delete for object recycling pool
@@ -203,6 +209,8 @@ private:
     //static boost::object_pool<Allele> Pool;
 
 };
+
+void updateAllelesCachedData(vector<Allele*>& alleles);
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);

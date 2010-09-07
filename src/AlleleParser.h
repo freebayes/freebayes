@@ -189,7 +189,11 @@ public:
     int fastaReferenceSequenceCount; // number of reference sequences
     BedData* currentTarget;
     long unsigned int currentPosition;  // 0-based current position
-    string currentReferenceBase();
+    char currentReferenceBase;
+    string currentSequence;
+    char currentReferenceBaseChar();
+    string currentReferenceBaseString();
+    string::iterator currentReferenceBaseIterator();
 
     // output files
     ofstream logFile, outputFile, traceFile;
@@ -200,7 +204,6 @@ private:
     Allele* currentReferenceAllele;
     Allele* currentAlternateAllele;
 
-    string currentSequence;
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
     int basesAfterCurrentTarget;  // ........................................  after ...................
 

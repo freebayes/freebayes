@@ -75,7 +75,7 @@ int main (int argc, char *argv[]) {
         cout << "{\"sequence\":\"" << parser->currentTarget->seq << "\","
             << "\"total coverage\":" << alleles.size() << ","
             << "\"position\":" << parser->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
-            << "\"reference base\":\"" << parser->currentReferenceBase() << "\","
+            << "\"reference base\":\"" << parser->currentReferenceBase << "\","
             //<< "\"raDepth\":" << parser->registeredAlleles.size() << ","
             << "\"samples\":{";  // TODO ... quality (~pSnp)
 

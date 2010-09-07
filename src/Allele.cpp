@@ -10,6 +10,17 @@ int Allele::referenceOffset(void) const {
     return *currentReferencePosition - position;
 }
 
+void Allele::update(void) {
+    currentBase = base();
+    quality = currentQuality();
+}
+
+void updateAllelesCachedData(vector<Allele*>& alleles) {
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        (*a)->update();
+    }
+}
+
 // quality at a given reference position
 const short Allele::currentQuality(void) const {
     switch (this->type) {
@@ -72,11 +83,11 @@ const string Allele::base(void) const { // the base of this allele
         return alternateSequence;
 
     switch (this->type) {
+        case ALLELE_REFERENCE:
+            return string(1, *currentReferenceBase);
+            break;
         case ALLELE_GENOTYPE:
             return alternateSequence;
-            break;
-        case ALLELE_REFERENCE:
-            return alternateSequence.substr(referenceOffset(), 1);
             break;
         //case ALLELE_MISMATCH:
             //break;
