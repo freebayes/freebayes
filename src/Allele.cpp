@@ -14,7 +14,7 @@ int Allele::referenceOffset(void) const {
 void Allele::update(void) {
     currentBase = base();
     quality = currentQuality();
-    lnquality = log(quality);
+    lnquality = phred2ln(quality);
 }
 
 void updateAllelesCachedData(vector<Allele*>& alleles) {
@@ -697,6 +697,7 @@ bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups
 
     // always analyze if we have more alternate observations than reference observations
     // this is meant to catch the case in which the reference is the rare allele
+    // it will probably also catch cases in which we have very low coverage
     if (totalReferenceCount < totalAlternateCount) {
         return true;
     }
