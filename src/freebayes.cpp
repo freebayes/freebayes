@@ -106,8 +106,6 @@ int main (int argc, char *argv[]) {
 
     while (parser->getNextAlleles(sampleGroups, allowedAlleleTypes)) {
 
-        DEBUG("position: " << parser->currentTarget->seq << ":" << parser->currentPosition);
-
         DEBUG2("at start of main loop");
 
         //filterAlleles(alleles, allowedAlleles);
@@ -129,6 +127,8 @@ int main (int argc, char *argv[]) {
         }
 
         int coverage = countAlleles(sampleGroups);
+
+        DEBUG2("position: " << parser->currentTarget->seq << ":" << parser->currentPosition << " coverage: " << coverage);
 
         // skips 0-coverage regions
         if (coverage == 0) {

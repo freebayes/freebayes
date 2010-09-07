@@ -16,9 +16,9 @@ long double likelihoodGivenTrueAlleles(vector<Allele*>& observedAlleles, vector<
         Allele& observedAllele = **o;
         Allele& trueAllele = **t;
         if (observedAllele == trueAllele) {
-            prob += log(1 - exp(observedAllele.lncurrentQuality()));
+            prob += log(1 - exp(observedAllele.lnquality));
         } else {
-            prob += observedAllele.lncurrentQuality();
+            prob += observedAllele.lnquality;
         }
     }
     return prob;
@@ -83,9 +83,9 @@ badApproxProbObservedAllelesGivenGenotype(
     for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
         Allele& observation = **obs;
         if (genotype.containsAllele(observation)) {
-            probInAllWrong += observation.lncurrentQuality();
+            probInAllWrong += observation.lnquality;
         } else {
-            probOutAreAllErrors += observation.lncurrentQuality();
+            probOutAreAllErrors += observation.lnquality;
         }
     }
     
@@ -116,9 +116,9 @@ approxProbObservedAllelesGivenGenotype(
     for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
         Allele& observation = **obs;
         if (genotype.containsAllele(observation)) {
-            probInAllCorrect += log(1 - exp(observation.lncurrentQuality()));
+            probInAllCorrect += log(1 - exp(observation.lnquality));
         } else {
-            probOutAllWrong += observation.lncurrentQuality();
+            probOutAllWrong += observation.lnquality;
         }
     }
     
@@ -145,7 +145,7 @@ bamBayesApproxProbObservedAllelesGivenGenotype(
     for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
         Allele& observation = **obs;
         if (!genotype.containsAllele(observation)) {
-            sumQout += observation.lncurrentQuality();
+            sumQout += observation.lnquality;
             ++countOut;
         }
     }

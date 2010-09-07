@@ -14,6 +14,7 @@ int Allele::referenceOffset(void) const {
 void Allele::update(void) {
     currentBase = base();
     quality = currentQuality();
+    lnquality = log(quality);
 }
 
 void updateAllelesCachedData(vector<Allele*>& alleles) {

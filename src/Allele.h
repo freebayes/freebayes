@@ -99,6 +99,7 @@ public:
     string qualityString;   // quality string drawn from sequencer
     vector<short> baseQualities;
     short quality;          // base quality score associated with this allele, updated every position in the case of reference alleles
+    long double lnquality;  // log version of above
     string currentBase;       // current base, meant to be updated every position
     short mapQuality;       // map quality for the originating read
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
@@ -134,6 +135,7 @@ public:
         , readID(readid)
         , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
         , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
+        , lnquality(log((qual == -1) ? averageQuality(qstr) : qual))
         , qualityString(qstr)
         , mapQuality(mapqual) 
         , genotypeAllele(false)
@@ -154,6 +156,7 @@ public:
         , currentBase(alt)
         , length(len)
         , quality(0)
+        , lnquality(1)
         , position(pos)
         , genotypeAllele(true)
     { }
@@ -173,6 +176,7 @@ public:
         , readID(other.readID)
         , strand(other.strand)
         , quality(other.quality)
+        , lnquality(other.lnquality)
         , currentBase(other.currentBase)
         , qualityString(other.qualityString)
         , baseQualities(other.baseQualities)

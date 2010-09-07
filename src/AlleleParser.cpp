@@ -1032,23 +1032,24 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
     // get the variant alleles *at* the current position
     // and the reference alleles *overlapping* the current position
     for (vector<Allele*>::const_iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
-        Allele* allele = *a;
-        if (!allele->processed
-                && allowedAlleleTypes & allele->type
+        Allele& allele = **a;
+        if (!allele.processed
+                && allowedAlleleTypes & allele.type
                 && (
-                    (allele->type == ALLELE_REFERENCE 
-                      && currentPosition >= allele->position 
-                      && currentPosition < allele->position + allele->length) // 0-based, means position + length - 1 is the last included base
+                    (allele.type == ALLELE_REFERENCE 
+                      && currentPosition >= allele.position 
+                      && currentPosition < allele.position + allele.length) // 0-based, means position + length - 1 is the last included base
                   || 
-                    (allele->position == currentPosition)
+                    (allele.position == currentPosition)
                     ) 
-                && allele->currentQuality() >= parameters.BQL0
-                && !allele->masked()
                 ) {
-            allelesBySample[allele->sampleID].push_back(allele);
-            //alleles.push_back(allele);
-            allele->processed = true;
-            allele->update();
+            allele.update();
+            if (allele.quality >= parameters.BQL0 && !allele.masked()) {
+                allelesBySample[allele.sampleID].push_back(*a);
+                //alleles.push_back(allele);
+                allele.processed = true;
+                //allele->update();
+            }
         }
     }
 
@@ -1097,16 +1098,11 @@ vector<Allele> AlleleParser::genotypeAlleles(
         int qSum = 0;
         for (vector<Allele*>::iterator a = group->begin(); a != group->end(); ++a) {
             Allele& allele = **a;
-            //if (!passesFilters && allele.mapQuality >= parameters.MQL1 && allele.currentQuality() >= parameters.BQL1) {
-            //    passesFilters = true;
-            //}
-            qSum += allele.currentQuality();
+            qSum += allele.quality;
         }
-        //if (passesFilters) {
         Allele& allele = *group->front();
         int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
         unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length), qSum));
-        //}
     }
     DEBUG2("found genotype alleles");
 
