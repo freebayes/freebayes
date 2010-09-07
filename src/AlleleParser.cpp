@@ -795,6 +795,8 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 }
 
+// TODO change these to handle indels properly
+
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         if (currentPosition >= (*allele)->position + (*allele)->length) {
@@ -951,9 +953,9 @@ bool AlleleParser::getNextAlleles(list<Allele*>& alleles) {
     }
 }
 
-bool AlleleParser::getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
+bool AlleleParser::getNextAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
     if (toNextTargetPosition()) {
-        getAlleles(alleles, allelesBySample, allowedAlleleTypes);
+        getAlleles(allelesBySample, allowedAlleleTypes);
         return true;
     } else {
         return false;
@@ -999,11 +1001,11 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
     // as we always sort them by sample later
 }
 
-void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
+void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
 
     DEBUG2("getting alleles");
 
-    removeNonOverlappingAlleles(alleles);
+    //removeNonOverlappingAlleles(alleles);
     for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
         removeNonOverlappingAlleles(s->second);
     }
@@ -1013,7 +1015,7 @@ void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*
         if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
         currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
         allelesBySample[currentTarget->seq].push_back(currentReferenceAllele);
-        alleles.push_back(currentReferenceAllele);
+        //alleles.push_back(currentReferenceAllele);
     }
 
     // get the variant alleles *at* the current position
@@ -1033,7 +1035,7 @@ void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*
                 && !allele->masked()
                 ) {
             allelesBySample[allele->sampleID].push_back(allele);
-            alleles.push_back(allele);
+            //alleles.push_back(allele);
             allele->processed = true;
         }
     }

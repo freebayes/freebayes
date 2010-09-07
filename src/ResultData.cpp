@@ -74,7 +74,7 @@ string vcf(
         string refbase,
         string alternateBase,
         vector<string>& samples,
-        list<Allele*> observedAlleles,
+        int coverage,
         GenotypeCombo& genotypeCombo,
         Results& results,
         AlleleParser* parser) {
@@ -107,7 +107,7 @@ string vcf(
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
         << "NS=" << samples.size() << ";"
-        << "DP=" << observedAlleles.size() << ";"
+        << "DP=" << coverage << ";"
         << "AC=" << alternateCount << "\t"
         //<< "ESF=" << alleleSamplingProb << "\t" // positional information
         << "GT:GQ:DP:RA:AA";

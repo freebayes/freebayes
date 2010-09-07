@@ -147,9 +147,9 @@ public:
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
     bool getNextAlleles(list<Allele*>& alleles);
-    bool getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
+    bool getNextAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
     void getAlleles(list<Allele*>& alleles);
-    void getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
+    void getAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
 

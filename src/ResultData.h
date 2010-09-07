@@ -66,7 +66,7 @@ public:
             string referenceBase,
             string alternateBase,
             vector<string>& samples,
-            list<Allele*> observedAlleles,
+            int coverage,
             GenotypeCombo& genotypeCombo,
             Results& results,
             AlleleParser* parser);

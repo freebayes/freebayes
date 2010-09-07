@@ -104,7 +104,7 @@ int main (int argc, char *argv[]) {
         vcfHeader(out, parser->reference->filename, parser->sampleList);
     }
 
-    while (parser->getNextAlleles(alleles, sampleGroups, allowedAlleleTypes)) {
+    while (parser->getNextAlleles(sampleGroups, allowedAlleleTypes)) {
 
         DEBUG2("position: " << parser->currentTarget->seq << ":" << parser->currentPosition);
 
@@ -128,14 +128,16 @@ int main (int argc, char *argv[]) {
             DEBUG2("after trace generation");
         }
 
+        int coverage = countAlleles(sampleGroups);
+
         // skips 0-coverage regions
-        if (alleles.size() == 0) {
+        if (coverage == 0) {
             //cerr << "no alleles found at " << parser->currentTarget->seq << ":" << parser->currentPosition << endl;
             DEBUG("no alleles left at this site after filtering");
             continue;
         }
 
-        DEBUG2("coverage " << parser->currentTarget->seq << ":" << parser->currentPosition << " == " << alleles.size());
+        DEBUG2("coverage " << parser->currentTarget->seq << ":" << parser->currentPosition << " == " << coverage);
 
         // establish a set of possible alternate alleles to evaluate at this location
         // only evaluate alleles with at least one supporting read with mapping
@@ -149,7 +151,7 @@ int main (int argc, char *argv[]) {
             continue;
         }
 
-        vector<vector<Allele*> > alleleGroups = groupAlleles(alleles, &allelesEquivalent);
+        vector<vector<Allele*> > alleleGroups = groupAlleles(sampleGroups, &allelesEquivalent);
         DEBUG2("grouped alleles by equivalence");
 
         vector<string> sampleListPlusRef;
@@ -465,7 +467,7 @@ int main (int argc, char *argv[]) {
                     << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
                     << ", \"best_genotype_combo_ewens_sampling_probability\":" << bestGenotypeComboAlleleSamplingProb
                     << ", \"combos_tested\":" << bandedCombos.size()
-                    << ", \"coverage\":" << alleles.size()
+                    << ", \"coverage\":" << coverage
                     << ", \"posterior_normalizer\":" << safe_exp(posteriorNormalizer)
                     << ", \"samples\":";
                 json(out, results, parser);
@@ -482,7 +484,7 @@ int main (int argc, char *argv[]) {
                             referenceBase,
                             bestAlt.base(),
                             parser->sampleList,
-                            alleles,
+                            coverage,
                             bestGenotypeCombo,
                             results,
                             parser)

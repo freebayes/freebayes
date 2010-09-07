@@ -401,6 +401,30 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
     }
 }
 
+
+vector<vector<Allele*> > groupAlleles(map<string, vector<Allele*> > &sampleGroups, bool (*fncompare)(Allele &a, Allele &b)) {
+    vector<vector<Allele*> > groups;
+    for (map<string, vector<Allele*> >::iterator sg = sampleGroups.begin(); sg != sampleGroups.end(); ++sg) {
+        vector<Allele*>& alleles = sg->second;
+        for (vector<Allele*>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
+            bool unique = true;
+            for (vector<vector<Allele*> >::iterator ag = groups.begin(); ag != groups.end(); ++ag) {
+                if ((*fncompare)(**oa, *ag->front())) {
+                    ag->push_back(*oa);
+                    unique = false;
+                    break;
+                }
+            }
+            if (unique) {
+                vector<Allele*> trueAlleleGroup;
+                trueAlleleGroup.push_back(*oa);
+                groups.push_back(trueAlleleGroup);
+            }
+        }
+    }
+    return groups;
+}
+
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b)) {
     vector<vector<Allele*> > groups;
     for (list<Allele*>::iterator oa = alleles.begin(); oa != alleles.end(); ++oa) {
@@ -684,5 +708,15 @@ void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position
         }
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+
+}
+
+int countAlleles(map<string, vector<Allele*> > sampleGroups) {
+
+    int count = 0;
+    for (map<string, vector<Allele*> >::iterator sg = sampleGroups.begin(); sg != sampleGroups.end(); ++sg) {
+        count += sg->second.size();
+    }
+    return count;
 
 }

@@ -210,6 +210,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
 void filterAlleles(list<Allele*>& alleles, int allowedTypes);
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position);
+int countAlleles(map<string, vector<Allele*> > sampleGroups);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
 map<string, int> countAllelesString(vector<Allele*>& alleles);
@@ -232,6 +233,7 @@ vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)
 vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele*> > groupAlleles(vector<Allele*> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele*> > groupAlleles(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
+vector<vector<Allele*> > groupAlleles(map<string, vector<Allele*> > &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles_copy(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
 vector<vector<Allele> > groupAlleles_copy(vector<Allele> &alleles);
