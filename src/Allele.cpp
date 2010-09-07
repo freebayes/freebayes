@@ -655,26 +655,19 @@ bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups
 
 }
 
-vector<bool> allowedAlleleTypesVector(vector<AlleleType>& allowedEnumeratedTypes) {
-    vector<bool> allowedTypes;// (numberOfPossibleAlleleTypes, false);
-    for (int i = 0; i < numberOfPossibleAlleleTypes; ++i) {
-        bool allowed = false;
-        for (vector<AlleleType>::iterator t = allowedEnumeratedTypes.begin(); t != allowedEnumeratedTypes.end(); ++t) {
-            if (i == *t) {
-                allowed = true;
-                break;
-            }
-        }
-        allowedTypes.push_back(allowed);
+int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes) {
+    int allowedTypes = 0;// (numberOfPossibleAlleleTypes, false);
+    for (vector<AlleleType>::iterator t = allowedEnumeratedTypes.begin(); t != allowedEnumeratedTypes.end(); ++t) {
+        allowedTypes |= *t;
     }
     return allowedTypes;
 }
 
-void filterAlleles(list<Allele*>& alleles, vector<bool>& allowedTypes) {
+void filterAlleles(list<Allele*>& alleles, int allowedTypes) {
 
     for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         bool allowed = false;
-        if (!allowedTypes.at((*allele)->type))
+        if (!(allowedTypes & (*allele)->type))
             *allele = NULL;
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());

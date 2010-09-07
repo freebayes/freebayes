@@ -40,17 +40,17 @@ private:
 // a structure describing an allele
 
 enum AlleleType {
-    ALLELE_GENOTYPE = 0,
-    ALLELE_REFERENCE = 1,
-    ALLELE_MISMATCH = 2, 
-    ALLELE_SNP = 3, 
-    ALLELE_INSERTION = 4, 
-    ALLELE_DELETION = 5,
-    ALLELE_CNV = 6
+    ALLELE_GENOTYPE = 1,
+    ALLELE_REFERENCE = 2,
+    ALLELE_MISMATCH = 4,
+    ALLELE_SNP = 8,
+    ALLELE_INSERTION = 16,
+    ALLELE_DELETION = 32,
+    ALLELE_CNV = 64
 };
 
 // used in making allele type filter vectors
-const int numberOfPossibleAlleleTypes = 7;
+//const int numberOfPossibleAlleleTypes = 7;
 
 enum AlleleStrand {
     STRAND_FORWARD,
@@ -102,6 +102,7 @@ public:
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
     vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
     const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
+    bool processed; // flag to mark if we've presented this allele for analysis
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
@@ -131,6 +132,7 @@ public:
         , qualityString(qstr)
         , mapQuality(mapqual) 
         , genotypeAllele(false)
+        , processed(false)
     { 
         baseQualities.resize(qstr.size()); // cache qualities
         transform(qstr.begin(), qstr.end(), baseQualities.begin(), qualityChar2ShortInt);
@@ -168,6 +170,7 @@ public:
         , baseQualities(other.baseQualities)
         , mapQuality(other.mapQuality) 
         , genotypeAllele(other.genotypeAllele)
+        , processed(other.processed)
     { }
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
@@ -204,8 +207,8 @@ private:
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);
 void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >& groups);
 
-vector<bool> allowedAlleleTypesVector(vector<AlleleType>& allowedEnumeratedTypes);
-void filterAlleles(list<Allele*>& alleles, vector<bool>& allowedTypes);
+int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
+void filterAlleles(list<Allele*>& alleles, int allowedTypes);
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);

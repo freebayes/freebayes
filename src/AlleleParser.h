@@ -134,6 +134,8 @@ public:
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
     void updateAlignmentQueue(void);
+    void removeNonOverlappingAlleles(vector<Allele*>& alleles);
+    void removeNonOverlappingAlleles(list<Allele*>& alleles);
     void updateRegisteredAlleles(void);
     vector<BedData>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
@@ -145,9 +147,9 @@ public:
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
     bool getNextAlleles(list<Allele*>& alleles);
-    bool getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes);
+    bool getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
     void getAlleles(list<Allele*>& alleles);
-    void getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes);
+    void getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
 

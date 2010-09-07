@@ -58,12 +58,7 @@ int main (int argc, char *argv[]) {
     AlleleParser* parser = new AlleleParser(argc, argv);
     list<Allele*> alleles;
 
-    vector<AlleleType> allowedAlleles;
-    allowedAlleles.push_back(ALLELE_REFERENCE);
-    allowedAlleles.push_back(ALLELE_SNP);
-    vector<bool> allowedAlleleTypes = allowedAlleleTypesVector(allowedAlleles);
-    //allowedAlleles.push_back(ALLELE_INSERTION);
-    //allowedAlleles.push_back(ALLELE_DELETION);
+    int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP;
 
     while (parser->getNextAlleles(alleles)) {
 

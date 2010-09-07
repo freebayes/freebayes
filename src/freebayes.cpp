@@ -97,12 +97,7 @@ int main (int argc, char *argv[]) {
     allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
-    vector<AlleleType> allowedAlleles;
-    allowedAlleles.push_back(ALLELE_REFERENCE);
-    allowedAlleles.push_back(ALLELE_SNP);
-    vector<bool> allowedAlleleTypes = allowedAlleleTypesVector(allowedAlleles);
-    //allowedAlleles.push_back(ALLELE_INSERTION);
-    //allowedAlleles.push_back(ALLELE_DELETION);
+    int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP;
 
     // output VCF header
     if (parameters.output == "vcf") {

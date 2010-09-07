@@ -795,6 +795,24 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 }
 
+void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
+    for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        if (currentPosition >= (*allele)->position + (*allele)->length) {
+            *allele = NULL;
+        }
+    }
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+}
+
+void AlleleParser::removeNonOverlappingAlleles(list<Allele*>& alleles) {
+    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        if (currentPosition >= (*allele)->position + (*allele)->length) {
+            *allele = NULL;
+        }
+    }
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+}
+
 // initialization function, should only be called via constructor
 bool AlleleParser::toFirstTargetPosition(void) {
     return loadTarget(&targets.front());
@@ -933,7 +951,7 @@ bool AlleleParser::getNextAlleles(list<Allele*>& alleles) {
     }
 }
 
-bool AlleleParser::getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes) {
+bool AlleleParser::getNextAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
     if (toNextTargetPosition()) {
         getAlleles(alleles, allelesBySample, allowedAlleleTypes);
         return true;
@@ -981,13 +999,13 @@ void AlleleParser::getAlleles(list<Allele*>& alleles) {
     // as we always sort them by sample later
 }
 
-void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, vector<bool>& allowedAlleleTypes) {
+void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
 
     DEBUG2("getting alleles");
 
-    alleles.clear();
+    removeNonOverlappingAlleles(alleles);
     for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
-        s->second.clear();
+        removeNonOverlappingAlleles(s->second);
     }
 
     // add the reference allele to the analysis
@@ -1002,7 +1020,8 @@ void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*
     // and the reference alleles *overlapping* the current position
     for (vector<Allele*>::const_iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
         Allele* allele = *a;
-        if (allowedAlleleTypes[allele->type]
+        if (!allele->processed
+                && allowedAlleleTypes & allele->type
                 && (
                     (allele->type == ALLELE_REFERENCE 
                       && currentPosition >= allele->position 
@@ -1015,6 +1034,7 @@ void AlleleParser::getAlleles(list<Allele*>& alleles, map<string, vector<Allele*
                 ) {
             allelesBySample[allele->sampleID].push_back(allele);
             alleles.push_back(allele);
+            allele->processed = true;
         }
     }
 
