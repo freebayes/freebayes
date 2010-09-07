@@ -106,7 +106,7 @@ int main (int argc, char *argv[]) {
 
     while (parser->getNextAlleles(sampleGroups, allowedAlleleTypes)) {
 
-        DEBUG2("position: " << parser->currentTarget->seq << ":" << parser->currentPosition);
+        DEBUG("position: " << parser->currentTarget->seq << ":" << parser->currentPosition);
 
         DEBUG2("at start of main loop");
 
@@ -121,7 +121,7 @@ int main (int argc, char *argv[]) {
                 for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
                     Allele& allele = **a;
                     parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
-                        << g->first << "," << allele.readID << "," << allele.base() << "," 
+                        << g->first << "," << allele.readID << "," << allele.currentBase << "," 
                         << allele.currentQuality() << "," << allele.mapQuality << endl;
                 }
             }
@@ -167,7 +167,7 @@ int main (int argc, char *argv[]) {
         vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, sampleGroups, allGenotypeAlleles);
 
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
-            DEBUG2("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
         }
         DEBUG2("genotype alleles: " << genotypeAlleles);
@@ -273,12 +273,12 @@ int main (int argc, char *argv[]) {
             map<Allele, int> alleleCounts = countAlleles(genotypeCombo);
             cout << "alleleCounts = ";
             for (map<Allele, int>::iterator a = alleleCounts.begin(); a != alleleCounts.end(); ++a) {
-                cout << " ( " << a->first.base() << " " << a->second << ")";
+                cout << " ( " << a->first.currentBase << " " << a->second << ")";
             }
             cout << endl;
+            */
 
             map<int, int> frequencyCounts = countFrequencies(genotypeCombo);
-            */
 
             long double priorProbabilityOfGenotypeComboG_Af = 
                 probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
@@ -482,7 +482,7 @@ int main (int argc, char *argv[]) {
                     // TODO update the vcf output function to handle the reporting of multiple alternate alleles
                     out << vcf(pVar,
                             referenceBase,
-                            bestAlt.base(),
+                            bestAlt.currentBase,
                             parser->sampleList,
                             coverage,
                             bestGenotypeCombo,

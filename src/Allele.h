@@ -128,6 +128,7 @@ public:
         , currentReferenceBase(crefbase)
         , length(len)
         //, referenceSequence(refallele)
+        , currentBase(alt)
         , alternateSequence(alt)
         , sampleID(sampleid)
         , readID(readid)
@@ -150,6 +151,7 @@ public:
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
+        , currentBase(alt)
         , length(len)
         , quality(0)
         , position(pos)
@@ -171,6 +173,7 @@ public:
         , readID(other.readID)
         , strand(other.strand)
         , quality(other.quality)
+        , currentBase(other.currentBase)
         , qualityString(other.qualityString)
         , baseQualities(other.baseQualities)
         , mapQuality(other.mapQuality) 
@@ -184,8 +187,8 @@ public:
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
-    const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
     void update(void); // for reference alleles, updates currentBase and quality
+    const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
 
 
     // overload new and delete for object recycling pool

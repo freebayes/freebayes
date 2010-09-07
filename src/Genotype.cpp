@@ -25,7 +25,7 @@ vector<int> Genotype::alleleCountsInObservations(vector<Allele*> observations) {
         Allele& b = i->first;
         for (vector<Allele*>::iterator o = observations.begin(); o != observations.end(); ++o) {
             Allele& obs = **o;
-            if (obs.base() == b.base())
+            if (obs.currentBase == b.currentBase)
                 ++count;
         }
         counts.push_back(count);
@@ -63,7 +63,7 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
     vector<Allele> alleles;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;
-        if (base != b.base())
+        if (base != b.currentBase)
             alleles.push_back(b);
     }
     return alleles;
@@ -73,7 +73,7 @@ int Genotype::alleleCount(string& base) {
     int alleleCount = 0;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;
-        if (base == b.base())
+        if (base == b.currentBase)
             alleleCount += i->second;
     }
     return alleleCount;
@@ -92,7 +92,7 @@ string Genotype::relativeGenotype(string& refbase, string& altbase) {
     vector<string> rg;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;
-        if (b.base() == altbase && refbase != b.base()) {
+        if (b.currentBase == altbase && refbase != b.currentBase) {
             for (int j = 0; j < i->second; ++j)
                 rg.push_back("1/");
         } else {
@@ -108,7 +108,7 @@ string Genotype::relativeGenotype(string& refbase, string& altbase) {
 bool Genotype::containsAlleleOtherThan(string& base) {
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         Allele& b = i->first;
-        if (base != b.base())
+        if (base != b.currentBase)
             return true;
     }
     return false;
@@ -410,9 +410,9 @@ pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string&
     int altcount = 0;
     int refcount = 0;
     for (vector<Allele*>::iterator allele = observations.begin(); allele != observations.end(); ++allele) {
-        if ((*allele)->base() == refbase)
+        if ((*allele)->currentBase == refbase)
             ++refcount;
-        else if ((*allele)->base() == altbase)
+        else if ((*allele)->currentBase == altbase)
             ++altcount;
     }
     return make_pair(altcount, refcount);

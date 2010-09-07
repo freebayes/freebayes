@@ -1076,6 +1076,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             baseQstr,
             mapQ);
     allele->genotypeAllele = true;
+    allele->update();
     return allele;
 }
 
@@ -1104,7 +1105,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         //if (passesFilters) {
         Allele& allele = *group->front();
         int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-        unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.base(), length), qSum));
+        unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length), qSum));
         //}
     }
     DEBUG2("found genotype alleles");
@@ -1167,7 +1168,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         bool hasRefAllele = false;
         vector<pair<Allele, int> >::iterator a = sortedAlleles.begin();
         while (a != sortedAlleles.end() && resultAlleles.size() < parameters.useBestNAlleles) {
-            if (a->first.base() == refBase)
+            if (a->first.currentBase == refBase)
                 hasRefAllele = true;
             // if we have reached the limit of allowable alleles, and still
             // haven't included the reference allele, include it

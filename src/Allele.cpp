@@ -10,6 +10,7 @@ int Allele::referenceOffset(void) const {
     return *currentReferencePosition - position;
 }
 
+// called prior to using the allele in analysis
 void Allele::update(void) {
     currentBase = base();
     quality = currentQuality();
@@ -76,7 +77,6 @@ string Allele::typeStr(void) {
 
 }
 
-inline
 const string Allele::base(void) const { // the base of this allele
 
     if (genotypeAllele)
@@ -267,13 +267,13 @@ ostream &operator<<(ostream &out, Allele &allele) {
 }
 
 bool operator<(const Allele &a, const Allele &b) {
-    return a.base() < b.base();
+    return a.currentBase < b.currentBase;
 }
 
 // alleles are equal if they represent the same reference-relative variation or
 // sequence, which we encode as a string and compare here
 bool operator==(const Allele &a, const Allele &b) {
-    return a.base() == b.base();
+    return a.currentBase == b.currentBase;
 }
 
 bool operator!=(const Allele& a, const Allele& b) {
@@ -286,6 +286,10 @@ bool Allele::equivalent(Allele &b) {
         return false;
     } else {
         switch (type) {
+            case ALLELE_REFERENCE:
+                if (currentBase == b.currentBase)
+                    return true;
+                break;
             case ALLELE_SNP:
                 if (alternateSequence == b.alternateSequence)
                     return true;
@@ -297,10 +301,6 @@ bool Allele::equivalent(Allele &b) {
             case ALLELE_INSERTION:
                 if (length == b.length 
                     && alternateSequence == b.alternateSequence)
-                    return true;
-                break;
-            case ALLELE_REFERENCE:
-                if (base() == b.base())
                     return true;
                 break;
             default:
@@ -331,7 +331,7 @@ map<string, int> countAllelesString(vector<Allele*>& alleles) {
     map<string, int> counts;
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele& thisAllele = **a;
-        const string& allele = thisAllele.base();
+        const string& allele = thisAllele.currentBase;
         map<string, int>::iterator f = counts.find(allele);
         if (f == counts.end()) {
             counts[allele] = 1;
@@ -346,7 +346,7 @@ map<string, int> countAllelesString(vector<Allele>& alleles) {
     map<string, int> counts;
     for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele& thisAllele = *a;
-        const string& allele = thisAllele.base();
+        const string& allele = thisAllele.currentBase;
         map<string, int>::iterator f = counts.find(allele);
         if (f == counts.end()) {
             counts[allele] = 1;

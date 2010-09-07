@@ -49,7 +49,7 @@ probObservedAllelesGivenGenotype(
             long double lnTrueAllelePermutationsCount = log(trueAllelePermutations.size());
             vector<int> observationCounts; // counts of 'observations' of true alleles, ordered according to the genotype's internal ordering
             for (Genotype::const_iterator g = genotype.begin(); g != genotype.end(); ++g) {
-                map<string, int>::const_iterator count = trueAlleleCounts.find(g->first.base());
+                map<string, int>::const_iterator count = trueAlleleCounts.find(g->first.currentBase);
                 if (count != trueAlleleCounts.end()) {
                     observationCounts.push_back(count->second);
                 } else {
