@@ -135,7 +135,6 @@ public:
     RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
     void updateAlignmentQueue(void);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles);
-    void removeNonOverlappingAlleles(list<Allele*>& alleles);
     void updateRegisteredAlleles(void);
     vector<BedData>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);

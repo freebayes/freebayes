@@ -716,6 +716,7 @@ void AlleleParser::updateAlignmentQueue(void) {
     DEBUG2("currentAlignment.Position == " << currentAlignment.Position << ", currentPosition == " << currentPosition);
     if (currentAlignment.Position <= currentPosition) {
         do {
+            DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
             // get read group, and map back to a sample name
             string readGroup;
             if (!currentAlignment.GetTag("RG", readGroup)) {
@@ -757,7 +758,6 @@ void AlleleParser::updateAlignmentQueue(void) {
             }
                 // TODO collect statistics here...
         } while (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition);
-                                                //  XXX this is confusing because i thought the BamAlignment.Position is 0-based
     }
 
     DEBUG2("... finished pushing new alignments");
@@ -765,7 +765,7 @@ void AlleleParser::updateAlignmentQueue(void) {
     // pop from the back until we get to an alignment that overlaps our current position
     if (registeredAlignmentQueue.size() > 0) {
         BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-        while (currentPosition >= alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
+        while (currentPosition > alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
             DEBUG2("popping alignment");
             registeredAlignmentQueue.pop_back();
             if (registeredAlignmentQueue.size() > 0) {
@@ -795,7 +795,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
        */
     vector<Allele*>& alleles = registeredAlleles;
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition >= (*allele)->position + (*allele)->length) {
+        if (currentPosition > (*allele)->position + (*allele)->length) {
             delete *allele;
             *allele = NULL;
         }
@@ -808,16 +808,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition >= (*allele)->position + (*allele)->length) {
-            *allele = NULL;
-        }
-    }
-    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-}
-
-void AlleleParser::removeNonOverlappingAlleles(list<Allele*>& alleles) {
-    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition >= (*allele)->position + (*allele)->length) {
+        if (currentPosition > (*allele)->position + (*allele)->length) {
             *allele = NULL;
         }
     }
@@ -878,8 +869,8 @@ bool AlleleParser::loadTarget(BedData* target) {
     if (!r) { return r; }
     DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
-    r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
-    r &= bamMultiReader.GetNextAlignment(currentAlignment);
+    //r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
+    //r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) { return r; }
     DEBUG2("got first alignment in target region");
     int left_gap = currentPosition - currentAlignment.Position;
@@ -973,7 +964,9 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
     if (justSwitchedTargets) {
         for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s)
             s->second.clear();
-        justSwitchedTargets = false; // TODO XXX this whole flagged stanza is hacky; to resolve, store this map in the AlleleParser
+        justSwitchedTargets = false; // TODO XXX this whole flagged stanza is hacky;
+                                     // to resolve, store the allelesBySample map in
+                                     // the AlleleParser and clear it when we jump
     } else {
         // otherwise, remove non-overlapping alleles
         for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
