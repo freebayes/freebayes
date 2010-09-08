@@ -424,6 +424,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     currentRefID = 0; // will get set properly via toNextRefID
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
     currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
+    justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
 
 }
 
@@ -850,6 +851,7 @@ bool AlleleParser::toNextTarget(void) {
     if (currentTarget == &targets.back()) {
         return false;
     } else {
+        justSwitchedTargets = true;
         return loadTarget(++currentTarget);
         //return true;
     }
@@ -863,9 +865,6 @@ bool AlleleParser::loadTarget(BedData* target) {
     DEBUG("processing target " << currentTarget->desc << " " <<
             currentTarget->seq << " " << currentTarget->left << " " <<
             currentTarget->right);
-    DEBUG2("clearing alignment queue");
-
-    registeredAlignmentQueue.clear(); // clear our alignment deque on jumps
 
     DEBUG2("loading target reference subsequence");
     int refSeqID = referenceSequenceNameToID[currentTarget->seq];
@@ -896,6 +895,9 @@ bool AlleleParser::loadTarget(BedData* target) {
 
     DEBUG2("clearing registered alignments and alleles");
     registeredAlignmentQueue.clear();
+    for (vector<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ++allele) {
+        delete *allele;
+    }
     registeredAlleles.clear();
 
     return r;
@@ -954,15 +956,6 @@ bool AlleleParser::dummyProcessNextTarget(void) {
     return true;
 }
 
-bool AlleleParser::getNextAlleles(list<Allele*>& alleles) {
-    if (toNextTargetPosition()) {
-        getAlleles(alleles);
-        return true;
-    } else {
-        return false;
-    }
-}
-
 bool AlleleParser::getNextAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
     if (toNextTargetPosition()) {
         getAlleles(allelesBySample, allowedAlleleTypes);
@@ -972,53 +965,21 @@ bool AlleleParser::getNextAlleles(map<string, vector<Allele*> >& allelesBySample
     }
 }
 
-// updates the passed vector with the current alleles at the caller's target position
-void AlleleParser::getAlleles(list<Allele*>& alleles) {
-
-    DEBUG2("getting alleles");
-    // this is inefficient but no method besides shared_ptr exists to guarantee
-    // that we don't end up with corrupted alleles in this structure-- we won't
-    // be able to remove them if we recycle them elsewhere, so it will stay
-    // this way until i can implement shared_ptr...
-    alleles.clear();
-
-    // add the reference allele to the analysis
-    if (parameters.useRefAllele) {
-        if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
-        currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
-        alleles.push_back(currentReferenceAllele);
-    }
-
-    // get the variant alleles *at* the current position
-    // and the reference alleles *overlapping* the current position
-    for (vector<Allele*>::const_iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
-        Allele* allele = *a;
-        if (((allele->type == ALLELE_REFERENCE 
-                 && currentPosition >= allele->position 
-                 && currentPosition < allele->position + allele->length) // 0-based, means position + length - 1 is the last included base
-                || (allele->position == currentPosition)) 
-                && allele->currentQuality() >= parameters.BQL0
-                ) {
-            alleles.push_back(allele);
-        }
-    }
-
-    //alleles.sort();
-
-    DEBUG2("done getting alleles");
-    // TODO allele sorting by sample on registration
-    // for another potential perf boost
-    // as we always sort them by sample later
-}
-
 void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
 
     DEBUG2("getting alleles");
 
-    //removeNonOverlappingAlleles(alleles);
-    for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
-        removeNonOverlappingAlleles(s->second);
-        updateAllelesCachedData(s->second);
+    // if we just switched targets, clean up everything in our input vector
+    if (justSwitchedTargets) {
+        for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s)
+            s->second.clear();
+        justSwitchedTargets = false; // TODO XXX this whole flagged stanza is hacky; to resolve, store this map in the AlleleParser
+    } else {
+        // otherwise, remove non-overlapping alleles
+        for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
+            removeNonOverlappingAlleles(s->second);
+            updateAllelesCachedData(s->second);
+        }
     }
 
     // add the reference allele to the analysis

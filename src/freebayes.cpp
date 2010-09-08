@@ -167,7 +167,7 @@ int main (int argc, char *argv[]) {
         vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, sampleGroups, allGenotypeAlleles);
 
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
-            DEBUG("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG2("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
         }
         DEBUG2("genotype alleles: " << genotypeAlleles);

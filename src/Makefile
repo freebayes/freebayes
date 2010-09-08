@@ -25,8 +25,8 @@ C=gcc
 # Compiler flags
 #CFLAGS=-g # debugging
 #CFLAGS=-O3 #-pg #profiling
-CFLAGS=-pg -O3
-#CFLAGS=-O3
+#CFLAGS=-pg -O3
+CFLAGS=-O3 -g
 
 ################################################################################
 # Program builds

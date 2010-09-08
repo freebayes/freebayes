@@ -60,20 +60,20 @@ int main (int argc, char *argv[]) {
 
     int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP;
 
-    while (parser->getNextAlleles(alleles)) {
+    map<string, vector<Allele*> > sampleGroups;
 
-        filterAlleles(alleles, allowedAlleleTypes);
+    while (parser->getNextAlleles(sampleGroups, allowedAlleleTypes)) {
+
+        int coverage = countAlleles(sampleGroups);
 
         // skips 0-coverage regions
-        if (alleles.size() == 0)
+        if (coverage == 0)
             continue;
-
-        map<string, vector<Allele*> > sampleGroups = groupAllelesBySample(alleles);
 
         // report in json-formatted stream
         //
         cout << "{\"sequence\":\"" << parser->currentTarget->seq << "\","
-            << "\"total coverage\":" << alleles.size() << ","
+            << "\"total coverage\":" << coverage << ","
             << "\"position\":" << parser->currentPosition + 1 << ","  /// XXX basing somehow is 1-off... 
             << "\"reference base\":\"" << parser->currentReferenceBase << "\","
             //<< "\"raDepth\":" << parser->registeredAlleles.size() << ","
