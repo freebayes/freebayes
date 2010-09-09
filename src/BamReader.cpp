@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 3 September 2010 (DB)
+// Last modified: 7 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -282,7 +282,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
                     break;  // for 'H' - hard clip, do nothing to AlignedBases, move to next op
                     
                 default:
-                    printf("ERROR: Invalid Cigar op type\n"); // shouldn't get here
+                    fprintf(stderr, "ERROR: Invalid Cigar op type\n"); // shouldn't get here
                     exit(1);
             }
         }
@@ -330,7 +330,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
                     break;
                 
                 default : 
-                    printf("ERROR: Invalid tag value type\n"); // shouldn't get here
+                    fprintf(stderr, "ERROR: Invalid tag value type\n"); // shouldn't get here
                     exit(1);
             }
         }
@@ -382,7 +382,7 @@ bool BamReader::BamReaderPrivate::CreateIndex(bool useStandardIndex) {
     ClearIndex();
     
     // create index based on type requested
-    if ( useStandardIndex )
+    if ( useStandardIndex ) 
         NewIndex = new BamStandardIndex(&mBGZF, Parent, IsBigEndian);
     // create BamTools 'custom' index
     else
@@ -520,7 +520,7 @@ bool BamReader::BamReaderPrivate::Jump(int refID, int position) {
     // determine possible offsets
     vector<int64_t> offsets;
     if ( !NewIndex->GetOffsets(Region, IsRightBoundSpecified, offsets) ) {
-        printf("ERROR: Could not jump: unable to calculate offset for specified region.\n");
+        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
         return false;
     }
       
@@ -550,12 +550,12 @@ void BamReader::BamReaderPrivate::LoadHeaderData(void) {
     // check to see if proper BAM header
     char buffer[4];
     if (mBGZF.Read(buffer, 4) != 4) {
-        printf("Could not read header type\n");
+        fprintf(stderr, "Could not read header type\n");
         exit(1);
     }
 
     if (strncmp(buffer, "BAM\001", 4)) {
-        printf("wrong header type!\n");
+        fprintf(stderr, "wrong header type!\n");
         exit(1);
     }
 

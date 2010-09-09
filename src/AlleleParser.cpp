@@ -397,6 +397,7 @@ void AlleleParser::loadTargets(void) {
       bd.seq = refName;
       bd.left = 1;
       bd.right = refData.RefLength;
+      DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
       targets.push_back(bd);
       targetCount++;
     }
@@ -765,7 +766,7 @@ void AlleleParser::updateAlignmentQueue(void) {
     // pop from the back until we get to an alignment that overlaps our current position
     if (registeredAlignmentQueue.size() > 0) {
         BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-        while (currentPosition > alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
+        while (currentPosition >= alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
             DEBUG2("popping alignment");
             registeredAlignmentQueue.pop_back();
             if (registeredAlignmentQueue.size() > 0) {
@@ -795,7 +796,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
        */
     vector<Allele*>& alleles = registeredAlleles;
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition > (*allele)->position + (*allele)->length) {
+        if (currentPosition >= (*allele)->position + (*allele)->length) {
             delete *allele;
             *allele = NULL;
         }
@@ -808,7 +809,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition > (*allele)->position + (*allele)->length) {
+        if (currentPosition >= (*allele)->position + (*allele)->length) {
             *allele = NULL;
         }
     }

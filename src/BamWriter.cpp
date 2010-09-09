@@ -131,7 +131,7 @@ void BamWriter::BamWriterPrivate::CreatePackedCigar(const vector<CigarOp>& cigar
                   cigarOp = BAM_CPAD;
                   break;
             default:
-                  printf("ERROR: Unknown cigar operation found: %c\n", coIter->Type);
+                  fprintf(stderr, "ERROR: Unknown cigar operation found: %c\n", coIter->Type);
                   exit(1);
         }
 
@@ -182,7 +182,7 @@ void BamWriter::BamWriterPrivate::EncodeQuerySequence(const string& query, strin
                 break;
             
             default:
-                printf("ERROR: Only the following bases are supported in the BAM format: {=, A, C, G, T, N}. Found [%c]\n", *pQuery);
+                fprintf(stderr, "ERROR: Only the following bases are supported in the BAM format: {=, A, C, G, T, N}. Found [%c]\n", *pQuery);
                 exit(1);
         }
 
@@ -417,7 +417,7 @@ void BamWriter::BamWriterPrivate::SaveAlignment(const BamAlignment& al) {
                         break;
                                 
                     default : 
-                        printf("ERROR: Invalid tag value type\n"); // shouldn't get here
+                        fprintf(stderr, "ERROR: Invalid tag value type\n"); // shouldn't get here
                         free(tagData);
                         exit(1); 
                 }

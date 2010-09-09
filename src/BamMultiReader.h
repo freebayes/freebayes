@@ -61,7 +61,7 @@ class BamMultiReader {
         // also useful for merging
         // @preferStandardIndex - look for standard BAM index ".bai" first.  If false, 
         // will look for BamTools index ".bti".  
-        bool Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool preferStandardIndex = false);
+        bool Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool preferStandardIndex = true);
 
         // returns whether underlying BAM readers ALL have an index loaded
         // this is useful to indicate whether Jump() or SetRegion() are possible

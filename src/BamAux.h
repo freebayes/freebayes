@@ -790,12 +790,12 @@ bool BamAlignment::GetTag(const std::string& tag, uint32_t& destination) const {
             case 'f':
             case 'Z':
             case 'H':
-                printf("ERROR: Cannot store tag of type %c in integer destination\n", type);
+                fprintf(stderr, "ERROR: Cannot store tag of type %c in integer destination\n", type);
                 return false;
 
             // unknown tag type
             default:
-                printf("ERROR: Unknown tag storage class encountered: [%c]\n", type);
+                fprintf(stderr, "ERROR: Unknown tag storage class encountered: [%c]\n", type);
                 return false;
         }
           
@@ -858,12 +858,12 @@ bool BamAlignment::GetTag(const std::string& tag, float& destination) const {
             // unsupported type (var-length strings)
             case 'Z':
             case 'H':
-                printf("ERROR: Cannot store tag of type %c in integer destination\n", type);
+                fprintf(stderr, "ERROR: Cannot store tag of type %c in integer destination\n", type);
                 return false;
 
             // unknown tag type
             default:
-                printf("ERROR: Unknown tag storage class encountered: [%c]\n", type);
+                fprintf(stderr, "ERROR: Unknown tag storage class encountered: [%c]\n", type);
                 return false;
         }
           
@@ -985,7 +985,7 @@ bool BamAlignment::SkipToNextTag(const char storageType, char* &pTagData, unsign
 
         default: 
             // error case
-            printf("ERROR: Unknown tag storage class encountered: [%c]\n", storageType);
+            fprintf(stderr, "ERROR: Unknown tag storage class encountered: [%c]\n", storageType);
             return false;
     }
     
