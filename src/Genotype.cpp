@@ -259,6 +259,7 @@ bandedGenotypeCombinations(
         int bandwidth, int banddepth) {
 
     int nsamples = sampleGenotypes.size();
+    int ngenotypes = sampleGenotypes.front().second.size();
     vector<GenotypeCombo> combos;
     /*
     GenotypeCombo firstcombo;
@@ -268,7 +269,7 @@ bandedGenotypeCombinations(
     }
     combos.push_back(firstcombo);
     */
-    for (int i = 0; i < bandwidth; ++i) {
+    for (int i = 0; i < min(bandwidth, ngenotypes); ++i) {
         for (int j = 1; j < banddepth; ++j) {
             vector<int> indexes;
             for (int h = 0; h < j; ++h)
