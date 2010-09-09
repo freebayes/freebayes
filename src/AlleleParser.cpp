@@ -999,7 +999,7 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
                     ) 
                 ) {
             allele.update();
-            if (allele.quality >= parameters.BQL0 && !allele.masked()) {
+            if (allele.quality >= parameters.BQL0 && !allele.masked() && allele.currentBase != "N") {
                 allelesBySample[allele.sampleID].push_back(*a);
                 //alleles.push_back(allele);
                 allele.processed = true;

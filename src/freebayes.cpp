@@ -108,6 +108,11 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("at start of main loop");
 
+        // don't process reference N's
+        if (parser->currentReferenceBaseString() == "N") {
+            continue;
+        }
+
         //filterAlleles(alleles, allowedAlleles);
         //removeIndelMaskedAlleles(alleles, parser->currentPosition);
         
