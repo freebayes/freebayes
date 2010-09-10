@@ -1056,6 +1056,17 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
         }
     }
 
+    vector<map<string, vector<Allele*> >::iterator > emptySamples;
+    for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
+        if (s->second.size() == 0) {
+            emptySamples.push_back(s);
+        }
+    }
+
+    for (vector<map<string, vector<Allele*> >::iterator >::iterator es = emptySamples.begin();
+            es != emptySamples.end(); ++es)
+        allelesBySample.erase(*es);
+
     //alleles.sort();
 
     DEBUG2("done getting alleles");
