@@ -58,6 +58,7 @@ public:
     vector<string> bams;
     string fasta;
     string targets;
+    string region;
     string samples;
     string log;
     string output;

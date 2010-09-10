@@ -346,11 +346,55 @@ void AlleleParser::extendReferenceSequence(int rightExtension) {
 
 void AlleleParser::loadTargets(void) {
 
-  // process target region input file
-  
-  // if target file specified use targets from file
-  int targetCount = 0;
+    int targetCount = 0;
+
+    // if we have a region specified, use it to generate a target
+    if (parameters.region != "") {
+        // drawn from bamtools_utilities.cpp, modified to suit 1-based context, no end sequence
+
+        string region = parameters.region;
+        string startSeq;
+        int startPos;
+        int stopPos;
+
+        size_t foundFirstColon = region.find(":");
+
+        // we only have a single string, use the whole sequence as the target
+        if (foundFirstColon == string::npos) {
+            startSeq = region;
+            startPos = 1;
+            stopPos = -1;
+        } else {
+            startSeq = region.substr(0, foundFirstColon);
+            size_t foundRangeDots = region.find("..", foundFirstColon);
+            if (foundRangeDots == string::npos) {
+                startPos = atoi(region.substr(foundFirstColon + 1).c_str());
+                // differ from bamtools in this regard, in that we process only
+                // the specified position if a range isn't given
+                stopPos = startPos + 1;
+            } else {
+                startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
+                stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // to the start of this chromosome
+            }
+        }
+
+        for(RefVector::iterator refIter = referenceSequences.begin();
+                refIter != referenceSequences.end(); ++refIter) {
+            RefData& refData = *refIter;
+            if (refData.RefName == startSeq) {
+                BedData bd;
+                bd.seq = startSeq;
+                bd.left = (startPos == 1) ? 1 : startPos;
+                bd.right = (stopPos == -1) ? refData.RefLength : stopPos;
+                DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
+                targets.push_back(bd);
+                targetCount++;
+            }
+        }
+    }
+
   // if we have a targets file, use it...
+    // if target file specified use targets from file
   if (parameters.targets != "") {
     
     DEBUG("Making BedReader object for target file: " << parameters.targets << " ...");

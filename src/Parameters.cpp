@@ -118,6 +118,7 @@ void MyOutput::version(CmdLineInterface& c)
 }
 
 
+// XXX this is out of date
 ostream &operator<<(ostream &out, const Parameters &p) {
 
     out << "Complete list of parameter values:" << endl
@@ -227,6 +228,19 @@ Parameters::Parameters (int argc, char** argv) {
     arg.multi = false; 
     my.ArgList.push_back(arg);
     ValueArg<string> cmd_targets(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+
+    // input file: target regions 
+    ArgStruct argRegion;
+    arg = argRegion; 
+    arg.shortId = ""; 
+    arg.longId = "region"; 
+    arg.description = "Target region in <sequence>:<start>..<end> format";
+    arg.required = false; 
+    arg.defaultValueString = ""; 
+    arg.type = "string"; 
+    arg.multi = false; 
+    my.ArgList.push_back(arg);
+    ValueArg<string> cmd_region(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
 
     // input file: list of samples to analyze
     ArgStruct argSamples;
@@ -784,6 +798,7 @@ Parameters::Parameters (int argc, char** argv) {
 
     fasta = cmd_fasta.getValue();
     targets = cmd_targets.getValue();
+    region = cmd_region.getValue();
     samples = cmd_samples.getValue();
     outputFile = cmd_outputFile.getValue();
     log = cmd_log.getValue();

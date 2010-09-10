@@ -23,10 +23,10 @@ CC=g++
 C=gcc
 
 # Compiler flags
-#CFLAGS=-g # debugging
-#CFLAGS=-O3 #-pg #profiling
 #CFLAGS=-pg -O3
-CFLAGS=-O3 -g
+#CFLAGS=-O3 -g
+CFLAGS=-O3
+#CFLAGS=-O3 -static
 
 ################################################################################
 # Program builds
