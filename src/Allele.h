@@ -225,7 +225,12 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
 void filterAlleles(list<Allele*>& alleles, int allowedTypes);
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position);
-int countAlleles(map<string, vector<Allele*> > sampleGroups);
+int countAlleles(map<string, vector<Allele*> >& sampleGroups);
+int baseCount(map<string, vector<Allele*> >& alleles, string base, AlleleStrand strand);
+int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand);
+pair<pair<int, int>, pair<int, int> >
+baseCount(vector<Allele*>& alleles, string refbase, string altbase);
+int countAllelesWithBase(vector<Allele*>& alleles, string base);
 
 map<Allele, int> countAlleles(vector<Allele*>& alleles);
 map<string, int> countAllelesString(vector<Allele*>& alleles);

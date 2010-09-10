@@ -486,6 +486,7 @@ int main (int argc, char *argv[]) {
                     Allele& bestAlt = alternates.front().first;
                     // TODO update the vcf output function to handle the reporting of multiple alternate alleles
                     out << vcf(pVar,
+                            sampleGroups,
                             referenceBase,
                             bestAlt.currentBase,
                             parser->sampleList,

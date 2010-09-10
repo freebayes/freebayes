@@ -63,6 +63,7 @@ public:
     friend string vcf(
             long double comboProb,
             //long double alleleSamplingProb,
+            map<string, vector<Allele*> >& sampleObservations,
             string referenceBase,
             string alternateBase,
             vector<string>& samples,

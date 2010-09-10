@@ -71,8 +71,9 @@ void vcfHeader(ostream& out,
 string vcf(
         long double comboProb,
         //long double alleleSamplingProb,
+        map<string, vector<Allele*> >& sampleObservations,
         string refbase,
-        string alternateBase,
+        string altbase,
         vector<string>& samples,
         int coverage,
         GenotypeCombo& genotypeCombo,
@@ -87,14 +88,51 @@ string vcf(
 
     // count alternate alleles in the best genotyping
     int alternateCount = 0;
+    int alleleCount = 0;
+    // reference / alternate base counts by strand
+    map<string, pair<int, int> > altAndRefCountsBySample;
+    int alternateObsCount = 0;
+    int referenceObsCount = 0;
+    // het counts
+    int hetReferenceObsCount = 0;
+    int hetAlternateObsCount = 0;
+    int hetAllObsCount = 0;
+    pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
+    pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
+    map<string, pair<int, int> > baseCountsForwardBySample;
+    map<string, pair<int, int> > baseCountsReverseBySample;
     for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
-        //cerr << "alternate count for " << alternateBase << " and " << *genotype << " is " << genotype->alleleCount(alternateBase) << endl;
+        //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
         if (gc != comboMap.end()) {
             Genotype* genotype = gc->second.first;
-            alternateCount += genotype->alleleCount(alternateBase);
+            alternateCount += genotype->alleleCount(altbase);
+            alleleCount += genotype->ploidy;
+
+            vector<Allele*>& observations = sampleObservations[*sampleName];
+
+            if (!genotype->homozygous()) {
+                hetAllObsCount += observations.size();
+                hetReferenceObsCount += countAllelesWithBase(observations, refbase);
+                hetAlternateObsCount += countAllelesWithBase(observations, altbase);
+            }
+
+            pair<int, int> altAndRefCounts = alternateAndReferenceCount(observations, refbase, altbase);
+            altAndRefCountsBySample[*sampleName] = altAndRefCounts;
+            alternateObsCount += altAndRefCounts.first;
+            referenceObsCount += altAndRefCounts.second;
+
+            pair<pair<int,int>, pair<int,int> > baseCounts = baseCount(observations, refbase, altbase);
+            baseCountsForwardBySample[*sampleName] = baseCounts.first;
+            baseCountsReverseBySample[*sampleName] = baseCounts.second;
+            baseCountsForwardTotal.first += baseCounts.first.first;
+            baseCountsForwardTotal.second += baseCounts.first.second;
+            baseCountsReverseTotal.first += baseCounts.second.first;
+            baseCountsReverseTotal.second += baseCounts.second.second;
         }
     }
+
+    int allObsCount = alternateObsCount + referenceObsCount;
 
     //string refbase = parser->currentReferenceBase();
     // positional information
@@ -103,14 +141,48 @@ string vcf(
         << parser->currentPosition + 1 << "\t"
         << "." << "\t"
         << refbase << "\t"
-        << alternateBase << "\t"
+        << altbase << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
         << "NS=" << samples.size() << ";"
         << "DP=" << coverage << ";"
-        << "AC=" << alternateCount << "\t"
-        //<< "ESF=" << alleleSamplingProb << "\t" // positional information
-        << "GT:GQ:DP:RA:AA";
+        << "AC=" << alternateCount << ";"
+        << "AF=" << (double) alternateCount / (double) alleleCount << ";" // estimated alternate allele frequency in the range (0,1]
+        // strand specific base counts, forward strand, reference and alternate, colon separated, comma separated for each alternate
+        << "BCF=" << baseCountsForwardTotal.first << "," << baseCountsForwardTotal.second << ";"
+        // strand specific base counts, reverse strand, reference and alternate, colon separated, comma separated for each alternate
+        << "BCR=" << baseCountsReverseTotal.first << "," << baseCountsReverseTotal.second << ";"
+        // strand bias for the alternate allele, a number between 0 and 1 representing the (weighted) ratio 
+        // of forward strand sequence reads showing the alternate
+        // allele to all sequence reads showing the alternate allele
+        << "SB=" << (double) baseCountsForwardTotal.second / (double) alternateObsCount << ";"
+        // allele balance at heterozygous sites, a number between 0 and 1 representing the weighted ratio of 
+        // reads showing the reference allele to all reads,
+        // restricted to sequence data from individuals who appear
+        // to be heterozygous at this site.
+        << "AB=" << (double) hetReferenceObsCount / (double) hetAllObsCount << ";"
+        // allele balance counts, two numbers, comma separated, giving the numbers of sequence reads
+        // from apparent heterozygotes which show the reference and
+        // alternate alleles for this site.  ignores mapping strand
+        // information.  these could be totals of numbers from the
+        // bc fields for individual genotypes, counting only
+        // individuals who are heterozygous.
+        << "ABB=" << hetReferenceObsCount << "," << hetAlternateObsCount <<  ";"
+        //<< "PRSQ=;" // TODO predicted R-squared number between 0 and 1 which estimates the correlation at 
+                    // each site between imputed genotypes and the actual
+                    // alternate allele counts that would be found if
+                    // experimental genotyping were done on this panel of
+                    // individuals
+        //<< "AVPR=;" // TODO average posterior probability for genotype calls,
+                    // average across all individuals of the posterior probability for the
+                    // most probable discrete genotype call
+        // homopolymer run length.  number of consecutive nucleotides (prior to this position?) in the genome
+        // reference sequence matching the alternate allele, after substituting the
+        // alternate in place of the reference sequence allele
+        << "RUN=" << parser->homopolymerRunLength(altbase) << ";"
+        << "\t"
+
+        << "GT:GQ:DP:RA:AA:BCF:BCR:GL";
 
     // samples
     for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
@@ -119,13 +191,17 @@ string vcf(
         if (gc != comboMap.end() && s != results.end()) {
             ResultData& sample = s->second;
             Genotype* genotype = gc->second.first;
-            pair<int, int> altAndRefCounts = alternateAndReferenceCount(sample.observations, refbase, alternateBase);
+            pair<int, int> altAndRefCounts = altAndRefCountsBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);
             out << "\t"
-                << genotype->relativeGenotype(refbase, alternateBase)
+                << genotype->relativeGenotype(refbase, altbase)
                 << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]))
                 << ":" << sample.observations.size()
                 << ":" << altAndRefCounts.second
-                << ":" << altAndRefCounts.first;
+                << ":" << altAndRefCounts.first
+                << ":" << baseCount(sample.observations, refbase, STRAND_FORWARD) << "," << baseCount(sample.observations, altbase, STRAND_FORWARD) // TODO
+                << ":" << baseCount(sample.observations, refbase, STRAND_REVERSE) << "," << baseCount(sample.observations, altbase, STRAND_REVERSE) // TODO
+                ;
+                //<< ":" << "GL"  // TODO
         } else {
             out << "\t.";
         }

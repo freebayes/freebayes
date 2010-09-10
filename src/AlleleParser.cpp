@@ -440,6 +440,7 @@ int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
     return (alignment.Position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
 }
 
+// TODO clean up this.... just use a string
 char AlleleParser::currentReferenceBaseChar(void) {
     return *currentReferenceBaseIterator();
 }
@@ -1154,5 +1155,22 @@ vector<Allele> AlleleParser::genotypeAlleles(
     }
 
     return resultAlleles;
+
+}
+
+// homopolymer run length.  number of consecutive nucleotides (prior to this
+// position) in the genome reference sequence matching the alternate allele,
+// after substituting the alternate in place of the reference sequence allele
+int AlleleParser::homopolymerRunLength(string altbase) {
+
+    int position = currentPosition - 1;
+    int sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    int runlength = 0;
+    while (sequenceposition >= 0 && currentSequence.substr(sequenceposition, 1) == altbase) {
+        ++runlength;
+        --position;
+        sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    }
+    return runlength;
 
 }

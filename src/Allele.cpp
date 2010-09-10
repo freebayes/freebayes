@@ -738,12 +738,72 @@ void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position
 
 }
 
-int countAlleles(map<string, vector<Allele*> > sampleGroups) {
+int countAlleles(map<string, vector<Allele*> >& sampleGroups) {
 
     int count = 0;
     for (map<string, vector<Allele*> >::iterator sg = sampleGroups.begin(); sg != sampleGroups.end(); ++sg) {
         count += sg->second.size();
     }
     return count;
+
+}
+
+int countAllelesWithBase(vector<Allele*>& alleles, string base) {
+
+    int count = 0;
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        if ((*a)->currentBase == base)
+            ++count;
+    }
+    return count;
+
+}
+
+int baseCount(map<string, vector<Allele*> >& alleleGroups, string base, AlleleStrand strand) {
+
+    int count = 0;
+    for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
+        count += baseCount(a->second, base, strand);
+    }
+    return count;
+
+}
+
+int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand) {
+
+    int count = 0;
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        if ((*a)->currentBase == base && (*a)->strand == strand)
+            ++count;
+    }
+    return count;
+
+}
+
+pair<pair<int, int>, pair<int, int> >
+baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
+    
+    int forwardRef = 0;
+    int reverseRef = 0;
+    int forwardAlt = 0;
+    int reverseAlt = 0;
+
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        string base = (*a)->currentBase;
+        AlleleStrand strand = (*a)->strand;
+        if (base == refbase) {
+            if (strand == STRAND_FORWARD)
+                ++forwardRef;
+            else if (strand == STRAND_REVERSE)
+                ++reverseRef;
+        } else if (base == altbase) {
+            if (strand == STRAND_FORWARD)
+                ++forwardAlt;
+            else if (strand == STRAND_REVERSE)
+                ++reverseAlt;
+        }
+    }
+
+    return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
 
 }
