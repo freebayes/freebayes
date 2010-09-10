@@ -47,19 +47,27 @@ void vcfHeader(ostream& out,
 
     out << "##fileformat=VCFv4.0" << endl
         << "##fileDate=" << dateStr() << endl
-        << "##source=alleleBayes" << endl
+        << "##source=freeBayes" << endl
         << "##reference=" << referenceName << endl
         << "##phasing=none" << endl
-        << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"number of samples with data\">" << endl
-        << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"total read depth at the locus\">" << endl
-        << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"total number of alternate alleles in called genotypes\">" << endl
-        << "##INFO=<ID=AF,Number=1,Type=Integer,Description=\"total number of alleles in called genotypes\">" << endl
-        << "##INFO=<ID=ESF,Number=1,Type=Float,Description=\"Ewens' sampling formula probability for the called genotype combination\">" << endl
-        << "##FORMAT=GT,1,String,\"Genotype\"" << endl
-        << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl
-        << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl
-        << "##FORMAT=RA,1,Integer,\"Reference allele observations\"" << endl
-        << "##FORMAT=AA,1,Integer,\"Alternate allele observations\"" << endl
+        << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">" << endl
+        << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << endl
+        << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">" << endl
+        << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">" << endl
+        //<< "##INFO=<ID=AF,Number=1,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
+        << "##INFO=<ID=BCF,Number=2,Type=Integer,Description=\"Forward-strand base count: the number of observations on the forward strand for, the reference, the first alternate, the second alternate, and so on for each alternate\">" << endl
+        << "##INFO=<ID=BCR,Number=2,Type=Integer,Description=\"Reverse-strand base count: the number of observations on the reverse strand for, the reference, the first alternate, the second alternate, and so on for each alternate\">" << endl
+        << "##INFO=<ID=SB,Number=1,Type=Float,Description=\"Strand bias for the alternate allele: a number between 0 and 1 representing the ratio of forward strand sequence reads showing the alternate allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
+        << "##INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele balance at heterozygous sites: a number beween 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
+        << "##INFO=<ID=ABB,Number=2,Type=Integer,Description=\"Allele balance counts: two numbers giving the numbers of sequence reads from apparent heterozygotes which show reference and alternate alleles for the site\">" << endl
+        << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
+        << "##FORMAT=<ID=GT,Number=1,String,\"Genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Integer,\"Genotype Quality\">" << endl
+        << "##FORMAT=<ID=DP,Number=1,Integer,\"Read Depth\">" << endl
+        << "##FORMAT=<ID=RA,Number=1,Integer,\"Reference allele observations\">" << endl
+        << "##FORMAT=<ID=AA,Number=1,Integer,\"Alternate allele observations\">" << endl
+        << "##FORMAT=<ID=BCF,Number=2,Integer,\"Number of forward-strand reference and alternate allele observations\">" << endl
+        << "##FORMAT=<ID=BCR,Number=2,Integer,\"Number of reverse-strand reference and alternate allele observations\">" << endl
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
@@ -147,7 +155,8 @@ string vcf(
         << "NS=" << samples.size() << ";"
         << "DP=" << coverage << ";"
         << "AC=" << alternateCount << ";"
-        << "AF=" << (double) alternateCount / (double) alleleCount << ";" // estimated alternate allele frequency in the range (0,1]
+        << "AN=" << alleleCount << ";"
+        //<< "AF=" << (double) alternateCount / (double) alleleCount << ";" // estimated alternate allele frequency in the range (0,1]
         // strand specific base counts, forward strand, reference and alternate, colon separated, comma separated for each alternate
         << "BCF=" << baseCountsForwardTotal.first << "," << baseCountsForwardTotal.second << ";"
         // strand specific base counts, reverse strand, reference and alternate, colon separated, comma separated for each alternate
@@ -179,10 +188,11 @@ string vcf(
         // homopolymer run length.  number of consecutive nucleotides (prior to this position?) in the genome
         // reference sequence matching the alternate allele, after substituting the
         // alternate in place of the reference sequence allele
-        << "RUN=" << parser->homopolymerRunLength(altbase) << ";"
+        << "RUN=" << parser->homopolymerRunLength(altbase)
         << "\t"
 
-        << "GT:GQ:DP:RA:AA:BCF:BCR:GL";
+        << "GT:GQ:DP:RA:AA:BCF:BCR";
+    // TODO GL, un-normalized data likelihoods for genotypes
 
     // samples
     for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {

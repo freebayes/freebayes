@@ -101,6 +101,7 @@ string Genotype::relativeGenotype(string& refbase, string& altbase) {
         }
     }
     sort(rg.begin(), rg.end()); // enforces the same ordering for all genotypes
+    reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
     string result = accumulate(rg.begin(), rg.end(), string(""));
     return result.substr(0, result.size() - 1); // chop trailing '/'
 }
