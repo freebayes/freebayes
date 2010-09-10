@@ -430,8 +430,11 @@ void AlleleParser::loadTargets(void) {
 
     DEBUG("done");
 
-  // otherwise analyze all reference sequences from BAM file
-  } else {
+  }
+
+  // otherwise, if we weren't given a region string or targets file, analyze
+  // all reference sequences from BAM file
+  if (parameters.targets == "" && parameters.region == "") {
     RefVector::iterator refIter = referenceSequences.begin();
     RefVector::iterator refEnd  = referenceSequences.end();
     for( ; refIter != refEnd; ++refIter) {
