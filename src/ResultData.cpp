@@ -188,7 +188,7 @@ string vcf(
         // homopolymer run length.  number of consecutive nucleotides (prior to this position?) in the genome
         // reference sequence matching the alternate allele, after substituting the
         // alternate in place of the reference sequence allele
-        << "RUN=" << parser->homopolymerRunLength(altbase)
+        << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)
         << "\t"
 
         << "GT:GQ:DP:RA:AA:BCF:BCR";

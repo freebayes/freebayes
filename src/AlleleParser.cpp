@@ -871,8 +871,8 @@ bool AlleleParser::loadTarget(BedData* target) {
     if (!r) { return r; }
     DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
-    //r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
-    //r &= bamMultiReader.GetNextAlignment(currentAlignment);
+    r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
+    r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) { return r; }
     DEBUG2("got first alignment in target region");
     int left_gap = currentPosition - currentAlignment.Position;
@@ -1161,7 +1161,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
 // homopolymer run length.  number of consecutive nucleotides (prior to this
 // position) in the genome reference sequence matching the alternate allele,
 // after substituting the alternate in place of the reference sequence allele
-int AlleleParser::homopolymerRunLength(string altbase) {
+int AlleleParser::homopolymerRunLeft(string altbase) {
 
     int position = currentPosition - 1;
     int sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
@@ -1169,6 +1169,20 @@ int AlleleParser::homopolymerRunLength(string altbase) {
     while (sequenceposition >= 0 && currentSequence.substr(sequenceposition, 1) == altbase) {
         ++runlength;
         --position;
+        sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    }
+    return runlength;
+
+}
+
+int AlleleParser::homopolymerRunRight(string altbase) {
+
+    int position = currentPosition + 1;
+    int sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    int runlength = 0;
+    while (sequenceposition >= 0 && currentSequence.substr(sequenceposition, 1) == altbase) {
+        ++runlength;
+        ++position;
         sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
     }
     return runlength;

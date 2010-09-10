@@ -149,7 +149,8 @@ public:
     void getAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
-    int homopolymerRunLength(string altbase);
+    int homopolymerRunLeft(string altbase);
+    int homopolymerRunRight(string altbase);
 
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters
