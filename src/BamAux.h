@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 3 September 2010 (DB)
+// Last modified: 10 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides the basic constants, data structures, etc. for using BAM files
 // ***************************************************************************
@@ -270,6 +270,12 @@ struct BamRegion {
         , RightRefID(rightID)
         , RightPosition(rightPos)
     { }
+    
+    // member functions
+    void clear(void) { LeftRefID = -1; LeftPosition = -1; RightRefID = -1; RightPosition = -1; }
+    bool isLeftBoundSpecified(void) const { return ( LeftRefID != -1 && LeftPosition != -1 ); }
+    bool isNull(void) const { return ( !isLeftBoundSpecified() && !isRightBoundSpecified() ); }
+    bool isRightBoundSpecified(void) const { return ( RightRefID != -1 && RightPosition != -1 ); }
 };
 
 // ----------------------------------------------------------------

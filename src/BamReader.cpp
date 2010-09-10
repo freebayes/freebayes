@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 7 September 2010 (DB)
+// Last modified: 10 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -42,8 +42,7 @@ struct BamReader::BamReaderPrivate {
     // general file data
     BgzfData  mBGZF;
     string    HeaderText;
-    //BamIndex  Index;
-    BamIndex* NewIndex;
+    BamIndex* Index;
     RefVector References;
     bool      IsIndexLoaded;
     int64_t   AlignmentsBeginOffset;
@@ -54,11 +53,7 @@ struct BamReader::BamReaderPrivate {
     bool IsBigEndian;
 
     // user-specified region values
-    BamRegion Region;
-    bool IsLeftBoundSpecified;
-    bool IsRightBoundSpecified;
-    
-    bool IsRegionSpecified;
+    BamRegion Region;    
     int  CurrentRefID;
     int  CurrentLeft;
 
@@ -81,7 +76,6 @@ struct BamReader::BamReaderPrivate {
 
     // file operations
     void Close(void);
-    bool Jump(int refID, int position);
     bool Open(const std::string& filename, 
               const std::string& indexFilename, 
               const bool lookForIndex, 
@@ -142,14 +136,7 @@ BamReader::~BamReader(void) {
 void BamReader::Close(void) { d->Close(); }
 bool BamReader::IsIndexLoaded(void) const { return d->IsIndexLoaded; }
 bool BamReader::IsOpen(void) const { return d->mBGZF.IsOpen; }
-bool BamReader::Jump(int refID, int position) 
-{ 
-    d->Region.LeftRefID = refID;
-    d->Region.LeftPosition = position;
-    d->IsLeftBoundSpecified = true;
-    d->IsRightBoundSpecified = false;
-    return d->Jump(refID, position); 
-}
+bool BamReader::Jump(int refID, int position)  { return d->SetRegion( BamRegion(refID, position) ); }
 bool BamReader::Open(const std::string& filename, 
                      const std::string& indexFilename, 
                      const bool lookForIndex, 
@@ -183,12 +170,9 @@ bool BamReader::CreateIndex(bool useStandardIndex) { return d->CreateIndex(useSt
 
 // constructor
 BamReader::BamReaderPrivate::BamReaderPrivate(BamReader* parent)
-    : NewIndex(0)
+    : Index(0)
     , IsIndexLoaded(false)
     , AlignmentsBeginOffset(0)
-    , IsLeftBoundSpecified(false)
-    , IsRightBoundSpecified(false)
-    , IsRegionSpecified(false)
     , CurrentRefID(0)
     , CurrentLeft(0)
     , Parent(parent)
@@ -350,8 +334,8 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
 
 // clear index data structure
 void BamReader::BamReaderPrivate::ClearIndex(void) {
-    delete NewIndex;
-    NewIndex = 0;
+    delete Index;
+    Index = 0;
     IsIndexLoaded = false;
 }
 
@@ -368,9 +352,7 @@ void BamReader::BamReaderPrivate::Close(void) {
     HeaderText.clear();
     
     // clear out region flags
-    IsLeftBoundSpecified  = false;
-    IsRightBoundSpecified = false;
-    IsRegionSpecified     = false;
+    Region.clear();
 }
 
 // creates index for BAM file, saves to file
@@ -383,18 +365,18 @@ bool BamReader::BamReaderPrivate::CreateIndex(bool useStandardIndex) {
     
     // create index based on type requested
     if ( useStandardIndex ) 
-        NewIndex = new BamStandardIndex(&mBGZF, Parent, IsBigEndian);
+        Index = new BamStandardIndex(&mBGZF, Parent, IsBigEndian);
     // create BamTools 'custom' index
     else
-        NewIndex = new BamToolsIndex(&mBGZF, Parent, IsBigEndian);
+        Index = new BamToolsIndex(&mBGZF, Parent, IsBigEndian);
     
     // build new index
     bool ok = true;
-    ok &= NewIndex->Build();
+    ok &= Index->Build();
     IsIndexLoaded = ok;
     
     // attempt to save index data to file
-    ok &= NewIndex->Write(Filename); 
+    ok &= Index->Write(Filename); 
     
     // return success/fail of both building & writing index
     return ok;
@@ -425,7 +407,7 @@ bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment)
         bAlignment.SupportData.HasCoreOnly = true;
       
         // if region not specified, return success
-        if ( !IsLeftBoundSpecified ) return true;
+        if ( !Region.isLeftBoundSpecified() ) return true;
 
         // determine region state (before, within, after)
         BamReader::BamReaderPrivate::RegionState state = IsOverlap(bAlignment);
@@ -472,7 +454,7 @@ BamReader::BamReaderPrivate::RegionState BamReader::BamReaderPrivate::IsOverlap(
     // check alignment start against right bound cutoff
     
     // if full region of interest was given
-    if ( IsRightBoundSpecified ) {
+    if ( Region.isRightBoundSpecified() ) {
       
         // read starts on right bound reference, but AFTER right bound position
         if ( bAlignment.RefID == Region.RightRefID && bAlignment.Position > Region.RightPosition )
@@ -504,44 +486,6 @@ BamReader::BamReaderPrivate::RegionState BamReader::BamReaderPrivate::IsOverlap(
     // else begins before left bound position
     else
         return BEFORE_REGION;
-}
-
-// jumps to specified region(refID, leftBound) in BAM file, returns success/fail
-bool BamReader::BamReaderPrivate::Jump(int refID, int position) {
-
-    // -----------------------------------------------------------------------
-    // check for existing index 
-    if ( !IsIndexLoaded || NewIndex == 0 ) return false; 
-    // see if reference has alignments
-    if ( !NewIndex->HasAlignments(refID) ) return false; 
-    // make sure position is valid
-    if ( position > References.at(refID).RefLength ) return false;
-    
-    // determine possible offsets
-    vector<int64_t> offsets;
-    if ( !NewIndex->GetOffsets(Region, IsRightBoundSpecified, offsets) ) {
-        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
-        return false;
-    }
-      
-    // iterate through offsets
-    BamAlignment bAlignment;
-    bool result = true;
-    for ( vector<int64_t>::const_iterator o = offsets.begin(); o != offsets.end(); ++o) {
-        
-        // attempt seek & load first available alignment
-        result &= mBGZF.Seek(*o);
-        LoadNextAlignment(bAlignment);
-        
-        // if this alignment corresponds to desired position
-        // return success of seeking back to 'current offset'
-        if ( (bAlignment.RefID == refID && bAlignment.Position + bAlignment.Length > position) || (bAlignment.RefID > refID) ) {
-            if ( o != offsets.begin() ) --o;
-            return mBGZF.Seek(*o);
-        }
-    }
-    
-    return result;
 }
 
 // load BAM header data
@@ -584,26 +528,26 @@ bool BamReader::BamReaderPrivate::LoadIndex(const bool lookForIndex, const bool 
       
         // attempt to load BamIndex based on current Filename provided & preferStandardIndex flag
         const BamIndex::PreferredIndexType type = (preferStandardIndex ? BamIndex::STANDARD : BamIndex::BAMTOOLS);
-        NewIndex = BamIndex::FromBamFilename(Filename, &mBGZF, Parent, IsBigEndian, type);
+        Index = BamIndex::FromBamFilename(Filename, &mBGZF, Parent, IsBigEndian, type);
         
         // if null, return failure
-        if ( NewIndex == 0 ) return false;
+        if ( Index == 0 ) return false;
         
         // generate proper IndexFilename based on type of index created
-        IndexFilename = Filename + NewIndex->Extension();
+        IndexFilename = Filename + Index->Extension();
     }
     
     else {
         // attempt to load BamIndex based on IndexFilename provided by client
-        NewIndex = BamIndex::FromIndexFilename(IndexFilename, &mBGZF, Parent, IsBigEndian);
+        Index = BamIndex::FromIndexFilename(IndexFilename, &mBGZF, Parent, IsBigEndian);
         
         // if null, return failure
-        if ( NewIndex == 0 ) return false; 
+        if ( Index == 0 ) return false; 
     }
     
     // an index file was found
     // return success of loading the index data from file
-    IsIndexLoaded = NewIndex->Load(IndexFilename);
+    IsIndexLoaded = Index->Load(IndexFilename);
     return IsIndexLoaded;
 }
 
@@ -759,38 +703,44 @@ bool BamReader::BamReaderPrivate::Open(const string& filename, const string& ind
 // returns BAM file pointer to beginning of alignment data
 bool BamReader::BamReaderPrivate::Rewind(void) {
    
-    // rewind to first alignment
+    // rewind to first alignment, return false if unable to seek
     if ( !mBGZF.Seek(AlignmentsBeginOffset) ) return false;
   
-    // retrieve first alignment data
+    // retrieve first alignment data, return false if unable to read
     BamAlignment al;
     if ( !LoadNextAlignment(al) ) return false;
       
     // reset default region info using first alignment in file
-    Region.LeftRefID      = al.RefID;
-    Region.LeftPosition   = al.Position;
-    Region.RightRefID     = -1;
-    Region.RightPosition  = -1;
-    IsLeftBoundSpecified  = false;
-    IsRightBoundSpecified = false; 
+    Region.clear();
+    Region.LeftRefID    = al.RefID;
+    Region.LeftPosition = al.Position;
 
-    // rewind back to before first alignment
+    // rewind back to beginning of first alignment
     // return success/fail of seek
     return mBGZF.Seek(AlignmentsBeginOffset);
 }
 
-// sets a region of interest (with left & right bound reference/position)
-// attempts a Jump() to left bound as well
-// returns success/failure of Jump()
+// asks Index to attempt a Jump() to specified region
+// returns success/failure
 bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
+      
+    // clear out any prior BamReader region data
+    //
+    // N.B. - this is cleared so that BamIndex now has free reign to call
+    // GetNextAlignmentCore() and do overlap checking without worrying about BamReader 
+    // performing any overlap checking of its own and moving on to the next read... Calls 
+    // to GetNextAlignmentCore() with no Region set, simply return the next alignment.
+    // This ensures that the Index is able to do just that. (All without exposing 
+    // LoadNextAlignment() to the public API, and potentially confusing clients with the nomenclature)
+    Region.clear();
+  
+    // check for existing index 
+    if ( !IsIndexLoaded || Index == 0 ) return false; 
     
-    // save region of interest
+    // attempt jump to user-specified region, return false if failed
+    if ( !Index->Jump(region) ) return false;
+      
+    // if successful, save region data locally, return success
     Region = region;
-    
-    // set flags
-    if ( region.LeftRefID  >= 0 && region.LeftPosition  >= 0 ) IsLeftBoundSpecified  = true;
-    if ( region.RightRefID >= 0 && region.RightPosition >= 0 ) IsRightBoundSpecified = true;
-    
-    // attempt jump to beginning of region, return success/fail of Jump()
-    return Jump( Region.LeftRefID, Region.LeftPosition );
+    return true;
 }
