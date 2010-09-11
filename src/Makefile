@@ -25,8 +25,8 @@ C=gcc
 # Compiler flags
 #CFLAGS=-pg -O3
 #CFLAGS=-O3 -g
-CFLAGS=-O3
-#CFLAGS=-O3 -static
+#CFLAGS=-O3
+CFLAGS=-O3 -static
 
 ################################################################################
 # Program builds

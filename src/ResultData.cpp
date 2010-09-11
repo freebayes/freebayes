@@ -169,7 +169,7 @@ string vcf(
         // reads showing the reference allele to all reads,
         // restricted to sequence data from individuals who appear
         // to be heterozygous at this site.
-        << "AB=" << (double) hetReferenceObsCount / (double) hetAllObsCount << ";"
+        << "AB=" << ((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ) << ";"
         // allele balance counts, two numbers, comma separated, giving the numbers of sequence reads
         // from apparent heterozygotes which show the reference and
         // alternate alleles for this site.  ignores mapping strand
