@@ -13,6 +13,7 @@
 #include "Allele.h"
 #include "Utility.h"
 #include "AlleleParser.h"
+#include "Version.h"
 
 using namespace std;
 

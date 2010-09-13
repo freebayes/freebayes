@@ -841,8 +841,8 @@ struct BamToolsIndex::BamToolsIndexPrivate {
     // -------------------------
     // internal methods
     
-    // calculates offset(s) for a given region
-    bool GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets);
+    // calculates offset for a given region
+    bool GetOffset(const BamRegion& region, int64_t& offset);
 };
 
 bool BamToolsIndex::BamToolsIndexPrivate::Build(void) { 
@@ -925,22 +925,25 @@ bool BamToolsIndex::BamToolsIndexPrivate::Build(void) {
 }
 
 // N.B. - ignores isRightBoundSpecified
-bool BamToolsIndex::BamToolsIndexPrivate::GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets) { 
+bool BamToolsIndex::BamToolsIndexPrivate::GetOffset(const BamRegion& region, int64_t& offset) { 
   
     // return false if leftBound refID is not found in index data
-    if ( m_indexData.find(region.LeftRefID) == m_indexData.end() ) return false;
-  
-    // clear any prior data
-    offsets.clear();
+    if ( m_indexData.find(region.LeftRefID) == m_indexData.end() ) {
+        fprintf(stderr, "Could not find region reference ID %i in indexData\n", region.LeftRefID);
+        return false;
+    }
     
     const vector<BamToolsIndexEntry> referenceOffsets = m_indexData[region.LeftRefID];
-    if ( referenceOffsets.empty() ) return false;
+    if ( referenceOffsets.empty() ) {
+        fprintf(stderr, "No reference offsets for reference ID %i\n", region.LeftRefID);
+        return false;
+    }
     
     // -------------------------------------------------------
     // calculate nearest index to jump to
     
     // save first offset
-    int64_t offset = (*referenceOffsets.begin()).StartOffset;
+    offset = (*referenceOffsets.begin()).StartOffset;
     vector<BamToolsIndexEntry>::const_iterator indexIter = referenceOffsets.begin();
     vector<BamToolsIndexEntry>::const_iterator indexEnd  = referenceOffsets.end();
     for ( ; indexIter != indexEnd; ++indexIter ) {
@@ -950,10 +953,12 @@ bool BamToolsIndex::BamToolsIndexPrivate::GetOffsets(const BamRegion& region, co
     }
   
     // no index found
-    if ( indexIter == indexEnd ) return false;
+    if ( indexIter == indexEnd ) {
+        fprintf(stderr, "No index found\n");
+        return false;
+    }
     
-    //store offset & return success
-    offsets.push_back(offset);
+    // return succes
     return true; 
 }
 
@@ -976,31 +981,15 @@ bool BamToolsIndex::BamToolsIndexPrivate::Jump(const BamRegion& region) {
     // make sure left-bound position is valid
     if ( region.LeftPosition > references.at(region.LeftRefID).RefLength ) return false;
   
-    vector<int64_t> offsets;
-    if ( !GetOffsets(region, region.isRightBoundSpecified(), offsets) ) {
-        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
+    // calculate nearest offset to jump to
+    int64_t offset;
+    if ( !GetOffset(region, offset) ) {
+        fprintf(stderr, "ERROR: Could not jump - unable to calculate offset for specified region.\n");
         return false;
     }
   
-    // iterate through offsets
-    BamAlignment bAlignment;
-    bool result = true;
-    for ( vector<int64_t>::const_iterator o = offsets.begin(); o != offsets.end(); ++o) {
-        
-        // attempt seek & load first available alignment
-        result &= mBGZF->Seek(*o);
-        reader->GetNextAlignmentCore(bAlignment);
-        
-        // if this alignment corresponds to desired position
-        // return success of seeking back to 'current offset'
-        if ( (bAlignment.RefID == region.LeftRefID && bAlignment.Position + bAlignment.Length > region.LeftPosition) || (bAlignment.RefID > region.LeftRefID) ) {
-            if ( o != offsets.begin() ) --o;
-            return mBGZF->Seek(*o);
-        }
-    }
-    
-    if ( !result ) fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
-    return result;
+    // attempt seek in file, return success/fail
+    return mBGZF->Seek(offset);    
 }
 
 bool BamToolsIndex::BamToolsIndexPrivate::Load(const string& filename) { 

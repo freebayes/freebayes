@@ -47,7 +47,7 @@ void vcfHeader(ostream& out,
 
     out << "##fileformat=VCFv4.0" << endl
         << "##fileDate=" << dateStr() << endl
-        << "##source=freeBayes" << endl
+        << "##source=freeBayes version " << GIT_HEAD_COMMIT_ID << endl
         << "##reference=" << referenceName << endl
         << "##phasing=none" << endl
         << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">" << endl
