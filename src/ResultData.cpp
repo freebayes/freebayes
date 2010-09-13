@@ -94,6 +94,7 @@ string vcf(
 
     GenotypeComboMap comboMap = genotypeCombo2Map(genotypeCombo);
 
+    int samplesWithData = 0;
     // count alternate alleles in the best genotyping
     int alternateCount = 0;
     int alleleCount = 0;
@@ -118,6 +119,12 @@ string vcf(
             alleleCount += genotype->ploidy;
 
             vector<Allele*>& observations = sampleObservations[*sampleName];
+
+            if (observations.size() == 0) {
+                continue;
+            } else {
+                ++samplesWithData;
+            }
 
             if (!genotype->homozygous()) {
                 hetAllObsCount += observations.size();
@@ -152,7 +159,7 @@ string vcf(
         << altbase << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
-        << "NS=" << samples.size() << ";"
+        << "NS=" << samplesWithData << ";"
         << "DP=" << coverage << ";"
         << "AC=" << alternateCount << ";"
         << "AN=" << alleleCount << ";"
