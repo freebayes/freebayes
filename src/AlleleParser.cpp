@@ -1080,7 +1080,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     //string name = reference->filename;
     string name = currentTarget->seq; // this behavior matches old bambayes
     string baseQstr = "";
-    baseQstr += qualityInt2Char(baseQ);
+    //baseQstr += qualityInt2Char(baseQ);
     Allele* allele = new Allele(ALLELE_REFERENCE, 
             currentTarget->seq,
             currentPosition,
@@ -1091,6 +1091,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             baseQstr,
             mapQ);
     allele->genotypeAllele = true;
+    allele->baseQualities.push_back(baseQ);
     allele->update();
     return allele;
 }
@@ -1141,12 +1142,12 @@ vector<Allele> AlleleParser::genotypeAlleles(
             }
             if (alleleCount >= parameters.minAltCount 
                     && ((float) alleleCount / (float) observedAlleles.size()) >= parameters.minAltFraction) {
-                //cerr << genotypeAllele << " has support of " << alleleCount 
-                //    << " in individual " << sample->first << " and fraction " 
-                //    << (float) alleleCount / (float) observedAlleles.size() << endl;
+                DEBUG2(genotypeAllele << " has support of " << alleleCount 
+                    << " in individual " << sample->first << " and fraction " 
+                    << (float) alleleCount / (float) observedAlleles.size());
                 filteredAlleles[genotypeAllele] = qSum;
-                //out << *genotypeAllele << endl;
                 break;
+                //out << *genotypeAllele << endl;
             }
         }
     }
@@ -1185,6 +1186,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
             if (parameters.forceRefAllele 
                 && resultAlleles.size() == parameters.useBestNAlleles - 1 
                 && !hasRefAllele) {
+                DEBUG2("including reference allele");
                 resultAlleles.push_back(genotypeAllele(ALLELE_REFERENCE, refBase, 1));
             } else {
                 resultAlleles.push_back(a->first);
