@@ -814,7 +814,7 @@ void AlleleParser::updateAlignmentQueue(void) {
     // pop from the back until we get to an alignment that overlaps our current position
     if (registeredAlignmentQueue.size() > 0) {
         BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-        while (currentPosition >= alignment->Position + alignment->Length && registeredAlignmentQueue.size() > 0) {
+        while (currentPosition > alignment->GetEndPosition() && registeredAlignmentQueue.size() > 0) {
             DEBUG2("popping alignment");
             registeredAlignmentQueue.pop_back();
             if (registeredAlignmentQueue.size() > 0) {
@@ -918,8 +918,8 @@ bool AlleleParser::loadTarget(BedData* target) {
     if (!r) { return r; }
     DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
-    r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
-    r &= bamMultiReader.GetNextAlignment(currentAlignment);
+    //r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
+    //r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) { return r; }
     DEBUG2("got first alignment in target region");
     int left_gap = currentPosition - currentAlignment.Position;

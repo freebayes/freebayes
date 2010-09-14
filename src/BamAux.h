@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 10 September 2010 (DB)
+// Last modified: 13 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides the basic constants, data structures, etc. for using BAM files
 // ***************************************************************************
@@ -435,7 +435,7 @@ int BamAlignment::GetEndPosition(bool usePadded) const {
             alignEnd += (*cigarIter).Length;
         }
     }
-    return alignEnd;
+    return alignEnd - 1;
 }
 
 inline
