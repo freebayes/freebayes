@@ -27,6 +27,7 @@ C=gcc
 #CFLAGS=-O3 -g
 #CFLAGS=-O3
 CFLAGS=-O3 -static
+#CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 ################################################################################
 # Program builds
