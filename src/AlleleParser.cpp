@@ -1190,41 +1190,28 @@ vector<Allele> AlleleParser::genotypeAlleles(
         DEBUG2("getting N best alleles");
         string refBase = string(1, currentReferenceBase);
         bool hasRefAllele = false;
-        vector<pair<Allele, int> >::iterator a = sortedAlleles.begin();
-        while (a != sortedAlleles.end() && resultAlleles.size() < parameters.useBestNAlleles) {
+        for (vector<pair<Allele, int> >::iterator a = sortedAlleles.begin(); a != sortedAlleles.end(); ++a) {
             if (a->first.currentBase == refBase)
                 hasRefAllele = true;
-            // if we have reached the limit of allowable alleles, and still
-            // haven't included the reference allele, include it
-            if (parameters.forceRefAllele 
-                && resultAlleles.size() == parameters.useBestNAlleles - 1 
-                && !hasRefAllele) {
-                DEBUG2("including reference allele");
-                resultAlleles.push_back(genotypeAllele(ALLELE_REFERENCE, refBase, 1));
-            } else {
-                resultAlleles.push_back(a->first);
+            resultAlleles.push_back(a->first);
+            if (resultAlleles.size() >= parameters.useBestNAlleles) {
+                break;
             }
-            ++a;
+        }
+        DEBUG2("found " << sortedAlleles.size() << " alleles of which we now have " << resultAlleles.size());
+
+        // if we have reached the limit of allowable alleles, and still
+        // haven't included the reference allele, include it
+        if (parameters.forceRefAllele && !hasRefAllele) {
+            DEBUG2("including reference allele");
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1));
         }
 
-        if (resultAlleles.size() < parameters.useBestNAlleles) {
-            DEBUG2("adding dummy genotype alleles for evaluation even though we don't have data to support them");
-            vector<Allele>::iterator allele = allGenotypeAlleles.begin();
-            while (resultAlleles.size() < parameters.useBestNAlleles && allele != allGenotypeAlleles.end()) {
-                bool alreadyHas = false;
-                for (vector<Allele>::iterator f = resultAlleles.begin(); f != resultAlleles.end(); ++f) {
-                    if (*f == *allele) {
-                        ++allele;
-                        alreadyHas = true;
-                        break;
-                    }
-                }
-                if (!alreadyHas) {
-                    resultAlleles.push_back(*allele);
-                    ++allele;
-                }
-            }
+        // if we now have too many alleles (most likely one too many), get rid of some
+        while (resultAlleles.size() > parameters.useBestNAlleles) {
+            resultAlleles.pop_back();
         }
+
     }
 
     return resultAlleles;
