@@ -864,6 +864,17 @@ void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 }
 
+// removes alleles which are filtered at the current position, and unsets their 'processed' flag so they are later evaluated
+void AlleleParser::removeFilteredAlleles(vector<Allele*>& alleles) {
+    for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        if ((*allele)->quality < parameters.BQL0 || (*allele)->masked() || (*allele)->currentBase == "N") {
+            (*allele)->processed = false; // force re-processing later
+            *allele = NULL;
+        }
+    }
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+}
+
 // initialization function, should only be called via constructor
 bool AlleleParser::toFirstTargetPosition(void) {
     return loadTarget(&targets.front());
@@ -1014,13 +1025,15 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
         for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s)
             s->second.clear();
         justSwitchedTargets = false; // TODO XXX this whole flagged stanza is hacky;
-                                     // to resolve, store the allelesBySample map in
+                                     // to clean up, store the allelesBySample map in
                                      // the AlleleParser and clear it when we jump
     } else {
         // otherwise, remove non-overlapping alleles
         for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
             removeNonOverlappingAlleles(s->second);
             updateAllelesCachedData(s->second);
+            removeFilteredAlleles(s->second); // removes alleles which are filtered at this position, 
+                                              // and requeues them for processing by unsetting their 'processed' flag
         }
     }
 
