@@ -81,7 +81,7 @@ BGZF.o: BGZF.cpp BGZF.h
 	$(CC) $(CFLAGS) -c BGZF.cpp -Wno-deprecated
 
 #Version
-Parameters.o: Parameters.cpp Parameters.h Version
+Parameters.o: Parameters.cpp Parameters.h Version.h
 	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
 
 Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
@@ -127,7 +127,7 @@ Function-Math.o: Function-Math.cpp Function-Math.h Type-Hash.h
 
 
 # versioning, requires git
-Version:
+Version.h:
 	echo \#define GIT_HEAD_COMMIT_ID \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
 	echo \#define COMPILE_DATE \"`date +%F`\" >>Version.h
 
@@ -144,7 +144,7 @@ Version:
 # House-keeping
 ################################################################################
 clean:
-	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles
+	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles Version.h
 
 cleanEmacs:
 	rm -rf *~
