@@ -81,7 +81,7 @@ BGZF.o: BGZF.cpp BGZF.h
 	$(CC) $(CFLAGS) -c BGZF.cpp -Wno-deprecated
 
 #Version
-Parameters.o: Parameters.cpp Parameters.h
+Parameters.o: Parameters.cpp Parameters.h Version
 	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
 
 Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
