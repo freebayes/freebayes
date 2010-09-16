@@ -724,32 +724,34 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
         cerr << (*i ? "t" : "f");
     cerr << endl;
     */
-    for (vector<bool>::iterator m = indelMask.begin(); m < indelMask.end(); ++m) {
-        if (*m) {
-            vector<bool>::iterator q = m - parameters.IDW;
-            if (q < indelMask.begin()) q = indelMask.begin();
-            for (; q <= m + parameters.IDW && q != indelMask.end(); ++q) {
-                *q = true;
-            }
-            m += parameters.IDW + 1;
-        }
-    }
-    for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-        Allele& allele = **a;
-        int start = (allele.position - alignment.Position);
-        int end = start + allele.length;
-        vector<bool>::iterator im = indelMask.begin();
-        // if there is anything masked, store it, otherwise just leave the
-        // indelMask on this alignment empty, which means, "no masking" in
-        // Allele::masked()
-        for (vector<bool>::iterator q = im + start; q != im + end; ++q) {
-            if (*q) { // there is a masked element
-                allele.indelMask.resize(allele.length);
-                copy(im + start, im + end, allele.indelMask.begin());
-                break;
+    if (parameters.IDW > -1) {
+        for (vector<bool>::iterator m = indelMask.begin(); m < indelMask.end(); ++m) {
+            if (*m) {
+                vector<bool>::iterator q = m - parameters.IDW;
+                if (q < indelMask.begin()) q = indelMask.begin();
+                for (; q <= m + parameters.IDW && q != indelMask.end(); ++q) {
+                    *q = true;
+                }
+                m += parameters.IDW + 1;
             }
         }
-        // here apply the indel exclusion window to the allele
+        for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+            Allele& allele = **a;
+            int start = (allele.position - alignment.Position);
+            int end = start + allele.length;
+            vector<bool>::iterator im = indelMask.begin();
+            // if there is anything masked, store it, otherwise just leave the
+            // indelMask on this alignment empty, which means, "no masking" in
+            // Allele::masked()
+            for (vector<bool>::iterator q = im + start; q != im + end; ++q) {
+                if (*q) { // there is a masked element
+                    allele.indelMask.resize(allele.length);
+                    copy(im + start, im + end, allele.indelMask.begin());
+                    break;
+                }
+            }
+            // here apply the indel exclusion window to the allele
+        }
     }
 
     return ra;

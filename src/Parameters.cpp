@@ -555,11 +555,11 @@ Parameters::Parameters (int argc, char** argv) {
     arg.longId = "IDW";
     arg.description = "Window of base exclusion around INDELs in reads";
     arg.required = false;
-    arg.defaultValueString = "0";
+    arg.defaultValueString = "-1";  // this means 'no exclusion', whilst 0 means 'exclude indels'
     arg.type = "int";
     arg.multi = false;
     my.ArgList.push_back(arg);
-    ValueArg<int> cmd_IDW(arg.shortId, arg.longId, arg.description, arg.required, 0, arg.type, cmd);
+    ValueArg<int> cmd_IDW(arg.shortId, arg.longId, arg.description, arg.required, -1, arg.type, cmd);
 
     // RDF: read dependence factor
     ArgStruct argRDF;
