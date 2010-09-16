@@ -58,7 +58,7 @@ int main (int argc, char *argv[]) {
     AlleleParser* parser = new AlleleParser(argc, argv);
     list<Allele*> alleles;
 
-    int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP;
+    int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP | ALLELE_INSERTION | ALLELE_DELETION;
 
     map<string, vector<Allele*> > sampleGroups;
 
