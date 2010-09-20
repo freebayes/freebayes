@@ -1,9 +1,9 @@
 // ***************************************************************************
-// BamMultiReader.cpp (c) 2010 Erik Garrison
+// BamMultiReader.cpp (c) 2010 Erik Garrison, Derek Barnett
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 3 September 2010 (DB)
+// Last modified: 18 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -16,7 +16,6 @@
 // precludes the need to sort merged files.
 // ***************************************************************************
 
-// C++ includes
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -24,8 +23,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-// BamTools includes
 #include "BGZF.h"
 #include "BamMultiReader.h"
 using namespace BamTools;
@@ -74,11 +71,11 @@ void BamMultiReader::Close(void) {
 }
 
 // saves index data to BAM index files (".bai"/".bti") where necessary, returns success/fail
-bool BamMultiReader::CreateIndexes(bool useDefaultIndex) {
+bool BamMultiReader::CreateIndexes(bool useStandardIndex) {
     bool result = true;
     for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
         BamReader* reader = it->first;
-        result &= reader->CreateIndex(useDefaultIndex);
+        result &= reader->CreateIndex(useStandardIndex);
     }
     return result;
 }
@@ -99,11 +96,12 @@ const string BamMultiReader::GetHeaderText(void) const {
     // foreach extraction entry (each BAM file)
     for (vector<pair<BamReader*, BamAlignment*> >::const_iterator rs = readers.begin(); rs != readers.end(); ++rs) {
 
-        map<string, bool> currentFileReadGroups;
-
         BamReader* reader = rs->first;
-
-        stringstream header(reader->GetHeaderText());
+        string headerText = reader->GetHeaderText();
+        if ( headerText.empty() ) continue;
+        
+        map<string, bool> currentFileReadGroups;
+        stringstream header(headerText);
         vector<string> lines;
         string item;
         while (getline(header, item))
@@ -290,7 +288,7 @@ bool BamMultiReader::Jump(int refID, int position) {
 }
 
 // opens BAM files
-bool BamMultiReader::Open(const vector<string> filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
+bool BamMultiReader::Open(const vector<string>& filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
     
     // for filename in filenames
     fileNames = filenames; // save filenames in our multireader
@@ -373,9 +371,9 @@ bool BamMultiReader::SetRegion(const BamRegion& region) {
 
     for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
         if (!it->first->SetRegion(region)) {
-            cerr << "ERROR: could not jump " << it->first->GetFilename() << " to "
-                << region.LeftRefID << ":" << region.LeftPosition
-                << ".." << region.RightRefID << ":" << region.RightPosition << endl;
+            // cerr << "ERROR: could not jump " << it->first->GetFilename() << " to "
+            //     << region.LeftRefID << ":" << region.LeftPosition
+            //     << ".." << region.RightRefID << ":" << region.RightPosition << endl;
         }
     }
 

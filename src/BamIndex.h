@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 10 September 2010 (DB)
+// Last modified: 18 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides index functionality - both for the standardized BAM index format
 // (".bai") as well as a BamTools-specific (nonstandard) index format (".bti").
@@ -15,7 +15,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "BamAux.h"
+#include "BamAlignment.h"
 
 namespace BamTools {
 
@@ -38,7 +38,10 @@ class BamIndex {
         // returns supported file extension
         virtual const std::string Extension(void) const =0;
         // attempts to use index to jump to region; returns success/fail
-        virtual bool Jump(const BamTools::BamRegion& region) =0;
+        // a "successful" jump indicates no error, but not whether this region has data
+        //   * thus, the method sets a flag to indicate whether there are alignments 
+        //     available after the jump position
+        virtual bool Jump(const BamTools::BamRegion& region, bool* hasAlignmentsInRegion) =0;
         // returns whether reference has alignments or no
         virtual bool HasAlignments(const int& referenceID); 
         // loads existing data from file into memory
@@ -97,7 +100,10 @@ class BamStandardIndex : public BamIndex {
         // returns supported file extension
         const std::string Extension(void) const { return std::string(".bai"); }
         // attempts to use index to jump to region; returns success/fail
-        bool Jump(const BamTools::BamRegion& region);
+        // a "successful" jump indicates no error, but not whether this region has data
+        //   * thus, the method sets a flag to indicate whether there are alignments 
+        //     available after the jump position
+        bool Jump(const BamTools::BamRegion& region, bool* hasAlignmentsInRegion);
          // loads existing data from file into memory
         bool Load(const std::string& filename);
         // writes in-memory index data out to file 
@@ -130,7 +136,10 @@ class BamToolsIndex : public BamIndex {
         // returns supported file extension
         const std::string Extension(void) const { return std::string(".bti"); }
         // attempts to use index to jump to region; returns success/fail
-        bool Jump(const BamTools::BamRegion& region);
+        // a "successful" jump indicates no error, but not whether this region has data
+        //   * thus, the method sets a flag to indicate whether there are alignments 
+        //     available after the jump position
+        bool Jump(const BamTools::BamRegion& region, bool* hasAlignmentsInRegion);
          // loads existing data from file into memory
         bool Load(const std::string& filename);
         // writes in-memory index data out to file 

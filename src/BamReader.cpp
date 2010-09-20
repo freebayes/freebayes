@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 10 September 2010 (DB)
+// Last modified: 17 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -17,8 +17,6 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
-// BamTools includes
 #include "BGZF.h"
 #include "BamReader.h"
 #include "BamIndex.h"
@@ -53,9 +51,8 @@ struct BamReader::BamReaderPrivate {
     bool IsBigEndian;
 
     // user-specified region values
-    BamRegion Region;    
-    int  CurrentRefID;
-    int  CurrentLeft;
+    BamRegion Region;
+    bool HasAlignmentsInRegion;
 
     // parent BamReader
     BamReader* Parent;
@@ -173,8 +170,6 @@ BamReader::BamReaderPrivate::BamReaderPrivate(BamReader* parent)
     : Index(0)
     , IsIndexLoaded(false)
     , AlignmentsBeginOffset(0)
-    , CurrentRefID(0)
-    , CurrentLeft(0)
     , Parent(parent)
     , DNA_LOOKUP("=ACMGRSVTWYHKDBN")
     , CIGAR_LOOKUP("MIDNSHP")
@@ -400,6 +395,10 @@ bool BamReader::BamReaderPrivate::GetNextAlignment(BamAlignment& bAlignment) {
 // useful for operations requiring ONLY positional or other alignment-related information
 bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment) {
 
+    // if region is set but has no alignments
+    if ( !Region.isNull() && !HasAlignmentsInRegion ) 
+        return false;
+  
     // if valid alignment available
     if ( LoadNextAlignment(bAlignment) ) {
 
@@ -714,6 +713,7 @@ bool BamReader::BamReaderPrivate::Rewind(void) {
     Region.clear();
     Region.LeftRefID    = al.RefID;
     Region.LeftPosition = al.Position;
+    HasAlignmentsInRegion = true;
 
     // rewind back to beginning of first alignment
     // return success/fail of seek
@@ -737,10 +737,17 @@ bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
     // check for existing index 
     if ( !IsIndexLoaded || Index == 0 ) return false; 
     
-    // attempt jump to user-specified region, return false if failed
-    if ( !Index->Jump(region) ) return false;
+    // attempt jump to user-specified region return false if jump could not be performed at all
+    // (invalid index, unknown reference, etc)
+    //
+    // Index::Jump() is allowed to modify the HasAlignmentsInRegion flag
+    //  * This covers case where a region is requested that lies beyond the last alignment on a reference
+    //    If this occurs, any subsequent calls to GetNexAlignment[Core] simply return false
+    //    BamMultiReader is then able to successfully pull alignments from a region from multiple files
+    //    even if one or more have no data.
+    if ( !Index->Jump(region, &HasAlignmentsInRegion) ) return false;
       
-    // if successful, save region data locally, return success
+    // if jump successful, save region data & return success
     Region = region;
     return true;
 }

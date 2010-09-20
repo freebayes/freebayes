@@ -1,9 +1,9 @@
 // ***************************************************************************
-// BamMultiReader.h (c) 2010 Erik Garrison
+// BamMultiReader.h (c) 2010 Erik Garrison, Derek Barnett
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 3 September 2010 (DB)
+// Last modified: 18 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Functionality for simultaneously reading multiple BAM files
 // ***************************************************************************
@@ -11,23 +11,16 @@
 #ifndef BAMMULTIREADER_H
 #define BAMMULTIREADER_H
 
-// C++ includes
 #include <string>
 #include <map>
-#include <utility> // for pair
+#include <utility>
 #include <sstream>
-
-using namespace std;
-
-// BamTools includes
-#include "BamAux.h"
 #include "BamReader.h"
 
 namespace BamTools {
 
 // index mapping reference/position pairings to bamreaders and their alignments
-typedef multimap<pair<int, int>, pair<BamReader*, BamAlignment*> > AlignmentIndex;
-
+typedef std::multimap<std::pair<int, int>, std::pair<BamReader*, BamAlignment*> > AlignmentIndex;
 
 class BamMultiReader {
 
@@ -61,7 +54,7 @@ class BamMultiReader {
         // also useful for merging
         // @preferStandardIndex - look for standard BAM index ".bai" first.  If false, 
         // will look for BamTools index ".bti".  
-        bool Open(const vector<string> filenames, bool openIndexes = true, bool coreMode = false, bool preferStandardIndex = false);
+        bool Open(const std::vector<std::string>& filenames, bool openIndexes = true, bool coreMode = false, bool preferStandardIndex = false);
 
         // returns whether underlying BAM readers ALL have an index loaded
         // this is useful to indicate whether Jump() or SetRegion() are possible
@@ -97,7 +90,7 @@ class BamMultiReader {
         // ----------------------
 
         // returns unified SAM header text for all files
-        const string GetHeaderText(void) const;
+        const std::string GetHeaderText(void) const;
         // returns number of reference sequences
         const int GetReferenceCount(void) const;
         // returns vector of reference objects
@@ -112,7 +105,7 @@ class BamMultiReader {
         // ----------------------
 
         // creates index for BAM files which lack them, saves to files (default = bamFilename + ".bai")
-        bool CreateIndexes(bool useDefaultIndex = true);
+        bool CreateIndexes(bool useStandardIndex = true);
 
         //const int GetReferenceID(const string& refName) const;
 
@@ -125,13 +118,13 @@ class BamMultiReader {
     private:
 
         // the set of readers and alignments which we operate on, maintained throughout the life of this class
-        vector<pair<BamReader*, BamAlignment*> > readers;
+        std::vector<std::pair<BamReader*, BamAlignment*> > readers;
 
         // readers and alignments sorted by reference id and position, to keep track of the lowest (next) alignment
         // when a reader reaches EOF, its entry is removed from this index
         AlignmentIndex alignments;
 
-        vector<string> fileNames;
+        std::vector<std::string> fileNames;
 };
 
 } // namespace BamTools

@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 3 September 2010 (DB)
+// Last modified: 18 September 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -14,11 +14,8 @@
 #ifndef BAMREADER_H
 #define BAMREADER_H
 
-// C++ includes
 #include <string>
-
-// BamTools includes
-#include "BamAux.h"
+#include "BamAlignment.h"
 
 namespace BamTools {
   
@@ -42,7 +39,7 @@ class BamReader {
         bool IsIndexLoaded(void) const;
         // returns whether reader is open for reading or not
         bool IsOpen(void) const;
-        // performs random-access jump to reference, position
+        // performs random-access jump using (reference, position) as a left-bound
         bool Jump(int refID, int position = 0);
         // opens BAM file (and optional BAM index file, if provided)
         // @lookForIndex - if no indexFilename provided, look for an existing index file
@@ -67,9 +64,8 @@ class BamReader {
         bool GetNextAlignment(BamAlignment& bAlignment);
         
         // retrieves next available alignment core data (returns success/fail)
-        // ** DOES NOT parse any character data (read name, bases, qualities, tag data)
-        //    these can be accessed, if necessary, from the supportData 
-        // useful for operations requiring ONLY positional or other alignment-related information
+        // ** DOES NOT parse any character data (read name, bases, qualities, tag data) **
+        // useful for operations requiring ONLY aligner-related information (refId/position, alignment flags, CIGAR, mapQuality, etc)
         bool GetNextAlignmentCore(BamAlignment& bAlignment);
 
         // ----------------------

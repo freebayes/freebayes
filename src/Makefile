@@ -34,14 +34,14 @@ CFLAGS=-O3 -static
 ################################################################################
 all: ../bin/freebayes
 
-freebayes ../bin/freebayes: freebayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o
-	$(CC) $(CFLAGS) freebayes.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
+freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o
+	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
 
-alleles ../bin/alleles: alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) alleles.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lboost_regex -lpthread -Wno-deprecated
+alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lboost_regex -lpthread -Wno-deprecated
 
-dummy ../bin/dummy: dummy.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) dummy.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lboost_regex -lpthread -Wno-deprecated
+dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lboost_regex -lpthread -Wno-deprecated
 
 ################################################################################
 # Compilation
@@ -64,6 +64,9 @@ freebayes.o: freebayes.cpp TryCatch.h
 # Class compilations
 fastlz.o: fastlz.c fastlz.h
 	$(C) $(CFLAGS) -c fastlz.c	
+
+BamAlignment.o: BamAlignment.cpp BamAlignment.h BamAux.h
+	$(CC) $(CFLAGS) -c BamAlignment.cpp  -Wno-deprecated
 
 BamMultiReader.o: BamMultiReader.cpp BamMultiReader.h BamReader.cpp BamReader.h BamAux.h
 	$(CC) $(CFLAGS) -c BamMultiReader.cpp  -Wno-deprecated	
