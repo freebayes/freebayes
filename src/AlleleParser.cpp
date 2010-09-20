@@ -896,20 +896,23 @@ bool AlleleParser::toFirstTargetPosition(void) {
 //  2) no alignments in region
 //  3) failed jump to target start
 //  ...
-//  TODO might want to generalize this into a jump function and a step function
 
+// returns true if we still have more targets to process
+// false otherwise
 bool AlleleParser::toNextTarget(void) {
 
-    DEBUG2("seeking to next target...");
+    DEBUG2("seeking to next target with alignments...");
 
-    // if we are at the end of the list of targets in this reference sequence
-    if (currentTarget == &targets.back()) {
-        return false;
-    } else {
-        justSwitchedTargets = true;
-        return loadTarget(++currentTarget);
-        //return true;
-    }
+    bool ok = false;
+
+    if (currentTarget == NULL)
+        ok = loadTarget(&targets.front());
+
+    while (!ok && currentTarget != &targets.back())
+        ok = loadTarget(++currentTarget);
+
+    if (ok) justSwitchedTargets = true;
+    return ok;
 
 }
 
@@ -930,12 +933,18 @@ bool AlleleParser::loadTarget(BedData* target) {
 
     // XXX should check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
     bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1);
-    if (!r) { return r; }
+    if (!r) {
+        ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
+        return r;
+    }
     DEBUG2("set region");
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
     //r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
     //r &= bamMultiReader.GetNextAlignment(currentAlignment);
-    if (!r) { return r; }
+    if (!r) {
+        ERROR("Could not find any reads in target region " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
+        return r;
+    }
     DEBUG2("got first alignment in target region");
     int left_gap = currentPosition - currentAlignment.Position;
 
@@ -967,8 +976,7 @@ bool AlleleParser::loadTarget(BedData* target) {
 bool AlleleParser::toNextTargetPosition(void) {
 
     if (currentTarget == NULL) {
-        if (!toFirstTargetPosition()) {
-            ERROR("failed to load first target");
+        if (!toNextTarget()) {
             return false;
         }
     } else {
@@ -992,16 +1000,9 @@ bool AlleleParser::toNextTargetPosition(void) {
 // XXX for testing only, steps targets but does nothing
 bool AlleleParser::dummyProcessNextTarget(void) {
 
-    if (currentTarget == NULL) {
-        if (!toFirstTargetPosition()) {
-            ERROR("failed to load first target");
-            return false;
-        }
-    } else {
-        if (!toNextTarget()) {
-            DEBUG("no more targets, finishing");
-            return false;
-        }
+    if (!toNextTarget()) {
+        DEBUG("no more targets, finishing");
+        return false;
     }
 
     while (bamMultiReader.GetNextAlignment(currentAlignment)) {
