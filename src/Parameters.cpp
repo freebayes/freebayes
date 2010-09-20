@@ -52,6 +52,9 @@ void MyOutput::failure(CmdLineInterface& c, ArgException& e)
     cerr << "###" << endl;
     cerr << "### Command line error:" << e.what() << endl;
     cerr << "### For usage please type: " << c.getProgramName() << " --help" << endl;
+#ifdef VERBOSE_DEBUG
+    cerr << "### (compiled with --debug2 support)" << endl;
+#endif
     cerr << "################################################################################" << endl;
 }
 
