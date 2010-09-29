@@ -67,40 +67,9 @@ probObservedAllelesGivenGenotype(
     return logsumexp(probs);
 }
 
-/*
-long double
-badApproxProbObservedAllelesGivenGenotype(
-        vector<Allele*>& observedAlleles,
-        Genotype& genotype
-        ) {
-    
-    int observationCount = observedAlleles.size();
-    vector<long double> alleleProbs = genotype.alleleProbabilities();
-    vector<int> observationCounts = genotype.alleleCountsInObservations(observedAlleles);
-
-    long double probInAllWrong = 0; // 
-    long double probOutAreAllErrors = 0; // 
-    for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
-        Allele& observation = **obs;
-        if (genotype.containsAllele(observation)) {
-            probInAllWrong += observation.lnquality;
-        } else {
-            probOutAreAllErrors += observation.lnquality;
-        }
-    }
-    
-    if (sum(observationCounts) == 0) {
-        return probOutAreAllErrors;
-    } else {
-        long double someInCorrect = log(1 - exp(probInAllWrong));
-        return someInCorrect + (probOutAreAllErrors != 0 ? log(1 - exp(probOutAreAllErrors)) : 0) + log(dirichletMaximumLikelihoodRatio(alleleProbs, observationCounts));
-    }
-
-}
-*/
-
 // p(out are wrong) * p(in are correct) * (multinomial(in | genotype))
 // sum(Q)           * sum(1 - Q)        *          ...
+/*
 long double
 approxProbObservedAllelesGivenGenotype(
         vector<Allele*>& observedAlleles,
@@ -126,6 +95,34 @@ approxProbObservedAllelesGivenGenotype(
         return probOutAllWrong;
     } else {
         return probInAllCorrect + probOutAllWrong + multinomialln(alleleProbs, observationCounts);
+    }
+
+}
+*/
+
+long double
+approxProbObservedAllelesGivenGenotype(
+        vector<Allele*>& observedAlleles,
+        Genotype& genotype
+        ) {
+
+    int observationCount = observedAlleles.size();
+    vector<long double> alleleProbs = genotype.alleleProbabilities();
+    vector<int> observationCounts = genotype.alleleCountsInObservations(observedAlleles);
+
+    long double probInAllCorrect = 0; // 
+    long double probOutAllWrong  = 0; // 
+    for (vector<Allele*>::iterator obs = observedAlleles.begin(); obs != observedAlleles.end(); ++obs) {
+        Allele& observation = **obs;
+        if (!genotype.containsAllele(observation)) {
+            probOutAllWrong += observation.lnquality;
+        }
+    }
+    
+    if (sum(observationCounts) == 0) {
+        return probOutAllWrong;
+    } else {
+        return probOutAllWrong + multinomialln(alleleProbs, observationCounts);
     }
 
 }
