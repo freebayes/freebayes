@@ -33,7 +33,8 @@ void FastaIndexEntry::clear(void)
 }
 
 ostream& operator<<(ostream& output, const FastaIndexEntry& e) {
-    output << e.name << "\t" << e.length << "\t" << e.offset << "\t" <<
+    // just write the first component of the name, for compliance with other tools
+    output << split(e.name, ' ').at(0) << "\t" << e.length << "\t" << e.offset << "\t" <<
         e.line_blen << "\t" << e.line_len;
     return output;  // for multiple << operators.
 }
@@ -44,21 +45,22 @@ FastaIndex::FastaIndex(void)
 void FastaIndex::readIndexFile(string fname) {
     string line;
     long long linenum = 0;
-    vector<string> fields;
     indexFile.open(fname.c_str(), ifstream::in);
     if (indexFile.is_open()) {
         while (getline (indexFile, line)) {
             ++linenum;
-            fields.clear();
             // the fai format defined in samtools is tab-delimited, every line being:
             // fai->name[i], (int)x.len, (long long)x.offset, (int)x.line_blen, (int)x.line_len
-            boost::split(fields, line, boost::is_any_of("\t")); // split on tab
+            vector<string> fields = split(line, '\t');
             if (fields.size() == 5) {  // if we don't get enough fields then there is a problem with the file
                 // note that fields[0] is the sequence name
-                this->push_back(FastaIndexEntry(fields[0], lexical_cast<int>(fields[1]),
-                                                    lexical_cast<long long>(fields[2]),
-                                                    lexical_cast<int>(fields[3]),
-                                                    lexical_cast<int>(fields[4])));
+                char* end;
+                string name = split(fields[0], " \t").at(0);  // key by first token of name
+                sequenceNames.push_back(name);
+                this->insert(make_pair(name, FastaIndexEntry(fields[0], atoi(fields[1].c_str()),
+                                                    strtoll(fields[2].c_str(), &end, 10),
+                                                    atoi(fields[3].c_str()),
+                                                    atoi(fields[4].c_str()))));
             } else {
                 cerr << "Warning: malformed fasta index file " << fname << 
                     "does not have enough fields @ line " << linenum << endl;
@@ -66,17 +68,20 @@ void FastaIndex::readIndexFile(string fname) {
                 exit(1);
             }
         }
+    } else {
+        cerr << "could not open index file " << fname << endl;
+        exit(1);
     }
 }
 
 // for consistency this should be a class method
 bool fastaIndexEntryCompare ( FastaIndexEntry a, FastaIndexEntry b) { return (a.offset<b.offset); }
 
-ostream& operator<<(ostream& output, const FastaIndex& fastaIndex) {
+ostream& operator<<(ostream& output, FastaIndex& fastaIndex) {
     vector<FastaIndexEntry> sortedIndex;
-    for(vector<FastaIndexEntry>::const_iterator it = fastaIndex.begin(); it != fastaIndex.end(); ++it)
+    for(vector<string>::const_iterator it = fastaIndex.sequenceNames.begin(); it != fastaIndex.sequenceNames.end(); ++it)
     {
-        sortedIndex.push_back(*it);
+        sortedIndex.push_back(fastaIndex[*it]);
     }
     sort(sortedIndex.begin(), sortedIndex.end(), fastaIndexEntryCompare);
     for( vector<FastaIndexEntry>::iterator fit = sortedIndex.begin(); fit != sortedIndex.end(); ++fit) {
@@ -90,7 +95,7 @@ void FastaIndex::indexReference(string refname) {
     //  track byte offset from the start of the file
     //  if line is a fasta header, take the name and dump the last sequnece to the index
     //  if line is a sequence, add it to the current sequence
-    cerr << "indexing fasta reference " << refname << endl;
+    //cerr << "indexing fasta reference " << refname << endl;
     string line;
     FastaIndexEntry entry;  // an entry buffer used in processing
     entry.clear();
@@ -175,14 +180,16 @@ void FastaIndex::indexReference(string refname) {
 }
 
 void FastaIndex::flushEntryToIndex(FastaIndexEntry& entry) {
-    this->push_back(FastaIndexEntry(entry.name, entry.length,
-                                entry.offset, entry.line_blen,
-                                entry.line_len));
+    string name = split(entry.name, " \t").at(0);  // key by first token of name
+    sequenceNames.push_back(name);
+    this->insert(make_pair(name, FastaIndexEntry(entry.name, entry.length,
+                        entry.offset, entry.line_blen,
+                        entry.line_len)));
 
 }
 
 void FastaIndex::writeIndexFile(string fname) {
-    cerr << "writing fasta index file " << fname << endl;
+    //cerr << "writing fasta index file " << fname << endl;
     ofstream file;
     file.open(fname.c_str()); 
     if (file.is_open()) {
@@ -198,9 +205,11 @@ FastaIndex::~FastaIndex(void) {
 }
 
 FastaIndexEntry FastaIndex::entry(string name) {
-    for (vector<FastaIndexEntry>::const_iterator it = this->begin(); it != this->end(); ++it) {
-        if (it->name == name)
-            return *it;
+    try {
+        return (*this)[name];
+    } catch (exception& e) {
+        cerr << e.what() << ": unable to find index entry for " << name << endl;
+        exit(1);
     }
 }
 
@@ -208,7 +217,10 @@ string FastaIndex::indexFileExtension() { return ".fai"; }
 
 FastaReference::FastaReference(string reffilename) {
     filename = reffilename;
-    file = fopen(filename.c_str(), "r");
+    if (!(file = fopen(filename.c_str(), "r"))) {
+        cerr << "could not open " << filename << endl;
+        exit(1);
+    }
     index = new FastaIndex();
     struct stat stFileInfo; 
     string indexFileName = filename + index->indexFileExtension(); 
@@ -230,45 +242,28 @@ FastaReference::~FastaReference(void) {
 string FastaReference::getSequence(string seqname) {
     FastaIndexEntry entry = index->entry(seqname);
     int newlines_in_sequence = entry.length / entry.line_blen;
-    int total_length = newlines_in_sequence  + entry.length;
-    char* seq = (char*) malloc (sizeof(char)*total_length);
+    int seqlen = newlines_in_sequence  + entry.length;
+    char* seq = (char*) calloc (seqlen + 1, sizeof(char));
     fseek64(file, entry.offset, SEEK_SET);
-    fread(seq, sizeof(char), total_length, file);
+    fread(seq, sizeof(char), seqlen, file);
+    seq[seqlen] = '\0';
     char* pbegin = seq;
-    char* pend = seq + ((string)seq).size()/sizeof(char);
-    pend = remove (pbegin, pend, '\n');
-    // TODO check if this works for \r
-    // pend = remove (pbegin, pend, '\r');
+    char* pend = seq + (seqlen/sizeof(char));
+    pend = remove(pbegin, pend, '\n');
+    pend = remove(pbegin, pend, '\0');
     string s = seq;
+    free(seq);
     s.resize((pend - pbegin)/sizeof(char));
     return s;
 }
 
+// TODO cleanup; odd function.  use a map
 string FastaReference::sequenceNameStartingWith(string seqnameStart) {
-    string teststr;
-    string result = "";
-    vector<string> fields;
-    for(vector<FastaIndexEntry>::const_iterator it = index->begin(); it != index->end(); ++it)
-    {
-        boost::split(fields, it->name, boost::is_any_of("\t ")); // split on ws
-        // check if the first field is the same as our startseq
-        teststr = fields.at(0);
-        if (teststr == seqnameStart) {
-            if (result == "") {
-                result = it->name;
-            } else {
-                cerr << " is not unique in fasta index" << endl;
-                exit(1);
-                //return "";
-            }
-        }
-    }
-    if (result != "") {
-        return result;
-    } else {
-        cerr << "could not find sequence named " << seqnameStart << endl;
+    try {
+        return (*index)[seqnameStart].name;
+    } catch (exception& e) {
+        cerr << e.what() << ": unable to find index entry for " << seqnameStart << endl;
         exit(1);
-        //return ""; // XXX returning an empty string is an unclear result; should raise an error!!!
     }
 }
 
@@ -285,19 +280,18 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     int newlines_before = start > 0 ? (start - 1) / entry.line_blen : 0;
     int newlines_by_end = (start + length - 1) / entry.line_blen;
     int newlines_inside = newlines_by_end - newlines_before;
-    /*
-    cout << "start: " << start << " length: " << length << endl;
-    cout << "newlines before: " << newlines_before << endl;
-    cout << "newlines inside: " << newlines_inside << endl;
-    */
     int seqlen = length + newlines_inside;
-    char* seq = (char*) malloc (sizeof(char)*seqlen + 1);
+    char* seq = (char*) calloc (seqlen + 1, sizeof(char));
     fseek64(file, (off_t) (entry.offset + newlines_before + start), SEEK_SET);
     fread(seq, sizeof(char), (off_t) seqlen, file);
     seq[seqlen] = '\0';
+    char* pbegin = seq;
+    char* pend = seq + (seqlen/sizeof(char));
+    pend = remove(pbegin, pend, '\n');
+    pend = remove(pbegin, pend, '\0');
     string s = seq;
     free(seq);
-    boost::erase_all(s, "\n");
+    s.resize((pend - pbegin)/sizeof(char));
     return s;
 }
 

@@ -34,8 +34,8 @@ CFLAGS=-O3 -static
 ################################################################################
 all: ../bin/freebayes
 
-freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o
-	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
+freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
+	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
 
 alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
 	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lboost_regex -lpthread -Wno-deprecated
@@ -127,6 +127,9 @@ Function-Generic.o: Function-Generic.cpp Function-Generic.h Type-Hash.h
 
 Function-Math.o: Function-Math.cpp Function-Math.h Type-Hash.h
 	$(CC) $(CFLAGS) -c Function-Math.cpp -Wno-deprecated
+
+split.o: split.h split.cpp
+	$(CC) $(CFLAGS) -c split.cpp -Wno-deprecated
 
 
 # versioning, requires git

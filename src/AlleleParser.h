@@ -14,6 +14,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/bind.hpp>
 #include <time.h>
+#include "split.h"
 #include "BamReader.h"
 #include "Class-BedReader.h"
 #include "Parameters.h"

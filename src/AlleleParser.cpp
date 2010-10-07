@@ -286,18 +286,15 @@ void AlleleParser::loadFastaReference(void) {
     //--------------------------------------------------------------------------
     // load ref seq names into hash
     //--------------------------------------------------------------------------
-    for(vector<FastaIndexEntry>::const_iterator entry = reference->index->begin(); 
+    for(map<string, FastaIndexEntry>::const_iterator entry = reference->index->begin(); 
           entry != reference->index->end(); ++entry) {
 
-        // we split out the first word of the full sequence name for keying our sequences
-        // as often the full sequence names are overkill
-        vector<string> sequenceNameParts;
-        boost::split(sequenceNameParts, entry->name, boost::is_any_of(" "));
-        string name = sequenceNameParts.front();
+        string name = entry->first;
+
         DEBUG2("sequence name " << name << " id = " << id);
 
         // get the reference names in this vector
-        referenceSequenceNames.push_back(name);  // WARNING: these are broken; no order guarantees
+        referenceSequenceNames.push_back(name);  // WARNING: no order guarantees
         referenceSequenceNameToID[name] = id++;
         ++fastaReferenceSequenceCount;
 
