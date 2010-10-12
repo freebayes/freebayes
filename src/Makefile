@@ -1,6 +1,6 @@
 ################################################################################
-# Makefile for the GigaBayes package
-# Gabor T. Marth 2008, 2009
+# Makefile for FreeBayes
+# Erik Garrison, 2010
 # Boston College
 ################################################################################
 
@@ -14,40 +14,36 @@
 # to profile
 # make CFLAGS="-O9 -static -pg"
 
-################################################################################
-# Variables
-################################################################################
+# to enable verbose debugging
+# make CFLAGS="-O9 -static -pg -D VERBOSE_DEBUG"
 
 # Compiler
 CC=g++
 C=gcc
 
 # Compiler flags
-#CFLAGS=-pg -O3
-#CFLAGS=-O3 -g
-#CFLAGS=-O3
 CFLAGS=-O3 # -static
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 ################################################################################
-# Program builds
+# executables
 ################################################################################
+
 all: ../bin/freebayes
 
-freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
-	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
+freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
+	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -lpthread -Wno-deprecated
 
-alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lboost_regex -lpthread -Wno-deprecated
+alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lpthread -Wno-deprecated
 
-dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lboost_regex -lpthread -Wno-deprecated
+dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lpthread -Wno-deprecated
 
 ################################################################################
-# Compilation
+# objects
 ################################################################################
 
-# Main program compilations
 Fasta.o: Fasta.cpp
 	$(CC) $(CFLAGS) -c Fasta.cpp -Wno-deprecated
 
@@ -83,7 +79,6 @@ BamIndex.o: BamIndex.cpp BamIndex.h BamAux.h
 BGZF.o: BGZF.cpp BGZF.h
 	$(CC) $(CFLAGS) -c BGZF.cpp -Wno-deprecated
 
-#Version
 Parameters.o: Parameters.cpp Parameters.h Version.h
 	$(CC) $(CFLAGS) -c Parameters.cpp -Wno-deprecated
 
@@ -111,16 +106,12 @@ Multinomial.o: Multinomial.h Multinomial.cpp Sum.h Product.h Utility.h
 DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
 	$(CC) $(CFLAGS) -c DataLikelihood.cpp -Wno-deprecated
 
-ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AlleleParser.h
+ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AlleleParser.h Version.h
 	$(CC) $(CFLAGS) -c ResultData.cpp -Wno-deprecated
 
 # ...
 BedReader.o: BedReader.cpp BedReader.h Function-Generic.h
 	$(CC) $(CFLAGS) -c BedReader.cpp -Wno-deprecated
-
-# Function compilations
-Function-Sequence.o: Function-Sequence.cpp Function-Sequence.h
-	$(CC) $(CFLAGS) -c Function-Sequence.cpp -Wno-deprecated
 
 Function-Generic.o: Function-Generic.cpp Function-Generic.h Type-Hash.h
 	$(CC) $(CFLAGS) -c Function-Generic.cpp -Wno-deprecated

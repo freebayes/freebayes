@@ -84,47 +84,29 @@ void AlleleParser::openOutputFile(void) {
 
 // read sample list file or get sample names from bam file header
 void AlleleParser::getSampleNames(void) {
+
     // If a sample file is given, use it.  But otherwise process the bam file
     // header to get the sample names.
     //
 
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  // read sample list file or get sample names from bam file header
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  //
-  // If a sample file is given, use it.  But otherwise process the bam file
-  // header to get the sample names.
-  //
     if (parameters.samples != "") {
         ifstream sampleFile(parameters.samples.c_str(), ios::in);
         if (! sampleFile) {
             cerr << "unable to open file: " << parameters.samples << endl;
             exit(1);
         }
-        boost::regex patternSample("^(\\S+)\\s*(.*)$");
-        boost::regex re("\\s+");
-        boost::regex pr("^(\\S+):(\\S+)$");
-        boost::smatch match;
         string line;
         while (getline(sampleFile, line)) {
-            // if proper line
-            if (boost::regex_search(line, match, patternSample)) {
-                // assign content
-                string s = match[1];
-                DEBUG2("found sample " << s);
-                sampleList.push_back(s);
-            }
+            DEBUG2("found sample " << line);
+            sampleList.push_back(line);
         }
-    } 
+    }
 
     // retrieve header information
 
     string bamHeader = bamMultiReader.GetHeaderText();
 
-    vector<string> headerLines;
-    boost::split(headerLines, bamHeader, boost::is_any_of("\n"));
+    vector<string> headerLines = split(bamHeader, '\n');
 
     for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
 
@@ -136,13 +118,11 @@ void AlleleParser::getSampleNames(void) {
         // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
         //                     ^^^^^^^\ is our sample name
         if ( headerLine.find("@RG") == 0 ) {
-            vector<string> readGroupParts;
-            boost::split(readGroupParts, headerLine, boost::is_any_of("\t "));
+            vector<string> readGroupParts = split(headerLine, "\t ");
             string name = "";
             string readGroupID = "";
             for (vector<string>::const_iterator r = readGroupParts.begin(); r != readGroupParts.end(); ++r) {
-                vector<string> nameParts;
-                boost::split(nameParts, *r, boost::is_any_of(":"));
+                vector<string> nameParts = split(*r, ":");
                 if (nameParts.at(0) == "SM") {
                    name = nameParts.at(1);
                 } else if (nameParts.at(0) == "ID") {

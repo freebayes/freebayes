@@ -20,8 +20,6 @@
 #include "Allele.h"
 #include "Fasta.h"
 #include "TryCatch.h"
-//#include "Function-Math.h"
-#include "Function-Sequence.h"
 #include "BamMultiReader.h"
 #include "Genotype.h"
 
