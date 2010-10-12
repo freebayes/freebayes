@@ -24,20 +24,19 @@ using namespace std;
 // a pair as a complex datatype.
 // It's clearer to write things like 'genotypeelement->allele' and
 // 'genotypeelement->count' than ..->first and ..->second
-/*
-class GenotypeElement : public pair<Allele, int> {
+class GenotypeElement {
 
     friend ostream& operator<<(ostream& out, GenotypeElement& rhs);
 
 public:
-    Allele& allele(void) { return this->first; }
-    int& count(void) { return this->second; }
+    Allele allele;
+    int count;
+    GenotypeElement(const Allele& a, int c) : allele(a), count(c) { }
 
 };
-*/
 
 
-class Genotype : public vector<pair<Allele, int> > {
+class Genotype : public vector<GenotypeElement> {
 
     friend ostream& operator<<(ostream& out, const pair<Allele, int>& rhs);
     friend ostream& operator<<(ostream& out, const Genotype& g);
@@ -53,7 +52,7 @@ public:
         sort(alleles.begin(), alleles.end());
         vector<vector<Allele> > groups = groupAlleles_copy(alleles);
         for (vector<vector<Allele> >::const_iterator group = groups.begin(); group != groups.end(); ++group) {
-            this->push_back(make_pair(group->front(), group->size()));
+            this->push_back(GenotypeElement(group->front(), group->size()));
         }
         ploidy = getPloidy();
     }

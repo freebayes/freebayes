@@ -9,8 +9,6 @@
 #include <deque>
 #include <utility>
 #include <algorithm>
-#include <boost/tuple/tuple.hpp>
-#include <boost/bind.hpp>
 #include <time.h>
 #include "split.h"
 #include "BamReader.h"
@@ -25,8 +23,6 @@
 
 using namespace std;
 using namespace BamTools;
-using boost::tuple;
-using boost::make_tuple;
 
 // a structure holding information about our parameters
 
@@ -155,32 +151,6 @@ public:
     vector<Allele> genotypeAlleles(vector<vector<Allele*> >& alleleGroups,
             map<string, vector<Allele*> >& sampleGroups,
             vector<Allele>& allGenotypeAlleles);
-
-    // TODO clean these up...
-    // p( observedAlleles | genotype ) for all genotypes
-    vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
-    vector<pair<Genotype, long double> > probObservedAllelesGivenGenotypes_approx(vector<Allele*> &observedAlleles, vector< vector<Allele> > &genotypes);
-    vector<pair<Genotype, long double> > probObservedAllelesGivenPossibleGenotypes(vector<Allele*> &observedAlleles, int ploidy);
-    long double probObservedAllelesGivenGenotype(vector<vector<Allele*> > &alleleCombo, vector<Allele> &genotype);
-    long double probObservedAllelesGivenGenotype(vector<tuple<long double, long double, vector<Allele*> > > &alleleComboProbs, 
-            vector<Allele> &genotype);
-
-    // NB: this is the one we're currently using
-    long double probObservedAllelesGivenGenotypeAndTrueAlleles(
-            vector<tuple<long double, long double, Allele* > >& allelesAndProbs,
-            vector<Allele*>& trueAlleles,
-            vector<Allele>& genotype);
-
-    // caches probability products of the allele observations
-    void calculateAlleleGroupProbabilities(vector<vector<Allele*> >& alleleGroups, 
-            vector<tuple<long double, long double, vector<Allele*> > >& alleleGroupsAndQualities);
-
-
-    // calculates log observation true/false probabilities and caches them in allelesAndProbs
-    // true prob = log(1 - phred2float(Q score)), false prob = phred2log(Q score)
-    void calculateAlleleBinaryProbabilities(
-            vector<Allele*>& alleles, 
-            vector<tuple<long double, long double, Allele* > >& allelesAndProbs);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences

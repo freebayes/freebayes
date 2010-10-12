@@ -1082,6 +1082,12 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     return allele;
 }
 
+// helper function object to AlleleParser::genotypeAlleles for sorting allele counts
+struct AlleleQualityCompare {
+    bool operator()(const pair<Allele, int>& a, const pair<Allele, int>& b) {
+        return a.second > b.second;
+    }
+} alleleQualityCompare;
 
 vector<Allele> AlleleParser::genotypeAlleles(
         vector<vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
@@ -1156,9 +1162,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
             sortedAlleles.push_back(make_pair(p->first, p->second));
         }
         DEBUG2("sorting alleles to get best alleles");
-        sort(sortedAlleles.begin(), sortedAlleles.end(),
-                boost::bind(&pair<Allele, int>::second, _1) 
-                    > boost::bind(&pair<Allele, int>::second, _2));
+        sort(sortedAlleles.begin(), sortedAlleles.end(), alleleQualityCompare);
 
         DEBUG2("getting N best alleles");
         string refBase = string(1, currentReferenceBase);

@@ -17,15 +17,8 @@
 #include <time.h>
 #include <float.h>
 
-// "boost" regular expression library
-#include <boost/regex.hpp>
-
-// "boost" string manipulation
-#include <boost/algorithm/string/join.hpp>
 // tuple
 #include <boost/tuple/tuple.hpp>
-// bind
-#include <boost/bind.hpp>
 
 // private libraries
 #include "BamReader.h"
@@ -43,11 +36,6 @@
 #include "GenotypePriors.h"
 #include "DataLikelihood.h"
 #include "ResultData.h"
-
-//#include <boost/foreach.hpp>
-
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 
 
 // local helper debugging macros to improve code readability
@@ -337,8 +325,6 @@ int main (int argc, char *argv[]) {
 
         // sort by the normalized datalikelihood + prior
         sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), genotypeComboResultSorter);
-                //boost::bind(&GenotypeComboResult::get<1>, _1) 
-                //    > boost::bind(&GenotypeComboResult::get<1>, _2));
 
         DEBUG2("sorted genotype combination likelihoods");
 

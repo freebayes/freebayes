@@ -6,14 +6,14 @@
 vector<Allele> Genotype::uniqueAlleles(void) {
     vector<Allele> uniques;
     for (Genotype::iterator g = this->begin(); g != this->end(); ++g)
-        uniques.push_back(g->first);
+        uniques.push_back(g->allele);
     return uniques;
 }
 
 int Genotype::getPloidy(void) {
     int result = 0;
     for (Genotype::const_iterator i = this->begin(); i != this->end(); ++i) {
-        result += i->second;
+        result += i->count;
     }
     return result;
 }
@@ -22,7 +22,7 @@ vector<int> Genotype::alleleCountsInObservations(vector<Allele*> observations) {
     vector<int> counts;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
         int count = 0;
-        Allele& b = i->first;
+        Allele& b = i->allele;
         for (vector<Allele*>::iterator o = observations.begin(); o != observations.end(); ++o) {
             Allele& obs = **o;
             if (obs.currentBase == b.currentBase)
@@ -62,7 +62,7 @@ void inOutObservationCounts(vector<Allele*> observations,
 vector<Allele> Genotype::alternateAlleles(string& base) {
     vector<Allele> alleles;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        Allele& b = i->first;
+        Allele& b = i->allele;
         if (base != b.currentBase)
             alleles.push_back(b);
     }
@@ -72,9 +72,9 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
 int Genotype::alleleCount(string& base) {
     int alleleCount = 0;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        Allele& b = i->first;
+        Allele& b = i->allele;
         if (base == b.currentBase)
-            alleleCount += i->second;
+            alleleCount += i->count;
     }
     return alleleCount;
 }
@@ -82,8 +82,8 @@ int Genotype::alleleCount(string& base) {
 int Genotype::alleleFrequency(Allele& allele) {
     int frequency = 0;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        if (allele == i->first)
-            frequency += i->second;;
+        if (allele == i->allele)
+            frequency += i->count;
     }
     return frequency;
 }
@@ -91,12 +91,12 @@ int Genotype::alleleFrequency(Allele& allele) {
 string Genotype::relativeGenotype(string& refbase, string& altbase) {
     vector<string> rg;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        Allele& b = i->first;
+        Allele& b = i->allele;
         if (b.currentBase == altbase && refbase != b.currentBase) {
-            for (int j = 0; j < i->second; ++j)
+            for (int j = 0; j < i->count; ++j)
                 rg.push_back("1/");
         } else {
-            for (int j = 0; j < i->second; ++j)
+            for (int j = 0; j < i->count; ++j)
                 rg.push_back("0/");
         }
     }
@@ -108,7 +108,7 @@ string Genotype::relativeGenotype(string& refbase, string& altbase) {
 
 bool Genotype::containsAlleleOtherThan(string& base) {
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        Allele& b = i->first;
+        Allele& b = i->allele;
         if (base != b.currentBase)
             return true;
     }
@@ -117,7 +117,7 @@ bool Genotype::containsAlleleOtherThan(string& base) {
 
 bool Genotype::containsAllele(Allele& allele) {
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        Allele& b = i->first;
+        Allele& b = i->allele;
         if (allele == b)
             return true;
     }
@@ -131,17 +131,17 @@ bool Genotype::homozygous(void) {
 // the probability of drawing each allele out of the genotype, ordered by allele
 vector<long double> Genotype::alleleProbabilities(void) {
     vector<long double> probs;
-    for (vector<pair<Allele, int> >::const_iterator a = this->begin(); a != this->end(); ++a) {
-        probs.push_back((long double) a->second / (long double) ploidy);
+    for (vector<GenotypeElement>::const_iterator a = this->begin(); a != this->end(); ++a) {
+        probs.push_back((long double) a->count / (long double) ploidy);
     }
     return probs;
 }
 
 string Genotype::str(void) {
     string s;
-    for (Genotype::const_iterator allele = this->begin(); allele != this->end(); ++allele) {
-        for (int i = 0; i < allele->second; ++i)
-            s += allele->first.alternateSequence;
+    for (Genotype::const_iterator ge = this->begin(); ge != this->end(); ++ge) {
+        for (int i = 0; i < ge->count; ++i)
+            s += ge->allele.alternateSequence;
     }
     return s;
 }
@@ -181,8 +181,8 @@ string IUPAC2GenotypeStr(string iupac) {
     return iupac;
 }
 
-ostream& operator<<(ostream& out, const pair<Allele, int>& rhs) {
-    out << rhs.first.alternateSequence << rhs.second;
+ostream& operator<<(ostream& out, const GenotypeElement& rhs) {
+    out << rhs.allele.alternateSequence << rhs.count;
     //for (int i = 0; i < rhs.second; ++i)
     //    out << rhs.first.alternateSequence;
     return out;
@@ -226,10 +226,10 @@ bool operator<(Genotype& a, Genotype& b) {
     // step through each genotype, and if we find a difference between either
     // their allele or count return a<b
     for (; ai != a.end() && bi != b.end(); ++ai, ++bi) {
-        if (ai->first != bi->first)
-            return ai->first < bi->first;
-        else if (ai->second != bi->second)
-            return ai->second < bi->second;
+        if (ai->allele != bi->allele)
+            return ai->allele < bi->allele;
+        else if (ai->count != bi->count)
+            return ai->count < bi->count;
     }
     return false; // if the two are equal, then we return false per C++ convention
 }

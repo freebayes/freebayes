@@ -143,6 +143,3 @@ Version.h:
 clean:
 	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles Version.h
 
-cleanEmacs:
-	rm -rf *~
-
