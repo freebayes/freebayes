@@ -32,13 +32,13 @@ CFLAGS=-O3 # -static
 all: ../bin/freebayes
 
 freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
-	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -lpthread -Wno-deprecated
+	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -Wno-deprecated
 
-alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lpthread -Wno-deprecated
+alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h split.o
+	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o split.o -o ../bin/alleles -lz -Wno-deprecated
 
 dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lpthread -Wno-deprecated
+	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -Wno-deprecated
 
 ################################################################################
 # objects

@@ -17,16 +17,6 @@
 #include <cmath>
 #include <time.h>
 
-// "boost" regular expression library
-#include <boost/regex.hpp>
-
-// "boost" string manipulation
-#include <boost/algorithm/string/join.hpp>
-// tuple
-#include <boost/tuple/tuple.hpp>
-// bind
-#include <boost/bind.hpp>
-
 // private libraries
 #include "BamReader.h"
 #include "Fasta.h"
@@ -34,14 +24,12 @@
 #include "Parameters.h"
 #include "Allele.h"
 #include "AlleleParser.h"
+#include "split.h"
 
 #include "multichoose.h"
 #include "multipermute.h"
 
 using namespace std; 
-
-using boost::tuple;
-using boost::make_tuple;
 
 // Allele object recycling:
 //

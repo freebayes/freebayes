@@ -22,11 +22,11 @@ map<Allele, int> countAlleles(vector<Genotype*>& genotypeCombo) {
     map<Allele, int> alleleCounts;
     for (vector<Genotype*>::iterator g = genotypeCombo.begin(); g != genotypeCombo.end(); ++g) {
         for (Genotype::iterator a = (*g)->begin(); a != (*g)->end(); ++a) {
-            map<Allele, int>::iterator c = alleleCounts.find(a->first);
+            map<Allele, int>::iterator c = alleleCounts.find(a->allele);
             if (c != alleleCounts.end()) {
-                c->second += a->second;
+                c->second += a->count;
             } else {
-                alleleCounts.insert(make_pair(a->first, a->second));
+                alleleCounts.insert(make_pair(a->allele, a->count));
             }
         }
     }
