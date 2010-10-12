@@ -895,7 +895,7 @@ bool AlleleParser::loadTarget(BedTarget* target) {
             currentTarget->right);
 
     DEBUG2("loading target reference subsequence");
-    int refSeqID = referenceSequenceNameToID[currentTarget->seq];
+    int refSeqID = bamMultiReader.GetReferenceID(currentTarget->seq);
     DEBUG2("reference sequence id " << refSeqID);
 
     DEBUG2("setting new position " << currentTarget->left);
@@ -908,14 +908,14 @@ bool AlleleParser::loadTarget(BedTarget* target) {
         return r;
     }
     DEBUG2("set region");
+
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
-    //r &= bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1); // XXX jump twice?
-    //r &= bamMultiReader.GetNextAlignment(currentAlignment);
     if (!r) {
         ERROR("Could not find any reads in target region " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
         return r;
     }
     DEBUG2("got first alignment in target region");
+
     int left_gap = currentPosition - currentAlignment.Position;
 
     DEBUG2("left gap: " << left_gap << " currentAlignment.Position: " << currentAlignment.Position);

@@ -22,7 +22,7 @@ CC=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=-O3 # -static
+CFLAGS=-O3
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 ################################################################################
@@ -30,6 +30,9 @@ CFLAGS=-O3 # -static
 ################################################################################
 
 all: ../bin/freebayes
+
+static:
+	make CFLAGS="$(CFLAGS) -static" all
 
 freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
 	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -Wno-deprecated
@@ -124,7 +127,7 @@ split.o: split.h split.cpp
 
 
 # versioning, requires git
-Version.h:
+Version:
 	echo \#define GIT_HEAD_COMMIT_ID \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
 	echo \#define COMPILE_DATE \"`date +%F`\" >>Version.h
 
