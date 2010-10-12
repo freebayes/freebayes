@@ -49,7 +49,7 @@ probObservedAllelesGivenGenotype(
             long double lnTrueAllelePermutationsCount = log(trueAllelePermutations.size());
             vector<int> observationCounts; // counts of 'observations' of true alleles, ordered according to the genotype's internal ordering
             for (Genotype::const_iterator g = genotype.begin(); g != genotype.end(); ++g) {
-                map<string, int>::const_iterator count = trueAlleleCounts.find(g->first.currentBase);
+                map<string, int>::const_iterator count = trueAlleleCounts.find(g->allele.currentBase);
                 if (count != trueAlleleCounts.end()) {
                     observationCounts.push_back(count->second);
                 } else {
@@ -204,7 +204,7 @@ probObservedAllelesGivenGenotypes(
             pair<int, int> alleleRatio = make_pair(0, genotype.uniqueAlleles().size());
             //alleleRatio(observedAlleles, genotype);
             for (Genotype::iterator a = genotype.begin(); a != genotype.end(); ++a) {
-                if (a->first == *(observedAlleles.front()))
+                if (a->allele == *(observedAlleles.front()))
                     alleleRatio.first += 1;
             }
             map<pair<int, int>, long double>::iterator c = cachedProbsGivenAllelesInGenotype.find(alleleRatio);
@@ -240,7 +240,7 @@ bamBayesProbObservedAllelesGivenGenotypes(
             pair<int, int> alleleRatio = make_pair(0, genotype.uniqueAlleles().size());
             //alleleRatio(observedAlleles, genotype);
             for (Genotype::iterator a = genotype.begin(); a != genotype.end(); ++a) {
-                if (a->first == *(observedAlleles.front()))
+                if (a->allele == *(observedAlleles.front()))
                     alleleRatio.first += 1;
             }
             map<pair<int, int>, long double>::iterator c = cachedProbsGivenAllelesInGenotype.find(alleleRatio);

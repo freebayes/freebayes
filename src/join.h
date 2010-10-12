@@ -8,7 +8,7 @@
 // for both class S and T and an ostream, as it is e.g. in the case of strings
 // and character arrays
 template<class S, class T>
-std::string join(S& delim, std::vector<T>& elems) {
+std::string join(std::vector<T>& elems, S& delim) {
     std::stringstream ss;
     typename std::vector<T>::iterator e = elems.begin();
     ss << *e++;

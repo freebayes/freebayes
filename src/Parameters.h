@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <boost/algorithm/string.hpp>
+#include "split.h"
 #include "Version.h"
 
 using namespace std;

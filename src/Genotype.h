@@ -11,10 +11,6 @@
 #include <math.h>
 #include <numeric>
 #include "Allele.h"
-#include <boost/tuple/tuple.hpp>
-#include <boost/bind.hpp>
-
-using boost::tuple;
 
 using namespace std;
 
@@ -90,7 +86,30 @@ string IUPAC2GenotypeStr(string iupac);
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
 typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
-typedef tuple<GenotypeCombo, long double, long double, long double, long double, long double> GenotypeComboResult;
+
+class GenotypeComboResult {
+public:
+    GenotypeCombo combo;
+    long double comboProb;
+    long double probObsGivenGenotypes;
+    long double priorProbGenotypeCombo;
+    long double priorProbGenotypeComboG_Af;
+    long double priorProbGenotypeComboAf;
+    GenotypeComboResult(GenotypeCombo& gc,
+            long double cp,
+            long double pogg,
+            long double ppgc,
+            long double ppgcgaf,
+            long double ppgcaf)
+        : combo(gc)
+        , comboProb(cp)
+        , probObsGivenGenotypes(pogg)
+        , priorProbGenotypeCombo(ppgc)
+        , priorProbGenotypeComboG_Af(ppgcgaf)
+        , priorProbGenotypeComboAf(ppgcaf)
+    { }
+};
+
 bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2);
 
 typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;

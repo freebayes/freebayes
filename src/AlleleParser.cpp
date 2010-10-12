@@ -217,7 +217,7 @@ void AlleleParser::writeVcfHeader(ostream& out) {
             << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
             << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
             << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
-            << boost::algorithm::join(sampleList, "\t")
+            << join(sampleList, "\t")
             << endl;
 
 }
@@ -491,6 +491,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
     string readName = alignment.Name;
 
+#ifdef VERBOSE_DEBUG
     if (parameters.debug2) {
         DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
                 "alignment readName " << readName << endl <<
@@ -511,6 +512,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
         DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignedLength));
     }
+#endif
 
     /*
      * This should be simpler, but isn't because the cigar only records matches
@@ -1082,13 +1084,6 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     return allele;
 }
 
-// helper function object to AlleleParser::genotypeAlleles for sorting allele counts
-struct AlleleQualityCompare {
-    bool operator()(const pair<Allele, int>& a, const pair<Allele, int>& b) {
-        return a.second > b.second;
-    }
-} alleleQualityCompare;
-
 vector<Allele> AlleleParser::genotypeAlleles(
         vector<vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
         map<string, vector<Allele*> >& sampleGroups, // alleles grouped by sample
@@ -1162,6 +1157,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
             sortedAlleles.push_back(make_pair(p->first, p->second));
         }
         DEBUG2("sorting alleles to get best alleles");
+        AllelePairIntCompare alleleQualityCompare;
         sort(sortedAlleles.begin(), sortedAlleles.end(), alleleQualityCompare);
 
         DEBUG2("getting N best alleles");

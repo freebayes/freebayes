@@ -430,7 +430,7 @@ GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc) {
 }
 
 bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2) {
-    return gc1.get<1>() > gc2.get<1>();
+    return gc1.comboProb > gc2.comboProb;
 }
 
 
@@ -458,9 +458,8 @@ vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referen
         sortedAlternates.push_back(make_pair(a->first, a->second));
     }
 
-    sort(sortedAlternates.begin(), sortedAlternates.end(),
-            boost::bind(&pair<Allele,int>::second, _1) 
-            > boost::bind(&pair<Allele,int>::second, _2));
+    AllelePairIntCompare alleleCountCompare;
+    sort(sortedAlternates.begin(), sortedAlternates.end(), alleleCountCompare);
 
     return sortedAlternates;
 

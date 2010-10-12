@@ -215,6 +215,14 @@ private:
 
 };
 
+// for sorting pairs of alleles and ints
+class AllelePairIntCompare {
+public:
+    bool operator()(const pair<Allele, int>& a, const pair<Allele, int>& b) {
+        return a.second > b.second;
+    }
+};
+
 void updateAllelesCachedData(vector<Allele*>& alleles);
 
 map<string, vector<Allele*> > groupAllelesBySample(list<Allele*>& alleles);

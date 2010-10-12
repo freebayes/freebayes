@@ -3,12 +3,7 @@
 
 #include <vector>
 #include <ostream>
-
-//#include <boost/tuple/tuple.hpp>
-#include <boost/bind.hpp>
-
 #include <time.h>
-
 #include "Genotype.h"
 #include "Allele.h"
 #include "Utility.h"
@@ -18,6 +13,15 @@
 using namespace std;
 
 class ResultData;
+
+// for sorting data likelihoods
+class DataLikelihoodCompare {
+public:
+    bool operator()(const pair<Genotype*, long double>& a,
+            const pair<Genotype*, long double>& b) {
+        return a.second > b.second;
+    }
+};
 
 // maps sample names to results
 typedef map<string, ResultData> Results;
@@ -54,10 +58,10 @@ public:
     }
 
     void sortDataLikelihoods(void) {
+        DataLikelihoodCompare datalikelihoodCompare;
         sort(dataLikelihoods.begin(), 
                 dataLikelihoods.end(), 
-                boost::bind(&pair<Genotype*, long double>::second, _1) 
-                    > boost::bind(&pair<Genotype*, long double>::second, _2));
+                datalikelihoodCompare);
     }
 
     friend void json(ostream& out, Results& results, AlleleParser* parser);
@@ -78,10 +82,6 @@ public:
 
 string dateStr(void);
 void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples);
-
-
-
-// TODO vcf output
 
 
 #endif

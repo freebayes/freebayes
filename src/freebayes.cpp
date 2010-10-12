@@ -17,9 +17,6 @@
 #include <time.h>
 #include <float.h>
 
-// tuple
-#include <boost/tuple/tuple.hpp>
-
 // private libraries
 #include "BamReader.h"
 #include "Fasta.h"
@@ -56,9 +53,6 @@
 
 
 using namespace std; 
-
-using boost::tuple;
-using boost::make_tuple;
 
 // Allele object recycling:
 //
@@ -300,7 +294,7 @@ int main (int argc, char *argv[]) {
                 }
             }
 
-            genotypeComboProbs.push_back(make_tuple(*combo,
+            genotypeComboProbs.push_back(GenotypeComboResult(*combo,
                         comboProb,
                         probabilityObservationsGivenGenotypes,
                         priorProbabilityOfGenotypeCombo,
@@ -315,7 +309,7 @@ int main (int argc, char *argv[]) {
         vector<long double> comboProbs;
         //comboProbs.resize(genotypeComboProbs.size());
         for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc)
-            comboProbs.push_back(gc->get<1>());
+            comboProbs.push_back(gc->comboProb);
         long double posteriorNormalizer = logsumexp_probs(comboProbs);
         DEBUG2("got posterior normalizer");
         if (parameters.trace) {
@@ -380,8 +374,8 @@ int main (int argc, char *argv[]) {
             cout << endl;
             cout << (long double) gc->second << endl;
             */
-            if (isHomozygousCombo(gc->get<0>())) {
-                pVar -= safe_exp(gc->get<1>() - posteriorNormalizer);
+            if (isHomozygousCombo(gc->combo)) {
+                pVar -= safe_exp(gc->comboProb - posteriorNormalizer);
             }
         }
         DEBUG2("calculated pVar");
@@ -407,8 +401,8 @@ int main (int argc, char *argv[]) {
         }
         GenotypeCombo& bestHetGenotypeCombo = *besthc; // for establishing the best alternate
         */
-        GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().get<0>(); //*besthc;
-        long double bestGenotypeComboProb = genotypeComboProbs.front().get<1>();
+        GenotypeCombo& bestGenotypeCombo = genotypeComboProbs.front().combo; //*besthc;
+        long double bestGenotypeComboProb = genotypeComboProbs.front().comboProb;
         vector<Genotype*> bestComboGenotypes;
         for (GenotypeCombo::iterator g = bestGenotypeCombo.begin(); g != bestGenotypeCombo.end(); ++g)
             bestComboGenotypes.push_back(g->second.first);
@@ -417,18 +411,18 @@ int main (int argc, char *argv[]) {
         if (parameters.trace) {
             for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
                 vector<Genotype*> comboGenotypes;
-                for (GenotypeCombo::iterator g = gc->get<0>().begin(); g != gc->get<0>().end(); ++g)
+                for (GenotypeCombo::iterator g = gc->combo.begin(); g != gc->combo.end(); ++g)
                     comboGenotypes.push_back(g->second.first);
-                long double comboProb = gc->get<1>();
-                long double dataLikelihoodln = gc->get<2>();
-                long double priorln = gc->get<3>();
-                long double priorlnG_Af = gc->get<4>();
-                long double priorlnAf = gc->get<5>();
+                long double comboProb = gc->comboProb;
+                long double dataLikelihoodln = gc->probObsGivenGenotypes;
+                long double priorln = gc->priorProbGenotypeCombo;
+                long double priorlnG_Af = gc->priorProbGenotypeComboG_Af;
+                long double priorlnAf = gc->priorProbGenotypeComboAf;
 
                 parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",genotypecombo,";
 
                 int j = 0;
-                GenotypeCombo::iterator i = gc->get<0>().begin();
+                GenotypeCombo::iterator i = gc->combo.begin();
                 for (vector<bool>::iterator d = samplesWithData.begin(); d != samplesWithData.end(); ++d) {
                     if (*d) {
                         parser->traceFile << IUPAC(*i->second.first);

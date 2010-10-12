@@ -797,7 +797,7 @@ Parameters::Parameters (int argc, char** argv) {
     //----------------------------------------------------------------------------
 
     bam = cmd_bam.getValue();
-    boost::split(bams, bam, boost::is_any_of(" \n"));
+    bams = split(bam, " \n");
 
     fasta = cmd_fasta.getValue();
     targets = cmd_targets.getValue();
