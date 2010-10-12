@@ -16,7 +16,7 @@
 #include <time.h>
 #include "split.h"
 #include "BamReader.h"
-#include "Class-BedReader.h"
+#include "BedReader.h"
 #include "Parameters.h"
 #include "Utility.h"
 #include "Allele.h"
@@ -100,9 +100,9 @@ public:
     map<string, int> referenceSequenceNameToID;
     
     // target regions
-    //vector<vector<BedData>> targetRegions;  // beddatas indexed by sequence id
-    //map<string, vector<BedData> > targetsByRefseq; // same, indexed by sequence name
-    vector<BedData> targets;
+    //vector<vector<BedTarget>> targetRegions;  // beddatas indexed by sequence id
+    //map<string, vector<BedTarget> > targetsByRefseq; // same, indexed by sequence name
+    vector<BedTarget> targets;
 
     // bamreader
     BamMultiReader bamMultiReader;
@@ -128,8 +128,8 @@ public:
     void loadFastaReference(void);
     void loadReferenceSequence(int seqID);
     void loadReferenceSequence(string seqName, int start, int length);
-    void loadReferenceSequence(BedData*);
-    void loadReferenceSequence(BedData*, int, int);
+    void loadReferenceSequence(BedTarget*);
+    void loadReferenceSequence(BedTarget*, int, int);
     void extendReferenceSequence(int);
     void loadTargets(void);
     void initializeOutputFiles(void);
@@ -138,9 +138,9 @@ public:
     void removeNonOverlappingAlleles(vector<Allele*>& alleles);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void updateRegisteredAlleles(void);
-    vector<BedData>* targetsInCurrentRefSeq(void);
+    vector<BedTarget>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
-    bool loadTarget(BedData*);
+    bool loadTarget(BedTarget*);
     bool toFirstTargetPosition(void);
     bool toNextTargetPosition(void);
     bool dummyProcessNextTarget(void);
@@ -188,7 +188,7 @@ public:
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
-    BedData* currentTarget;
+    BedTarget* currentTarget;
     long unsigned int currentPosition;  // 0-based current position
     char currentReferenceBase;
     string currentSequence;

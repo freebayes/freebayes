@@ -317,7 +317,7 @@ void AlleleParser::loadReferenceSequence(string seqName, int start, int length) 
 }
 
 /*
-void AlleleParser::loadReferenceSequence(BedData* target) {
+void AlleleParser::loadReferenceSequence(BedTarget* target) {
     loadReferenceSequence(target->seq, target->left - 1, target->right - target->left + 1);
 }
 */
@@ -325,7 +325,7 @@ void AlleleParser::loadReferenceSequence(BedData* target) {
 // intended to load all the sequence covered by reads which overlap our current target
 // this lets us process the reads fully, checking for suspicious reads, etc.
 // but does not require us to load the whole sequence
-void AlleleParser::loadReferenceSequence(BedData* target, int before, int after) {
+void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int after) {
     basesBeforeCurrentTarget = before;
     basesAfterCurrentTarget = after;
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
@@ -344,8 +344,6 @@ void AlleleParser::extendReferenceSequence(int rightExtension) {
 }
 
 void AlleleParser::loadTargets(void) {
-
-    int targetCount = 0;
 
     // if we have a region specified, use it to generate a target
     if (parameters.region != "") {
@@ -381,75 +379,68 @@ void AlleleParser::loadTargets(void) {
                 refIter != referenceSequences.end(); ++refIter) {
             RefData& refData = *refIter;
             if (refData.RefName == startSeq) {
-                BedData bd;
-                bd.seq = startSeq;
-                bd.left = (startPos == 1) ? 1 : startPos;
-                bd.right = (stopPos == -1) ? refData.RefLength : stopPos;
+                BedTarget bd(startSeq,
+                            (startPos == 1) ? 1 : startPos,
+                            (stopPos == -1) ? refData.RefLength : stopPos);
                 DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
                 targets.push_back(bd);
-                targetCount++;
             }
         }
     }
 
-  // if we have a targets file, use it...
+    // if we have a targets file, use it...
     // if target file specified use targets from file
-  if (parameters.targets != "") {
-    
-    DEBUG("Making BedReader object for target file: " << parameters.targets << " ...");
-    
-    BedReader bedReader(parameters.targets);
-    
-    if (! bedReader.isOpen()) {
-      ERROR("Unable to open target file: " << parameters.targets << "... terminating.");
-      exit(1);
-    }
-    
-    BedData bd;
-    while (bedReader.getNextEntry(bd)) {
-        if (parameters.debug2) {
-            cerr << bd.seq << "\t" << bd.left << "\t" << bd.right << "\t" << bd.desc << endl;
+    if (parameters.targets != "") {
+
+        DEBUG("Making BedReader object for target file: " << parameters.targets << " ...");
+
+        BedReader bedReader(parameters.targets);
+
+        if (!bedReader.is_open()) {
+            ERROR("Unable to open target file: " << parameters.targets << "... terminating.");
+            exit(1);
         }
-        // TODO add back check that the right bound isn't out of bounds
-        string seqName = reference->sequenceNameStartingWith(bd.seq);
-        if (bd.left < 1 || bd.right < bd.left || bd.right >= reference->sequenceLength(seqName)) {
-          ERROR("Target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right << ") outside of reference sequence bounds (" << bd.seq << " " << reference->sequenceLength(seqName) << ") terminating.");
-          exit(1);
+
+        targets = bedReader.entries();
+
+        // check validity of targets wrt. reference
+        for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
+            BedTarget& bd = *e;
+            if (bd.left < 1 || bd.right < bd.left || bd.right >= reference->sequenceLength(bd.seq)) {
+                ERROR("Target region coordinates (" << bd.seq << " "
+                        << bd.left << " " << bd.right
+                        << ") outside of reference sequence bounds ("
+                        << bd.seq << " " << reference->sequenceLength(bd.seq) << ") terminating.");
+                exit(1);
+            }
         }
-        targets.push_back(bd);
-        targetCount++;
+
+        if (targets.size() == 0) {
+            ERROR("Could not load any targets from " << parameters.targets);
+            exit(1);
+        }
+
+        bedReader.close();
+
+        DEBUG("done");
+
     }
 
-    if (targets.size() == 0) {
-        ERROR("Could not load any targets from " << parameters.targets);
-        exit(1);
+    // otherwise, if we weren't given a region string or targets file, analyze
+    // all reference sequences from BAM file
+    if (parameters.targets == "" && parameters.region == "") {
+        RefVector::iterator refIter = referenceSequences.begin();
+        RefVector::iterator refEnd  = referenceSequences.end();
+        for( ; refIter != refEnd; ++refIter) {
+            RefData refData = *refIter;
+            string refName = refData.RefName;
+            BedTarget bd(refName, 1, refData.RefLength);
+            DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
+            targets.push_back(bd);
+        }
     }
-    
-    bedReader.close();
 
-    DEBUG("done");
-
-  }
-
-  // otherwise, if we weren't given a region string or targets file, analyze
-  // all reference sequences from BAM file
-  if (parameters.targets == "" && parameters.region == "") {
-    RefVector::iterator refIter = referenceSequences.begin();
-    RefVector::iterator refEnd  = referenceSequences.end();
-    for( ; refIter != refEnd; ++refIter) {
-      RefData refData = *refIter;
-      string refName = refData.RefName;
-      BedData bd;
-      bd.seq = refName;
-      bd.left = 1;
-      bd.right = refData.RefLength;
-      DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
-      targets.push_back(bd);
-      targetCount++;
-    }
-  }
-
-  DEBUG("Number of target regions: " << targetCount);
+    DEBUG("Number of target regions: " << targets.size());
 
 }
 
@@ -913,7 +904,7 @@ bool AlleleParser::toNextTarget(void) {
 
 }
 
-bool AlleleParser::loadTarget(BedData* target) {
+bool AlleleParser::loadTarget(BedTarget* target) {
 
     currentTarget = target;
 

@@ -12,7 +12,6 @@
 #include <sstream>
 #include <assert.h>
 #include "Utility.h"
-#include <boost/pool/object_pool.hpp>
 
 using namespace std;
 
@@ -213,7 +212,6 @@ public:
 private:
     static AlleleFreeList _freeList; // for object recycling
     Allele* _pNext; // for use in object recycling on the AlleleFreeList, used to link freed alleles into a list
-    //static boost::object_pool<Allele> Pool;
 
 };
 

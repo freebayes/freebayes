@@ -26,7 +26,7 @@ C=gcc
 #CFLAGS=-pg -O3
 #CFLAGS=-O3 -g
 #CFLAGS=-O3
-CFLAGS=-O3 -static
+CFLAGS=-O3 # -static
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 ################################################################################
@@ -34,14 +34,14 @@ CFLAGS=-O3 -static
 ################################################################################
 all: ../bin/freebayes
 
-freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
-	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
+freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
+	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -lboost_regex -lpthread -Wno-deprecated
 
-alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lboost_regex -lpthread -Wno-deprecated
+alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/alleles -lz -lboost_regex -lpthread -Wno-deprecated
 
-dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
-	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o Class-BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lboost_regex -lpthread -Wno-deprecated
+dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h
+	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Function-Sequence.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o  -o ../bin/dummy -lz -lboost_regex -lpthread -Wno-deprecated
 
 ################################################################################
 # Compilation
@@ -115,8 +115,8 @@ ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AllelePa
 	$(CC) $(CFLAGS) -c ResultData.cpp -Wno-deprecated
 
 # ...
-Class-BedReader.o: Class-BedReader.cpp Class-BedReader.h Function-Generic.h
-	$(CC) $(CFLAGS) -c Class-BedReader.cpp -Wno-deprecated
+BedReader.o: BedReader.cpp BedReader.h Function-Generic.h
+	$(CC) $(CFLAGS) -c BedReader.cpp -Wno-deprecated
 
 # Function compilations
 Function-Sequence.o: Function-Sequence.cpp Function-Sequence.h
