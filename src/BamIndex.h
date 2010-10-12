@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 18 September 2010 (DB)
+// Last modified: 8 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides index functionality - both for the standardized BAM index format
 // (".bai") as well as a BamTools-specific (nonstandard) index format (".bti").
@@ -43,7 +43,7 @@ class BamIndex {
         //     available after the jump position
         virtual bool Jump(const BamTools::BamRegion& region, bool* hasAlignmentsInRegion) =0;
         // returns whether reference has alignments or no
-        virtual bool HasAlignments(const int& referenceID); 
+        virtual bool HasAlignments(const int& referenceID) const =0;
         // loads existing data from file into memory
         virtual bool Load(const std::string& filename)  =0;
         // writes in-memory index data out to file 
@@ -58,7 +58,7 @@ class BamIndex {
         // (if not found, attmempts to load other type(s), returns 0 if NONE found)
         //
         // ** default preferred type is BamToolsIndex ** use this anytime it exists
-         enum PreferredIndexType { BAMTOOLS = 0, STANDARD };
+        enum PreferredIndexType { BAMTOOLS = 0, STANDARD };
         static BamIndex* FromBamFilename(const std::string& bamFilename, 
                                          BamTools::BgzfData* bgzf, 
                                          BamTools::BamReader* reader, 
@@ -99,6 +99,8 @@ class BamStandardIndex : public BamIndex {
         bool Build(void);
         // returns supported file extension
         const std::string Extension(void) const { return std::string(".bai"); }
+        // returns whether reference has alignments or no
+        bool HasAlignments(const int& referenceID) const;
         // attempts to use index to jump to region; returns success/fail
         // a "successful" jump indicates no error, but not whether this region has data
         //   * thus, the method sets a flag to indicate whether there are alignments 
@@ -135,6 +137,8 @@ class BamToolsIndex : public BamIndex {
         bool Build(void);
         // returns supported file extension
         const std::string Extension(void) const { return std::string(".bti"); }
+        // returns whether reference has alignments or no
+        bool HasAlignments(const int& referenceID) const;
         // attempts to use index to jump to region; returns success/fail
         // a "successful" jump indicates no error, but not whether this region has data
         //   * thus, the method sets a flag to indicate whether there are alignments 

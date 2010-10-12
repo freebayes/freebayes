@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 17 September 2010 (DB)
+// Last modified: 9 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -96,6 +96,8 @@ struct BamReader::BamReaderPrivate {
 
     // *** reading alignments and auxiliary data *** //
 
+    // adjusts requested region if necessary (depending on where data actually begins)
+    void AdjustRegion(BamRegion& region);
     // fills out character data for BamAlignment data
     bool BuildCharData(BamAlignment& bAlignment);
     // checks to see if alignment overlaps current region
@@ -106,6 +108,8 @@ struct BamReader::BamReaderPrivate {
     bool LoadNextAlignment(BamAlignment& bAlignment);
     // builds reference data structure from BAM file
     void LoadReferenceData(void);
+    // mark references with 'HasAlignments' status
+    void MarkReferences(void);
 
     // *** index file handling *** //
 
@@ -170,6 +174,7 @@ BamReader::BamReaderPrivate::BamReaderPrivate(BamReader* parent)
     : Index(0)
     , IsIndexLoaded(false)
     , AlignmentsBeginOffset(0)
+    , HasAlignmentsInRegion(true)
     , Parent(parent)
     , DNA_LOOKUP("=ACMGRSVTWYHKDBN")
     , CIGAR_LOOKUP("MIDNSHP")
@@ -182,6 +187,33 @@ BamReader::BamReaderPrivate::~BamReaderPrivate(void) {
     Close();
 }
 
+// adjusts requested region if necessary (depending on where data actually begins)
+void BamReader::BamReaderPrivate::AdjustRegion(BamRegion& region) {
+  
+    // check for valid index first
+    if ( Index == 0 ) return;
+  
+    // see if any references in region have alignments
+    HasAlignmentsInRegion = false;
+    int currentId = region.LeftRefID;
+    while ( currentId <= region.RightRefID ) { 
+	HasAlignmentsInRegion = Index->HasAlignments(currentId);
+	if ( HasAlignmentsInRegion ) break;
+	++currentId;
+    }
+    
+    // if no data found on any reference in region
+    if ( !HasAlignmentsInRegion ) return;
+
+    // if left bound of desired region had no data, use first reference that had data
+    // otherwise, leave requested region as-is
+    if ( currentId != region.LeftRefID ) {
+	region.LeftRefID = currentId;
+	region.LeftPosition = 0;
+    }
+}
+
+// fills out character data for BamAlignment data
 bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
   
     // calculate character lengths/offsets
@@ -370,6 +402,9 @@ bool BamReader::BamReaderPrivate::CreateIndex(bool useStandardIndex) {
     ok &= Index->Build();
     IsIndexLoaded = ok;
     
+    // mark empty references
+    MarkReferences();
+    
     // attempt to save index data to file
     ok &= Index->Write(Filename); 
     
@@ -385,8 +420,7 @@ bool BamReader::BamReaderPrivate::GetNextAlignment(BamAlignment& bAlignment) {
         return BuildCharData(bAlignment);
     
     // no valid alignment found
-    else
-        return false;
+    else return false;
 }
 
 // retrieves next available alignment core data (returns success/fail)
@@ -396,7 +430,7 @@ bool BamReader::BamReaderPrivate::GetNextAlignment(BamAlignment& bAlignment) {
 bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment) {
 
     // if region is set but has no alignments
-    if ( !Region.isNull() && !HasAlignmentsInRegion ) 
+    if ( !Region.isNull() && !HasAlignmentsInRegion )
         return false;
   
     // if valid alignment available
@@ -405,12 +439,12 @@ bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment)
         // set core-only flag
         bAlignment.SupportData.HasCoreOnly = true;
       
-        // if region not specified, return success
-        if ( !Region.isLeftBoundSpecified() ) return true;
-
+	// if region not specified with at least a left boundary, return success
+	if ( !Region.isLeftBoundSpecified() ) return true;
+	
         // determine region state (before, within, after)
         BamReader::BamReaderPrivate::RegionState state = IsOverlap(bAlignment);
-      
+
         // if alignment lies after region, return false
         if ( state == AFTER_REGION ) return false;
 
@@ -427,8 +461,7 @@ bool BamReader::BamReaderPrivate::GetNextAlignmentCore(BamAlignment& bAlignment)
     }
 
     // no valid alignment
-    else
-        return false;
+    else return false;
 }
 
 // returns RefID for given RefName (returns References.size() if not found)
@@ -449,42 +482,58 @@ int BamReader::BamReaderPrivate::GetReferenceID(const string& refName) const {
 // this *internal* method should ONLY called when (at least) IsLeftBoundSpecified == true
 BamReader::BamReaderPrivate::RegionState BamReader::BamReaderPrivate::IsOverlap(BamAlignment& bAlignment) {
     
-    // --------------------------------------------------
-    // check alignment start against right bound cutoff
-    
-    // if full region of interest was given
-    if ( Region.isRightBoundSpecified() ) {
+    // if alignment is on any reference sequence before left bound
+    if ( bAlignment.RefID < Region.LeftRefID ) return BEFORE_REGION;
+  
+    // if alignment starts on left bound reference 
+    else if ( bAlignment.RefID == Region.LeftRefID ) {
       
-        // read starts on right bound reference, but AFTER right bound position
-        if ( bAlignment.RefID == Region.RightRefID && bAlignment.Position > Region.RightPosition )
-            return AFTER_REGION;
-      
-        // if read starts on reference AFTER right bound, return false
-        if ( bAlignment.RefID > Region.RightRefID ) 
-            return AFTER_REGION;
+	// if alignment starts at or after left boundary
+	if ( bAlignment.Position >= Region.LeftPosition) {
+	  
+	    // if right boundary is specified AND 
+	    // left/right boundaries are on same reference AND 
+	    // alignment starts past right boundary
+	    if ( Region.isRightBoundSpecified() && 
+	         Region.LeftRefID == Region.RightRefID && 
+	         bAlignment.Position > Region.RightPosition )
+		return AFTER_REGION;
+	    
+	    // otherwise, alignment is within region
+	    return WITHIN_REGION;
+	}
+	
+	// alignment starts before left boundary
+	else {
+	    // check if alignment overlaps left boundary
+	    if ( bAlignment.GetEndPosition() >= Region.LeftPosition ) return WITHIN_REGION;
+	    else return BEFORE_REGION;
+	}
     }
   
-    // --------------------------------------------------------
-    // no right bound given OR read starts before right bound
-    // so, check if it overlaps left bound 
-  
-    // if read starts on left bound reference AND after left boundary, return success
-    if ( bAlignment.RefID == Region.LeftRefID && bAlignment.Position >= Region.LeftPosition)
-        return WITHIN_REGION;
-  
-    // if read is on any reference sequence before left bound, return false
-    if ( bAlignment.RefID < Region.LeftRefID )
-        return BEFORE_REGION;
-
-    // --------------------------------------------------------
-    // read is on left bound reference, but starts before left bound position
-
-    // if it overlaps, return WITHIN_REGION
-    if ( bAlignment.GetEndPosition() >= Region.LeftPosition )
-        return WITHIN_REGION;
-    // else begins before left bound position
-    else
-        return BEFORE_REGION;
+    // alignment starts on a reference after the left bound
+    else {
+      
+	// if region has a right boundary
+	if ( Region.isRightBoundSpecified() ) {
+	  
+	    // alignment is on reference between boundaries
+	    if ( bAlignment.RefID < Region.RightRefID ) return WITHIN_REGION;
+	  
+	    // alignment is on reference after right boundary
+	    else if ( bAlignment.RefID > Region.RightRefID ) return AFTER_REGION;
+	  
+	    // alignment is on right bound reference
+	    else {
+		// check if alignment starts before or at right boundary
+		if ( bAlignment.Position <= Region.RightPosition ) return WITHIN_REGION;		
+		else return AFTER_REGION;
+	    }
+	}
+      
+	// otherwise, alignment is after left bound reference, but there is no right boundary
+	else return WITHIN_REGION;
+    }
 }
 
 // load BAM header data
@@ -537,16 +586,22 @@ bool BamReader::BamReaderPrivate::LoadIndex(const bool lookForIndex, const bool 
     }
     
     else {
+      
         // attempt to load BamIndex based on IndexFilename provided by client
         Index = BamIndex::FromIndexFilename(IndexFilename, &mBGZF, Parent, IsBigEndian);
         
         // if null, return failure
-        if ( Index == 0 ) return false; 
+        if ( Index == 0 ) return false;
     }
     
     // an index file was found
     // return success of loading the index data from file
     IsIndexLoaded = Index->Load(IndexFilename);
+    
+    // mark empty references
+    MarkReferences();
+    
+    // return index status
     return IsIndexLoaded;
 }
 
@@ -666,6 +721,17 @@ void BamReader::BamReaderPrivate::LoadReferenceData(void) {
     }
 }
 
+// mark references with no alignment data
+void BamReader::BamReaderPrivate::MarkReferences(void) {
+    
+    // ensure index is available
+    if ( Index == 0 || !IsIndexLoaded ) return;
+    
+    // mark empty references
+    for ( int i = 0; i < (int)References.size(); ++i ) 
+	References.at(i).RefHasAlignments = Index->HasAlignments(i);
+}
+
 // opens BAM file (and index)
 bool BamReader::BamReaderPrivate::Open(const string& filename, const string& indexFilename, const bool lookForIndex, const bool preferStandardIndex) {
 
@@ -711,8 +777,6 @@ bool BamReader::BamReaderPrivate::Rewind(void) {
       
     // reset default region info using first alignment in file
     Region.clear();
-    Region.LeftRefID    = al.RefID;
-    Region.LeftPosition = al.Position;
     HasAlignmentsInRegion = true;
 
     // rewind back to beginning of first alignment
@@ -737,6 +801,19 @@ bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
     // check for existing index 
     if ( !IsIndexLoaded || Index == 0 ) return false; 
     
+    // adjust region if necessary to reflect where data actually begins
+    BamRegion adjustedRegion(region);
+    AdjustRegion(adjustedRegion);
+    
+    // if no data present, return true
+    // not an error, but BamReader knows that no data is there for future alignment access
+    // (this is useful in a MultiBamReader setting where some BAM files may lack data in regions
+    // that other BAMs have data)
+    if ( !HasAlignmentsInRegion ) { 
+	Region = adjustedRegion;
+	return true;
+    }
+    
     // attempt jump to user-specified region return false if jump could not be performed at all
     // (invalid index, unknown reference, etc)
     //
@@ -745,9 +822,10 @@ bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
     //    If this occurs, any subsequent calls to GetNexAlignment[Core] simply return false
     //    BamMultiReader is then able to successfully pull alignments from a region from multiple files
     //    even if one or more have no data.
-    if ( !Index->Jump(region, &HasAlignmentsInRegion) ) return false;
-      
-    // if jump successful, save region data & return success
-    Region = region;
+    if ( !Index->Jump(adjustedRegion, &HasAlignmentsInRegion) )
+	return false;
+    
+    // save region and return success
+    Region = adjustedRegion;
     return true;
 }

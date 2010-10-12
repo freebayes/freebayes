@@ -371,9 +371,9 @@ bool BamMultiReader::SetRegion(const BamRegion& region) {
 
     for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
         if (!it->first->SetRegion(region)) {
-            // cerr << "ERROR: could not jump " << it->first->GetFilename() << " to "
-            //     << region.LeftRefID << ":" << region.LeftPosition
-            //     << ".." << region.RightRefID << ":" << region.RightPosition << endl;
+            cerr << "ERROR: could not jump " << it->first->GetFilename() << " to "
+                << region.LeftRefID << ":" << region.LeftPosition
+                << ".." << region.RightRefID << ":" << region.RightPosition << endl;
         }
     }
 

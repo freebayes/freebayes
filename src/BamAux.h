@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 18 September 2010 (DB)
+// Last modified: 9 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides the basic constants, data structures, utilities etc. 
 // used throughout the API for handling BAM files
@@ -109,6 +109,14 @@ struct BamRegion {
         , LeftPosition(leftPos)
         , RightRefID(rightID)
         , RightPosition(rightPos)
+    { }
+    
+    // copy constructor
+    BamRegion(const BamRegion& other)
+	: LeftRefID(other.LeftRefID)
+	, LeftPosition(other.LeftPosition)
+	, RightRefID(other.RightRefID)
+	, RightPosition(other.RightPosition)
     { }
     
     // member functions

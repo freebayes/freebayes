@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 18 September 2010 (DB)
+// Last modified: 9 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides index functionality - both for the default (standardized) BAM 
 // index format (.bai) as well as a BamTools-specific (nonstandard) index 
@@ -31,17 +31,6 @@ BamIndex::BamIndex(BamTools::BgzfData* bgzf, BamTools::BamReader* reader, bool i
 { 
     if ( m_reader && m_reader->IsOpen() ) 
         m_references = m_reader->GetReferenceData();
-}
-
-bool BamIndex::HasAlignments(const int& referenceID) {
-    
-    // return false if invalid ID
-    if ( (referenceID < 0) || (referenceID >= (int)m_references.size()) ) 
-        return false;
-    
-    // else return status of reference (has alignments?)
-    else
-        return m_references.at(referenceID).RefHasAlignments;
 }
 
 // #########################################################################################
@@ -120,9 +109,11 @@ struct BamStandardIndex::BamStandardIndexPrivate {
     
     // creates index data (in-memory) from current reader data
     bool Build(void);
+    // returns whether reference has alignments or no
+    bool HasAlignments(const int& referenceID) const;
     // attempts to use index to jump to region; returns success/fail
     bool Jump(const BamTools::BamRegion& region, bool* hasAlignmentsInRegion);
-      // loads existing data from file into memory
+    // loads existing data from file into memory
     bool Load(const std::string& filename);
     // writes in-memory index data out to file 
     // N.B. - (this is the original BAM filename, method will modify it to use applicable extension)
@@ -134,7 +125,7 @@ struct BamStandardIndex::BamStandardIndexPrivate {
     // calculate bins that overlap region
     int BinsFromRegion(const BamRegion& region, const bool isRightBoundSpecified, uint16_t bins[BamTools::MAX_BIN]);
     // calculates offset(s) for a given region
-    bool GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets);
+    bool GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets, bool* hasAlignmentsInRegion);
     // saves BAM bin entry for index
     void InsertBinEntry(BamBinMap& binMap, const uint32_t& saveBin, const uint64_t& saveOffset, const uint64_t& lastOffset);
     // saves linear offset entry for index
@@ -175,13 +166,13 @@ int BamStandardIndex::BamStandardIndexPrivate::BinsFromRegion(const BamRegion& r
     return i;
 }
 
+// creates index data (in-memory) from current reader data
 bool BamStandardIndex::BamStandardIndexPrivate::Build(void) { 
   
     // localize parent data
     if ( m_parent == 0 ) return false;
-    BamReader* reader = m_parent->m_reader;
-    BgzfData*  mBGZF  = m_parent->m_BGZF;
-    RefVector& references = m_parent->m_references;
+    BamReader* reader     = m_parent->m_reader;
+    BgzfData*  mBGZF      = m_parent->m_BGZF;
   
     // be sure reader & BGZF file are valid & open for reading
     if ( reader == 0 || mBGZF == 0 || !mBGZF->IsOpen ) 
@@ -191,7 +182,7 @@ bool BamStandardIndex::BamStandardIndexPrivate::Build(void) {
     reader->Rewind();
 
     // get reference count, reserve index space
-    int numReferences = (int)references.size();
+    const int numReferences = (int)m_parent->m_references.size();
     for ( int i = 0; i < numReferences; ++i ) 
         m_indexData.push_back(ReferenceIndex());
     
@@ -233,7 +224,7 @@ bool BamStandardIndex::BamStandardIndexPrivate::Build(void) {
         if ( (bAlignment.RefID >= 0) && (bAlignment.Bin < 4681) ) {
 
             // save linear offset entry (matched to BAM entry refID)
-            ReferenceIndex& refIndex = m_indexData.at(bAlignment.RefID);
+            ReferenceIndex& refIndex    = m_indexData.at(bAlignment.RefID);
             LinearOffsetVector& offsets = refIndex.Offsets;
             InsertLinearOffset(offsets, bAlignment, lastOffset);
         }
@@ -289,7 +280,6 @@ bool BamStandardIndex::BamStandardIndexPrivate::Build(void) {
     MergeChunks();
     
     // iterate through references in index
-    // store whether reference has data &
     // sort offsets in linear offset vector
     BamStandardIndexData::iterator indexIter = m_indexData.begin();
     BamStandardIndexData::iterator indexEnd  = m_indexData.end();
@@ -297,11 +287,7 @@ bool BamStandardIndex::BamStandardIndexPrivate::Build(void) {
 
         // get reference index data
         ReferenceIndex& refIndex = (*indexIter);
-        BamBinMap& binMap = refIndex.Bins;
         LinearOffsetVector& offsets = refIndex.Offsets;
-
-        // store whether reference has alignments or no
-        references[i].RefHasAlignments = ( binMap.size() > 0 );
 
         // sort linear offsets
         sort(offsets.begin(), offsets.end());
@@ -311,7 +297,8 @@ bool BamStandardIndex::BamStandardIndexPrivate::Build(void) {
     return reader->Rewind();
 }
 
-bool BamStandardIndex::BamStandardIndexPrivate::GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets) { 
+// calculates offset(s) for a given region
+bool BamStandardIndex::BamStandardIndexPrivate::GetOffsets(const BamRegion& region, const bool isRightBoundSpecified, vector<int64_t>& offsets, bool* hasAlignmentsInRegion) { 
   
     // calculate which bins overlap this region
     uint16_t* bins = (uint16_t*)calloc(MAX_BIN, 2);
@@ -352,8 +339,21 @@ bool BamStandardIndex::BamStandardIndexPrivate::GetOffsets(const BamRegion& regi
     // sort the offsets before returning
     sort(offsets.begin(), offsets.end());
     
-    // return whether any offsets were found
-    return ( offsets.size() != 0 );
+    // set flag & return success
+    *hasAlignmentsInRegion = (offsets.size() != 0 );
+    return true;
+}
+
+// returns whether reference has alignments or no
+bool BamStandardIndex::BamStandardIndexPrivate::HasAlignments(const int& referenceID) const {
+    
+    // ID not found
+    if ( referenceID < 0 || referenceID >= (int)m_indexData.size() ) 
+	return false;
+	
+    // return whether reference contains data
+    const ReferenceIndex& refIndex = m_indexData.at(referenceID);
+    return !( refIndex.Bins.empty() );
 }
 
 // saves BAM bin entry for index
@@ -404,6 +404,7 @@ void BamStandardIndex::BamStandardIndexPrivate::InsertLinearOffset(LinearOffsetV
     }
 }      
 
+// attempts to use index to jump to region; returns success/fail
 bool BamStandardIndex::BamStandardIndexPrivate::Jump(const BamRegion& region, bool* hasAlignmentsInRegion) {
   
     // localize parent data
@@ -416,17 +417,14 @@ bool BamStandardIndex::BamStandardIndexPrivate::Jump(const BamRegion& region, bo
     if ( reader == 0 || mBGZF == 0 || !mBGZF->IsOpen ) 
         return false;
     
-    // see if left-bound reference of region has alignments
-    if ( !m_parent->HasAlignments(region.LeftRefID) ) return false; 
-    
     // make sure left-bound position is valid
     if ( region.LeftPosition > references.at(region.LeftRefID).RefLength ) return false;
         
     // calculate offsets for this region
     // if failed, print message, set flag, and return failure
     vector<int64_t> offsets;
-    if ( !GetOffsets(region, region.isRightBoundSpecified(), offsets) ) {
-        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
+    if ( !GetOffsets(region, region.isRightBoundSpecified(), offsets, hasAlignmentsInRegion) ) {
+        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset(s) for specified region.\n");
         *hasAlignmentsInRegion = false;
         return false;
     }
@@ -451,7 +449,7 @@ bool BamStandardIndex::BamStandardIndexPrivate::Jump(const BamRegion& region, bo
     
     // if error in jumping, print message & set flag
     if ( !result ) {
-        fprintf(stderr, "ERROR: Could not jump: unable to calculate offset for specified region.\n");
+        fprintf(stderr, "ERROR: Could not jump: unable to determine correct offset for specified region.\n");
         *hasAlignmentsInRegion = false;
     }
     
@@ -459,12 +457,12 @@ bool BamStandardIndex::BamStandardIndexPrivate::Jump(const BamRegion& region, bo
     return result;
 }
 
+// loads existing data from file into memory
 bool BamStandardIndex::BamStandardIndexPrivate::Load(const string& filename)  { 
     
     // localize parent data
     if ( m_parent == 0 ) return false;
     const bool isBigEndian = m_parent->m_isBigEndian;
-    RefVector& references  = m_parent->m_references;
   
     // open index file, abort on error
     FILE* indexStream = fopen(filename.c_str(), "rb");
@@ -500,11 +498,6 @@ bool BamStandardIndex::BamStandardIndexPrivate::Load(const string& filename)  {
         int32_t numBins;
         elementsRead = fread(&numBins, 4, 1, indexStream);
         if ( isBigEndian ) SwapEndian_32(numBins);
-
-        if ( numBins > 0 ) {
-            RefData& refEntry = references[i];
-            refEntry.RefHasAlignments = true;
-        }
 
         // intialize BinVector
         BamBinMap binMap;
@@ -652,6 +645,7 @@ bool BamStandardIndex::BamStandardIndexPrivate::Write(const std::string& bamFile
     if ( m_parent == 0 ) return false;
     const bool isBigEndian = m_parent->m_isBigEndian;
   
+    // open index file
     string indexFilename = bamFilename + ".bai";
     FILE* indexStream = fopen(indexFilename.c_str(), "wb");
     if ( indexStream == 0 ) {
@@ -761,6 +755,9 @@ BamStandardIndex::~BamStandardIndex(void) {
 // creates index data (in-memory) from current reader data
 bool BamStandardIndex::Build(void) { return d->Build(); }
 
+// returns whether reference has alignments or no
+bool BamStandardIndex::HasAlignments(const int& referenceID) const { return d->HasAlignments(referenceID); }
+
 // attempts to use index to jump to region; returns success/fail
 bool BamStandardIndex::Jump(const BamRegion& region, bool* hasAlignmentsInRegion) { return d->Jump(region, hasAlignmentsInRegion); }
 
@@ -809,7 +806,7 @@ struct BamToolsIndex::BamToolsIndexPrivate {
     
     // keep a list of any supported versions here 
     // (might be useful later to handle any 'legacy' versions if the format changes)
-    // listed for example like: BTI_1_1 = 2, BTI_1_2 = 3, BTI_2_0 = 4, and so on
+    // listed for example like: BTI_1_0 = 1, BTI_1_1 = 2, BTI_1_2 = 3, BTI_2_0 = 4, and so on
     //
     // so a change introduced in (hypothetical) BTI_1_2 would be handled from then on by: 
     //
@@ -817,12 +814,15 @@ struct BamToolsIndex::BamToolsIndexPrivate {
     //   do something new 
     // else 
     //   do the old thing
+    
     enum Version { BTI_1_0 = 1 
                  , BTI_1_1
+                 , BTI_1_2
                  };  
   
     // -------------------------
     // data members
+    
     BamToolsIndexData m_indexData;
     BamToolsIndex*    m_parent;
     int32_t           m_blockSize;
@@ -834,7 +834,7 @@ struct BamToolsIndex::BamToolsIndexPrivate {
     BamToolsIndexPrivate(BamToolsIndex* parent) 
         : m_parent(parent)
         , m_blockSize(1000)
-        , m_version(BTI_1_1) // latest version - used for writing new index files
+        , m_version(BTI_1_2) // latest version - used for writing new index files
     { }
     
     ~BamToolsIndexPrivate(void) { }
@@ -845,10 +845,12 @@ struct BamToolsIndex::BamToolsIndexPrivate {
     // creates index data (in-memory) from current reader data
     bool Build(void);
     // returns supported file extension
-    const std::string Extension(void) const { return std::string(".bti"); }
+    const string Extension(void) const { return string(".bti"); }
+    // returns whether reference has alignments or no
+    bool HasAlignments(const int& referenceID) const;
     // attempts to use index to jump to region; returns success/fail
     bool Jump(const BamTools::BamRegion& region, bool* hasAlignmentsInRegion);
-      // loads existing data from file into memory
+    // loads existing data from file into memory
     bool Load(const std::string& filename);
     // writes in-memory index data out to file 
     // N.B. - (this is the original BAM filename, method will modify it to use applicable extension)
@@ -861,13 +863,13 @@ struct BamToolsIndex::BamToolsIndexPrivate {
     bool GetOffset(const BamRegion& region, int64_t& offset, bool* hasAlignmentsInRegion);
 };
 
+// creates index data (in-memory) from current reader data
 bool BamToolsIndex::BamToolsIndexPrivate::Build(void) { 
   
     // localize parent data
     if ( m_parent == 0 ) return false;
-    BamReader* reader = m_parent->m_reader;
-    BgzfData*  mBGZF  = m_parent->m_BGZF;
-    RefVector& references = m_parent->m_references;
+    BamReader* reader     = m_parent->m_reader;
+    BgzfData*  mBGZF      = m_parent->m_BGZF;
   
     // be sure reader & BGZF file are valid & open for reading
     if ( reader == 0 || mBGZF == 0 || !mBGZF->IsOpen ) 
@@ -877,6 +879,11 @@ bool BamToolsIndex::BamToolsIndexPrivate::Build(void) {
     // quit if failed
     if ( !reader->Rewind() ) 
         return false;
+    
+    // initialize index data structure with space for all references
+    const int numReferences = (int)m_parent->m_references.size();
+    for ( int i = 0; i < numReferences; ++i )
+	m_indexData[i].clear();    
     
     // set up counters and markers
     int32_t currentBlockCount      = 0;
@@ -893,13 +900,10 @@ bool BamToolsIndex::BamToolsIndexPrivate::Build(void) {
         // if block contains data (not the first time through) AND alignment is on a new reference
         if ( currentBlockCount > 0 && al.RefID != blockRefId ) {
           
-            // make sure reference flag is set
-            references[blockRefId].RefHasAlignments = true;
-          
-            // store previous data
-            m_indexData[blockRefId].push_back( BamToolsIndexEntry(blockMaxEndPosition, blockStartOffset, blockStartPosition) );
-            
-            // intialize new block
+	    // store previous data
+	    m_indexData[blockRefId].push_back( BamToolsIndexEntry(blockMaxEndPosition, blockStartOffset, blockStartPosition) );
+
+            // intialize new block for current alignment's reference
             currentBlockCount   = 0;
             blockMaxEndPosition = al.GetEndPosition();
             blockStartOffset    = currentAlignmentOffset;
@@ -913,7 +917,7 @@ bool BamToolsIndex::BamToolsIndexPrivate::Build(void) {
       
         // increment block counter
         ++currentBlockCount;
-        
+
         // check end position
         int32_t alignmentEndPosition = al.GetEndPosition();
         if ( alignmentEndPosition > blockMaxEndPosition ) 
@@ -921,10 +925,6 @@ bool BamToolsIndex::BamToolsIndexPrivate::Build(void) {
         
         // if block is full, get offset for next block, reset currentBlockCount
         if ( currentBlockCount == m_blockSize ) {
-          
-            // make sure reference flag is set
-            references[blockRefId].RefHasAlignments = true;
-          
             m_indexData[blockRefId].push_back( BamToolsIndexEntry(blockMaxEndPosition, blockStartOffset, blockStartPosition) );
             blockStartOffset  = mBGZF->Tell();
             currentBlockCount = 0;
@@ -935,7 +935,7 @@ bool BamToolsIndex::BamToolsIndexPrivate::Build(void) {
         currentAlignmentOffset = mBGZF->Tell();  
     }
     
-    // store final block
+    // store final block with data
     m_indexData[blockRefId].push_back( BamToolsIndexEntry(blockMaxEndPosition, blockStartOffset, blockStartPosition) );
     
     // attempt to rewind back to begnning of alignments
@@ -973,6 +973,15 @@ bool BamToolsIndex::BamToolsIndexPrivate::GetOffset(const BamRegion& region, int
     return true; 
 }
 
+// returns whether reference has alignments or no
+bool BamToolsIndex::BamToolsIndexPrivate::HasAlignments(const int& referenceID) const {  
+    if ( m_indexData.find(referenceID) == m_indexData.end() ) 
+	return false;
+    else 
+      return ( !m_indexData.at(referenceID).empty() );
+}
+
+// attempts to use index to jump to region; returns success/fail
 bool BamToolsIndex::BamToolsIndexPrivate::Jump(const BamRegion& region, bool* hasAlignmentsInRegion) {
   
     // clear flag
@@ -990,9 +999,6 @@ bool BamToolsIndex::BamToolsIndexPrivate::Jump(const BamRegion& region, bool* ha
         return false;
     }
   
-    // see if left-bound reference of region has alignments
-    if ( !m_parent->HasAlignments(region.LeftRefID) ) return false; 
-    
     // make sure left-bound position is valid
     if ( region.LeftPosition > references.at(region.LeftRefID).RefLength ) return false;
   
@@ -1002,17 +1008,17 @@ bool BamToolsIndex::BamToolsIndexPrivate::Jump(const BamRegion& region, bool* ha
         fprintf(stderr, "ERROR: Could not jump - unable to calculate offset for specified region.\n");
         return false;
     }
-  
+    
     // attempt seek in file, return success/fail
     return mBGZF->Seek(offset);    
 }
 
+// loads existing data from file into memory
 bool BamToolsIndex::BamToolsIndexPrivate::Load(const string& filename) { 
   
     // localize parent data
     if ( m_parent == 0 ) return false;
     const bool isBigEndian = m_parent->m_isBigEndian;
-    RefVector& references  = m_parent->m_references;
   
     // open index file, abort on error
     FILE* indexStream = fopen(filename.c_str(), "rb");
@@ -1032,7 +1038,7 @@ bool BamToolsIndex::BamToolsIndexPrivate::Load(const string& filename) {
         fclose(indexStream);
         return false;
     }
-
+    
     // read in version
     int32_t indexVersion;
     elementsRead = fread(&indexVersion, sizeof(indexVersion), 1, indexStream);
@@ -1043,8 +1049,15 @@ bool BamToolsIndex::BamToolsIndexPrivate::Load(const string& filename) {
         return false;
     }
 
-    if ( (Version)indexVersion < BTI_1_1 ) {
+    if ( (Version)indexVersion == BTI_1_0 ) {
         fprintf(stderr, "\nProblem with index file - this version of the index contains a bug related to accessing data near reference ends.\n");
+        fprintf(stderr, "\nPlease run \'bamtools index -bti -in yourData.bam\' to generate an up-to-date BamToolsIndex.\n\n");
+        fclose(indexStream);
+        exit(1);
+    }
+    
+    if ( (Version)indexVersion == BTI_1_1 ) {
+        fprintf(stderr, "\nProblem with index file - this version of the index contains a bug related to handling empty references.\n");
         fprintf(stderr, "\nPlease run \'bamtools index -bti -in yourData.bam\' to generate an up-to-date BamToolsIndex.\n\n");
         fclose(indexStream);
         exit(1);
@@ -1058,7 +1071,7 @@ bool BamToolsIndex::BamToolsIndexPrivate::Load(const string& filename) {
     int32_t numReferences;
     elementsRead = fread(&numReferences, sizeof(numReferences), 1, indexStream);
     if ( isBigEndian ) SwapEndian_32(numReferences);
-    
+
     // iterate over reference entries
     for ( int i = 0; i < numReferences; ++i ) {
       
@@ -1097,9 +1110,6 @@ bool BamToolsIndex::BamToolsIndexPrivate::Load(const string& filename) {
         
         // save refID, offsetVector entry into data structure
         m_indexData.insert( make_pair(i, offsets) );
-        
-        // set ref.HasAlignments flag
-        references[i].RefHasAlignments = (numOffsets != 0);
     }
 
     // close index file and return
@@ -1202,6 +1212,9 @@ BamToolsIndex::~BamToolsIndex(void) {
 
 // creates index data (in-memory) from current reader data
 bool BamToolsIndex::Build(void) { return d->Build(); }
+
+// returns whether reference has alignments or no
+bool BamToolsIndex::HasAlignments(const int& referenceID) const { return d->HasAlignments(referenceID); }
 
 // attempts to use index to jump to region; returns success/fail
 // a "successful" jump indicates no error, but not whether this region has data

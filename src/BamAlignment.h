@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 19 September 2010 (DB)
+// Last modified: 9 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // Provides the BamAlignment data structure
 // ***************************************************************************
@@ -140,8 +140,7 @@ struct BamAlignment {
         int32_t     MatePosition;      // Position (0-based) where alignment's mate starts
         int32_t     InsertSize;        // Mate-pair insert size
           
-    // internal data
-    private:
+    public:
         struct BamAlignmentSupportData {
       
             // data members
@@ -162,14 +161,18 @@ struct BamAlignment {
             { }
         };
         
-        // contains raw character data & lengths
+        // ** THIS IS INTERNAL DATA! DO NOT ACCESS OR EDIT FROM CLIENT CODE **
+	//
+	// Intended for use by BamReader & BamWriter ONLY. No, really, I mean it.
+	//
+	// BamTools makes some assumptions about this data being pristine, so please don't tinker with it.
+	// The regular data fields above should be sufficient for client code.
+	//
+	// Technical/design note - Ideally, this would be a private data member with BamReader & BamWriter 
+	// allowed direct 'friend' access. However older compilers (especially gcc before v4.1 ) do not 
+	// propagate the friend access to BamReader/Writer's implementation inner classes. 
         BamAlignmentSupportData SupportData;   
         
-        // allow these classes access to BamAlignment private members (SupportData)
-        // but client code should not need to touch this data
-        friend class BamReader;
-        friend class BamWriter;
-
     // Alignment flag query constants
     // Use the get/set methods above instead
     private:
