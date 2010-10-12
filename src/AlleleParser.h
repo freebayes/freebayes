@@ -119,9 +119,6 @@ public:
     void getSampleNames(void);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
-    void loadReferenceSequence(int seqID);
-    void loadReferenceSequence(string seqName, int start, int length);
-    void loadReferenceSequence(BedTarget*);
     void loadReferenceSequence(BedTarget*, int, int);
     void extendReferenceSequence(int);
     void loadTargets(void);

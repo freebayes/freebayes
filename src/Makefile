@@ -144,5 +144,5 @@ Version:
 # House-keeping
 ################################################################################
 clean:
-	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles Version.h
+	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles
 

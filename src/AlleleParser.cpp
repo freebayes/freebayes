@@ -238,69 +238,17 @@ void AlleleParser::loadBamReferenceSequenceNames(void) {
 
 void AlleleParser::loadFastaReference(void) {
 
-    // XXX we don't technically need to load the whole thing into memory
-    // the FastaReference class will let us grab individual sequences and subsequences 
-    // very fast from the file
-    // thus cutting down on memory requirements...
-    //
-    // perhaps a good approach is to open the file here
-    // and then get long subsequences at runtime
-    // 
-    // this keeps our memory requirements low, and will allow us to operate unmodified on more systems
+    DEBUG("loading fasta reference " << parameters.fasta);
 
-    DEBUG("processing fasta reference " << parameters.fasta);
-
-    //--------------------------------------------------------------------------
-    // process input fasta file
-    //--------------------------------------------------------------------------
-    // This call loads the reference and reads any index file it can find.
-    // If it can't find an index file for the reference, it will attempt to
-    // generate one alongside it.
+    // This call loads the reference and reads any index file it can find.  If
+    // it can't find an index file for the reference, it will attempt to
+    // generate one alongside it.  Note that this only loads the reference.
+    // Sequence data is obtained by progressive calls to
+    // reference->getSubSequence(..), thus keeping our memory requirements low.
 
     reference = new FastaReference(parameters.fasta);
 
-    fastaReferenceSequenceCount = 0;
-
-    int id = 0;
-
-    //--------------------------------------------------------------------------
-    // load ref seq names into hash
-    //--------------------------------------------------------------------------
-    for(map<string, FastaIndexEntry>::const_iterator entry = reference->index->begin(); 
-          entry != reference->index->end(); ++entry) {
-
-        string name = entry->first;
-
-        DEBUG2("sequence name " << name << " id = " << id);
-
-        // get the reference names in this vector
-        referenceSequenceNames.push_back(name);  // WARNING: no order guarantees
-        referenceSequenceNameToID[name] = id++;
-        ++fastaReferenceSequenceCount;
-
-    }
-
-    DEBUG(" done.");
-
 }
-
-void AlleleParser::loadReferenceSequence(int seqID) {
-    DEBUG2("loading reference sequence " << seqID);
-    string name = reference->sequenceNameStartingWith(referenceSequenceNames[seqID]);
-    currentSequence = reference->getSequence(name);
-}
-
-void AlleleParser::loadReferenceSequence(string seqName, int start, int length) {
-    DEBUG2("loading reference subsequence " << seqName << " from " << start << " to " << start + length);
-    string name = reference->sequenceNameStartingWith(seqName);
-    currentSequence = reference->getSubSequence(name, start, length);
-}
-
-/*
-void AlleleParser::loadReferenceSequence(BedTarget* target) {
-    loadReferenceSequence(target->seq, target->left - 1, target->right - target->left + 1);
-}
-*/
 
 // intended to load all the sequence covered by reads which overlap our current target
 // this lets us process the reads fully, checking for suspicious reads, etc.
