@@ -34,6 +34,9 @@ all: ../bin/freebayes
 static:
 	make CFLAGS="$(CFLAGS) -static" all
 
+debug:
+	make CFLAGS="$(CFLAGS) -D VERBOSE_DEBUG" all
+
 freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
 	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -Wno-deprecated
 

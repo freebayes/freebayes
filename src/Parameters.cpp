@@ -1,867 +1,476 @@
 #include "Parameters.h"
-// XXX A BUG in tclap 1.1.0 means we can only include this in this source file
-// otherwise we'll get multiple definition errors
-// see http://blog.csdn.net/happyashley/archive/2009/08/28/4492589.aspx (chinese)
-#include <tclap/CmdLine.h>
+#include "convert.h"
 
-using namespace TCLAP; 
 using namespace std;
 
-
-class MyOutput : public TCLAP::StdOutput {
-public:
-
-    string ProgramName;
-    string ProgramDescription;
-    string ProgramVersion;
-    string ProgramDate;
-    string ProgramDeveloper;
-    string ProgramInstitution;
-    string ProgramCopyrightDates;
-
-    vector<ArgStruct> ArgList;
-
-    virtual void failure(TCLAP::CmdLineInterface& c, TCLAP::ArgException& e);
-    virtual void usage(TCLAP::CmdLineInterface& c);
-    virtual void version(TCLAP::CmdLineInterface& c);
-
-    MyOutput(void);
-};
-
-
-MyOutput::MyOutput(void)
-    : ProgramName("freebayes")
-    , ProgramDescription("Bayesian SNP and short-INDEL polymorphism discovery program.")
-    , ProgramVersion(GIT_HEAD_COMMIT_ID)
-    , ProgramDate(COMPILE_DATE)
-    , ProgramDeveloper("Gabor T. Marth, Erik Garrison")
-    , ProgramInstitution("Boston College")
-    , ProgramCopyrightDates("2007, 2008, 2009, 2010.")
-{ }
-
-void MyOutput::failure(CmdLineInterface& c, ArgException& e)
-{
-    cerr << "################################################################################" << endl;
-    cerr << "### Program: " << ProgramName << endl;
-    cerr << "### Version: " <<  ProgramVersion << endl;
-    cerr << "### Release date: " << ProgramDate << endl;
-    cerr << "### " << ProgramDescription << endl;
-    cerr << "### " << "Copyright: " << ProgramCopyrightDates << endl;
-    cerr << "### " << ProgramDeveloper << ", " << ProgramInstitution << endl;
-    cerr << "### All rights reserved." << endl;
-    cerr << "###" << endl;
-    cerr << "### Command line error:" << e.what() << endl;
-    cerr << "### For usage please type: " << c.getProgramName() << " --help" << endl;
-#ifdef VERBOSE_DEBUG
-    cerr << "### (compiled with --debug2 support)" << endl;
-#endif
-    cerr << "################################################################################" << endl;
+void Parameters::usage(char** argv) {
+    cout 
+         << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
+         << endl
+         << "Bayesian SNP and short INDEL polymorphism discovery." << endl
+         << endl
+         << "options:" << endl
+         << endl
+         << "   -h --help       Prints this help dialog." << endl
+         << "   -b --bam FILE   Add FILE to the set of BAM files to be analyzed." << endl
+         << "   -c --stdin      Read BAM input on stdin." << endl
+         << "   -v --vcf FILE   Output VCF-format results to FILE." << endl
+         << "   -f --fasta-reference FILE" << endl
+         << "                   Use FILE as the reference sequence for analysis." << endl
+         << "                   An index file (FILE.fai) will be created if none exists." << endl
+         << "                   If neither --targets nor --region are specified, FreeBayes" << endl
+         << "                   will analyze every position in this reference." << endl
+         << "   -t --targets FILE" << endl
+         << "                   Limit analysis to targets listed in the BED-format FILE." << endl
+         << "   -r --region <chrom>:<start_position>..<end_position>" << endl
+         << "                   Limit analysis to the specified region." << endl
+         << "   -s --samples FILE" << endl
+         << "                   Limit analysis to samples listed (one per line) in the FILE." << endl
+         << "                   By default FreeBayes will analyze all samples in its input" << endl
+         << "                   BAM files." << endl
+         << "   -j --json       Toggle JSON output of results on stdout." << endl
+         << "   -O --output-alleles" << endl
+         << "                   When --json is set, add records to the JSON output stream" << endl
+         << "                   describing each allele in the input." << endl
+         << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
+         << "   -X --suppress-output" << endl
+         << "                   Suppress output.  Used for debugging." << endl
+         << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
+         << "                   at the site is greater than N.  default: 0.0" << endl
+         << "   -G --factorial-data-likelihoods" << endl
+         << "                   Use the factorial/gamma distribution for calculating the" << endl
+         << "                   sampling component of data likelihoods.  Default is to use" << endl
+         << "                   the multinomial distribution." << endl
+         << "   -T --theta N    The expected mutation rate or pairwise nucleotide diversity" << endl
+         << "                   among the population under analysis.  This serves as the" << endl
+         << "                   single parameter to the Ewens Sampling Formula prior model" << endl
+         << "                   default: 0.001" << endl
+         << "   -p --ploidy N   Sets the default ploidy for the analysis to N.  default: 2" << endl
+         << "   -i --allow-indels" << endl
+         << "                   Include insertion and deletion alleles in the analysis." << endl
+         << "                   default: only analyze SNP alleles." << endl
+         << "   -n --use-best-n-alleles N" << endl
+         << "                   Evaluate only the best N alleles, ranked by sum of" << endl
+         << "                   supporting quality scores.  By default, evaluate all" << endl
+         << "                   possible alleles." << endl
+         << "   -E --use-duplicate-reads" << endl
+         << "                   Include duplicate-marked alignments in the analysis." << endl
+         << "                   default: exclude duplicates" << endl
+         << "   -A --use-reference-allele" << endl
+         << "                   Include the reference allele in the analysis as if it is an" << endl
+         << "                   additional sample." << endl
+         << "   -M --reference-mapping-quality Q" << endl
+         << "                   Assign mapping quality of Q to the reference allele at each" << endl
+         << "                   site.  default: 100" << endl
+         << "   -B --reference-base-quality Q" << endl
+         << "                   Assign a base quality of Q to the reference allele at each" << endl
+         << "                   site.  default: 60" << endl
+         << "   -Z --force-reference-allele" << endl
+         << "                   Force the use of the reference allele in analysis, even if" << endl
+         << "                   it isn't one of the best N alleles provided its assigned" << endl
+         << "                   base quality." << endl
+         << "   -m --min-mapping-quality Q" << endl
+         << "                   Exclude alignments from analysis if they have a mapping" << endl
+         << "                   quality less than Q.  default: 30" << endl
+         << "   -q --min-base-quality Q" << endl
+         << "                   Exclude alleles from analysis if their supporting base" << endl
+         << "                   quality is less than Q.  default: 20" << endl
+         << "   -R --min-supporting-mapping-quality Q" << endl
+         << "                   In order to consider an alternate allele, at least one" << endl
+         << "                   supporting alignment must have this mapping quality." << endl
+         << "                   default: 40" << endl
+         << "   -S --min-supporting-base-quality Q" << endl
+         << "                   In order to consider an alternate allele, at least one" << endl
+         << "                   supporting alignment must have this base quality at the" << endl
+         << "                   site of the allele.  default: 40" << endl
+         << "   -U --read-mismatch-limit N" << endl
+         << "                   The maximum allowable number of mismatches between an" << endl
+         << "                   alignment and the reference where each mismatch has" << endl
+         << "                   base quality >= the mismatch-base-quality-threshold." << endl
+         << "                   default: ~unbounded" << endl
+         << "   -Q --mismatch-base-quality-threshold Q" << endl
+         << "                   Count mismatches toward --read-mismatch-limit if the base" << endl
+         << "                   quality of the mismatch is >= Q.  default: 10" << endl
+         << "   -x --indel-exclusion-window" << endl
+         << "                   Ignore portions of alignments this many bases from a" << endl
+         << "                   putative insertion or deletion allele.  default: 0" << endl
+         << "   -D --read-dependence-factor N" << endl
+         << "                   Incorporate non-independence of reads by scaling successive" << endl
+         << "                   observations by this factor during data likelihood" << endl
+         << "                   calculations.  default: 0.9" << endl
+         << "   -W --posterior-integration-bandwidth N" << endl
+         << "                   Integrate all genotype combinations in our posterior space" << endl
+         << "                   which lie no more than N steps from the most likely" << endl
+         << "                   combination in terms of data likelihoods, taking the N" << endl
+         << "                   steps from the most to least likely genotype for each" << endl
+         << "                   individual.  default: 2" << endl
+         << "   -F --min-alternate-fraction N" << endl
+         << "                   Require at least this fraction of observations supporting" << endl
+         << "                   an alternate allele within a single individual in the" << endl
+         << "                   in order to evaluate the position.  default: 0.0" << endl
+         << "   -C --min-alternate-count N" << endl
+         << "                   Require at least this count of observations supporting" << endl
+         << "                   an alternate allele within a single individual in order" << endl
+         << "                   to evaluate the position.  default: 1" << endl
+         << "   -d --debug      Print debugging output." << endl
+         << "   -dd             Print more verbose debugging output" << endl
+         << endl
+         << "author:  Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010" << endl
+         << "date:    " << FREEBAYES_COMPILE_DATE << endl
+         << "version: " <<  FREEBAYES_VERSION << endl;
 }
 
-void MyOutput::usage(CmdLineInterface& c)
-{
 
-    cout << "################################################################################" << endl;
-    cout << "### Program: " << ProgramName << " Version: " <<  ProgramVersion << " Release date: " << ProgramDate << endl;
-    cout << "### " << ProgramDescription << endl;
-    cout << "### " << "Copyright: " << ProgramCopyrightDates << " " << ProgramDeveloper << ", " << ProgramInstitution << endl;
-    cout << "### All rights reserved." << endl;
-    cout << "###" << endl;
-    cout << "### Usage: " << c.getProgramName() << " [arguments], where:" << endl;
+Parameters::Parameters(int argc, char** argv) {
 
-    for(vector<ArgStruct>::const_iterator it = ArgList.begin(); 
-        it != ArgList.end(); it++) {
-        ArgStruct arg = *it;
-
-        string idString = "";
-        if (arg.longId != "") {
-            idString += "--" + arg.longId;
-        }
-        if (arg.shortId != "") {
-            idString += ", -" + arg.shortId;
-        }
-
-        string multiString = "single-valued";
-        if (arg.multi) {
-            multiString = "multi-valued";
-        }
-        if (arg.required) {
-            cout << "### " << idString << " [" << arg.type << ", required, no default, " << multiString << "]" << endl;
-        } else {
-            cout << "### " << idString << " [" << arg.type << ", optional, default=" << arg.defaultValueString << ", " << multiString << "]" << endl;
-        }
-        if (arg.constraint.size() > 0) {
-            cout << "###     Permitted values: (";
-            bool first = true;
-            for (vector<string>::const_iterator iter = arg.constraint.begin();
-             iter != arg.constraint.end(); iter++) {
-                string value = *iter;
-                if (! first) {
-                    cout << "|";
-                } 
-                first = false;
-                cout << value;
-            }
-            cout << ")" << endl;
-        }
-        cout << "###     Description: " << arg.description << endl;
+    if (argc == 1) {
+        usage(argv);
+        exit(1);
     }
-    cout << "################################################################################" << endl;
-}
 
-void MyOutput::version(CmdLineInterface& c)
-{
-    cerr << "################################################################################" << endl;
-    cerr << "### Program: " << ProgramName << " Version: " <<  ProgramVersion << " Release date: " << ProgramDate << endl;
-    cout << "### " << ProgramDescription << endl;
-    cout << "### " << "Copyright: " << ProgramCopyrightDates << " " << ProgramDeveloper << ", " << ProgramInstitution << endl;
-    cout << "### All rights reserved." << endl;
-    cout << "###" << endl;
-    cerr << "################################################################################" << endl;
-}
+    // set defaults
+
+    // i/o parameters:
+    useStdin = false;               // -c --stdin
+    fasta = "";                // -f --fasta-reference
+    targets = "";              // -t --targets
+    region = "";               // -r --region
+    samples = "";              // -s --samples
+    output = "vcf";               // -v --vcf
+    outputFile = "";
+    traceFile = "";
+
+    // operation parameters
+    outputAlleles = false;          // -O --output-alleles
+    trace = false;                  // -L --trace
+    useDuplicateReads = false;      // -E --use-duplicate-reads
+    suppressOutput = false;         // -S --suppress-output
+    bamBayesDataLikelihoods = false;// -G --factorial-data-likelihoods
+    useBestNAlleles = 0;         // -n --use-best-n-alleles
+    forceRefAllele = false;         // -F --force-reference-allele
+    useRefAllele = false;           // -U --use-reference-allele
+    allowIndels = false;            // -i --allow-indels
+    MQR = 100;                     // -M --reference-mapping-quality
+    BQR = 60;                     // -B --reference-base-quality
+    ploidy = 2;                  // -p --ploidy
+    MQL0 = 30;                    // -m --min-mapping-quality
+    BQL0 = 20;                    // -q --min-base-quality
+    MQL1 = 40;                    // -R --min-supporting-mapping-quality
+    BQL1 = 30;                    // -S --min-supporting-base-quality
+    BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
+    RMU = 10000000;                     // -U --read-mismatch-limit
+    IDW = -1;                     // -x --indel-exclusion-window
+    TH = 10e-3;              // -T --theta
+    PVL = 0.0;             // -P --pvar
+    RDF = 0.9;             // -D --read-dependence-factor
+    WB = 2;                      // -W --posterior-integration-bandwidth
+    minAltFraction = 0.0;
+    minAltCount = 1;
+    debuglevel = 0;
+    debug = false;
+    debug2 = false;
 
 
-// XXX this is out of date
-ostream &operator<<(ostream &out, const Parameters &p) {
+    int c; // counter for getopt
 
-    out << "Complete list of parameter values:" << endl
-         << "  --bam = " << p.bam << endl
-         << "  --fasta = " << p.fasta << endl
-         << "  --targets = " << p.targets << endl
-         << "  --samples = " << p.samples << endl
-         << "  --log = " << p.log << endl
-         << "  --useRefAllele = " <<  (p.useRefAllele ? "true" : "false") << endl
-         << "  --forceRefAllele = " <<  (p.forceRefAllele ? "true" : "false") << endl
-         << "  --MQR = " << p.MQR << endl
-         << "  --BQR = " << p.BQR << endl
-         << "  --ploidy = " << p.ploidy << endl
-         << "  --sampleNaming = " << p.sampleNaming << endl
-         << "  --sampleDel = " << p.sampleDel << endl
-         << "  --BQL0 = " << p.BQL0 << endl
-         << "  --MQL0 = " << p.MQL0 << endl
-         << "  --BQL1 = " << p.BQL1 << endl
-         << "  --MQL1 = " << p.MQL1 << endl
-         << "  --BQL2 = " << p.BQL2 << endl
-         << "  --RMU = " << p.RMU << endl
-         << "  --IDW = " << p.IDW << endl
-         << "  --TH = " << p.TH << endl
-         << "  --PVL = " << p.PVL << endl
-         << "  --algorithm = " << p.algorithm << endl
-         << "  --RDF = " << p.RDF << endl
-         << "  --WB = " << p.WB << endl
-         << "  --TB = " << p.TB << endl
-         << "  --includeMonoB = " <<  (p.includeMonoB ? "true" : "false") << endl
-         << "  --TR = " << p.TR << endl
-         << "  --I = " << p.I << endl
-         << "  --record = " << (p.record ? "true" : "false" ) << endl
-         << "  --debug = " <<  (p.debug ? "true" : "false") << endl
-         << "  --debug2 = " <<  (p.debug2 ? "true" : "false") << endl
-         << "  --outputAlleles = " << p.outputAlleles << endl
-         << "  --suppressOutput = " << p.suppressOutput << endl
-         << endl;
+    static struct option long_options[] =
+    {
+        {"help", no_argument, 0, 'h'},
+        {"bam", required_argument, 0, 'b'},
+        {"stdin", no_argument, 0, 'c'},
+        {"fasta-reference", required_argument, 0, 'f'},
+        {"targets", required_argument, 0, 't'},
+        {"region", required_argument, 0, 'r'},
+        {"samples", required_argument, 0, 's'},
+        {"json", no_argument, 0, 'v'},
+        {"vcf", required_argument, 0, 'v'},
+        {"output-alleles", no_argument, 0, 'O'},
+        {"trace", required_argument, 0, 'L'},
+        {"use-duplicate-reads", no_argument, 0, 'E'},
+        {"suppress-output", no_argument, 0, 'X'},
+        {"factorial-data-likelihoods", no_argument, 0, 'G'},
+        {"use-best-n-alleles", required_argument, 0, 'n'},
+        {"force-reference-allele", no_argument, 0, 'Z'},
+        {"use-reference-allele", no_argument, 0, 'A'},
+        {"reference-mapping-quality", required_argument, 0, 'M'},
+        {"reference-base-quality", required_argument, 0, 'B'},
+        {"ploidy", required_argument, 0, 'p'},
+        {"min-mapping-quality", required_argument, 0, 'm'},
+        {"min-base-quality", required_argument, 0, 'q'},
+        {"min-supporting-mapping-quality", required_argument, 0, 'R'},
+        {"min-supporting-base-quality", required_argument, 0, 'S'},
+        {"mismatch-base-quality-threshold", required_argument, 0, 'Q'},
+        {"read-mismatch-limit", required_argument, 0, 'U'},
+        {"allow-indels", no_argument, 0, 'i'},
+        {"indel-exclusion-window", required_argument, 0, 'x'},
+        {"theta", required_argument, 0, 'T'},
+        {"pvar", required_argument, 0, 'P'},
+        {"read-dependence-factor", required_argument, 0, 'D'},
+        {"posterior-integration-bandwidth", required_argument, 0, 'W'},
+        {"min-alternate-fraction", required_argument, 0, 'F'},
+        {"min-alternate-count", required_argument, 0, 'C'},
+        {"debug", no_argument, 0, 'd'},
 
-    return out;
+        {0, 0, 0, 0}
 
-}
+    };
 
-Parameters::Parameters (int argc, char** argv) {
+    while (true) {
 
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
-    // constants
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
+        int option_index = 0;
+        c = getopt_long(argc, argv, "hcOEXGZAdDb:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:",
+                        long_options, &option_index);
 
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
-    // command line
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
+        if (c == -1) // end of options
+            break;
 
-    //----------------------------------------------------------------------------
-    // Create new CmdLine object
-    //----------------------------------------------------------------------------
+        switch (c) {
 
-    MyOutput my;
-    CmdLine cmd("", ' ', my.ProgramVersion);
-    cmd.setOutput(&my);
+            // i/o parameters:
+            // -b --bam
+            case 'b':
+                bams.push_back(optarg);
+                break;
 
-    //----------------------------------------------------------------------------
-    // add program-specific command line arguments
-    //----------------------------------------------------------------------------
+            // -f --fasta-reference
+            case 'f':
+                fasta = optarg;
+                break;
 
-    // initialize arg
-    ArgStruct arg;
+            // -t --targets
+            case 't':
+                targets = optarg;
+                break;
 
-    // input file: BAM read alignments
-    ArgStruct argBam;
-    arg = argBam; 
-    arg.shortId = ""; 
-    arg.longId = "bam"; 
-    arg.description = "Read alignment input file (indexed and sorted BAM format)";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false; 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_bam(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -r --region
+            case 'r':
+                region = optarg;
+                break;
 
-    // input file: MOSAIK binary reference sequence archive
-    ArgStruct argMbr;
-    arg = argMbr; 
-    arg.shortId = ""; 
-    arg.longId = "fasta"; 
-    arg.description = "Reference sequence fasta file";
-    arg.required = true; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false; 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_fasta(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -s --samples
+            case 's':
+                samples = optarg;
+                break;
 
-    // input file: target regions 
-    ArgStruct argTargets;
-    arg = argTargets; 
-    arg.shortId = ""; 
-    arg.longId = "targets"; 
-    arg.description = "Target region input file (BED format)";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false; 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_targets(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -j --json
+            case 'j':
+                output = "json";
+                break;
 
-    // input file: target regions 
-    ArgStruct argRegion;
-    arg = argRegion; 
-    arg.shortId = ""; 
-    arg.longId = "region"; 
-    arg.description = "Target region in <sequence>:<start>..<end> format";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false; 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_region(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -v --vcf
+            case 'v':
+                output = "vcf";
+                outputFile = optarg;
+                break;
 
-    // input file: list of samples to analyze
-    ArgStruct argSamples;
-    arg = argSamples; 
-    arg.shortId = ""; 
-    arg.longId = "samples"; 
-    arg.description = "File containing list of samples to analyze";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false; 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_samples(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -O --output-alleles
+            case 'O':
+                outputAlleles = true;
+                break;
 
-    // output file: VCF output file
-    ArgStruct argOutputFile;
-    arg = argOutputFile; 
-    arg.shortId = ""; 
-    arg.longId = "outputFile"; 
-    arg.description = "output file (format selectable via --output option)";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false; 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_outputFile(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -L --trace
+            case 'L':
+                traceFile = optarg;
+                trace = true;
+                break;
 
-    // output option: output information about all alleles contributing to a given genotyping position
-    ArgStruct argOutput;
-    arg = argOutput; 
-    arg.shortId = ""; 
-    arg.longId = "output"; 
-    arg.description = "Output option: stdout output format, json or vcf";
-    arg.required = false; 
-    arg.defaultValueString = "vcf"; 
-    arg.type = "string"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_output(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -E --use-duplicate-reads
+            case 'E':
+                useDuplicateReads = true;
+                break;
 
-    // output option: output information about all alleles contributing to a given genotyping position
-    ArgStruct argOutputAlleles;
-    arg = argOutputAlleles; 
-    arg.shortId = ""; 
-    arg.longId = "outputAlleles"; 
-    arg.description = "Output option: output information about all alleles contributing to a given genotyping position";
-    arg.required = false; 
-    arg.defaultValueString = "false"; 
-    arg.type = "switch"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_outputAlleles(arg.shortId, arg.longId, arg.description, cmd, false);
+            // -X --suppress-output
+            case 'X':
+                suppressOutput = true;
+                break;
 
-    // algorithm, use gigabayes method for calculating data likelihoods
-    ArgStruct argBamBayesDataLikelihoods;
-    arg = argBamBayesDataLikelihoods; 
-    arg.shortId = ""; 
-    arg.longId = "bamBayesDataLikelihoods"; 
-    arg.description = "algorithm, use GigaBayes method for calculating data likelihoods";
-    arg.required = false; 
-    arg.defaultValueString = "false"; 
-    arg.type = "switch"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_bamBayesDataLikelihoods(arg.shortId, arg.longId, arg.description, cmd, false);
+            // -G --factorial-data-likelihoods
+            case 'G':
+                bamBayesDataLikelihoods = true;
+                break;
 
-    // ignore duplicate reads
-    ArgStruct argUseDuplicateReads;
-    arg = argUseDuplicateReads; 
-    arg.shortId = ""; 
-    arg.longId = "useDuplicateReads"; 
-    arg.description = "Use alignments which are marked as duplicates in the analysis, default behavior is to drop them.";
-    arg.required = false; 
-    arg.defaultValueString = "false"; 
-    arg.type = "switch"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_useDuplicateReads(arg.shortId, arg.longId, arg.description, cmd, false);
+            // -n --use-best-n-alleles
+            case 'n':
+                if (!convert(optarg, useBestNAlleles)) {
+                    cerr << "could not parse reference-mapping-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // output option: output information about all alleles contributing to a given genotyping position
-    ArgStruct argSuppressOutput;
-    arg = argSuppressOutput; 
-    arg.shortId = ""; 
-    arg.longId = "suppressOutput"; 
-    arg.description = "Output option: suppress output stream (for debugging work)";
-    arg.required = false; 
-    arg.defaultValueString = "false"; 
-    arg.type = "switch"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_suppressOutput(arg.shortId, arg.longId, arg.description, cmd, false);
+            // -Z --force-reference-allele
+            case 'Z':
+                forceRefAllele = true;
+                break;
 
-    // log file
-    ArgStruct argLog;
-    arg = argLog; 
-    arg.shortId = ""; 
-    arg.longId = "log"; 
-    arg.description = "Log file";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_log(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -A --use-reference-allele
+            case 'A':
+                useRefAllele = true;
+                break;
 
-    // log file
-    ArgStruct argTrace;
-    arg = argTrace; 
-    arg.shortId = ""; 
-    arg.longId = "trace"; 
-    arg.description = "Trace file output algorithmic traces to this file";
-    arg.required = false; 
-    arg.defaultValueString = ""; 
-    arg.type = "string"; 
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_traceFile(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -M --reference-mapping-quality
+            case 'M':
+                if (!convert(optarg, MQR)) {
+                    cerr << "could not parse reference-mapping-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // useRefAllele
-    ArgStruct argUseRefAllele;
-    arg = argUseRefAllele;
-    arg.shortId = "";
-    arg.longId = "useRefAllele";
-    arg.description = "Use reference sequence allele in polymorphism calling?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_useRefAllele(arg.shortId, arg.longId, arg.description, cmd, false);
+            // -B --reference-base-quality
+            case 'B':
+                if (!convert(optarg, BQR)) {
+                    cerr << "could not parse reference-base-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // forceRefAllele
-    ArgStruct argForceRefAllele;
-    arg = argForceRefAllele;
-    arg.shortId = "";
-    arg.longId = "forceRefAllele";
-    arg.description = "Force reference sequence allele to be always considered?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_forceRefAllele(arg.shortId, arg.longId, arg.description, cmd, false);
+            // -p --ploidy
+            case 'p':
+                if (!convert(optarg, ploidy)) {
+                    cerr << "could not parse ploidy" << endl;
+                    exit(1);
+                }
+                break;
 
-    // best N alleles
-    ArgStruct argUseBestNAlleles;
-    arg = argUseBestNAlleles;
-    arg.shortId = "";
-    arg.longId = "useBestNAlleles";
-    arg.description = "Consider this many best possible alleles genotypes in analysis, even those without evidence.";
-    arg.required = false;
-    arg.defaultValueString = "0";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_useBestNAlleles(arg.shortId, arg.longId, arg.description, arg.required, 0, arg.type, cmd);
+            // -m --min-mapping-quality
+            case 'm':
+                if (!convert(optarg, MQL0)) {
+                    cerr << "could not parse min-base-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // MQR: reference sequence mapping quality value
-    ArgStruct argMQR;
-    arg = argMQR;
-    arg.shortId = "";
-    arg.longId = "MQR";
-    arg.description = "Reference sequence mapping quality value";
-    arg.required = false;
-    arg.defaultValueString = "100";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_MQR(arg.shortId, arg.longId, arg.description, arg.required, 100, arg.type, cmd);
+            // -q --min-base-quality
+            case 'q':
+                if (!convert(optarg, BQL0)) {
+                    cerr << "could not parse min-base-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // BQR: reference base quality value
-    ArgStruct argBQR;
-    arg = argBQR;
-    arg.shortId = "";
-    arg.longId = "BQR";
-    arg.description = "Reference sequence base quality value";
-    arg.required = false;
-    arg.defaultValueString = "60";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_BQR(arg.shortId, arg.longId, arg.description, arg.required, 60, arg.type, cmd);
+            // -R --min-supporting-mapping-quality
+            case 'R':
+                if (!convert(optarg, MQL1)) {
+                    cerr << "could not parse min-supporting-mapping-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // ploidy: sample ploidy
-    ArgStruct argPloidy;
-    arg = argPloidy;
-    arg.shortId = "";
-    arg.longId = "ploidy";
-    arg.description = "Sample ploidy";
-    arg.required = false;
-    arg.defaultValueString = "2";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_ploidy(arg.shortId, arg.longId, arg.description, arg.required, 2, arg.type, cmd);
+            // -S --min-supporting-base-quality
+            case 'S':
+                if (!convert(optarg, BQL1)) {
+                    cerr << "could not parse min-supporting-base-quality" << endl;
+                    exit(1);
+                }
+                break;
 
-    // sample: naming scheme for matching reads to samples
-    ArgStruct argSampleNaming;
-    arg = argSampleNaming;
-    arg.shortId = "";
-    arg.longId = "sampleNaming";
-    arg.description = "Naming scheme for matching reads to samples";
-    arg.required = false;
-    arg.defaultValueString = "multiple";
-    arg.type = "string";
-    arg.multi = false;
-    vector<string> allowedSampleNaming;
-    allowedSampleNaming.push_back("single");
-    allowedSampleNaming.push_back("multiple");
-    allowedSampleNaming.push_back("trio");
-    allowedSampleNaming.push_back("unknown");
-    arg.constraint = allowedSampleNaming;
-    ValuesConstraint<string> allowedSampleNamingVals(allowedSampleNaming); 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_sampleNaming(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, &allowedSampleNamingVals, cmd);
+            // -Q --mismatch-base-quality-threshold
+            case 'Q':
+                if (!convert(optarg, BQL2)) {
+                    cerr << "could not parse mismatch-base-quality-threshold" << endl;
+                    exit(1);
+                }
+                break;
 
-    // sampleDel
-    ArgStruct argSampleDel;
-    arg = argSampleDel;
-    arg.shortId = "";
-    arg.longId = "sampleDel";
-    arg.description = "Delimiter string separating sample name and read name";
-    arg.required = false;
-    arg.defaultValueString = "-";
-    arg.type = "string";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_sampleDel(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, arg.type, cmd);
+            // -U --read-mismatch-limit
+            case 'U':
+                if (!convert(optarg, RMU)) {
+                    cerr << "could not parse read-mismatch-limit" << endl;
+                    exit(1);
+                }
+                break;
 
-    // MQL0: minimum mapping quality value to consider read
-    ArgStruct argMQL0;
-    arg = argMQL0;
-    arg.shortId = "";
-    arg.longId = "MQL0";
-    arg.description = "Minimum mapping quality value to consider read";
-    arg.required = false;
-    arg.defaultValueString = "40";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_MQL0(arg.shortId, arg.longId, arg.description, arg.required, 40, arg.type, cmd);
+            // -x --indel-exclusion-window
+            case 'x':
+                if (!convert(optarg, IDW)) {
+                    cerr << "could not parse indel-exclusion-window" << endl;
+                    exit(1);
+                }
+                break;
 
-    // BQL0: minimum read base quality value
-    ArgStruct argBQL0;
-    arg = argBQL0;
-    arg.shortId = "";
-    arg.longId = "BQL0";
-    arg.description = "Minimum read base quality value";
-    arg.required = false;
-    arg.defaultValueString = "10";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_BQL0(arg.shortId, arg.longId, arg.description, arg.required, 10, arg.type, cmd);
+            // -T --theta
+            case 'T':
+                if (!convert(optarg, TH)) {
+                    cerr << "could not parse theta" << endl;
+                    exit(1);
+                }
+                break;
 
-    // MQL1: minimum mapping quality value required for at least one read for each allele
-    ArgStruct argMQL1;
-    arg = argMQL1;
-    arg.shortId = "";
-    arg.longId = "MQL1";
-    arg.description = "Minimum mapping quality value required for at least one read for each allele";
-    arg.required = false;
-    arg.defaultValueString = "40";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_MQL1(arg.shortId, arg.longId, arg.description, arg.required, 40, arg.type, cmd);
+            // -P --pvar
+            case 'P':
+                if (!convert(optarg, PVL)) {
+                    cerr << "could not parse pvar" << endl;
+                    exit(1);
+                }
+                break;
 
-    // BQL1: minimum base quality value required for at least one base for each allele
-    ArgStruct argBQL1;
-    arg = argBQL1;
-    arg.shortId = "";
-    arg.longId = "BQL1";
-    arg.description = "Minimum read base quality value required for at least one base for each allele";
-    arg.required = false;
-    arg.defaultValueString = "30";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_BQL1(arg.shortId, arg.longId, arg.description, arg.required, 30, arg.type, cmd);
+            // -D --read-dependence-factor
+            case 'D':
+                if (!convert(optarg, RDF)) {
+                    cerr << "could not parse read-dependence-factor" << endl;
+                    exit(1);
+                }
+                break;
 
-    // BQL2: minimum mismatch base quality value for read mismatch filtering
-    ArgStruct argBQL2;
-    arg = argBQL2;
-    arg.shortId = "";
-    arg.longId = "BQL2";
-    arg.description = "Minimum mismatch base quality value for read mismatch filtering";
-    arg.required = false;
-    arg.defaultValueString = "10";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_BQL2(arg.shortId, arg.longId, arg.description, arg.required, 10, arg.type, cmd);
+            // -W --posterior-integration-bandwidth
+            case 'W':
+                if (!convert(optarg, WB)) {
+                    cerr << "could not parse posterior-integration-bandwidth" << endl;
+                    exit(1);
+                }
+                break;
 
-    // RMU: maximum number of mismatches between read and reference sequence
-    ArgStruct argRMU;
-    arg = argRMU;
-    arg.shortId = "";
-    arg.longId = "RMU";
-    arg.description = "Maximum number of mismatches between read and refrence sequence";
-    arg.required = false;
-    arg.defaultValueString = "10000000";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_RMU(arg.shortId, arg.longId, arg.description, arg.required, 10000000, arg.type, cmd);
+            // -F --min-alternate-fraction
+            case 'F':
+                if (!convert(optarg, minAltFraction)) {
+                    cerr << "could not parse min-alternate-fraction" << endl;
+                    exit(1);
+                }
+                break;
 
-    // IDW: Window of base exclusion around INDELs in reads
-    ArgStruct argIDW;
-    arg = argIDW;
-    arg.shortId = "";
-    arg.longId = "IDW";
-    arg.description = "Window of base exclusion around INDELs in reads";
-    arg.required = false;
-    arg.defaultValueString = "-1";  // this means 'no exclusion', whilst 0 means 'exclude indels'
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_IDW(arg.shortId, arg.longId, arg.description, arg.required, -1, arg.type, cmd);
+            // -C --min-alternate-count
+            case 'C':
+                if (!convert(optarg, minAltCount)) {
+                    cerr << "could not parse min-alternate-count" << endl;
+                    exit(1);
+                }
+                break;
 
-    // RDF: read dependence factor
-    ArgStruct argRDF;
-    arg = argRDF;
-    arg.shortId = "";
-    arg.longId = "RDF";
-    arg.description = "Read dependence factor";
-    arg.required = false;
-    arg.defaultValueString = "0.9";
-    arg.type = "double";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<double> cmd_RDF(arg.shortId, arg.longId, arg.description, arg.required, 0.9, arg.type, cmd);
+            // -d --debug
+            case 'd':
+                ++debuglevel;
+                break;
 
-    // minAltFraction: filter against positions, don't process
-    // if no sample has less than this fraction of alternate alleles
-    ArgStruct argMinAltFraction;
-    arg = argMinAltFraction;
-    arg.shortId = "";
-    arg.longId = "minAltFraction";
-    arg.description = "skip positions if no sample has >= than this fraction of alternate alleles";
-    arg.required = false;
-    arg.defaultValueString = "0.0";
-    arg.type = "double";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<double> cmd_minAltFraction(arg.shortId, arg.longId, arg.description, arg.required, 0.0, arg.type, cmd);
+            case 'h':
+                usage(argv);
+                exit(0);
+                break;
+ 
+            case '?': // getopt_long should have printed an error message
+                break;
 
-    // minAltCount: filter against positions, don't process if no sample has
-    // less than this count of alternate alleles
-    ArgStruct argMinAltCount;
-    arg = argMinAltCount;
-    arg.shortId = "";
-    arg.longId = "minAltCount";
-    arg.description = "skip positions if no sample has >= this count of alternate alleles";
-    arg.required = false;
-    arg.defaultValueString = "1";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_minAltCount(arg.shortId, arg.longId, arg.description, arg.required, 1, arg.type, cmd);
+            default:
+                abort ();
+        }
 
-    // TH: pairwise nucleotide diversity (theta)
-    ArgStruct argTH;
-    arg = argTH;
-    arg.shortId = "";
-    arg.longId = "TH";
-    arg.description = "Pairwise nucleotide diversity (theta)";
-    arg.required = false;
-    arg.defaultValueString = "10E-3";
-    arg.type = "double";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<double> cmd_TH(arg.shortId, arg.longId, arg.description, arg.required, 1E-3, arg.type, cmd);
-
-    // PVL: minimum P(VAR) value for site to be reported in output
-    ArgStruct argPVL;
-    arg = argPVL;
-    arg.shortId = "";
-    arg.longId = "PVL";
-    arg.description = "minimum P(VAR) value for site to be reported in output";
-    arg.required = false;
-    arg.defaultValueString = "0.0";
-    arg.type = "double";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<double> cmd_PVL(arg.shortId, arg.longId, arg.description, arg.required, 0.0, arg.type, cmd);
-
-    // algorithm
-    ArgStruct argAlgorithm;
-    arg = argAlgorithm;
-    arg.shortId = "";
-    arg.longId = "algorithm";
-    arg.description = "P(SNP) calculation algorithm";
-    arg.required = false;
-    arg.defaultValueString = "banded";
-    arg.type = "string";
-    arg.multi = false;
-    vector<string> allowedAlgorithm;
-    allowedAlgorithm.push_back("banded");
-    allowedAlgorithm.push_back("recursive");
-    arg.constraint = allowedAlgorithm;
-    ValuesConstraint<string> allowedAlgorithmVals(allowedAlgorithm); 
-    my.ArgList.push_back(arg);
-    ValueArg<string> cmd_algorithm(arg.shortId, arg.longId, arg.description, arg.required, arg.defaultValueString, &allowedAlgorithmVals, cmd);
-
-    // WB: bandwidth for banded P(SNP) calculation algorithm (genotype combination level)
-    ArgStruct argWB;
-    arg = argWB;
-    arg.shortId = "";
-    arg.longId = "WB";
-    arg.description = "Bandwidth for banded P(SNP) calculation algorithm (genotype combination level)";
-    arg.required = false;
-    arg.defaultValueString = "2";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_WB(arg.shortId, arg.longId, arg.description, arg.required, 2, arg.type, cmd);
-
-    // TB: number of terms to keep in banded P(SNP) calculation algorithm
-    ArgStruct argTB;
-    arg = argTB;
-    arg.shortId = "";
-    arg.longId = "TB";
-    arg.description = "Number of terms to keep per cycle in banded P(SNP) calculation algorithm (0: keep all)";
-    arg.required = false;
-    arg.defaultValueString = "10";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_TB(arg.shortId, arg.longId, arg.description, arg.required, 10, arg.type, cmd);
-
-    // includeMonoB
-    ArgStruct argIncludeMonoB;
-    arg = argIncludeMonoB;
-    arg.shortId = "";
-    arg.longId = "IncludeMonoB";
-    arg.description = "Include monomorphic genotype combinations in initial list in banded SNP prob calculation?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_includeMonoB(arg.shortId, arg.longId, arg.description, cmd, false);
-
-    // TR: number of terms to keep in recursive P(SNP) calculation algorithm
-    ArgStruct argTR;
-    arg = argTR;
-    arg.shortId = "";
-    arg.longId = "TR";
-    arg.description = "Number of terms to keep per cycle of recursive P(SNP) calculation algorithm (0: keep all)";
-    arg.required = false;
-    arg.defaultValueString = "10";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_TR(arg.shortId, arg.longId, arg.description, arg.required, 10, arg.type, cmd);
-
-    // I: report interval for debugging printouts
-    ArgStruct argI;
-    arg = argI;
-    arg.shortId = "";
-    arg.longId = "I";
-    arg.description = "Report interval for debugging printouts";
-    arg.required = false;
-    arg.defaultValueString = "10000";
-    arg.type = "int";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    ValueArg<int> cmd_I(arg.shortId, arg.longId, arg.description, arg.required, 10000, arg.type, cmd);
-
-    // debug
-    ArgStruct argRecord;
-    arg = argRecord;
-    arg.shortId = "";
-    arg.longId = "record";
-    arg.description = "Record messages to logfile?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_record(arg.shortId, arg.longId, arg.description, cmd, false);
-
-    // debug
-    ArgStruct argDebug;
-    arg = argDebug;
-    arg.shortId = "";
-    arg.longId = "debug";
-    arg.description = "Print debugging messages?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_debug(arg.shortId, arg.longId, arg.description, cmd, false);
-
-    // debug2
-    ArgStruct argDebug2;
-    arg = argDebug2;
-    arg.shortId = "";
-    arg.longId = "debug2";
-    arg.description = "Print very detailed debugging messages?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-    SwitchArg cmd_debug2(arg.shortId, arg.longId, arg.description, cmd, false);
-
-    //----------------------------------------------------------------------------
-    // register (but not add to cmd) special arguments that are automatically
-    // added to cmd
-    //----------------------------------------------------------------------------
-
-    // help
-    ArgStruct argHelp;
-    arg = argHelp;
-    arg.shortId = "h";
-    arg.longId = "help";
-    arg.description = "Print usage statement?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-
-    // version
-    ArgStruct argVersion;
-    arg = argVersion;
-    arg.shortId = "";
-    arg.longId = "version";
-    arg.description = "Print program version?";
-    arg.required = false;
-    arg.defaultValueString = "false";
-    arg.type = "switch";
-    arg.multi = false;
-    my.ArgList.push_back(arg);
-
-    //----------------------------------------------------------------------------
-    // parse command line and catch possible errors
-    //----------------------------------------------------------------------------
-    try {
-        cmd.parse(argc,argv);
-    } 
-    catch ( ArgException& e ) { 
-        cerr << "ERROR: " << e.error() << " " << e.argId() << endl; 
     }
-  
-    //----------------------------------------------------------------------------
-    // assign command line parameters
-    //----------------------------------------------------------------------------
+ 
+    // any remaining arguments are considered as bam files
+    if (optind < argc) {
+        while (optind < argc) {
+            bams.push_back(argv[optind++]);
+        }
+    }
 
-    bam = cmd_bam.getValue();
-    bams = split(bam, " \n");
+    if (debuglevel >= 1) {
+        debug = true;
+    }
+    if (debuglevel >= 2) {
+        debug2 = true;
+    }
 
-    fasta = cmd_fasta.getValue();
-    targets = cmd_targets.getValue();
-    region = cmd_region.getValue();
-    samples = cmd_samples.getValue();
-    outputFile = cmd_outputFile.getValue();
-    log = cmd_log.getValue();
-    output = cmd_output.getValue();
-    outputAlleles = cmd_outputAlleles.getValue();
-    bamBayesDataLikelihoods = cmd_bamBayesDataLikelihoods.getValue();
-    traceFile = cmd_traceFile.getValue();
-    useDuplicateReads = cmd_useDuplicateReads.getValue();
-    suppressOutput = cmd_suppressOutput.getValue();
-
-    useRefAllele = cmd_useRefAllele.getValue();
-    forceRefAllele = cmd_forceRefAllele.getValue();
-    useBestNAlleles = cmd_useBestNAlleles.getValue();
-    MQR = cmd_MQR.getValue();
-    BQR = cmd_BQR.getValue();
-    ploidy = cmd_ploidy.getValue();
-    sampleNaming = cmd_sampleNaming.getValue();
-    sampleDel = cmd_sampleDel.getValue();
-    MQL0 = cmd_MQL0.getValue();
-    BQL0 = cmd_BQL0.getValue();
-    MQL1 = cmd_MQL1.getValue();
-    BQL1 = cmd_BQL1.getValue();
-    BQL2 = cmd_BQL2.getValue();
-    RMU = cmd_RMU.getValue();
-    IDW = cmd_IDW.getValue();
-    TH = (long double)cmd_TH.getValue();
-    PVL = (long double)cmd_PVL.getValue();
-    algorithm = cmd_algorithm.getValue();
-    RDF = (long double)cmd_RDF.getValue();
-    minAltFraction = (long double) cmd_minAltFraction.getValue();
-    minAltCount = cmd_minAltCount.getValue();
-    WB = cmd_WB.getValue();
-    TB = cmd_TB.getValue();
-    includeMonoB = cmd_includeMonoB.getValue();
-    TR = cmd_TR.getValue();
-    I = cmd_I.getValue();
-    record = cmd_record.getValue();
-    debug = cmd_debug.getValue();
-    debug2 = cmd_debug2.getValue();
-
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
-    // check and fix command line options
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
-
-  
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
-    // derived variables
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
-
-    record = false;
-    if (log != "")
-        record = true;
-
-    trace = false;
-    if (traceFile != "")
-        trace = true;
-
+    if (bams.size() == 0) {
+        cerr << "Please specify a BAM file or files." << endl;
+        exit(1);
+    }
 
 }

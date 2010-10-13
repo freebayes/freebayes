@@ -113,7 +113,6 @@ public:
     //RefHasAlignments; //!< True if BAM file contains alignments mapped to reference sequence
  
     void openBams(void);
-    void openLogFile(void);
     void openTraceFile(void);
     void openOutputFile(void);
     void getSampleNames(void);

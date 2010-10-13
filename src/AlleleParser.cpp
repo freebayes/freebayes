@@ -19,7 +19,6 @@
 
 // must-see error messages
 #define ERROR(msg) \
-    if (parameters.record) { logFile << msg << endl; } \
     cerr << msg << endl;
 
 using namespace std;
@@ -42,19 +41,6 @@ void AlleleParser::openBams(void) {
     bamMultiReader.Open(parameters.bams, true);
     DEBUG(" done");
 
-}
-
-void AlleleParser::openLogFile(void) {
-
-    if (parameters.record) {
-        logFile.open(parameters.log.c_str(), ios::out);
-        DEBUG("Opening log file: " << parameters.log << " ...");
-        if (!logFile) {
-            ERROR(" unable to open log file: " << parameters.log);
-            exit(1);
-        }
-    }
-    // NB previously we wrote the program invocation command to the logfile here
 }
 
 void AlleleParser::openTraceFile(void) {
@@ -378,7 +364,6 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 {
 
     // initialization
-    openLogFile();
     openTraceFile();
     openOutputFile();
     openBams();

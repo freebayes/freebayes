@@ -1,50 +1,18 @@
-// standard includes
+#ifndef _PARAMETERS_H
+#define _PARAMETERS_H
+
 #include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <map>
+#include <getopt.h>
+#include <stdlib.h>
 #include "split.h"
 #include "Version.h"
 
 using namespace std;
-
-#ifndef _PARAMETERS_H
-#define _PARAMETERS_H
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-// typedefs
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-struct ArgStruct {
-  string shortId;
-  string longId;
-  string description;
-  bool required;
-  string defaultValueString;
-  int defaultValueInt;
-  double defaultValueDouble;
-  bool defaultValueBool;
-  string type;
-  bool multi;
-  vector<string> constraint;
-};
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-// static variables
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-// classes
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-class MyOutput;
 
 // Encapsulates tracking and parsing of command line program parameters
 class Parameters {
@@ -54,55 +22,56 @@ class Parameters {
 public:
 
     // i/o parameters:
-    string bam;
+    string bam;                  // -b --bam
     vector<string> bams;
-    string fasta;
-    string targets;
-    string region;
-    string samples;
-    string log;
-    string output;
+    bool useStdin;               // -c --stdin
+    string fasta;                // -f --fasta-reference
+    string targets;              // -t --targets
+    string region;               // -r --region
+    string samples;              // -s --samples
+    //string log;
+    string output;               // -v --vcf
     string outputFile;
     string traceFile;
 
     // operation parameters
-    bool useRefAllele;
-    bool outputAlleles;
-    bool trace;
-    bool useDuplicateReads;
-    bool suppressOutput;
-    bool forceRefAllele;
-    bool bamBayesDataLikelihoods;
-    int useBestNAlleles;
-    int MQR;
-    int BQR;
-    int ploidy;
-    string sampleNaming;
-    string sampleDel;
-    int MQL0;
-    int BQL0;
-    int MQL1;
-    int BQL1;
-    int BQL2;
-    int RMU;
-    int IDW;
-    long double TH;
-    long double PVL;
+    bool outputAlleles;          // -O --output-alleles
+    bool trace;                  // -L --trace
+    bool useDuplicateReads;      // -E --use-duplicate-reads
+    bool suppressOutput;         // -S --suppress-output
+    bool bamBayesDataLikelihoods;// -G --factorial-data-likelihoods
+    int useBestNAlleles;         // -n --use-best-n-alleles
+    bool forceRefAllele;         // -F --force-reference-allele
+    bool useRefAllele;           // -U --use-reference-allele
+    bool allowIndels;            // -I --allow-indels
+    int MQR;                     // -M --reference-mapping-quality
+    int BQR;                     // -B --reference-base-quality
+    int ploidy;                  // -p --ploidy
+    int MQL0;                    // -m --min-mapping-quality
+    int BQL0;                    // -q --min-base-quality
+    int MQL1;                    // -R --min-supporting-mapping-quality
+    int BQL1;                    // -S --min-supporting-base-quality
+    int BQL2;                    // -Q --mismatch-base-quality-threshold
+    int RMU;                     // -U --read-mismatch-limit
+    int IDW;                     // -I --indel-exclusion-window
+    long double TH;              // -T --theta
+    long double PVL;             // -P --pvar
     string algorithm;
-    long double RDF;
-    int WB;
+    long double RDF;             // -D --read-dependence-factor
+    int WB;                      // -W --integration-bandwidth
     int TB;
     bool includeMonoB;
     int TR;
     int I;
-    long double minAltFraction;
-    int minAltCount;
-    bool debug;
-    bool debug2;
-    bool record;
+    long double minAltFraction;  // -F --min-alternate-fraction
+    int minAltCount;             // -C --min-alternate-count
+    int debuglevel;              // -d --debug
+    bool debug; // set if debuglevel >=1
+    bool debug2; // set if debuglevel >=2
 
     // functions
     Parameters(int argc, char** argv);
+    void usage(char **argv);
 
 };
 

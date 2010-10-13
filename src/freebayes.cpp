@@ -84,6 +84,10 @@ int main (int argc, char *argv[]) {
     //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
     int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP;
+    if (parameters.allowIndels) {
+        allowedAlleleTypes |= ALLELE_INSERTION;
+        allowedAlleleTypes |= ALLELE_DELETION;
+    }
 
     // output VCF header
     if (parameters.output == "vcf") {
@@ -109,7 +113,7 @@ int main (int argc, char *argv[]) {
                 vector<Allele*>& group = g->second;
                 for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
                     Allele& allele = **a;
-                    parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
+                    parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",allele,"
                         << g->first << "," << allele.readID << "," << allele.currentBase << "," 
                         << allele.currentQuality() << "," << allele.mapQuality << endl;
                 }
@@ -194,7 +198,7 @@ int main (int argc, char *argv[]) {
             if (parameters.trace) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
                     parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
-                        << sampleName << "," << "likelihood," << IUPAC2GenotypeStr(IUPAC(*(p->first))) << "," << p->second << endl;
+                        << sampleName << ",likelihood," << IUPAC2GenotypeStr(IUPAC(*(p->first))) << "," << p->second << endl;
                 }
             }
 
