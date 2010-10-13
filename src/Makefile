@@ -127,9 +127,9 @@ split.o: split.h split.cpp
 
 
 # versioning, requires git
-Version:
-	echo \#define GIT_HEAD_COMMIT_ID \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
-	echo \#define COMPILE_DATE \"`date +%F`\" >>Version.h
+version:
+	echo \#define FREEBAYES_VERSION \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
+	echo \#define FREEBAYES_COMPILE_DATE \"`date +%F`\" >>Version.h
 
 ################################################################################
 # Archival
