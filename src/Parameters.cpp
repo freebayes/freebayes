@@ -218,7 +218,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEXGZAdDb:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:",
+        c = getopt_long(argc, argv, "hcOEXGZAdDb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
