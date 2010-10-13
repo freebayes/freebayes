@@ -1,0 +1,54 @@
+== FREEBAYES ==
+
+Overview:
+
+FreeBayes is a Bayesian genetic variant detector designed to find small
+polymorphisms, specifically SNPs (single-nucleotide polymorphisms) and indels
+(insertions and deletions) smaller than the length of a short-read sequencing
+alignment.  It uses short-read alignments (BAM files) for any number of
+individuals from a population and a reference genome to determine the
+most-likely combination of genotypes for the population at each position in a
+reference genome (FASTA).  It reports positions which it finds to be more
+likely polymorphic than monomorphic in a standard variant interchange format
+(VCF).
+
+
+Compilation:
+
+FreeBayes requires g++ and the standard C and C++ development libraries.
+
+    % make && sudo make install
+
+Will build and install the executable freebayes to /usr/local/bin.
+
+
+Usage:
+
+In its simplest operation, it requires only two inputs: a FASTA reference
+sequence, and a BAM-format alignment file sorted by reference position.  For instance:
+
+    % freebayes --fasta-reference h.sapiens.fasta NA20504.bam
+
+Will produce a VCF (Variant Call Format [1]) file on standard out describing
+all SNPs between the reference and the alignments in NA20504.bam.  In order to
+produce correct output, the reference supplied must be the reference to which
+NA20504.bam was aligned.
+
+Users may specify any number of BAM files on the command line.  FreeBayes uses
+the BamTools API [2] to open and parse these files in parallel.
+
+For a more detailed description of available command-line options, run:
+
+    % freebayes --help
+
+
+Author: Erik Garrison <erik.garrison@bc.edu>
+        Marth Lab [3], Boston College
+
+License: MIT
+
+References:
+
+[1] http://www.1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf4.0
+[2] http://sourceforge.net/projects/bamtools/
+[3] http://bioinformatics.bc.edu/marthlab/Main_Page

@@ -1,17 +1,15 @@
 all:
 	cd src && make
-	cd src && make install
 
-.PHONY: all
+install:
+	cp bin/freebayes /usr/bin/
 
-doc:
-	doxygen doxygen.cfg
-
-.PHONY: doc
+uninstall:
+	rm /usr/bin/freebayes
 
 clean:
 	cd src && make clean
 	rm -f bin/*
 	rm -rf doc/*
 
-.PHONY: clean
+.PHONY: all install uninstall clean

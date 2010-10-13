@@ -473,4 +473,9 @@ Parameters::Parameters(int argc, char** argv) {
         exit(1);
     }
 
+    if (fasta == "") {
+        cerr << "Please specify a fasta reference file." << endl;
+        exit(1);
+    }
+
 }
