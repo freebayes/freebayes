@@ -61,13 +61,13 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele balance at heterozygous sites: a number beween 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
         << "##INFO=<ID=ABB,Number=2,Type=Integer,Description=\"Allele balance counts: two numbers giving the numbers of sequence reads from apparent heterozygotes which show reference and alternate alleles for the site\">" << endl
         << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
-        << "##FORMAT=<ID=GT,Number=1,String,\"Genotype\">" << endl
-        << "##FORMAT=<ID=GQ,Number=1,Integer,\"Genotype Quality\">" << endl
-        << "##FORMAT=<ID=DP,Number=1,Integer,\"Read Depth\">" << endl
-        << "##FORMAT=<ID=RA,Number=1,Integer,\"Reference allele observations\">" << endl
-        << "##FORMAT=<ID=AA,Number=1,Integer,\"Alternate allele observations\">" << endl
-        << "##FORMAT=<ID=BCF,Number=2,Integer,\"Number of forward-strand reference and alternate allele observations\">" << endl
-        << "##FORMAT=<ID=BCR,Number=2,Integer,\"Number of reverse-strand reference and alternate allele observations\">" << endl
+        << "##FORMAT=<ID=GT,Number=1,Type=String,\"Genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,\"Genotype Quality\">" << endl
+        << "##FORMAT=<ID=DP,Number=1,Type=Integer,\"Read Depth\">" << endl
+        << "##FORMAT=<ID=RA,Number=1,Type=Integer,\"Reference allele observations\">" << endl
+        << "##FORMAT=<ID=AA,Number=1,Type=Integer,\"Alternate allele observations\">" << endl
+        << "##FORMAT=<ID=BCF,Number=2,Type=Integer,\"Number of forward-strand reference and alternate allele observations\">" << endl
+        << "##FORMAT=<ID=BCR,Number=2,Type=Integer,\"Number of reverse-strand reference and alternate allele observations\">" << endl
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
