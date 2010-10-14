@@ -264,15 +264,6 @@ int main (int argc, char *argv[]) {
                 probabilityObservationsGivenGenotypes += i->second.second;
             }
 
-            /*
-            map<Allele, int> alleleCounts = countAlleles(genotypeCombo);
-            cout << "alleleCounts = ";
-            for (map<Allele, int>::iterator a = alleleCounts.begin(); a != alleleCounts.end(); ++a) {
-                cout << " ( " << a->first.currentBase << " " << a->second << ")";
-            }
-            cout << endl;
-            */
-
             map<int, int> frequencyCounts = countFrequencies(genotypeCombo);
 
             long double priorProbabilityOfGenotypeComboG_Af = 
@@ -281,8 +272,6 @@ int main (int argc, char *argv[]) {
                 alleleFrequencyProbabilityln(countFrequencies(genotypeCombo), parameters.TH);
             long double priorProbabilityOfGenotypeCombo = 
                 priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
-            //cout << "priorProbabilityOfGenotypeCombo = " << priorProbabilityOfGenotypeCombo << endl;
-            //cout << "probabilityObservationsGivenGenotypes = " << probabilityObservationsGivenGenotypes << endl;
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
 
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {

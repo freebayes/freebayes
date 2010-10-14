@@ -1,5 +1,5 @@
 all:
-	cd src && make
+	cd src && $(MAKE)
 
 install:
 	cp bin/freebayes /usr/bin/
@@ -8,7 +8,7 @@ uninstall:
 	rm /usr/bin/freebayes
 
 clean:
-	cd src && make clean
+	cd src && $(MAKE) clean
 	rm -f bin/*
 	rm -rf doc/*
 
