@@ -118,8 +118,7 @@ int alleleFrequency(GenotypeCombo& genotypeCombo, Allele& allele) {
 
     int frequency = 0;
     for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        Genotype* g = gc->second.first;
-        frequency += g->alleleFrequency(allele);
+        frequency += gc->genotype->alleleFrequency(allele);
     }
     return frequency;
 
@@ -133,11 +132,32 @@ long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo&
     int f = alleleFrequency(genotypeCombo, allele);
 
     for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        Genotype* g = gc->second.first;
-        if (!g->homozygous())
+        if (!gc->genotype->homozygous())
             ++h;
     }
 
     return powln(log(2), h) - (factorialln(2 * n) - (factorialln(f) + factorialln(2 * n - f)));
+
+}
+
+
+// XXX although this is intended to replace the above diploid-specific
+// function, and will do so with identical results on diploid data, it is
+// unproven theoretically for non-uniform copy number
+long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
+
+    int n = genotypeCombo.numberOfAlleles();
+    int h = 0; // number of heterozygotes
+    int f = alleleFrequency(genotypeCombo, allele);
+    long double lnploidyscalar = 0;
+
+    for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
+        if (!gc->genotype->homozygous()) {
+            lnploidyscalar += log(gc->genotype->ploidy);
+            ++h;
+        }
+    }
+
+    return lnploidyscalar - (factorialln(n) - (factorialln(f) + factorialln(n - f)));
 
 }

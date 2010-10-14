@@ -15,11 +15,7 @@
 using namespace std;
 
 
-// TODO
-// Develop this stub to clean up leaky abstraction caused by direct use of
-// a pair as a complex datatype.
-// It's clearer to write things like 'genotypeelement->allele' and
-// 'genotypeelement->count' than ..->first and ..->second
+// each genotype is a vetor of GenotypeElements, each is a count of alleles
 class GenotypeElement {
 
     friend ostream& operator<<(ostream& out, GenotypeElement& rhs);
@@ -66,26 +62,46 @@ public:
     string relativeGenotype(string& refbase, string& altbase);
     bool homozygous(void);
     vector<int> alleleCountsInObservations(vector<Allele*> observations);
-    /*
-    void inOutObservationCounts(vector<Allele*> observations,
-            vector<pair<Allele, int> >& inCounts, 
-            vector<pair<Allele, int> >& outCounts);
-            */
 
 };
 
-// for sorting pairs of genotype, probs
-/*bool genotypeCmp(pair<Genotype, long double> a, pair<Genotype, long double> b) {
-    return a.second > b.second;
-}
-*/
 
 string IUPAC(Genotype& g);
 string IUPAC2GenotypeStr(string iupac);
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
-typedef vector<pair<string, pair<Genotype*, long double> > > GenotypeCombo;
+class SampleGenotypeProb {
+public:
+    string name;
+    Genotype* genotype;
+    long double prob;
+    SampleGenotypeProb(string n, Genotype* g, long double p)
+        : name(n)
+        , genotype(g)
+        , prob(p)
+    { }
+};
+
+class GenotypeCombo : public vector<SampleGenotypeProb> {
+public:
+    // GenotypeCombo::prob is equal to the sum of probs in the combo.  We
+    // factor it out so that we can construct the probabilities efficiently as
+    // we generate the genotype combinations
+    long double prob;
+
+    GenotypeCombo(void) : prob(0) { }
+
+    int numberOfAlleles(void) {
+        int count = 0;
+        for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
+            count += g->genotype->ploidy;
+        }
+        return count;
+    }
+
+};
+
 
 class GenotypeComboResult {
 public:
@@ -110,24 +126,32 @@ public:
     { }
 };
 
-bool genotypeComboResultSorter(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2);
+class GenotypeComboResultSorter {
+public:
+    bool operator()(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2) {
+        return gc1.comboProb > gc2.comboProb;
+    }
+};
 
 typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;
 
 GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc);
 
-vector<GenotypeCombo>
+void
 bandedGenotypeCombinations(
-        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
-        int bandwidth, int banddepth);
+    vector<GenotypeCombo>& combos,
+    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    int bandwidth, int banddepth);
 
-vector<GenotypeCombo>
+void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
-        vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
-        int bandwidth, int banddepth);
+    vector<GenotypeCombo>& combos,
+    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    int bandwidth, int banddepth);
 
-vector<GenotypeCombo>
+void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
+    vector<GenotypeCombo>& combos,
     vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
     vector<Genotype>& genotypes,
     int bandwidth, int banddepth);

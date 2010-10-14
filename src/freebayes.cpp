@@ -246,7 +246,8 @@ int main (int argc, char *argv[]) {
         //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
         //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
         DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
-        vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingAllHomozygousCombos(sampleGenotypes, genotypes, parameters.WB + 1, 2);
+        vector<GenotypeCombo> bandedCombos;
+        bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypes, parameters.WB, 1);
         DEBUG2("...done");
 
         vector<GenotypeComboResult> genotypeComboProbs;
@@ -260,11 +261,9 @@ int main (int argc, char *argv[]) {
             vector<Genotype*> genotypeCombo;
 
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
-                genotypeCombo.push_back(i->second.first);
-                probabilityObservationsGivenGenotypes += i->second.second;
+                genotypeCombo.push_back(i->genotype);
+                probabilityObservationsGivenGenotypes += i->prob;
             }
-
-            map<int, int> frequencyCounts = countFrequencies(genotypeCombo);
 
             long double priorProbabilityOfGenotypeComboG_Af = 
                 probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
@@ -275,16 +274,8 @@ int main (int argc, char *argv[]) {
             long double comboProb = priorProbabilityOfGenotypeCombo + probabilityObservationsGivenGenotypes;
 
             for (GenotypeCombo::iterator i = combo->begin(); i != combo->end(); ++i) {
-                map<Genotype*, vector<long double> >& marginals = results[i->first].rawMarginals;
-                Genotype* genotype = i->second.first;
-                map<Genotype*, vector<long double> >::iterator marginal = marginals.find(genotype);
-                if (marginal == marginals.end()) {
-                    vector<long double> probs;
-                    probs.push_back(comboProb);
-                    marginals.insert(make_pair(genotype, probs));
-                } else {
-                    marginals[genotype].push_back(comboProb);
-                }
+                map<Genotype*, vector<long double> >& marginals = results[i->name].rawMarginals;
+                marginals[i->genotype].push_back(comboProb);
             }
 
             genotypeComboProbs.push_back(GenotypeComboResult(*combo,
@@ -311,26 +302,11 @@ int main (int argc, char *argv[]) {
         }
 
         // sort by the normalized datalikelihood + prior
-        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), genotypeComboResultSorter);
+        GenotypeComboResultSorter gcrSorter;
+        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), gcrSorter);
 
         DEBUG2("sorted genotype combination likelihoods");
-
-        /*
-        for (vector<pair<GenotypeCombo, long double> >::iterator c = genotypeComboProbs.begin(); c != genotypeComboProbs.end(); ++c) {
-            cout << "prob:" << c->second << endl;
-        }
-        */
-        //cout << "posteriorNormalizer = " << posteriorNormalizer << endl;
-        /*
-        cout << "comboProbs = [";
-        for (vector<long double>::iterator i = comboProbs.begin(); i != comboProbs.end(); ++i)
-            cout << *i << " ";
-        cout << "]" << endl;
-        */
         
-
-        // TODO Gabor had a suggestion about this normalization, that we only normalize 'perturbed' cases
-        // ....  but i think that this thought was not asserted as necessary
         // normalize marginals
         for (Results::iterator r = results.begin(); r != results.end(); ++r) {
             ResultData& d = r->second;
@@ -398,14 +374,14 @@ int main (int argc, char *argv[]) {
         long double bestGenotypeComboProb = genotypeComboProbs.front().comboProb;
         vector<Genotype*> bestComboGenotypes;
         for (GenotypeCombo::iterator g = bestGenotypeCombo.begin(); g != bestGenotypeCombo.end(); ++g)
-            bestComboGenotypes.push_back(g->second.first);
+            bestComboGenotypes.push_back(g->genotype);
         long double bestGenotypeComboAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(countFrequencies(bestComboGenotypes), parameters.TH));
 
         if (parameters.trace) {
             for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
                 vector<Genotype*> comboGenotypes;
                 for (GenotypeCombo::iterator g = gc->combo.begin(); g != gc->combo.end(); ++g)
-                    comboGenotypes.push_back(g->second.first);
+                    comboGenotypes.push_back(g->genotype);
                 long double comboProb = gc->comboProb;
                 long double dataLikelihoodln = gc->probObsGivenGenotypes;
                 long double priorln = gc->priorProbGenotypeCombo;
@@ -418,7 +394,7 @@ int main (int argc, char *argv[]) {
                 GenotypeCombo::iterator i = gc->combo.begin();
                 for (vector<bool>::iterator d = samplesWithData.begin(); d != samplesWithData.end(); ++d) {
                     if (*d) {
-                        parser->traceFile << IUPAC(*i->second.first);
+                        parser->traceFile << IUPAC(*i->genotype);
                         ++i;
                     } else {
                         parser->traceFile << "?";
