@@ -445,7 +445,24 @@ Parameters::Parameters(int argc, char** argv) {
                 exit(0);
                 break;
  
-            case '?': // getopt_long should have printed an error message
+            case '?': // print a suggestion about the most-likely long option which the argument matches
+                {
+                    string bad_arg(argv[optind - 1]);
+                    option* opt = &long_options[0];
+                    option* closest_opt = opt;
+                    int shortest_distance = levenshteinDistance(opt->name, bad_arg);
+                    ++opt;
+                    while (opt->name != 0) {
+                        int distance = levenshteinDistance(opt->name, bad_arg);
+                        if (distance < shortest_distance) {
+                            shortest_distance = distance;
+                            closest_opt = opt;
+                        }
+                        ++opt;
+                    }
+                    cerr << "did you mean --" << closest_opt->name << " ?" << endl;
+                    exit(1);
+                }
                 break;
 
             default:

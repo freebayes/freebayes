@@ -45,6 +45,7 @@ long double logsumexp(const vector<long double>& lnv);
 long double betaln(const vector<long double>& alphas);
 long double beta(const vector<long double>& alphas);
 
+int levenshteinDistance(const std::string source, const std::string target);
 
 
 #endif

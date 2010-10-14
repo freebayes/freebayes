@@ -97,7 +97,7 @@ Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 GenotypePriors.o: GenotypePriors.cpp GenotypePriors.h Allele.h
 	$(CC) $(CFLAGS) -c GenotypePriors.cpp -Wno-deprecated
 
-AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.cpp Parameters.h
+AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h
 	$(CC) $(CFLAGS) -c AlleleParser.cpp -Wno-deprecated
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h

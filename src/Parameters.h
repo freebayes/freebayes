@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include "split.h"
 #include "Version.h"
+#include "Utility.h"
 
 using namespace std;
 
