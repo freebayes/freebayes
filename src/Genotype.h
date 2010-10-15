@@ -135,7 +135,7 @@ public:
 
 typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;
 
-GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc);
+void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 
 void
 bandedGenotypeCombinations(

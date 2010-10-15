@@ -4,10 +4,6 @@
 # Boston College
 ################################################################################
 
-################################################################################
-# To run (examples)
-################################################################################
-
 # optimized + static
 # make CFLAGS="-O9 -static"
 
@@ -25,9 +21,6 @@ C=gcc
 CFLAGS=-O3
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
-################################################################################
-# executables
-################################################################################
 
 all: ../bin/freebayes
 
@@ -40,18 +33,41 @@ debug:
 profiling:
 	$(MAKE) CFLAGS="$(CFLAGS) -pg" all
 
-freebayes ../bin/freebayes: freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o
-	$(CC) $(CFLAGS) freebayes.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o GenotypePriors.o ResultData.o Dirichlet.o split.o -o ../bin/freebayes -lz -Wno-deprecated
+OBJECTS=BamAlignment.o \
+		BamMultiReader.o \
+		BamReader.o \
+		BamIndex.o \
+		BGZF.o \
+		BedReader.o \
+		fastlz.o \
+		Fasta.o \
+		Parameters.o \
+		Allele.o \
+		AlleleParser.o \
+		Utility.o \
+		Genotype.o \
+		DataLikelihood.o \
+		Multinomial.o \
+		GenotypePriors.o \
+		ResultData.o \
+		Dirichlet.o \
+		split.o
 
-alleles ../bin/alleles: alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h split.o
-	$(CC) $(CFLAGS) alleles.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o split.o -o ../bin/alleles -lz -Wno-deprecated
+HEADERS=multichoose.h
 
-dummy ../bin/dummy: dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o fastlz.o Fasta.o Parameters.o Allele.o AlleleParser.o Utility.o multichoose.h split.o
-	$(CC) $(CFLAGS) dummy.o BamAlignment.o BamMultiReader.o BamReader.o BamIndex.o BGZF.o BedReader.o Parameters.o fastlz.o Fasta.o Allele.o AlleleParser.o Utility.o split.o -o ../bin/dummy -lz -Wno-deprecated
+# executables
 
-################################################################################
+freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) freebayes.o $(OBJECTS) -o ../bin/freebayes -lz -Wno-deprecated
+
+alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) alleles.o $(OBJECTS) -o ../bin/alleles -lz -Wno-deprecated
+
+dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) dummy.o $(OBJECTS) -o ../bin/dummy -lz -Wno-deprecated
+
+
 # objects
-################################################################################
 
 Fasta.o: Fasta.cpp
 	$(CC) $(CFLAGS) -c Fasta.cpp -Wno-deprecated
@@ -65,8 +81,6 @@ dummy.o: dummy.cpp AlleleParser.o Allele.o
 freebayes.o: freebayes.cpp TryCatch.h
 	$(CC) $(CFLAGS) -c freebayes.cpp -Wno-deprecated
 
-
-# Class compilations
 fastlz.o: fastlz.c fastlz.h
 	$(C) $(CFLAGS) -c fastlz.c	
 
@@ -118,37 +132,17 @@ DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
 ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AlleleParser.h Version.h
 	$(CC) $(CFLAGS) -c ResultData.cpp -Wno-deprecated
 
-# ...
-BedReader.o: BedReader.cpp BedReader.h Function-Generic.h
+BedReader.o: BedReader.cpp BedReader.h
 	$(CC) $(CFLAGS) -c BedReader.cpp -Wno-deprecated
-
-Function-Generic.o: Function-Generic.cpp Function-Generic.h Type-Hash.h
-	$(CC) $(CFLAGS) -c Function-Generic.cpp -Wno-deprecated
-
-Function-Math.o: Function-Math.cpp Function-Math.h Type-Hash.h
-	$(CC) $(CFLAGS) -c Function-Math.cpp -Wno-deprecated
 
 split.o: split.h split.cpp
 	$(CC) $(CFLAGS) -c split.cpp -Wno-deprecated
 
-
-# versioning, requires git
+# versioning for git point releases
 version:
 	echo \#define FREEBAYES_VERSION \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
 	echo \#define FREEBAYES_COMPILE_DATE \"`date +%F`\" >>Version.h
 
-################################################################################
-# Archival
-################################################################################
-# TODO
-#
-################################################################################
-# Installation
-################################################################################
-
-################################################################################
-# House-keeping
-################################################################################
 clean:
 	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles
 

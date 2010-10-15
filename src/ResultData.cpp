@@ -92,7 +92,8 @@ string vcf(
 
     // TODO make it so you use the genotypeCombo... 
 
-    GenotypeComboMap comboMap = genotypeCombo2Map(genotypeCombo);
+    GenotypeComboMap comboMap;
+    genotypeCombo2Map(genotypeCombo, comboMap);
 
     int samplesWithData = 0;
     // count alternate alleles in the best genotyping

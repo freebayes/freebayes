@@ -421,12 +421,10 @@ pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string&
 }
 
 
-GenotypeComboMap genotypeCombo2Map(GenotypeCombo& gc) {
-    GenotypeComboMap gcm;
+void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm) {
     for (GenotypeCombo::iterator g = gc.begin(); g != gc.end(); ++g) {
         gcm[g->name] = make_pair(g->genotype, g->prob);
     }
-    return gcm;
 }
 
 
