@@ -104,6 +104,10 @@ void Parameters::usage(char** argv) {
          << "                   combination in terms of data likelihoods, taking the N" << endl
          << "                   steps from the most to least likely genotype for each" << endl
          << "                   individual.  default: 2" << endl
+         << "   -K --posterior-marginal-depth N" << endl
+         << "                   Keep this many genotype combinations for calculating genotype" << endl
+         << "                   marginal probabilities for each sample.  Used to keep" << endl
+         << "                   calculations in O(NK) time." << endl
          << "   -F --min-alternate-fraction N" << endl
          << "                   Require at least this fraction of observations supporting" << endl
          << "                   an alternate allele within a single individual in the" << endl
@@ -164,6 +168,7 @@ Parameters::Parameters(int argc, char** argv) {
     PVL = 0.0;             // -P --pvar
     RDF = 0.9;             // -D --read-dependence-factor
     WB = 2;                      // -W --posterior-integration-bandwidth
+    posteriorMarginalDepth = 100;
     minAltFraction = 0.0;
     minAltCount = 1;
     debuglevel = 0;
@@ -209,6 +214,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
+        {"posterior-marginal-depth", required_argument, 0, 'K'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -431,6 +437,13 @@ Parameters::Parameters(int argc, char** argv) {
             case 'C':
                 if (!convert(optarg, minAltCount)) {
                     cerr << "could not parse min-alternate-count" << endl;
+                    exit(1);
+                }
+                break;
+            // -K --posterior-marginal-depth
+            case 'K':
+                if (!convert(optarg, posteriorMarginalDepth)) {
+                    cerr << "could not parse posterior-marginal-depth" << endl;
                     exit(1);
                 }
                 break;

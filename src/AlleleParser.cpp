@@ -38,7 +38,10 @@ void AlleleParser::openBams(void) {
             DEBUG2(*b);
         }
     }
-    bamMultiReader.Open(parameters.bams, true);
+    if (!bamMultiReader.Open(parameters.bams, true)) {
+        ERROR("Could not open BAM files, exiting!");
+        exit(1);
+    }
     DEBUG(" done");
 
 }
@@ -988,8 +991,6 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
             es != emptySamples.end(); ++es)
         allelesBySample.erase(*es);
 
-    //alleles.sort();
-
     DEBUG2("done getting alleles");
     // TODO allele sorting by sample on registration
     // for another potential perf boost
@@ -1018,7 +1019,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
 }
 
 vector<Allele> AlleleParser::genotypeAlleles(
-        vector<vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
+        map<string, vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
         map<string, vector<Allele*> >& sampleGroups, // alleles grouped by sample
         vector<Allele>& allGenotypeAlleles      // all possible genotype alleles, 
                                                 // to add back alleles if we don't have enough to meet our minimum allele count
@@ -1026,16 +1027,17 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
     vector<pair<Allele, int> > unfilteredAlleles;
 
-    for (vector<vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
+    for (map<string, vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
         // for each allele that we're going to evaluate, we have to have at least one supporting read with
         // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
         bool passesFilters = false;
         int qSum = 0;
-        for (vector<Allele*>::iterator a = group->begin(); a != group->end(); ++a) {
+        vector<Allele*>& alleles = group->second;
+        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
             Allele& allele = **a;
             qSum += allele.quality;
         }
-        Allele& allele = *group->front();
+        Allele& allele = *(alleles.front());
         int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
         unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length), qSum));
     }

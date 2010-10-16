@@ -413,6 +413,14 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
     }
 }
 
+void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups) {
+    for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin(); sample != sampleGroups.end(); ++sample) {
+        for (vector<Allele*>::iterator allele = sample->second.begin(); allele != sample->second.end(); ++allele) {
+            alleleGroups[(*allele)->base()].push_back(*allele);
+        }
+    }
+}
+
 
 vector<vector<Allele*> > groupAlleles(map<string, vector<Allele*> > &sampleGroups, bool (*fncompare)(Allele &a, Allele &b)) {
     vector<vector<Allele*> > groups;
@@ -807,3 +815,4 @@ baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
     return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
 
 }
+

@@ -18,35 +18,6 @@ def count_frequencies(genotype_combo):
     return counts
 */
 
-map<Allele, int> countAlleles(vector<Genotype*>& genotypeCombo) {
-    map<Allele, int> alleleCounts;
-    for (vector<Genotype*>::iterator g = genotypeCombo.begin(); g != genotypeCombo.end(); ++g) {
-        for (Genotype::iterator a = (*g)->begin(); a != (*g)->end(); ++a) {
-            map<Allele, int>::iterator c = alleleCounts.find(a->allele);
-            if (c != alleleCounts.end()) {
-                c->second += a->count;
-            } else {
-                alleleCounts.insert(make_pair(a->allele, a->count));
-            }
-        }
-    }
-    return alleleCounts;
-}
-
-map<int, int> countFrequencies(vector<Genotype*>& genotypeCombo) {
-    map<int, int> frequencyCounts;
-    map<Allele, int> alleles = countAlleles(genotypeCombo);
-    for (map<Allele, int>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-        map<int, int>::iterator c = frequencyCounts.find(a->second);
-        if (c != frequencyCounts.end()) {
-            c->second += 1;
-        } else {
-            frequencyCounts[a->second] = 1;
-        }
-    }
-    return frequencyCounts;
-}
-
 /*
 def allele_frequency_probability(allele_frequency_counts, theta=0.001):
     """Implements Ewens' Sampling Formula.  allele_frequency_counts is a
@@ -160,4 +131,34 @@ long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genoty
 
     return lnploidyscalar - (factorialln(n) - (factorialln(f) + factorialln(n - f)));
 
+}
+
+
+// core calculation of genotype combination likelihoods
+//
+void
+genotypeCombinationPriorProbability(
+        vector<GenotypeComboResult>& genotypeComboProbs,
+        vector<GenotypeCombo>& bandedCombos,
+        Allele& refAllele,
+        long double theta) {
+
+    for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
+
+        long double priorProbabilityOfGenotypeComboG_Af = 
+            probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+        long double priorProbabilityOfGenotypeComboAf = 
+            alleleFrequencyProbabilityln(combo->countFrequencies(), theta);
+        long double priorProbabilityOfGenotypeCombo = 
+            priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
+        long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob;
+
+        genotypeComboProbs.push_back(GenotypeComboResult(*combo,
+                    priorComboProb,
+                    combo->prob,
+                    priorProbabilityOfGenotypeCombo,
+                    priorProbabilityOfGenotypeComboG_Af,
+                    priorProbabilityOfGenotypeComboAf));
+
+    }
 }

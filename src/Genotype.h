@@ -83,6 +83,7 @@ public:
     { }
 };
 
+// a combination of genotypes for the population of samples in the analysis
 class GenotypeCombo : public vector<SampleGenotypeProb> {
 public:
     // GenotypeCombo::prob is equal to the sum of probs in the combo.  We
@@ -100,17 +101,49 @@ public:
         return count;
     }
 
+    map<Allele, int> countAlleles(void) {
+        map<Allele, int> alleleCounts;
+        for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
+            for (Genotype::iterator a = g->genotype->begin(); a != g->genotype->end(); ++a) {
+                map<Allele, int>::iterator c = alleleCounts.find(a->allele);
+                if (c != alleleCounts.end()) {
+                    c->second += a->count;
+                } else {
+                    alleleCounts.insert(make_pair(a->allele, a->count));
+                }
+            }
+        }
+        return alleleCounts;
+    }
+
+    map<int, int> countFrequencies(void) {
+        map<int, int> frequencyCounts;
+        map<Allele, int> alleles = countAlleles();
+        for (map<Allele, int>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            map<int, int>::iterator c = frequencyCounts.find(a->second);
+            if (c != frequencyCounts.end()) {
+                c->second += 1;
+            } else {
+                frequencyCounts[a->second] = 1;
+            }
+        }
+        return frequencyCounts;
+    }
+
 };
 
 
+// combines a genotype combination with probabilities
 class GenotypeComboResult {
 public:
+
     GenotypeCombo combo;
-    long double comboProb;
+    long double priorComboProb; // derived from the below values
     long double probObsGivenGenotypes;
     long double priorProbGenotypeCombo;
     long double priorProbGenotypeComboG_Af;
     long double priorProbGenotypeComboAf;
+
     GenotypeComboResult(GenotypeCombo& gc,
             long double cp,
             long double pogg,
@@ -118,20 +151,24 @@ public:
             long double ppgcgaf,
             long double ppgcaf)
         : combo(gc)
-        , comboProb(cp)
+        , priorComboProb(cp)
         , probObsGivenGenotypes(pogg)
         , priorProbGenotypeCombo(ppgc)
         , priorProbGenotypeComboG_Af(ppgcgaf)
         , priorProbGenotypeComboAf(ppgcaf)
     { }
+
 };
 
 class GenotypeComboResultSorter {
 public:
     bool operator()(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2) {
-        return gc1.comboProb > gc2.comboProb;
+        return gc1.priorComboProb > gc2.priorComboProb;
     }
 };
+
+// a set of probabilities for a set of genotypes for a set of samples
+typedef vector<pair<string, vector<pair<Genotype*, long double> > > > SampleGenotypesAndProbs;
 
 typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;
 
@@ -140,23 +177,24 @@ void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     int bandwidth, int banddepth);
 
 void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     int bandwidth, int banddepth);
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     vector<Genotype>& genotypes,
     int bandwidth, int banddepth);
 
 bool isHomozygousCombo(GenotypeCombo& combo);
+
 vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);
 
 pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string& refbase, string altbase);

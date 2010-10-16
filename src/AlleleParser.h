@@ -145,7 +145,7 @@ public:
 
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters
-    vector<Allele> genotypeAlleles(vector<vector<Allele*> >& alleleGroups,
+    vector<Allele> genotypeAlleles(map<string, vector<Allele*> >& alleleGroups,
             map<string, vector<Allele*> >& sampleGroups,
             vector<Allele>& allGenotypeAlleles);
 

@@ -243,10 +243,11 @@ vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAllele
     return genotypes;
 }
 
+/*
 void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     int bandwidth, int banddepth) {
 
     int nsamples = sampleGenotypes.size();
@@ -272,33 +273,114 @@ bandedGenotypeCombinations(
         }
     }
 }
+*/
 
 void
-bandedGenotypeCombinations_2(
+bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     int bandwidth, int banddepth) {
 
     int nsamples = sampleGenotypes.size();
-    int ngenotypes = sampleGenotypes.front().second.size();
+
+    // generate the best genotype combination according to data likelihoods
     GenotypeCombo comboKing;
-    for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
+    for (SampleGenotypesAndProbs::const_iterator s = sampleGenotypes.begin();
             s != sampleGenotypes.end(); ++s) {
         const pair<Genotype*, long double>& p = s->second.at(0);
         comboKing.push_back(SampleGenotypeProb(s->first, p.first, p.second));
         comboKing.prob += p.second;
     }
 
-    for (int i = 0; i < min(bandwidth, ngenotypes); ++i) {
+    combos.push_back(comboKing);
 
+    // overview:
+    //
+    // For each order of indexes in the bandwidth and banddepth, Obtain all
+    // multiset permutations of a set of indexes.  Then use these indexes to
+    // get the nth-best genotype from each individual's set of genotypes for
+    // which we have data likelihoods (sampleGenotypes), and turn this set into
+    // a genotype combination.  Update the combination probability inline here
+    // so we don't incur O(N^2) penalty calculating the probability within our
+    // genotypeCombinationPriors calculation loop, where we estimate the
+    // posterior probability of each genotype combination given its data
+    // likelihood and the prior probability of the distribution of alleles it
+    // represents.
+    // 
+    // example (bandwidth = 2, banddepth = 1)
+    //  indexes:      0 0 0 0 1, 0 0 0 1 1
+    //
+    //  permutations: 0 0 0 0 1 
+    //                0 0 0 1 0
+    //                0 0 1 0 0
+    //                0 1 0 0 0
+    //                1 0 0 0 0
+    //                1 1 0 0 0 
+    //                0 1 1 0 0 
+    //                1 0 1 0 0 
+    //                0 1 0 1 0 
+    //                0 0 1 1 0 
+    //                1 0 0 1 0 
+    //                0 1 0 0 1 
+    //                0 0 1 0 1 
+    //                0 0 0 1 1 
+    //                1 0 0 0 1 
+    //
+    // We then convert these permutation to genotype combinations by using the
+    // index to pick the nth-best genotype according to sorted individual
+    // genotype data likelihoods.
+    //
+    // In addition to this simple case, We can flexibly extend this to larger
+    // search spaces by changing the depth and width of the deviations from the
+    // data likelihood maximizer (aka 'king').
+    //
+    for (int i = 0; i <= bandwidth; ++i) {
+        for (int j = 1; j <= banddepth; ++j) {
+            vector<int> indexes;
+            for (int h = 0; h < j; ++h)
+                indexes.push_back(i);
+            for (int h = 0; h < (nsamples - j); ++h)
+                indexes.push_back(0);
+            vector<vector<int> > indexPermutations = multipermute(indexes);
+            for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
+                combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
+                GenotypeCombo& combo = combos.back();
+                bool useCombo = true;
+                GenotypeCombo::iterator currentSampleGenotype = combo.begin();
+                vector<int>::const_iterator n = p->begin();
+                for (SampleGenotypesAndProbs::const_iterator s = sampleGenotypes.begin();
+                        s != sampleGenotypes.end(); ++s, ++n, ++currentSampleGenotype) {
+                    int offset = *n;
+                    if (offset > 0) {
+                        const pair<Genotype*, long double>& p = s->second.at(offset);
+                        // ignore this combo if it's beyond the bounds of the individual's set of genotypes
+                        if (offset >= s->second.size()) {
+                            useCombo = false;
+                            break;
+                        }
+                        currentSampleGenotype->genotype = p.first;
+                        long double dataLikelihood = p.second;
+                        if (offset != 0) {
+                            long double diff = s->second.at(0).second - dataLikelihood;
+                            combo.prob -= diff;  // adjust combination total data likelihood here, to avoid O(N^2) loop
+                        }
+                    }
+                    //combo.push_back(SampleGenotypeProb(s->first, p.first, dataLikelihood));
+                }
+                if (!useCombo) {
+                    combos.erase(combos.end() - 1);
+                }
+            }
+        }
     }
+
 }
 
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     vector<Genotype>& genotypes,
     int bandwidth, int banddepth) {
 
@@ -350,8 +432,12 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
         }
     }
 
+    // accumulate homozygous combos and set their combo data probabilities
     for (map<Genotype*, GenotypeCombo>::iterator c = homozygousCombos.begin(); c != homozygousCombos.end(); ++c) {
-        combos.push_back(c->second);
+        GenotypeCombo& gc = c->second;
+        for (GenotypeCombo::iterator sgp = gc.begin(); sgp != gc.end(); ++sgp)
+            gc.prob += sgp->prob;
+        combos.push_back(gc);
     }
     
 }
@@ -359,7 +445,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
-    vector<pair<string, vector<pair<Genotype*, long double> > > >& sampleGenotypes,
+    SampleGenotypesAndProbs& sampleGenotypes,
     int bandwidth, int banddepth) {
 
     bandedGenotypeCombinations(combos, sampleGenotypes, bandwidth, banddepth);

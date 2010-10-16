@@ -191,6 +191,7 @@ public:
     const long double lncurrentQuality(void) const;
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
     void update(void); // for reference alleles, updates currentBase and quality
+    // TODO update this to reflect different insertions (e.g. IATGC instead of I4)
     const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
 
 
@@ -254,6 +255,10 @@ bool allelesEquivalent(Allele &a, Allele &b);
 bool allelesSameSample(Allele &a, Allele &b);
 bool allelesEqual(Allele &a, Allele &b);
 
+// using this one...
+void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups);
+
+// XXX cleanup
 // is there a way to template these?  difficult as the syntax for pointer-based comparisons is different than non-pointer
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));
 vector<vector<Allele*> >  groupAlleles(list<Allele> &alleles, bool (*fncompare)(Allele &a, Allele &b));
