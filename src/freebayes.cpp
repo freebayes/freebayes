@@ -285,6 +285,8 @@ int main (int argc, char *argv[]) {
             genotypeComboProbs.push_back(homozygousCombos.front());
             homozygousCombos.pop_front();
         }
+        // sort the homozygous chains into the right place
+        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), gcrSorter);
         
         // get posterior normalizer
         vector<long double> comboProbs;
