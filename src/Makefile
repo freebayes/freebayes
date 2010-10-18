@@ -31,7 +31,12 @@ debug:
 	$(MAKE) CFLAGS="$(CFLAGS) -D VERBOSE_DEBUG" all
 
 profiling:
+	$(MAKE) CFLAGS="$(CFLAGS) -g" all
+
+gprof:
 	$(MAKE) CFLAGS="$(CFLAGS) -pg" all
+
+.PHONY: all static debug profiling gprof
 
 OBJECTS=BamAlignment.o \
 		BamMultiReader.o \
