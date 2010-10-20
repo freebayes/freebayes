@@ -33,13 +33,13 @@ public:
     vector<pair<Genotype*, long double> > dataLikelihoods;
     map<Genotype*, vector<long double> > rawMarginals;
     map<Genotype*, long double> marginals;
-    vector<Allele*> observations;
+    Sample* observations;
 
     ResultData(string s,
         vector<pair<Genotype*, long double> > d,
         map<Genotype*, long double>  m,
         map<Genotype*, vector<long double> > rm,
-        vector<Allele*> o)
+        Sample* o)
             : name(s)
             , dataLikelihoods(d)
             , marginals(m)
@@ -68,7 +68,7 @@ public:
     friend string vcf(
             long double comboProb,
             //long double alleleSamplingProb,
-            map<string, vector<Allele*> >& sampleObservations,
+            Samples& sample,
             string referenceBase,
             string alternateBase,
             vector<string>& samples,

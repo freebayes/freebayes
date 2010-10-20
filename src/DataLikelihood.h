@@ -18,39 +18,34 @@ using namespace std;
 
 long double
 probObservedAllelesGivenGenotype(
-        vector<Allele*>& observedAlleles,
+        Sample& sample,
         Genotype& genotype);
 
 long double
 bamBayesProbObservedAllelesGivenGenotype(
-        vector<Allele*>& observedAlleles,
+        Sample& sample,
         Genotype& genotype,
         long double dependenceFactor);
 
 long double
 approxProbObservedAllelesGivenGenotype(
-        vector<Allele*>& observedAlleles,
+        Sample& sample,
         Genotype& genotype);
 
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
-        vector<Allele*>& observedAlleles,
+        Sample& sample,
         vector<Genotype>& genotype);
 
 vector<pair<Genotype*, long double> >
 bamBayesProbObservedAllelesGivenGenotypes(
-        vector<Allele*>& observedAlleles,
+        Sample& sample,
         vector<Genotype>& genotype,
         long double dependenceFactor);
 
 vector<pair<Genotype*, long double> >
-exactProbObservedAllelesGivenGenotypes(
-        vector<Allele*>& observedAlleles,
-        vector<Genotype>& genotypes);
-
-vector<pair<Genotype*, long double> >
 approxProbObservedAllelesGivenGenotypes(
-        vector<Allele*>& observedAlleles,
+        Sample& sample,
         vector<Genotype>& genotypes);
 
 long double

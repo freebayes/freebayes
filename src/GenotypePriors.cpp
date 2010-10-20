@@ -85,25 +85,15 @@ long double alleleFrequencyProbabilityln(map<int, int> alleleFrequencyCounts, lo
 
 }
 
-int alleleFrequency(GenotypeCombo& genotypeCombo, Allele& allele) {
-
-    int frequency = 0;
-    for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        frequency += gc->genotype->alleleFrequency(allele);
-    }
-    return frequency;
-
-}
-
 // TODO XXX only works for the diploid case!!!
 long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
 
     int n = genotypeCombo.size();
     int h = 0; // number of heterozygotes
-    int f = alleleFrequency(genotypeCombo, allele);
+    int f = genotypeCombo.alleleFrequency(allele);
 
     for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        if (!gc->genotype->homozygous())
+        if (!gc->genotype->homozygous)
             ++h;
     }
 
@@ -119,11 +109,11 @@ long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genoty
 
     int n = genotypeCombo.numberOfAlleles();
     int h = 0; // number of heterozygotes
-    int f = alleleFrequency(genotypeCombo, allele);
+    int f = genotypeCombo.alleleFrequency(allele);
     long double lnploidyscalar = 0;
 
     for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        if (!gc->genotype->homozygous()) {
+        if (!gc->genotype->homozygous) {
             lnploidyscalar += log(gc->genotype->ploidy);
             ++h;
         }
@@ -153,7 +143,7 @@ genotypeCombinationPriorProbability(
             priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
         long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob;
 
-        genotypeComboProbs.push_back(GenotypeComboResult(*combo,
+        genotypeComboProbs.push_back(GenotypeComboResult(&*combo,
                     priorComboProb,
                     combo->prob,
                     priorProbabilityOfGenotypeCombo,

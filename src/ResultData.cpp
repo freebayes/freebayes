@@ -9,7 +9,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
         ResultData& sample = r->second;
         if (r != results.begin()) out << ",";
         out << "\"" << sample.name << "\":{"
-            << "\"coverage\":" << sample.observations.size() << ","
+            << "\"coverage\":" << sample.observations->observationCount() << ","
             << "\"genotypes\":[";
         for (map<Genotype*, long double>::iterator g = sample.marginals.begin(); 
                 g != sample.marginals.end(); ++g) {
@@ -18,7 +18,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
         }
         out << "]";
         if (parser->parameters.outputAlleles)
-            out << ",\"alleles\":" << json(sample.observations);
+            out << ",\"alleles\":" << json(*(sample.observations));
         out << "}";
 
     }
@@ -79,10 +79,10 @@ void vcfHeader(ostream& out,
 string vcf(
         long double comboProb,
         //long double alleleSamplingProb,
-        map<string, vector<Allele*> >& sampleObservations,
+        Samples& samples,
         string refbase,
         string altbase,
-        vector<string>& samples,
+        vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
         Results& results,
@@ -111,34 +111,35 @@ string vcf(
     pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
     map<string, pair<int, int> > baseCountsForwardBySample;
     map<string, pair<int, int> > baseCountsReverseBySample;
-    for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
+    for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
         //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
         if (gc != comboMap.end()) {
             Genotype* genotype = gc->second.first;
-            alternateCount += genotype->alleleCount(altbase);
+            alternateCount += genotype->alleleFrequency(altbase);
             alleleCount += genotype->ploidy;
 
-            vector<Allele*>& observations = sampleObservations[*sampleName];
+            Sample& sample = samples[*sampleName];
 
-            if (observations.size() == 0) {
+            int observationCount = sample.observationCount();
+            if (observationCount == 0) {
                 continue;
             } else {
                 ++samplesWithData;
             }
 
-            if (!genotype->homozygous()) {
-                hetAllObsCount += observations.size();
-                hetReferenceObsCount += countAllelesWithBase(observations, refbase);
-                hetAlternateObsCount += countAllelesWithBase(observations, altbase);
+            if (!genotype->homozygous) {
+                hetAllObsCount += observationCount;
+                hetReferenceObsCount += sample[refbase].size();
+                hetAlternateObsCount += sample[altbase].size();
             }
 
-            pair<int, int> altAndRefCounts = alternateAndReferenceCount(observations, refbase, altbase);
+            pair<int, int> altAndRefCounts = make_pair(sample.observationCount(altbase), sample.observationCount(refbase));
             altAndRefCountsBySample[*sampleName] = altAndRefCounts;
             alternateObsCount += altAndRefCounts.first;
             referenceObsCount += altAndRefCounts.second;
 
-            pair<pair<int,int>, pair<int,int> > baseCounts = baseCount(observations, refbase, altbase);
+            pair<pair<int,int>, pair<int,int> > baseCounts = sample.baseCount(refbase, altbase);
             baseCountsForwardBySample[*sampleName] = baseCounts.first;
             baseCountsReverseBySample[*sampleName] = baseCounts.second;
             baseCountsForwardTotal.first += baseCounts.first.first;
@@ -203,7 +204,7 @@ string vcf(
     // TODO GL, un-normalized data likelihoods for genotypes
 
     // samples
-    for (vector<string>::iterator sampleName = samples.begin(); sampleName != samples.end(); ++sampleName) {
+    for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
         Results::iterator s = results.find(*sampleName);
         if (gc != comboMap.end() && s != results.end()) {
@@ -213,11 +214,11 @@ string vcf(
             out << "\t"
                 << genotype->relativeGenotype(refbase, altbase)
                 << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]))
-                << ":" << sample.observations.size()
+                << ":" << sample.observations->observationCount()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first
-                << ":" << baseCount(sample.observations, refbase, STRAND_FORWARD) << "," << baseCount(sample.observations, altbase, STRAND_FORWARD) // TODO
-                << ":" << baseCount(sample.observations, refbase, STRAND_REVERSE) << "," << baseCount(sample.observations, altbase, STRAND_REVERSE) // TODO
+                << ":" << sample.observations->baseCount(refbase, STRAND_FORWARD) << "," << sample.observations->baseCount(altbase, STRAND_FORWARD) // TODO
+                << ":" << sample.observations->baseCount(refbase, STRAND_REVERSE) << "," << sample.observations->baseCount(altbase, STRAND_REVERSE) // TODO
                 ;
                 //<< ":" << "GL"  // TODO
         } else {

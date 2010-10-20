@@ -136,8 +136,8 @@ public:
     bool toNextTarget(void);
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
-    bool getNextAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
-    void getAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes);
+    bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
+    void getAlleles(Samples& allelesBySample, int allowedAlleleTypes);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
     int homopolymerRunLeft(string altbase);
@@ -146,7 +146,7 @@ public:
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters
     vector<Allele> genotypeAlleles(map<string, vector<Allele*> >& alleleGroups,
-            map<string, vector<Allele*> >& sampleGroups,
+            Samples& samples,
             vector<Allele>& allGenotypeAlleles);
 
     // pointer to current position in targets

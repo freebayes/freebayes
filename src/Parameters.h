@@ -57,7 +57,8 @@ public:
     int IDW;                     // -I --indel-exclusion-window
     long double TH;              // -T --theta
     long double PVL;             // -P --pvar
-    int posteriorMarginalDepth;  // -K --posterior-marginal-depth
+                                 // -K --posterior-integration-depth
+    int posteriorIntegrationDepth;
     string algorithm;
     long double RDF;             // -D --read-dependence-factor
     int WB;                      // -W --integration-bandwidth

@@ -171,6 +171,21 @@ string stringForAlleles(vector<Allele> &alleles) {
     return out.str();
 }
 
+string json(map<string, vector<Allele*> > &alleles) {
+    stringstream out;
+    out << "[";
+    bool first = true;
+    for (map<string, vector<Allele*> >::iterator g = alleles.begin(); g != alleles.end(); ++g) {
+        vector<Allele*>& alleles = g->second;
+        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            if (!first) { out << ","; } else { first = false; }
+            out << json(**a);
+        }
+    }
+    out << "]";
+    return out.str();
+}
+
 string json(vector<Allele*> &alleles) {
     stringstream out;
     vector<Allele*>::iterator a = alleles.begin();
@@ -268,12 +283,14 @@ ostream &operator<<(ostream &out, Allele &allele) {
 }
 
 bool operator<(const Allele &a, const Allele &b) {
+    //cerr << "allele<" << endl;
     return a.currentBase < b.currentBase;
 }
 
 // alleles are equal if they represent the same reference-relative variation or
 // sequence, which we encode as a string and compare here
 bool operator==(const Allele &a, const Allele &b) {
+    //cerr << "allele==" << endl;
     return a.currentBase == b.currentBase;
 }
 
@@ -310,6 +327,16 @@ bool Allele::equivalent(Allele &b) {
     }
 
     return false;
+}
+
+bool areHomozygous(vector<Allele*>& alleles) {
+    Allele* prev = alleles.front();
+    for (vector<Allele*>::iterator allele = alleles.begin() + 1; allele != alleles.end(); ++allele) {
+        if (**allele != *prev) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // counts alleles which satisfy operator==
@@ -421,6 +448,18 @@ void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vecto
     }
 }
 
+void groupAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups) {
+    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        Sample& sample = s->second;
+        for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
+            const string& base = g->first;
+            const vector<Allele*>& alleles = g->second;
+            vector<Allele*>& group = alleleGroups[base];
+            group.reserve(group.size() + distance(alleles.begin(), alleles.end()));
+            group.insert(group.end(), alleles.begin(), alleles.end());
+        }
+    }
+}
 
 vector<vector<Allele*> > groupAlleles(map<string, vector<Allele*> > &sampleGroups, bool (*fncompare)(Allele &a, Allele &b)) {
     vector<vector<Allele*> > groups;
@@ -680,24 +719,34 @@ void AlleleFreeList::Purge() {
     }
 }
 
-bool sufficientAlternateObservations(map<string, vector<Allele*> >& sampleGroups, int mincount, float minfraction) {
+bool sufficientAlternateObservations(Samples& samples, int mincount, float minfraction) {
 
     int totalAlternateCount = 0;
     int totalReferenceCount = 0;
 
-    for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
-            sample != sampleGroups.end(); ++sample) {
+    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
 
-        vector<Allele*>& observedAlleles = sample->second;
+        //cerr << s->first << endl;
+        Sample& sample = s->second;
         int alternateCount = 0;
-        for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
-            if ((*a)->type != ALLELE_REFERENCE) {
-                ++alternateCount;
+        int observationCount = 0;
+
+        for (Sample::iterator group = sample.begin(); group != sample.end(); ++group) {
+            const string& base = group->first;
+            //cerr << base << endl;
+            vector<Allele*>& alleles = group->second;
+            //cerr << alleles.size() << endl;
+            if (alleles.size() == 0)
+                continue;
+            if (alleles.front()->type != ALLELE_REFERENCE) {
+                alternateCount += alleles.size();
             } else {
-                ++totalReferenceCount;
+                totalReferenceCount += alleles.size();
             }
+            observationCount += alleles.size();
         }
-        if (alternateCount >= mincount && ((float) alternateCount / (float) observedAlleles.size()) >= minfraction)
+
+        if (alternateCount >= mincount && ((float) alternateCount / (float) observationCount) >= minfraction)
             return true;
         totalAlternateCount += alternateCount;
     
@@ -746,6 +795,19 @@ void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position
 
 }
 
+int countAlleles(Samples& samples) {
+
+    int count = 0;
+    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        Sample& sample = s->second;
+        for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
+            count += sg->second.size();
+        }
+    }
+    return count;
+
+}
+
 int countAlleles(map<string, vector<Allele*> >& sampleGroups) {
 
     int count = 0;
@@ -762,16 +824,6 @@ int countAllelesWithBase(vector<Allele*>& alleles, string base) {
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         if ((*a)->currentBase == base)
             ++count;
-    }
-    return count;
-
-}
-
-int baseCount(map<string, vector<Allele*> >& alleleGroups, string base, AlleleStrand strand) {
-
-    int count = 0;
-    for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
-        count += baseCount(a->second, base, strand);
     }
     return count;
 
@@ -815,4 +867,3 @@ baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
     return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
 
 }
-

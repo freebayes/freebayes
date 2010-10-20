@@ -918,33 +918,37 @@ bool AlleleParser::dummyProcessNextTarget(void) {
     return true;
 }
 
-bool AlleleParser::getNextAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
+bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
     if (toNextTargetPosition()) {
-        getAlleles(allelesBySample, allowedAlleleTypes);
+        getAlleles(samples, allowedAlleleTypes);
         return true;
     } else {
         return false;
     }
 }
 
-void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, int allowedAlleleTypes) {
+void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
 
     DEBUG2("getting alleles");
 
     // if we just switched targets, clean up everything in our input vector
     if (justSwitchedTargets) {
-        for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s)
+        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
             s->second.clear();
-        justSwitchedTargets = false; // TODO XXX this whole flagged stanza is hacky;
-                                     // to clean up, store the allelesBySample map in
+        justSwitchedTargets = false; // TODO this whole flagged stanza is hacky;
+                                     // to clean up, store the samples map in
                                      // the AlleleParser and clear it when we jump
     } else {
-        // otherwise, remove non-overlapping alleles
-        for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
-            removeNonOverlappingAlleles(s->second);
-            updateAllelesCachedData(s->second);
-            removeFilteredAlleles(s->second); // removes alleles which are filtered at this position, 
-                                              // and requeues them for processing by unsetting their 'processed' flag
+        // otherwise, update and remove non-overlapping and filtered alleles
+        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+            Sample& sample = s->second;
+            for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
+                removeNonOverlappingAlleles(g->second); // removes alleles which no longer overlap our current position
+                updateAllelesCachedData(g->second);  // calls allele.update() on each Allele*
+                removeFilteredAlleles(g->second); // removes alleles which are filtered at this position, 
+                                                  // and requeues them for processing by unsetting their 'processed' flag
+            }
+            sample.sortAlleles();
         }
     }
 
@@ -952,7 +956,8 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
     if (parameters.useRefAllele) {
         if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
         currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
-        allelesBySample[currentTarget->seq].push_back(currentReferenceAllele);
+        samples[currentTarget->seq].clear();
+        samples[currentTarget->seq][currentReferenceAllele->currentBase].push_back(currentReferenceAllele);
         //alleles.push_back(currentReferenceAllele);
     }
 
@@ -972,29 +977,50 @@ void AlleleParser::getAlleles(map<string, vector<Allele*> >& allelesBySample, in
                 ) {
             allele.update();
             if (allele.quality >= parameters.BQL0 && !allele.masked() && allele.currentBase != "N") {
-                allelesBySample[allele.sampleID].push_back(*a);
-                //alleles.push_back(allele);
+                samples[allele.sampleID][allele.currentBase].push_back(*a);
                 allele.processed = true;
-                //allele->update();
             }
         }
     }
 
-    vector<map<string, vector<Allele*> >::iterator > emptySamples;
-    for (map<string, vector<Allele*> >::iterator s = allelesBySample.begin(); s != allelesBySample.end(); ++s) {
-        if (s->second.size() == 0) {
-            emptySamples.push_back(s);
+    // now remove empty alleles from our return so as to not confuse processing
+    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        const string& name = s->first;
+        Sample& sample = s->second;
+        bool empty = true;
+        // now move updated alleles to the right bin
+        sample.sortAlleles();
+        // and remove any empty groups which remain
+        for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
+            if (g->second.size() == 0) {
+                //cerr << "sample " << name << " has an empty " << g->first << endl;
+                sample.erase(g);
+            } else {
+                empty = false;
+            }
+        }
+        // and remove the entire sample if it has no alleles
+        if (empty) {
+            samples.erase(s);
         }
     }
 
-    for (vector<map<string, vector<Allele*> >::iterator >::iterator es = emptySamples.begin();
-            es != emptySamples.end(); ++es)
-        allelesBySample.erase(*es);
+    // XXX for some reason we have to iterate through the samples *again* to find empty individuals
+    // If this is nested within the above loop, it will fail to find the empty
+    // individuals.  I am unsure why, except perhaps maps can have their
+    // iterators invalidated if the above methods are used.
+    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        const string& name = s->first;
+        Sample& sample = s->second;
+        for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
+            if (g->second.size() == 0) {
+                sample.erase(g);
+            }
+        }
+    }
 
     DEBUG2("done getting alleles");
-    // TODO allele sorting by sample on registration
-    // for another potential perf boost
-    // as we always sort them by sample later
+
 }
 
 Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
@@ -1020,20 +1046,24 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
 
 vector<Allele> AlleleParser::genotypeAlleles(
         map<string, vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
-        map<string, vector<Allele*> >& sampleGroups, // alleles grouped by sample
+        Samples& samples, // alleles grouped by sample
         vector<Allele>& allGenotypeAlleles      // all possible genotype alleles, 
                                                 // to add back alleles if we don't have enough to meet our minimum allele count
         ) {
 
     vector<pair<Allele, int> > unfilteredAlleles;
 
+    DEBUG2("getting genotype alleles");
+
     for (map<string, vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
         // for each allele that we're going to evaluate, we have to have at least one supporting read with
         // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
+        DEBUG2("allele group " << group->first);
         bool passesFilters = false;
         int qSum = 0;
         vector<Allele*>& alleles = group->second;
         for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            DEBUG2("allele " << **a);
             Allele& allele = **a;
             qSum += allele.quality;
         }
@@ -1053,20 +1083,18 @@ vector<Allele> AlleleParser::genotypeAlleles(
         Allele& genotypeAllele = p->first;
         int qSum = p->second;
 
-        for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin();
-                sample != sampleGroups.end(); ++sample) {
-
-            vector<Allele*>& observedAlleles = sample->second;
+        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+            Sample& sample = s->second; 
             int alleleCount = 0;
-            for (vector<Allele*>::iterator a = observedAlleles.begin(); a != observedAlleles.end(); ++a) {
-                if (**a == genotypeAllele)
-                    ++alleleCount;
-            }
+            Sample::iterator c = sample.find(genotypeAllele.currentBase);
+            if (c != sample.end())
+                alleleCount = c->second.size();
+            int observationCount = sample.observationCount();
             if (alleleCount >= parameters.minAltCount 
-                    && ((float) alleleCount / (float) observedAlleles.size()) >= parameters.minAltFraction) {
+                    && ((float) alleleCount / (float) observationCount) >= parameters.minAltFraction) {
                 DEBUG2(genotypeAllele << " has support of " << alleleCount 
-                    << " in individual " << sample->first << " and fraction " 
-                    << (float) alleleCount / (float) observedAlleles.size());
+                    << " in individual " << s->first << " and fraction " 
+                    << (float) alleleCount / (float) observationCount);
                 filteredAlleles[genotypeAllele] = qSum;
                 break;
                 //out << *genotypeAllele << endl;
