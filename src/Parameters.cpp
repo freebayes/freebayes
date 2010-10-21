@@ -115,8 +115,9 @@ void Parameters::usage(char** argv) {
          << "                   value of -W (2) each variant site will require 3N^2 calculations" << endl
          << "                   to establish marginal genotype probabilities where N is the" << endl
          << "                   number of individuals, so setting a sensible number here" << endl
-         << "                   (0.1N - 0.25N) will help improve scalability in large" << endl
-         << "                   datasets." << endl
+         << "                   (0.1N to 0.25N) will help improve scalability in large" << endl
+         << "                   datasets at the cost of accuracy in calcuating marginal" << endl
+         << "                   genotype probabilites." << endl
          << "   -F --min-alternate-fraction N" << endl
          << "                   Require at least this fraction of observations supporting" << endl
          << "                   an alternate allele within a single individual in the" << endl
