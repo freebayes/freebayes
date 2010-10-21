@@ -104,6 +104,10 @@ void Parameters::usage(char** argv) {
          << "                   combination in terms of data likelihoods, taking the N" << endl
          << "                   steps from the most to least likely genotype for each" << endl
          << "                   individual.  default: 2" << endl
+         //<< "   -Y --posterior-integration-banddepth N" << endl
+         //<< "                   Generate all genotype combinations for which up to this" << endl
+         //<< "                   number of samples have up to their -W'th worst genotype" << endl
+         //<< "                   according to data likelihood.  default: 2" << endl
          << "   -K --posterior-integration-depth N" << endl
          << "                   Keep this many genotype combinations for calculating genotype" << endl
          << "                   marginal probabilities for each sample and overall variant"
@@ -170,6 +174,7 @@ Parameters::Parameters(int argc, char** argv) {
     PVL = 0.0;             // -P --pvar
     RDF = 0.9;             // -D --read-dependence-factor
     WB = 2;                      // -W --posterior-integration-bandwidth
+    TB = 1;                 // -Y --posterior-integration-banddepth
     posteriorIntegrationDepth = 0;
     minAltFraction = 0.0;
     minAltCount = 1;
@@ -226,7 +231,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEXGZAdDb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:",
+        c = getopt_long(argc, argv, "hcOEXGZAdDb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -427,6 +432,14 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
+            // -Y --posterior-integration-banddepth
+            case 'Y':
+                if (!convert(optarg, TB)) {
+                    cerr << "could not parse posterior-integration-banddepth" << endl;
+                    exit(1);
+                }
+                break;
+
             // -F --min-alternate-fraction
             case 'F':
                 if (!convert(optarg, minAltFraction)) {
@@ -442,6 +455,7 @@ Parameters::Parameters(int argc, char** argv) {
                     exit(1);
                 }
                 break;
+
             // -K --posterior-marginal-depth
             case 'K':
                 if (!convert(optarg, posteriorIntegrationDepth)) {

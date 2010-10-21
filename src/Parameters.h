@@ -61,8 +61,10 @@ public:
     int posteriorIntegrationDepth;
     string algorithm;
     long double RDF;             // -D --read-dependence-factor
-    int WB;                      // -W --integration-bandwidth
-    int TB;
+    int WB;                      // -W --posterior-integration-bandwidth
+    // XXX adjusting this to anything other than 1 may have bad consequences
+    // for large numbers of samples
+    int TB;                      // -Y --posterior-integration-depth
     bool includeMonoB;
     int TR;
     int I;

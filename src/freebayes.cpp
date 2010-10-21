@@ -259,7 +259,7 @@ int main (int argc, char *argv[]) {
         //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
         DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
         vector<GenotypeCombo> bandedCombos;
-        bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypes, parameters.WB, 1);
+        bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypes, parameters.WB, parameters.TB);
 
         vector<GenotypeComboResult> genotypeComboProbs;
 
