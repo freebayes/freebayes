@@ -110,7 +110,7 @@ void Parameters::usage(char** argv) {
          //<< "                   according to data likelihood.  default: 2" << endl
          << "   -K --posterior-integration-depth N" << endl
          << "                   Keep this many genotype combinations for calculating genotype" << endl
-         << "                   marginal probabilities for each sample and overall variant"
+         << "                   marginal probabilities for each sample and overall variant" << endl
          << "                   quality.  Default behavior is to keep all.  (For the default" << endl
          << "                   value of -W (2) each variant site will 3N^2 calcualtions" << endl
          << "                   to establish marginal genotype probabilities.)" << endl
