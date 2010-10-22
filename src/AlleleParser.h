@@ -121,6 +121,7 @@ public:
     void loadReferenceSequence(BedTarget*, int, int);
     void extendReferenceSequence(int);
     void loadTargets(void);
+    void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
     void updateAlignmentQueue(void);

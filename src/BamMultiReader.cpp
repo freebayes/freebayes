@@ -80,6 +80,14 @@ bool BamMultiReader::CreateIndexes(bool useStandardIndex) {
     return result;
 }
 
+// sets the index caching mode on the readers
+void BamMultiReader::SetIndexCacheMode(const BamIndex::BamIndexCacheMode mode) {
+    for (vector<pair<BamReader*, BamAlignment*> >::iterator it = readers.begin(); it != readers.end(); ++it) {
+        BamReader* reader = it->first;
+        reader->SetIndexCacheMode(mode);
+    }
+}
+
 // for debugging
 void BamMultiReader::DumpAlignmentIndex(void) {
     for (AlignmentIndex::const_iterator it = alignments.begin(); it != alignments.end(); ++it) {
@@ -288,7 +296,7 @@ bool BamMultiReader::Jump(int refID, int position) {
 }
 
 // opens BAM files
-bool BamMultiReader::Open(const vector<string>& filenames, bool openIndexes, bool coreMode, bool useDefaultIndex) {
+bool BamMultiReader::Open(const vector<string>& filenames, bool openIndexes, bool coreMode, bool preferStandardIndex) {
     
     // for filename in filenames
     fileNames = filenames; // save filenames in our multireader
@@ -302,8 +310,8 @@ bool BamMultiReader::Open(const vector<string>& filenames, bool openIndexes, boo
             
             // leave index filename empty 
             // this allows BamReader & BamIndex to search for any available
-            // useDefaultIndex gives hint to prefer BAI over BTI
-            openedOK = reader->Open(filename, "", true, useDefaultIndex);
+            // useStandardIndex gives hint to prefer BAI over BTI
+            openedOK = reader->Open(filename, "", true, preferStandardIndex);
         } 
         
         // ignoring index file(s)

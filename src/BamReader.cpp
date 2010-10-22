@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 9 October 2010 (DB)
+// Last modified: 13 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // Uses BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -19,7 +19,6 @@
 #include <iostream>
 #include "BGZF.h"
 #include "BamReader.h"
-#include "BamIndex.h"
 using namespace BamTools;
 using namespace std;
 
@@ -42,10 +41,13 @@ struct BamReader::BamReaderPrivate {
     string    HeaderText;
     BamIndex* Index;
     RefVector References;
-    bool      IsIndexLoaded;
+    bool      HasIndex;
     int64_t   AlignmentsBeginOffset;
     string    Filename;
     string    IndexFilename;
+    
+    // index caching mode
+    BamIndex::BamIndexCacheMode IndexCacheMode;
     
     // system data
     bool IsBigEndian;
@@ -61,15 +63,12 @@ struct BamReader::BamReaderPrivate {
     const char* DNA_LOOKUP;
     const char* CIGAR_LOOKUP;
 
-    // -------------------------------
     // constructor & destructor
-    // -------------------------------
     BamReaderPrivate(BamReader* parent);
     ~BamReaderPrivate(void);
 
     // -------------------------------
     // "public" interface
-    // -------------------------------
 
     // file operations
     void Close(void);
@@ -89,34 +88,37 @@ struct BamReader::BamReaderPrivate {
 
     // index operations
     bool CreateIndex(bool useStandardIndex);
+    void SetIndexCacheMode(const BamIndex::BamIndexCacheMode mode);
 
-    // -------------------------------
+
     // internal methods
-    // -------------------------------
+    private:
 
-    // *** reading alignments and auxiliary data *** //
+        // ---------------------------------------
+        // reading alignments and auxiliary data
 
-    // adjusts requested region if necessary (depending on where data actually begins)
-    void AdjustRegion(BamRegion& region);
-    // fills out character data for BamAlignment data
-    bool BuildCharData(BamAlignment& bAlignment);
-    // checks to see if alignment overlaps current region
-    RegionState IsOverlap(BamAlignment& bAlignment);
-    // retrieves header text from BAM file
-    void LoadHeaderData(void);
-    // retrieves BAM alignment under file pointer
-    bool LoadNextAlignment(BamAlignment& bAlignment);
-    // builds reference data structure from BAM file
-    void LoadReferenceData(void);
-    // mark references with 'HasAlignments' status
-    void MarkReferences(void);
+        // adjusts requested region if necessary (depending on where data actually begins)
+        void AdjustRegion(BamRegion& region);
+        // fills out character data for BamAlignment data
+        bool BuildCharData(BamAlignment& bAlignment);
+        // checks to see if alignment overlaps current region
+        RegionState IsOverlap(BamAlignment& bAlignment);
+        // retrieves header text from BAM file
+        void LoadHeaderData(void);
+        // retrieves BAM alignment under file pointer
+        bool LoadNextAlignment(BamAlignment& bAlignment);
+        // builds reference data structure from BAM file
+        void LoadReferenceData(void);
+        // mark references with 'HasAlignments' status
+        void MarkReferences(void);
 
-    // *** index file handling *** //
+        // ---------------------------------
+        // index file handling
 
-    // clear out inernal index data structure
-    void ClearIndex(void);
-    // loads index from BAM index file
-    bool LoadIndex(const bool lookForIndex, const bool preferStandardIndex);
+        // clear out inernal index data structure
+        void ClearIndex(void);
+        // loads index from BAM index file
+        bool LoadIndex(const bool lookForIndex, const bool preferStandardIndex);
 };
 
 // -----------------------------------------------------
@@ -135,7 +137,8 @@ BamReader::~BamReader(void) {
 
 // file operations
 void BamReader::Close(void) { d->Close(); }
-bool BamReader::IsIndexLoaded(void) const { return d->IsIndexLoaded; }
+bool BamReader::HasIndex(void) const { return d->HasIndex; }
+bool BamReader::IsIndexLoaded(void) const { return HasIndex(); }
 bool BamReader::IsOpen(void) const { return d->mBGZF.IsOpen; }
 bool BamReader::Jump(int refID, int position)  { return d->SetRegion( BamRegion(refID, position) ); }
 bool BamReader::Open(const std::string& filename, 
@@ -164,6 +167,7 @@ const std::string BamReader::GetFilename(void) const { return d->Filename; }
 
 // index operations
 bool BamReader::CreateIndex(bool useStandardIndex) { return d->CreateIndex(useStandardIndex); }
+void BamReader::SetIndexCacheMode(const BamIndex::BamIndexCacheMode mode) { d->SetIndexCacheMode(mode); }
 
 // -----------------------------------------------------
 // BamReaderPrivate implementation
@@ -172,8 +176,9 @@ bool BamReader::CreateIndex(bool useStandardIndex) { return d->CreateIndex(useSt
 // constructor
 BamReader::BamReaderPrivate::BamReaderPrivate(BamReader* parent)
     : Index(0)
-    , IsIndexLoaded(false)
+    , HasIndex(false)
     , AlignmentsBeginOffset(0)
+    , IndexCacheMode(BamIndex::LimitedIndexCaching)
     , HasAlignmentsInRegion(true)
     , Parent(parent)
     , DNA_LOOKUP("=ACMGRSVTWYHKDBN")
@@ -217,17 +222,17 @@ void BamReader::BamReaderPrivate::AdjustRegion(BamRegion& region) {
 bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
   
     // calculate character lengths/offsets
-    const unsigned int dataLength      = bAlignment.SupportData.BlockLength - BAM_CORE_SIZE;
-    const unsigned int seqDataOffset   = bAlignment.SupportData.QueryNameLength + (bAlignment.SupportData.NumCigarOperations * 4);
-    const unsigned int qualDataOffset  = seqDataOffset + (bAlignment.SupportData.QuerySequenceLength+1)/2;
-    const unsigned int tagDataOffset   = qualDataOffset + bAlignment.SupportData.QuerySequenceLength;
-    const unsigned int tagDataLength   = dataLength - tagDataOffset;
+    const unsigned int dataLength     = bAlignment.SupportData.BlockLength - BAM_CORE_SIZE;
+    const unsigned int seqDataOffset  = bAlignment.SupportData.QueryNameLength + (bAlignment.SupportData.NumCigarOperations * 4);
+    const unsigned int qualDataOffset = seqDataOffset + (bAlignment.SupportData.QuerySequenceLength+1)/2;
+    const unsigned int tagDataOffset  = qualDataOffset + bAlignment.SupportData.QuerySequenceLength;
+    const unsigned int tagDataLength  = dataLength - tagDataOffset;
       
     // set up char buffers
-    const char*     allCharData = bAlignment.SupportData.AllCharData.data();
-    const char*     seqData     = ((const char*)allCharData) + seqDataOffset;
-    const char*     qualData    = ((const char*)allCharData) + qualDataOffset;
-          char*     tagData     = ((char*)allCharData) + tagDataOffset;
+    const char* allCharData = bAlignment.SupportData.AllCharData.data();
+    const char* seqData     = ((const char*)allCharData) + seqDataOffset;
+    const char* qualData    = ((const char*)allCharData) + qualDataOffset;
+          char* tagData     = ((char*)allCharData) + tagDataOffset;
   
     // store alignment name (relies on null char in name as terminator)
     bAlignment.Name.assign((const char*)(allCharData));    
@@ -236,7 +241,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
     bAlignment.QueryBases.clear();
     bAlignment.QueryBases.reserve(bAlignment.SupportData.QuerySequenceLength);
     for (unsigned int i = 0; i < bAlignment.SupportData.QuerySequenceLength; ++i) {
-        char singleBase = DNA_LOOKUP[ ( ( seqData[(i/2)] >> (4*(1-(i%2)))) & 0xf ) ];
+        char singleBase = DNA_LOOKUP[ ( (seqData[(i/2)] >> (4*(1-(i%2)))) & 0xf ) ];
         bAlignment.QueryBases.append(1, singleBase);
     }
   
@@ -363,7 +368,7 @@ bool BamReader::BamReaderPrivate::BuildCharData(BamAlignment& bAlignment) {
 void BamReader::BamReaderPrivate::ClearIndex(void) {
     delete Index;
     Index = 0;
-    IsIndexLoaded = false;
+    HasIndex = false;
 }
 
 // closes the BAM file
@@ -392,21 +397,26 @@ bool BamReader::BamReaderPrivate::CreateIndex(bool useStandardIndex) {
     
     // create index based on type requested
     if ( useStandardIndex ) 
-        Index = new BamStandardIndex(&mBGZF, Parent, IsBigEndian);
-    // create BamTools 'custom' index
+        Index = new BamStandardIndex(&mBGZF, Parent);
     else
-        Index = new BamToolsIndex(&mBGZF, Parent, IsBigEndian);
+        Index = new BamToolsIndex(&mBGZF, Parent);
+    
+    // set index cache mode to full for writing
+    Index->SetCacheMode(BamIndex::FullIndexCaching);
     
     // build new index
     bool ok = true;
     ok &= Index->Build();
-    IsIndexLoaded = ok;
+    HasIndex = ok;
     
     // mark empty references
     MarkReferences();
     
     // attempt to save index data to file
     ok &= Index->Write(Filename); 
+    
+    // set client's desired index cache mode 
+    Index->SetCacheMode(IndexCacheMode);
     
     // return success/fail of both building & writing index
     return ok;
@@ -576,7 +586,7 @@ bool BamReader::BamReaderPrivate::LoadIndex(const bool lookForIndex, const bool 
       
         // attempt to load BamIndex based on current Filename provided & preferStandardIndex flag
         const BamIndex::PreferredIndexType type = (preferStandardIndex ? BamIndex::STANDARD : BamIndex::BAMTOOLS);
-        Index = BamIndex::FromBamFilename(Filename, &mBGZF, Parent, IsBigEndian, type);
+        Index = BamIndex::FromBamFilename(Filename, &mBGZF, Parent, type);
         
         // if null, return failure
         if ( Index == 0 ) return false;
@@ -588,21 +598,23 @@ bool BamReader::BamReaderPrivate::LoadIndex(const bool lookForIndex, const bool 
     else {
       
         // attempt to load BamIndex based on IndexFilename provided by client
-        Index = BamIndex::FromIndexFilename(IndexFilename, &mBGZF, Parent, IsBigEndian);
+        Index = BamIndex::FromIndexFilename(IndexFilename, &mBGZF, Parent);
         
         // if null, return failure
         if ( Index == 0 ) return false;
     }
-    
-    // an index file was found
-    // return success of loading the index data from file
-    IsIndexLoaded = Index->Load(IndexFilename);
+
+    // set cache mode for BamIndex
+    Index->SetCacheMode(IndexCacheMode);
+
+    // loading the index data from file
+    HasIndex = Index->Load(IndexFilename);
     
     // mark empty references
     MarkReferences();
     
     // return index status
-    return IsIndexLoaded;
+    return HasIndex;
 }
 
 // populates BamAlignment with alignment data under file pointer, returns success/fail
@@ -725,7 +737,7 @@ void BamReader::BamReaderPrivate::LoadReferenceData(void) {
 void BamReader::BamReaderPrivate::MarkReferences(void) {
     
     // ensure index is available
-    if ( Index == 0 || !IsIndexLoaded ) return;
+    if ( !HasIndex ) return;
     
     // mark empty references
     for ( int i = 0; i < (int)References.size(); ++i ) 
@@ -784,6 +796,13 @@ bool BamReader::BamReaderPrivate::Rewind(void) {
     return mBGZF.Seek(AlignmentsBeginOffset);
 }
 
+// change the index caching behavior
+void BamReader::BamReaderPrivate::SetIndexCacheMode(const BamIndex::BamIndexCacheMode mode) {
+    IndexCacheMode = mode;
+    if ( Index == 0 ) return;
+    Index->SetCacheMode(mode);
+}
+
 // asks Index to attempt a Jump() to specified region
 // returns success/failure
 bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
@@ -799,7 +818,7 @@ bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
     Region.clear();
   
     // check for existing index 
-    if ( !IsIndexLoaded || Index == 0 ) return false; 
+    if ( !HasIndex ) return false; 
     
     // adjust region if necessary to reflect where data actually begins
     BamRegion adjustedRegion(region);
@@ -822,8 +841,7 @@ bool BamReader::BamReaderPrivate::SetRegion(const BamRegion& region) {
     //    If this occurs, any subsequent calls to GetNexAlignment[Core] simply return false
     //    BamMultiReader is then able to successfully pull alignments from a region from multiple files
     //    even if one or more have no data.
-    if ( !Index->Jump(adjustedRegion, &HasAlignmentsInRegion) )
-	return false;
+    if ( !Index->Jump(adjustedRegion, &HasAlignmentsInRegion) ) return false;
     
     // save region and return success
     Region = adjustedRegion;

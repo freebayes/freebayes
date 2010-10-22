@@ -29,6 +29,7 @@ using namespace std;
 // open BAM input file
 void AlleleParser::openBams(void) {
 
+    // report differently if we have one or many bam files
     if (parameters.bams.size() == 1) {
         DEBUG("Opening BAM fomat alignment input file: " << parameters.bams.front() << " ...");
     } else if (parameters.bams.size() > 1) {
@@ -38,9 +39,20 @@ void AlleleParser::openBams(void) {
             DEBUG2(*b);
         }
     }
-    if (!bamMultiReader.Open(parameters.bams, true)) {
-        ERROR("Could not open BAM files, exiting!");
-        exit(1);
+    
+    // set no index caching if we are only making one jump
+    if (targets.size() == 1) {
+        bamMultiReader.SetIndexCacheMode(BamToolsIndex::NoIndexCaching);
+    }
+
+    if ( !bamMultiReader.Open(parameters.bams, true) ) {
+        if ( !bamMultiReader.Open(parameters.bams, false) ) {
+            ERROR("Could not open input BAM files");
+            exit(1);
+        } else {
+            ERROR("Opened BAM reader without index file, jumping is disabled.");
+            // TODO set a flag, check if there are targets specified?
+        }
     }
     DEBUG(" done");
 
@@ -173,6 +185,11 @@ void AlleleParser::getSampleNames(void) {
 
         }
     }
+
+    if (sampleList.size() == 0) {
+        ERROR("No sample names given, and no @RG tags found in BAM file(s).");
+        exit(1);
+    }
 }
 
 void AlleleParser::writeVcfHeader(ostream& out) {
@@ -292,17 +309,11 @@ void AlleleParser::loadTargets(void) {
             }
         }
 
-        for(RefVector::iterator refIter = referenceSequences.begin();
-                refIter != referenceSequences.end(); ++refIter) {
-            RefData& refData = *refIter;
-            if (refData.RefName == startSeq) {
-                BedTarget bd(startSeq,
-                            (startPos == 1) ? 1 : startPos,
-                            (stopPos == -1) ? refData.RefLength : stopPos);
-                DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
-                targets.push_back(bd);
-            }
-        }
+        BedTarget bd(startSeq,
+                    (startPos == 1) ? 1 : startPos,
+                    (stopPos == -1) ? reference->sequenceLength(startSeq) : stopPos);
+        DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
+        targets.push_back(bd);
     }
 
     // if we have a targets file, use it...
@@ -343,22 +354,23 @@ void AlleleParser::loadTargets(void) {
 
     }
 
-    // otherwise, if we weren't given a region string or targets file, analyze
-    // all reference sequences from BAM file
-    if (parameters.targets == "" && parameters.region == "") {
-        RefVector::iterator refIter = referenceSequences.begin();
-        RefVector::iterator refEnd  = referenceSequences.end();
-        for( ; refIter != refEnd; ++refIter) {
-            RefData refData = *refIter;
-            string refName = refData.RefName;
-            BedTarget bd(refName, 1, refData.RefLength);
-            DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
-            targets.push_back(bd);
-        }
-    }
-
     DEBUG("Number of target regions: " << targets.size());
 
+}
+
+void AlleleParser::loadTargetsFromBams(void) {
+    // otherwise, if we weren't given a region string or targets file, analyze
+    // all reference sequences from BAM file
+    DEBUG2("no targets specified, using all targets from BAM files");
+    RefVector::iterator refIter = referenceSequences.begin();
+    RefVector::iterator refEnd  = referenceSequences.end();
+    for( ; refIter != refEnd; ++refIter) {
+        RefData refData = *refIter;
+        string refName = refData.RefName;
+        BedTarget bd(refName, 1, refData.RefLength);
+        DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
+        targets.push_back(bd);
+    }
 }
 
 // initialization function
@@ -369,11 +381,20 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // initialization
     openTraceFile();
     openOutputFile();
+
+    // check how many targets we have specified
+    loadTargets();
+    // when we open the bam files we can use the number of targets to decide if
+    // we should load the indexes
     openBams();
+    // if we don't have any targets specified, now use the BAM header to get
+    // the targets to analyze
+    if (targets.size() == 0)
+        loadTargetsFromBams();
+
     getSampleNames();
     loadFastaReference();
     loadBamReferenceSequenceNames();
-    loadTargets();
 
     currentRefID = 0; // will get set properly via toNextRefID
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
@@ -837,12 +858,13 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     DEBUG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left - 1; // our bed targets are always 1-based at the left
 
-    // XXX should check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
+    // TODO double-check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
     bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1);
     if (!r) {
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
         return r;
     }
+
     DEBUG2("set region");
 
     r &= bamMultiReader.GetNextAlignment(currentAlignment);
@@ -855,8 +877,6 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     int left_gap = currentPosition - currentAlignment.Position;
 
     DEBUG2("left gap: " << left_gap << " currentAlignment.Position: " << currentAlignment.Position);
-    // step back
-    //bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right);
 
     //int right_gap = maxPos - currentTarget->right;
     // XXX the above is deprecated, as we now update as we read

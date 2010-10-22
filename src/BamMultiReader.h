@@ -107,6 +107,9 @@ class BamMultiReader {
         // creates index for BAM files which lack them, saves to files (default = bamFilename + ".bai")
         bool CreateIndexes(bool useStandardIndex = true);
 
+        // sets the index caching mode for the readers
+        void SetIndexCacheMode(const BamIndex::BamIndexCacheMode mode);
+
         //const int GetReferenceID(const string& refName) const;
 
         // utility

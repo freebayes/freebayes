@@ -3,7 +3,7 @@
 // Marth Lab, Department of Biology, Boston College
 // All rights reserved.
 // ---------------------------------------------------------------------------
-// Last modified: 16 August 2010 (DB)
+// Last modified: 20 October 2010 (DB)
 // ---------------------------------------------------------------------------
 // BGZF routines were adapted from the bgzf.c code developed at the Broad
 // Institute.
@@ -14,15 +14,10 @@
 #ifndef BGZF_H
 #define BGZF_H
 
-// 'C' includes
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-// C++ includes
 #include <string>
-
-// zlib includes
 #include "zlib.h"
 
 // Platform-specific large-file support
