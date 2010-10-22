@@ -52,6 +52,13 @@ void AlleleParser::openBams(void) {
         } else {
             ERROR("Opened BAM reader without index file, jumping is disabled.");
             // TODO set a flag, check if there are targets specified?
+            if (targets.size() > 0) {
+                ERROR("Targets specified but no BAM index file provided.");
+                ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
+                ERROR("Please generate a BAM index file either .bai (standard) or .bti (bamtools), e.g.:");
+                ERROR("bamtools index -in <bam_file >");
+                exit(1);
+            }
         }
     }
     DEBUG(" done");
@@ -387,14 +394,14 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // when we open the bam files we can use the number of targets to decide if
     // we should load the indexes
     openBams();
+    loadBamReferenceSequenceNames();
+    loadFastaReference();
+    getSampleNames();
+
     // if we don't have any targets specified, now use the BAM header to get
     // the targets to analyze
     if (targets.size() == 0)
         loadTargetsFromBams();
-
-    getSampleNames();
-    loadFastaReference();
-    loadBamReferenceSequenceNames();
 
     currentRefID = 0; // will get set properly via toNextRefID
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
@@ -763,16 +770,6 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
     // remove reference alleles which are no longer overlapping the current position
     // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
-    /*
-       for (list<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ) {
-       if (currentPosition > (*allele)->position + (*allele)->length) {
-       delete *allele;
-       allele = registeredAlleles.erase(allele);
-       } else {
-       ++allele;
-       }
-       }
-       */
     vector<Allele*>& alleles = registeredAlleles;
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         if (currentPosition >= (*allele)->position + (*allele)->length) {
@@ -804,11 +801,6 @@ void AlleleParser::removeFilteredAlleles(vector<Allele*>& alleles) {
         }
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-}
-
-// initialization function, should only be called via constructor
-bool AlleleParser::toFirstTargetPosition(void) {
-    return loadTarget(&targets.front());
 }
 
 // steps our position/beddata/reference pointers through all positions in all
