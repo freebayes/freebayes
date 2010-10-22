@@ -506,9 +506,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
         char t = cigarIter->Type;
         DEBUG2("cigar item: " << t << l);
 
-        if (t == 'S') { // soft clip
-            rp += l;
-        } else if (t == 'M') { // match or mismatch
+        if (t == 'M') { // match or mismatch
             int firstMatch = csp; // track the first match after a mismatch, for recording 'reference' alleles
             //cerr << "firstMatch = " << firstMatch << endl;
                                         // we start one back because the first position in a match should match...
@@ -640,24 +638,20 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             rp += l;
 
-        } // not handled, skipped region 'N's
+        } else if (t == 'S') { // soft clip, clipped sequence present in the read not matching the reference
+            rp += l; sp += l; csp += l;
+        } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
+            sp += l; csp += l;
+        } else if (t == 'N') { // skipped region in the reference
+            sp += l; csp += l;
+        }
+        // padding is currently not handled
+        //} else if (t == 'P') { // padding, silent deletion from the padded reference sequence
+        //    sp += l; csp += l;
+        //}
     } // end cigar iter loop
     //cerr << ra << endl;
-    /*
-    for (vector<Allele*>::iterator i = ra.alleles.begin(); i != ra.alleles.end(); ++i) {
-        cerr << (*i)->typeStr() << ":" << (*i)->alternateSequence << ",";
-    }
-    cerr << endl;
-    for (vector<Allele*>::iterator i = ra.alleles.begin(); i != ra.alleles.end(); ++i) {
-        cerr << (*i)->alternateSequence;
-    }
-    cerr << endl;
-    */
-    /*
-    for (vector<bool>::iterator i = indelMask.begin(); i != indelMask.end(); ++i)
-        cerr << (*i ? "t" : "f");
-    cerr << endl;
-    */
+
     if (parameters.IDW > -1) {
         for (vector<bool>::iterator m = indelMask.begin(); m < indelMask.end(); ++m) {
             if (*m) {
