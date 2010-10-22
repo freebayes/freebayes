@@ -287,7 +287,7 @@ bandedGenotypeCombinations(
     }
     comboKing.initAlleleFrequencies();
 
-    combos.push_back(comboKing);
+    //combos.push_back(comboKing);
 
     // overview:
     //
@@ -347,12 +347,12 @@ bandedGenotypeCombinations(
                         s != sampleGenotypes.end(); ++s, ++n, ++currentSampleGenotype) {
                     int offset = *n;
                     if (offset > 0) {
-                        const pair<Genotype*, long double>& p = s->second.at(offset);
                         // ignore this combo if it's beyond the bounds of the individual's set of genotypes
                         if (offset >= s->second.size()) {
                             useCombo = false;
                             break;
                         }
+                        const pair<Genotype*, long double>& p = s->second.at(offset);
                         // get the old and new genotypes, which we compare to
                         // change the cached counts and probability of the
                         // combo

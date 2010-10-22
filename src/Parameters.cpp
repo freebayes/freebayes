@@ -104,10 +104,10 @@ void Parameters::usage(char** argv) {
          << "                   combination in terms of data likelihoods, taking the N" << endl
          << "                   steps from the most to least likely genotype for each" << endl
          << "                   individual.  default: 2" << endl
-         //<< "   -Y --posterior-integration-banddepth N" << endl
-         //<< "                   Generate all genotype combinations for which up to this" << endl
-         //<< "                   number of samples have up to their -W'th worst genotype" << endl
-         //<< "                   according to data likelihood.  default: 2" << endl
+         << "   -Y --posterior-integration-banddepth N" << endl
+         << "                   Generate all genotype combinations for which up to this" << endl
+         << "                   number of samples have up to their -W'th worst genotype" << endl
+         << "                   according to data likelihood.  default: 2" << endl
          << "   -K --posterior-integration-depth N" << endl
          << "                   Keep this many genotype combinations for calculating genotype" << endl
          << "                   marginal probabilities for each sample and overall variant" << endl
