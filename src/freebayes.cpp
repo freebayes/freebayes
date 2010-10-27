@@ -106,6 +106,7 @@ int main (int argc, char *argv[]) {
 
         // don't process reference N's
         if (parser->currentReferenceBaseString() == "N") {
+            DEBUG2("current reference base is N");
             continue;
         }
 
@@ -122,7 +123,7 @@ int main (int argc, char *argv[]) {
                     for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
                         Allele& allele = **a;
                         parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1  
-                            << ",allele," << name << "," << allele.readID << "," << allele.currentBase << "," 
+                            << ",allele," << name << "," << allele.readID << "," << allele.base() << ","
                             << allele.currentQuality() << "," << allele.mapQuality << endl;
                     }
                 }
@@ -401,7 +402,7 @@ int main (int argc, char *argv[]) {
                     out << vcf(pVar,
                             samples,
                             referenceBase,
-                            bestAlt.currentBase,
+                            bestAlt.base(),
                             parser->sampleList,
                             coverage,
                             bestGenotypeCombo,

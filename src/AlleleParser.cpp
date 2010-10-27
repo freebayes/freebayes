@@ -857,12 +857,16 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 }
 
-// TODO change these to handle indels properly
-
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition >= (*allele)->position + (*allele)->length) {
-            *allele = NULL;
+        if ((*allele)->type == ALLELE_REFERENCE) {
+            if (currentPosition >= (*allele)->position + (*allele)->length) {
+                *allele = NULL;
+            }
+        } else { // snps, insertions, deletions
+            if (currentPosition >= (*allele)->position) {
+                *allele = NULL;
+            }
         }
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());

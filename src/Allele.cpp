@@ -90,16 +90,22 @@ const string Allele::base(void) const { // the base of this allele
         case ALLELE_GENOTYPE:
             return alternateSequence;
             break;
-        //case ALLELE_MISMATCH:
-            //break;
         case ALLELE_SNP:
             return alternateSequence;
             break;
         case ALLELE_INSERTION:
-            return "I" + length; // unclear what to do here
+            {
+                stringstream s;
+                s << alternateSequence;
+                return s.str(); // unclear what to do here
+            }
             break;
         case ALLELE_DELETION:
-            return "D" + length;
+            {
+                stringstream s;
+                s << "D" << length;
+                return s.str();
+            }
             break;
         default:
             break;
