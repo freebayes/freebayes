@@ -90,7 +90,7 @@ public:
     // reference
     FastaReference* reference;
     vector<string> referenceSequenceNames;
-    map<string, int> referenceSequenceNameToID;
+    map<int, string> referenceIDToName;
     
     // target regions
     //vector<vector<BedTarget>> targetRegions;  // beddatas indexed by sequence id
@@ -119,11 +119,17 @@ public:
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
     void loadReferenceSequence(BedTarget*, int, int);
+    void loadReferenceSequence(BamAlignment& alignment);
     void extendReferenceSequence(int);
+    void extendReferenceSequence(void);
+    void extendReferenceSequence(BamAlignment& alignment);
+    void eraseReferenceSequence(int leftErasure);
     void loadTargets(void);
+    bool getFirstAlignment(void);
     void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
     RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
+    void clearRegisteredAlignments(void);
     void updateAlignmentQueue(void);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles);
     void removeFilteredAlleles(vector<Allele*>& alleles);
@@ -132,7 +138,7 @@ public:
     bool toNextRefID(void);
     bool loadTarget(BedTarget*);
     bool toFirstTargetPosition(void);
-    bool toNextTargetPosition(void);
+    bool toNextPosition(void);
     bool dummyProcessNextTarget(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
@@ -170,6 +176,12 @@ private:
 
     Allele* currentReferenceAllele;
     Allele* currentAlternateAllele;
+
+    //BedTarget currentSequenceBounds;
+    long unsigned int currentSequenceStart;
+    string currentSequenceName;
+
+    bool hasMoreAlignments;
 
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
     int basesAfterCurrentTarget;  // ........................................  after ...................

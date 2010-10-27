@@ -235,7 +235,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEXGZAdDb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
+        c = getopt_long(argc, argv, "hcOEXGZAdDib:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -247,6 +247,12 @@ Parameters::Parameters(int argc, char** argv) {
             // -b --bam
             case 'b':
                 bams.push_back(optarg);
+                break;
+
+            // -c --stdin
+            case 'c':
+                useStdin = true;
+                bams.push_back("stdin");
                 break;
 
             // -f --fasta-reference
@@ -402,6 +408,11 @@ Parameters::Parameters(int argc, char** argv) {
                     cerr << "could not parse indel-exclusion-window" << endl;
                     exit(1);
                 }
+                break;
+
+            // -i --allow-indels
+            case 'i':
+                allowIndels = true;
                 break;
 
             // -T --theta

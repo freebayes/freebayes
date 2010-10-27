@@ -116,17 +116,19 @@ string vcf(
         //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
         if (gc != comboMap.end()) {
             Genotype* genotype = gc->second.first;
-            alternateCount += genotype->alleleFrequency(altbase);
-            alleleCount += genotype->ploidy;
 
             Sample& sample = samples[*sampleName];
 
+            // check that we actually have observations for this sample
             int observationCount = sample.observationCount();
             if (observationCount == 0) {
                 continue;
             } else {
                 ++samplesWithData;
             }
+
+            alternateCount += genotype->alleleFrequency(altbase);
+            alleleCount += genotype->ploidy;
 
             if (!genotype->homozygous) {
                 hetAllObsCount += observationCount;

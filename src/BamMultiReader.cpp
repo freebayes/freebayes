@@ -301,21 +301,12 @@ bool BamMultiReader::Open(const vector<string>& filenames, bool openIndexes, boo
     // for filename in filenames
     fileNames = filenames; // save filenames in our multireader
     for (vector<string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it) {
-        
+
         const string filename = *it;
         BamReader* reader = new BamReader;
 
         bool openedOK = true;
-        if (openIndexes) {
-            
-            // leave index filename empty 
-            // this allows BamReader & BamIndex to search for any available
-            // useStandardIndex gives hint to prefer BAI over BTI
-            openedOK = reader->Open(filename, "", true, preferStandardIndex);
-        } 
-        
-        // ignoring index file(s)
-        else openedOK = reader->Open(filename); 
+        openedOK = reader->Open(filename, "", openIndexes, preferStandardIndex);
         
         // if file opened ok, check that it can be read
         if ( openedOK ) {

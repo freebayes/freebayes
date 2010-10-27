@@ -45,19 +45,23 @@ void AlleleParser::openBams(void) {
         bamMultiReader.SetIndexCacheMode(BamToolsIndex::NoIndexCaching);
     }
 
-    if ( !bamMultiReader.Open(parameters.bams, true) ) {
-        if ( !bamMultiReader.Open(parameters.bams, false) ) {
-            ERROR("Could not open input BAM files");
-            exit(1);
-        } else {
-            ERROR("Opened BAM reader without index file, jumping is disabled.");
-            // TODO set a flag, check if there are targets specified?
-            if (targets.size() > 0) {
-                ERROR("Targets specified but no BAM index file provided.");
-                ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
-                ERROR("Please generate a BAM index file either .bai (standard) or .bti (bamtools), e.g.:");
-                ERROR("bamtools index -in <bam_file >");
+    if (parameters.useStdin) {
+        bamMultiReader.Open(parameters.bams, false, false, false);
+    } else {
+        if ( !bamMultiReader.Open(parameters.bams, true, false, true) ) {
+            if ( !bamMultiReader.Open(parameters.bams, false, false, false) ) {
+                ERROR("Could not open input BAM files");
                 exit(1);
+            } else {
+                ERROR("Opened BAM reader without index file, jumping is disabled.");
+                // TODO set a flag, check if there are targets specified?
+                if (!targets.empty()) {
+                    ERROR("Targets specified but no BAM index file provided.");
+                    ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
+                    ERROR("Please generate a BAM index file either .bai (standard) or .bti (bamtools), e.g.:");
+                    ERROR("bamtools index -in <bam_file >");
+                    exit(1);
+                }
             }
         }
     }
@@ -243,6 +247,11 @@ void AlleleParser::loadBamReferenceSequenceNames(void) {
 
     // store the names of all the reference sequences in the BAM file
     referenceSequences = bamMultiReader.GetReferenceData();
+    int i = 0;
+    for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
+        referenceIDToName[i] = r->RefName;
+        ++i;
+    }
 
     DEBUG("Number of ref seqs: " << bamMultiReader.GetReferenceCount());
 
@@ -261,6 +270,20 @@ void AlleleParser::loadFastaReference(void) {
 
     reference = new FastaReference(parameters.fasta);
 
+}
+
+void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
+    currentSequenceStart = alignment.Position;
+    currentSequenceName = referenceIDToName[alignment.RefID];
+    if (currentTarget == NULL) {
+        currentTarget = new BedTarget(currentSequenceName, currentSequenceStart + 1, 0);
+    } else {
+        if (currentSequenceName != currentTarget->seq)
+            currentTarget->seq = currentSequenceName;
+        if (currentSequenceStart + 1 != currentTarget->left)
+            currentTarget->left = currentSequenceStart + 1;
+    }
+    currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.Length);
 }
 
 // intended to load all the sequence covered by reads which overlap our current target
@@ -282,6 +305,38 @@ void AlleleParser::extendReferenceSequence(int rightExtension) {
                                                  (currentTarget->right - 1) + basesAfterCurrentTarget,
                                                  rightExtension);
     basesAfterCurrentTarget += rightExtension;
+}
+
+// handles reference extension if we are in 0-coverage regions
+void AlleleParser::extendReferenceSequence(void) {
+    int diff = currentPosition - (currentSequenceStart + currentSequence.size());
+    if (diff > 0) {
+        currentSequence += reference->getSubSequence(
+                currentSequenceName,
+                (currentSequenceStart + currentSequence.size()),
+                diff);
+    }
+}
+
+void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
+    if (alignment.Position < currentSequenceStart) {
+        int leftdiff = currentSequenceStart - alignment.Position;
+        currentSequenceStart -= leftdiff;
+        currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
+    }
+    int diff = (alignment.Position + alignment.AlignedBases.size()) - (currentSequenceStart + currentSequence.size());
+    if (diff > 0) {
+        currentSequence += reference->getSubSequence(
+                currentSequenceName,
+                (currentSequenceStart + currentSequence.size()),
+                diff);
+    }
+}
+
+void AlleleParser::eraseReferenceSequence(int leftErasure) {
+    DEBUG2("erasing leftmost " << leftErasure << "bp of cached reference sequence");
+    currentSequence.erase(0, leftErasure);
+    currentSequenceStart += leftErasure;
 }
 
 void AlleleParser::loadTargets(void) {
@@ -400,13 +455,14 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 
     // if we don't have any targets specified, now use the BAM header to get
     // the targets to analyze
-    if (targets.size() == 0)
-        loadTargetsFromBams();
+    //if (targets.empty())
+    //    loadTargetsFromBams();
 
     currentRefID = 0; // will get set properly via toNextRefID
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
     currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
     justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
+    hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
 
 }
 
@@ -418,7 +474,7 @@ AlleleParser::~AlleleParser(void) {
 
 // position of alignment relative to current sequence
 int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
-    return (alignment.Position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    return alignment.Position - currentSequenceStart;
 }
 
 // TODO clean up this.... just use a string
@@ -427,11 +483,11 @@ char AlleleParser::currentReferenceBaseChar(void) {
 }
 
 string AlleleParser::currentReferenceBaseString(void) {
-    return currentSequence.substr((currentPosition - (currentTarget->left - 1)) + basesBeforeCurrentTarget, 1);
+    return currentSequence.substr(currentPosition - currentSequenceStart, 1);
 }
 
 string::iterator AlleleParser::currentReferenceBaseIterator(void) {
-    return currentSequence.begin() + (currentPosition - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    return currentSequence.begin() + (currentPosition - currentSequenceStart);
 }
 
 // registeredalignment friend
@@ -474,7 +530,9 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 alignedLength += c->Length;
         }
 
-        DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignedLength));
+        DEBUG2("current sequence pointer: " << csp);
+
+        DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
     }
 #endif
 
@@ -616,7 +674,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             string qualstr = rQual.substr(rp, l);
 
-            // calculate joint quality, which is the probability that there are no errors in the observed bases
+            // calculate max quality of the insertion
+            // TODO: perhaps average quality makes more sense
             vector<short> quals = qualities(qualstr);
             short qual = *max_element(quals.begin(), quals.end());
             if (qual >= parameters.BQL2) {
@@ -626,9 +685,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 indelMask[sp - alignment.Position] = true;
                 indelMask[sp - alignment.Position + 1] = true;
             }
-            // register insertion + base quality with reference sequence
-            // XXX this cutoff may not make sense for long indels... the joint
-            // quality is much lower than the 'average' quality
+
             Allele* allele = new Allele(ALLELE_INSERTION,
                     currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l, "", rDna.substr(rp, l),
                     sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
@@ -638,21 +695,24 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             rp += l;
 
+        // handle other cigar element types
         } else if (t == 'S') { // soft clip, clipped sequence present in the read not matching the reference
             rp += l; sp += l; csp += l;
         } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
             sp += l; csp += l;
-        } else if (t == 'N') { // skipped region in the reference
+        } else if (t == 'N') { // skipped region in the reference not present in read, aka splice
             sp += l; csp += l;
         }
-        // padding is currently not handled
+        // ignore padding
         //} else if (t == 'P') { // padding, silent deletion from the padded reference sequence
         //    sp += l; csp += l;
         //}
     } // end cigar iter loop
-    //cerr << ra << endl;
 
-    if (parameters.IDW > -1) {
+
+    // mark positions in each alignment which are within IDW bases of an indel
+    // these are then filtered at each call to getAlleles()
+    if (parameters.IDW > -1) { // -1 is the default value and means 'no indel exclusion'
         for (vector<bool>::iterator m = indelMask.begin(); m < indelMask.end(); ++m) {
             if (*m) {
                 vector<bool>::iterator q = m - parameters.IDW;
@@ -678,7 +738,6 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     break;
                 }
             }
-            // here apply the indel exclusion window to the allele
         }
     }
 
@@ -694,7 +753,12 @@ void AlleleParser::updateAlignmentQueue(void) {
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
-    DEBUG2("currentAlignment.Position == " << currentAlignment.Position << ", currentPosition == " << currentPosition);
+    DEBUG2("currentAlignment.Position == " << currentAlignment.Position 
+            << ", currentAlignment.AlignedBases.size() == " << currentAlignment.AlignedBases.size()
+            << ", currentPosition == " << currentPosition
+            << ", currentSequenceStart == " << currentSequenceStart
+            << " .. + currentSequence.size() == " << currentSequenceStart + currentSequence.size()
+            );
     if (currentAlignment.Position <= currentPosition) {
         do {
             DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
@@ -711,34 +775,35 @@ void AlleleParser::updateAlignmentQueue(void) {
             if (readGroupToSampleNames.find(readGroup) == readGroupToSampleNames.end())
                 continue;
 
-            if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads)  // currently we don't process duplicate-marked reads
+            // skip this alignment if we are not using duplicate reads (we remove them by default)
+            if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads)
                 continue;
 
+            // skip unmapped alignments, as they cannot be used in the algorithm
             if (!currentAlignment.IsMapped())
                 continue;
 
+
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
-            string sampleName = readGroupToSampleNames[readGroup];
             // we have to register the alignment to acquire some information required by filters
             // such as mismatches
-            // filter low mapping quality (what happens if MapQuality is not in the file)
+
+            // initially skip reads with low mapping quality (what happens if MapQuality is not in the file)
             if (currentAlignment.MapQuality >= parameters.MQL0) {
-                // checks if we should grab and cache more sequence in order to process this alignment
-                int rightgap = (currentAlignment.AlignedBases.size() + currentAlignment.Position) 
-                    - (currentTarget->right - 1 + basesAfterCurrentTarget);
-                if (rightgap > 0) { extendReferenceSequence(rightgap); }
+                // extend our cached reference sequence to allow processing of this alignment
+                extendReferenceSequence(currentAlignment);
+                string sampleName = readGroupToSampleNames[readGroup];
+                // decomposes alignment into a set of alleles
                 RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
-                // TODO filters to implement:
-                // duplicates --- tracked via each BamAlignment
                 if (ra.mismatches <= parameters.RMU) {
                     registeredAlignmentQueue.push_front(ra);
+                    // which we then push into our registered alleles vector
                     for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
                         registeredAlleles.push_back(*allele);
                     }
                 }
             }
-                // TODO collect statistics here...
-        } while (bamMultiReader.GetNextAlignment(currentAlignment) && currentAlignment.Position <= currentPosition);
+        } while ((hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment)) && currentAlignment.Position <= currentPosition);
     }
 
     DEBUG2("... finished pushing new alignments");
@@ -760,18 +825,35 @@ void AlleleParser::updateAlignmentQueue(void) {
     DEBUG2("... finished popping old alignments");
 }
 
+// updates registered alleles and erases the unused portion of our cached reference sequence
 void AlleleParser::updateRegisteredAlleles(void) {
+
+    long unsigned int lowestPosition = currentSequenceStart + currentSequence.size();
 
     // remove reference alleles which are no longer overlapping the current position
     // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
     vector<Allele*>& alleles = registeredAlleles;
+
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if (currentPosition >= (*allele)->position + (*allele)->length) {
+        long unsigned int position = (*allele)->position;
+        if (currentPosition >= position + (*allele)->length) {
             delete *allele;
             *allele = NULL;
         }
+        else {
+            if (position < lowestPosition)
+                lowestPosition = position;
+        }
     }
+
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+
+    if (lowestPosition != currentSequenceStart + currentSequence.size()) {
+        int diff = lowestPosition - currentSequenceStart;
+        if (diff > 0) {
+            eraseReferenceSequence(diff);
+        }
+    }
 
 }
 
@@ -816,19 +898,50 @@ bool AlleleParser::toNextTarget(void) {
 
     DEBUG2("seeking to next target with alignments...");
 
-    bool ok = false;
+    // load first target if we have targets and have not loaded the first
+    if (currentTarget == NULL && !targets.empty()) {
+        if (!loadTarget(&targets.front())) {
+            ERROR("Could not load first target");
+            return false;
+        }
+        if (!getFirstAlignment()) {
+            ERROR("Could not get first alignment from target");
+            return false;
+        }
+        loadReferenceSequence(currentAlignment);
+        clearRegisteredAlignments();
+    // stdin case
+    } else if (currentTarget == NULL && targets.empty()) {
+        if (!getFirstAlignment()) {
+            ERROR("Could not get first alignment from target");
+            return false;
+        }
+        loadReferenceSequence(currentAlignment);
+        currentPosition = currentAlignment.Position;
+        currentReferenceBase = currentReferenceBaseChar();
+        clearRegisteredAlignments();
+    } else if (targets.empty()) {
+        ERROR("could not read any alignments");
+        return false;
+    } else {
+        // step through targets until we get to one with alignments
+        bool ok = false;
+        while (!ok && currentTarget != &targets.back()) {
+            ok &= loadTarget(++currentTarget);
+            ok &= getFirstAlignment();
+        }
+        if (!ok) return false;
+        loadReferenceSequence(currentAlignment);
+        clearRegisteredAlignments();
+    }
 
-    if (currentTarget == NULL)
-        ok = loadTarget(&targets.front());
-
-    while (!ok && currentTarget != &targets.back())
-        ok = loadTarget(++currentTarget);
-
-    if (ok) justSwitchedTargets = true;
-    return ok;
+    justSwitchedTargets = true;
+    return true;
 
 }
 
+// TODO refactor this to allow reading from stdin or reading the whole file
+// without loading each sequence as a target
 bool AlleleParser::loadTarget(BedTarget* target) {
 
     currentTarget = target;
@@ -836,77 +949,114 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     DEBUG("processing target " << currentTarget->desc << " " <<
             currentTarget->seq << " " << currentTarget->left << " " <<
             currentTarget->right);
-
     DEBUG2("loading target reference subsequence");
+
     int refSeqID = bamMultiReader.GetReferenceID(currentTarget->seq);
+
     DEBUG2("reference sequence id " << refSeqID);
 
     DEBUG2("setting new position " << currentTarget->left);
-    currentPosition = currentTarget->left - 1; // our bed targets are always 1-based at the left
+    currentPosition = currentTarget->left - 1;
 
-    // TODO double-check the basing of the target end... is the setregion call 0-based 0-base non-inclusive?
-    bool r = bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1);
-    if (!r) {
+    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1)) {
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
-        return r;
+        return false;
     }
-
     DEBUG2("set region");
 
-    r &= bamMultiReader.GetNextAlignment(currentAlignment);
-    if (!r) {
+    return true;
+
+}
+
+bool AlleleParser::getFirstAlignment(void) {
+
+    if (!bamMultiReader.GetNextAlignment(currentAlignment)) {
         ERROR("Could not find any reads in target region " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
-        return r;
+        return false;
     }
     DEBUG2("got first alignment in target region");
 
-    int left_gap = currentPosition - currentAlignment.Position;
+    return true;
 
-    DEBUG2("left gap: " << left_gap << " currentAlignment.Position: " << currentAlignment.Position);
+}
 
-    //int right_gap = maxPos - currentTarget->right;
-    // XXX the above is deprecated, as we now update as we read
-    loadReferenceSequence(currentTarget, (left_gap > 0) ? left_gap : 0, 0);
-    currentReferenceBase = currentReferenceBaseChar();
-
+void AlleleParser::clearRegisteredAlignments(void) {
     DEBUG2("clearing registered alignments and alleles");
     registeredAlignmentQueue.clear();
     for (vector<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ++allele) {
         delete *allele;
     }
     registeredAlleles.clear();
-
-    return r;
-
 }
+
+// TODO
+// this should be simplified
+// there are two modes of operation
+// that in which we have targets
+// and that without
+//
+// if we have targets, we need to keep track of which we're in
+// and if we're outside of it, try to get to the next one
+// and, if we have targets, we will try to jump around the bam file
+//
+// if we don't have targets we will just GetNextAlignment until we can't
+// anymore.  all positionality of the parser will respond to input alignments.
+//
+// rewrite things so that we aren't strung out between 8 functions
+//
 
 // stepping
 //
 // if the next position is outside of target region
 // seek to next target which is in-bounds for its sequence
 // if none exist, return false
-bool AlleleParser::toNextTargetPosition(void) {
+bool AlleleParser::toNextPosition(void) {
 
+    // as is the case when we read from stdin
+    /*
+    if (targets.empty()) {
+        // check if we've exhausted the input stream and are at the last base
+        if (!hasMoreAlignments && currentPosition == currentAlignment.Position + currentAlignment.AlignedBases.size()) {
+            return false;
+        } else {
+            ++currentPosition;
+            currentReferenceBase = currentReferenceBaseChar();
+        }
+    }
+    else {
+        */
     if (currentTarget == NULL) {
         if (!toNextTarget()) {
             return false;
         }
-    } else {
+    } 
+    else {
         ++currentPosition;
-        currentReferenceBase = currentReferenceBaseChar();
     }
-    if (currentPosition >= currentTarget->right - 1) { // time to move to a new target
+
+    extendReferenceSequence(); // grabs more sequence before the current position if we need it
+    currentReferenceBase = currentReferenceBaseChar();
+
+    if (!targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
             return false;
         }
     }
+    
+    // stdin case
+    if (targets.empty() && !hasMoreAlignments && registeredAlignmentQueue.empty()) {
+        DEBUG("no more alignments, exiting");
+        return false;
+    }
+
     DEBUG2("processing position " << currentPosition + 1 << " in sequence " << currentTarget->seq);
     updateAlignmentQueue();
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles();
     return true;
+
 }
 
 // XXX for testing only, steps targets but does nothing
@@ -925,7 +1075,7 @@ bool AlleleParser::dummyProcessNextTarget(void) {
 }
 
 bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
-    if (toNextTargetPosition()) {
+    if (toNextPosition()) {
         getAlleles(samples, allowedAlleleTypes);
         return true;
     } else {
@@ -958,6 +1108,9 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
         }
     }
 
+    // if we have targets and are outside of the current target, don't return anything
+
+
     // add the reference allele to the analysis
     if (parameters.useRefAllele) {
         if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
@@ -989,40 +1142,41 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
         }
     }
 
+    vector<string> samplesToErase;
     // now remove empty alleles from our return so as to not confuse processing
     for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+
         const string& name = s->first;
         Sample& sample = s->second;
-        bool empty = true;
-        // now move updated alleles to the right bin
+
+        // move updated alleles to the right bin
         sample.sortAlleles();
+
+        bool empty = true;
+        vector<string> genotypesToErase;
         // and remove any empty groups which remain
         for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
-            if (g->second.size() == 0) {
+            if (g->second.empty()) {
                 //cerr << "sample " << name << " has an empty " << g->first << endl;
-                sample.erase(g);
+                //sample.erase(g);
+                genotypesToErase.push_back(g->first);
             } else {
                 empty = false;
             }
         }
+
+        for (vector<string>::iterator gt = genotypesToErase.begin(); gt != genotypesToErase.end(); ++gt) {
+            sample.erase(*gt);
+        }
+
         // and remove the entire sample if it has no alleles
         if (empty) {
-            samples.erase(s);
+            samplesToErase.push_back(name);
         }
     }
 
-    // XXX for some reason we have to iterate through the samples *again* to find empty individuals
-    // If this is nested within the above loop, it will fail to find the empty
-    // individuals.  I am unsure why, except perhaps maps can have their
-    // iterators invalidated if the above methods are used.
-    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-        const string& name = s->first;
-        Sample& sample = s->second;
-        for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
-            if (g->second.size() == 0) {
-                sample.erase(g);
-            }
-        }
+    for (vector<string>::iterator name = samplesToErase.begin(); name != samplesToErase.end(); ++name) {
+        samples.erase(*name);
     }
 
     DEBUG2("done getting alleles");
@@ -1166,12 +1320,12 @@ vector<Allele> AlleleParser::genotypeAlleles(
 int AlleleParser::homopolymerRunLeft(string altbase) {
 
     int position = currentPosition - 1;
-    int sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    int sequenceposition = position - currentSequenceStart;
     int runlength = 0;
     while (sequenceposition >= 0 && currentSequence.substr(sequenceposition, 1) == altbase) {
         ++runlength;
         --position;
-        sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+        sequenceposition = position - currentSequenceStart;
     }
     return runlength;
 
@@ -1180,12 +1334,12 @@ int AlleleParser::homopolymerRunLeft(string altbase) {
 int AlleleParser::homopolymerRunRight(string altbase) {
 
     int position = currentPosition + 1;
-    int sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+    int sequenceposition = position - currentSequenceStart;
     int runlength = 0;
     while (sequenceposition >= 0 && currentSequence.substr(sequenceposition, 1) == altbase) {
         ++runlength;
         ++position;
-        sequenceposition = (position - (currentTarget->left - 1)) + basesBeforeCurrentTarget;
+        sequenceposition = position - currentSequenceStart;
     }
     return runlength;
 
