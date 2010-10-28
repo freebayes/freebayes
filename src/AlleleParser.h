@@ -10,6 +10,7 @@
 #include <utility>
 #include <algorithm>
 #include <time.h>
+#include <assert.h>
 #include "split.h"
 #include "join.h"
 #include "BamReader.h"
@@ -21,6 +22,8 @@
 #include "TryCatch.h"
 #include "BamMultiReader.h"
 #include "Genotype.h"
+
+#define CACHED_REFERENCE_WINDOW 10
 
 using namespace std;
 using namespace BamTools;
@@ -120,8 +123,8 @@ public:
     void loadFastaReference(void);
     void loadReferenceSequence(BedTarget*, int, int);
     void loadReferenceSequence(BamAlignment& alignment);
+    void preserveReferenceSequenceWindow(int bp);
     void extendReferenceSequence(int);
-    void extendReferenceSequence(void);
     void extendReferenceSequence(BamAlignment& alignment);
     void eraseReferenceSequence(int leftErasure);
     void loadTargets(void);

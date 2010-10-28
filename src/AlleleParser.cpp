@@ -46,7 +46,10 @@ void AlleleParser::openBams(void) {
     }
 
     if (parameters.useStdin) {
-        bamMultiReader.Open(parameters.bams, false, false, false);
+        if (!bamMultiReader.Open(parameters.bams, false, false, false)) {
+            ERROR("Could not read BAM data from stdin");
+            exit(1);
+        }
     } else {
         if ( !bamMultiReader.Open(parameters.bams, true, false, true) ) {
             if ( !bamMultiReader.Open(parameters.bams, false, false, false) ) {
@@ -54,12 +57,13 @@ void AlleleParser::openBams(void) {
                 exit(1);
             } else {
                 ERROR("Opened BAM reader without index file, jumping is disabled.");
-                // TODO set a flag, check if there are targets specified?
                 if (!targets.empty()) {
                     ERROR("Targets specified but no BAM index file provided.");
                     ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
                     ERROR("Please generate a BAM index file either .bai (standard) or .bti (bamtools), e.g.:");
-                    ERROR("bamtools index -in <bam_file >");
+                    ERROR("    \% bamtools index -bti -in <bam_file>   # for high-performance .bti index");
+                    ERROR("    \% bamtools index -in <bam_file>        # for standard .bai index");
+                    ERROR("    \% samtools index <bam_file>            # for standard .bai index");
                     exit(1);
                 }
             }
@@ -272,9 +276,13 @@ void AlleleParser::loadFastaReference(void) {
 
 }
 
+// alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
+    assert(targets.empty()); // this should only be used in the case that we have no targets
+    currentPosition = alignment.Position;
     currentSequenceStart = alignment.Position;
     currentSequenceName = referenceIDToName[alignment.RefID];
+    currentRefID = alignment.RefID;
     if (currentTarget == NULL) {
         currentTarget = new BedTarget(currentSequenceName, currentSequenceStart + 1, 0);
     } else {
@@ -295,46 +303,55 @@ void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int afte
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
     string name = reference->sequenceNameStartingWith(target->seq);
     currentSequence = reference->getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before);
-    //loadReferenceSequence(name, target->left - 1 - before, target->right - target->left + after + before);
+    currentReferenceBase = currentReferenceBaseChar();
 }
 
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
-    DEBUG2("extending reference subsequence right by " << rightExtension << " bp");
     currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
                                                  (currentTarget->right - 1) + basesAfterCurrentTarget,
                                                  rightExtension);
     basesAfterCurrentTarget += rightExtension;
 }
 
-// handles reference extension if we are in 0-coverage regions
-void AlleleParser::extendReferenceSequence(void) {
-    int diff = currentPosition - (currentSequenceStart + currentSequence.size());
-    if (diff > 0) {
+// maintain a 10bp window around the curent position
+// to guarantee our ability to process sequence
+void AlleleParser::preserveReferenceSequenceWindow(int bp) {
+    int leftdiff = currentSequenceStart - (currentPosition - bp);
+    int rightdiff = (currentPosition + bp) - (currentSequenceStart + currentSequence.size());
+    if (leftdiff > 0) {
+        currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
+        currentSequenceStart -= leftdiff;
+    }
+    if (rightdiff > 0) {
         currentSequence += reference->getSubSequence(
                 currentSequenceName,
                 (currentSequenceStart + currentSequence.size()),
-                diff);
+                rightdiff);  // always go 10bp past the end of what we need for alignment registration
     }
 }
 
+// ensure we have cached reference sequence according to the current alignment
 void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
-    if (alignment.Position < currentSequenceStart) {
-        int leftdiff = currentSequenceStart - alignment.Position;
+
+    int leftdiff = currentSequenceStart - alignment.Position;
+    if (leftdiff > 0) {
         currentSequenceStart -= leftdiff;
         currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
     }
-    int diff = (alignment.Position + alignment.AlignedBases.size()) - (currentSequenceStart + currentSequence.size());
-    if (diff > 0) {
+
+    int rightdiff = (alignment.Position + alignment.AlignedBases.size()) - (currentSequenceStart + currentSequence.size());
+    if (rightdiff > 0) {
         currentSequence += reference->getSubSequence(
                 currentSequenceName,
                 (currentSequenceStart + currentSequence.size()),
-                diff);
+                rightdiff);
     }
+
 }
 
 void AlleleParser::eraseReferenceSequence(int leftErasure) {
-    DEBUG2("erasing leftmost " << leftErasure << "bp of cached reference sequence");
+    //cerr << "erasing leftmost " << leftErasure << "bp of cached reference sequence" << endl;
     currentSequence.erase(0, leftErasure);
     currentSequenceStart += leftErasure;
 }
@@ -367,7 +384,12 @@ void AlleleParser::loadTargets(void) {
                 stopPos = startPos + 1;
             } else {
                 startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
-                stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // to the start of this chromosome
+                // if we have range dots specified, but no second number, read to the end of sequence
+                if (foundRangeDots + 2 != region.size()) {
+                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str());
+                } else {
+                    stopPos = reference->sequenceLength(startSeq);
+                }
             }
         }
 
@@ -444,13 +466,13 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     openTraceFile();
     openOutputFile();
 
+    loadFastaReference();
     // check how many targets we have specified
     loadTargets();
     // when we open the bam files we can use the number of targets to decide if
     // we should load the indexes
     openBams();
     loadBamReferenceSequenceNames();
-    loadFastaReference();
     getSampleNames();
 
     // if we don't have any targets specified, now use the BAM header to get
@@ -749,6 +771,10 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 void AlleleParser::updateAlignmentQueue(void) {
 
     DEBUG2("updating alignment queue");
+    DEBUG2("currentPosition = " << currentPosition << "; currentSequenceStart = " << currentSequenceStart << "; currentSequence end = " << currentSequence.size() + currentSequenceStart);
+
+    // make sure we have sequence for the *first* alignment
+    extendReferenceSequence(currentAlignment);
 
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
@@ -803,7 +829,8 @@ void AlleleParser::updateAlignmentQueue(void) {
                     }
                 }
             }
-        } while ((hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment)) && currentAlignment.Position <= currentPosition);
+        } while ((hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment)) && currentAlignment.Position <= currentPosition
+                && currentAlignment.RefID == currentRefID);
     }
 
     DEBUG2("... finished pushing new alignments");
@@ -811,7 +838,7 @@ void AlleleParser::updateAlignmentQueue(void) {
     // pop from the back until we get to an alignment that overlaps our current position
     if (registeredAlignmentQueue.size() > 0) {
         BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-        while (currentPosition > alignment->GetEndPosition() && registeredAlignmentQueue.size() > 0) {
+        while ((currentPosition > alignment->GetEndPosition() || alignment->RefID != currentRefID) && registeredAlignmentQueue.size() > 0) {
             DEBUG2("popping alignment");
             registeredAlignmentQueue.pop_back();
             if (registeredAlignmentQueue.size() > 0) {
@@ -848,13 +875,10 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 
-    if (lowestPosition != currentSequenceStart + currentSequence.size()) {
-        int diff = lowestPosition - currentSequenceStart;
-        if (diff > 0) {
-            eraseReferenceSequence(diff);
-        }
+    int diff = lowestPosition - currentSequenceStart;
+    if (diff > 0 && currentSequenceStart + diff < currentPosition - CACHED_REFERENCE_WINDOW) {
+        eraseReferenceSequence(diff);
     }
-
 }
 
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
@@ -912,18 +936,22 @@ bool AlleleParser::toNextTarget(void) {
             ERROR("Could not get first alignment from target");
             return false;
         }
-        loadReferenceSequence(currentAlignment);
+        // XXX hack
         clearRegisteredAlignments();
-    // stdin case
+        currentSequenceStart = currentAlignment.Position;
+        currentSequenceName = referenceIDToName[currentAlignment.RefID];
+        currentRefID = currentAlignment.RefID;
+        currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
+        currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length);
+    // stdin, no targets cases
     } else if (currentTarget == NULL && targets.empty()) {
         if (!getFirstAlignment()) {
             ERROR("Could not get first alignment from target");
             return false;
         }
-        loadReferenceSequence(currentAlignment);
-        currentPosition = currentAlignment.Position;
-        currentReferenceBase = currentReferenceBaseChar();
         clearRegisteredAlignments();
+        loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
+    // we've reached the end of file, or stdin, before we ever started?
     } else if (targets.empty()) {
         ERROR("could not read any alignments");
         return false;
@@ -935,8 +963,8 @@ bool AlleleParser::toNextTarget(void) {
             ok &= getFirstAlignment();
         }
         if (!ok) return false;
-        loadReferenceSequence(currentAlignment);
         clearRegisteredAlignments();
+        loadReferenceSequence(currentAlignment);
     }
 
     justSwitchedTargets = true;
@@ -1030,15 +1058,18 @@ bool AlleleParser::toNextPosition(void) {
     else {
         */
     if (currentTarget == NULL) {
+        DEBUG2("loading first target");
         if (!toNextTarget()) {
             return false;
         }
     } 
     else {
         ++currentPosition;
+        //cerr << currentPosition << "\r";
     }
 
-    extendReferenceSequence(); // grabs more sequence before the current position if we need it
+    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
+    //extendReferenceSequenceLeft(); // grabs more sequence before the current position if we need it
     currentReferenceBase = currentReferenceBaseChar();
 
     if (!targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
@@ -1049,11 +1080,23 @@ bool AlleleParser::toNextPosition(void) {
         }
     }
     
-    // stdin case
-    if (targets.empty() && !hasMoreAlignments && registeredAlignmentQueue.empty()) {
-        DEBUG("no more alignments, exiting");
-        return false;
+    // stdin, no targets case
+    if (targets.empty()) { 
+        if (!hasMoreAlignments && registeredAlignmentQueue.empty()) {
+            DEBUG("no more alignments, exiting");
+            return false;
+        }
+        // TODO rectify this with the other copies of this stanza...
+        // implicit step of target sequence
+        if (currentRefID != currentAlignment.RefID) {
+            DEBUG("moving to new reference sequence");
+            clearRegisteredAlignments();
+            loadReferenceSequence(currentAlignment);
+            justSwitchedTargets = true;
+        }
     }
+
+    // handle the case in which we don't have targets but in which we've switched reference sequence
 
     DEBUG2("processing position " << currentPosition + 1 << " in sequence " << currentTarget->seq);
     updateAlignmentQueue();
@@ -1093,6 +1136,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
 
     // if we just switched targets, clean up everything in our input vector
     if (justSwitchedTargets) {
+        DEBUG2("just switched targets, cleaning up sample alleles");
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
             s->second.clear();
         justSwitchedTargets = false; // TODO this whole flagged stanza is hacky;
