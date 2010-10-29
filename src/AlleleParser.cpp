@@ -511,7 +511,7 @@ int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
 
 // TODO clean up this.... just use a string
 char AlleleParser::currentReferenceBaseChar(void) {
-    return *currentReferenceBaseIterator();
+    return toupper(*currentReferenceBaseIterator());
 }
 
 string AlleleParser::currentReferenceBaseString(void) {
@@ -807,7 +807,7 @@ void AlleleParser::updateAlignmentQueue(void) {
             << ", currentSequenceStart == " << currentSequenceStart
             << " .. + currentSequence.size() == " << currentSequenceStart + currentSequence.size()
             );
-    if (currentAlignment.Position <= currentPosition) {
+    if (currentAlignment.Position <= currentPosition && currentAlignment.RefID == currentRefID) {
         do {
             DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
             // get read group, and map back to a sample name
@@ -1068,19 +1068,6 @@ void AlleleParser::clearRegisteredAlignments(void) {
 // if none exist, return false
 bool AlleleParser::toNextPosition(void) {
 
-    // as is the case when we read from stdin
-    /*
-    if (targets.empty()) {
-        // check if we've exhausted the input stream and are at the last base
-        if (!hasMoreAlignments && currentPosition == currentAlignment.Position + currentAlignment.AlignedBases.size()) {
-            return false;
-        } else {
-            ++currentPosition;
-            currentReferenceBase = currentReferenceBaseChar();
-        }
-    }
-    else {
-        */
     if (currentTarget == NULL) {
         DEBUG2("loading first target");
         if (!toNextTarget()) {
@@ -1089,12 +1076,7 @@ bool AlleleParser::toNextPosition(void) {
     } 
     else {
         ++currentPosition;
-        //cerr << currentPosition << "\r";
     }
-
-    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
-    //extendReferenceSequenceLeft(); // grabs more sequence before the current position if we need it
-    currentReferenceBase = currentReferenceBaseChar();
 
     if (!targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
@@ -1106,26 +1088,31 @@ bool AlleleParser::toNextPosition(void) {
     
     // stdin, no targets case
     if (targets.empty()) { 
-        if (!hasMoreAlignments && registeredAlignmentQueue.empty()) {
-            DEBUG("no more alignments, exiting");
-            return false;
-        }
         // TODO rectify this with the other copies of this stanza...
         // implicit step of target sequence
-        if (currentRefID != currentAlignment.RefID) {
-            DEBUG("moving to new reference sequence");
+        // XXX this must wait for us to clean out all of our alignments at the end of the target
+        if (registeredAlignmentQueue.empty() && currentRefID != currentAlignment.RefID) {
+            cerr << "moving to new reference sequence" << endl;
             clearRegisteredAlignments();
             loadReferenceSequence(currentAlignment);
             justSwitchedTargets = true;
+        } else if (!hasMoreAlignments && registeredAlignmentQueue.empty()) {
+            DEBUG("no more alignments in input");
+            return false;
         }
     }
+
+    currentReferenceBase = currentReferenceBaseChar();
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
 
     DEBUG2("processing position " << currentPosition + 1 << " in sequence " << currentTarget->seq);
     updateAlignmentQueue();
     DEBUG2("updating registered alleles");
-    updateRegisteredAlleles();
+    updateRegisteredAlleles(); // this removes unused left-flanking sequence
+    // so we have to make sure it's still there (this matters in low-coverage)
+    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
+
     return true;
 
 }

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <time.h>
 #include <assert.h>
+#include <ctype.h>
 #include "split.h"
 #include "join.h"
 #include "BamReader.h"
