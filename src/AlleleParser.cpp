@@ -524,15 +524,13 @@ string::iterator AlleleParser::currentReferenceBaseIterator(void) {
 }
 
 bool AlleleParser::isCpG(string& altbase) {
-    string flanking = currentSequence.substr(currentPosition - currentSequenceStart - 1, 3);
-           // forward CpG <-> TpG
-    if ((   (flanking[0] == 'G' || flanking[2] == 'G')
-        &&   ((flanking[1] == 'C' && altbase == "T")
-           || (flanking[1] == 'T' && altbase == "C"))) 
-        || // reverse complement TpA <-> CpA
-         (  (flanking[0] == 'A' || flanking[2] == 'A')
-        &&   ((flanking[1] == 'C' && altbase == "T")
-           || (flanking[1] == 'T' && altbase == "C"))))
+    string nextb = currentSequence.substr(currentPosition - currentSequenceStart - 1, 1);
+    string currb = currentSequence.substr(currentPosition - currentSequenceStart, 1);
+    string prevb = currentSequence.substr(currentPosition - currentSequenceStart + 1, 1);
+           // 5'-3' CpG <-> TpG
+    if ((nextb == "G" && ((currb == "C" && altbase == "T") || (currb == "T" && altbase == "C")))
+        ||
+        (prevb == "C" && ((currb == "G" && altbase == "A") || (currb == "A" && altbase == "G"))))
     {
         return true;
     } else {
