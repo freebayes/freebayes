@@ -352,6 +352,10 @@ Parameters::Parameters(int argc, char** argv) {
                     cerr << "could not parse ploidy" << endl;
                     exit(1);
                 }
+                if (ploidy <= 0) {
+                    cerr << "cannot set ploidy to less than 1" << endl;
+                    exit(1);
+                }
                 break;
 
             // -m --min-mapping-quality
