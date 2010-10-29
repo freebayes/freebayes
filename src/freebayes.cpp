@@ -113,8 +113,6 @@ int main (int argc, char *argv[]) {
         //filterAlleles(alleles, allowedAlleles);
         //removeIndelMaskedAlleles(alleles, parser->currentPosition);
         
-        DEBUG2("alleles filtered");
-
         if (parameters.trace) {
             for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
                 const string& name = s->first;

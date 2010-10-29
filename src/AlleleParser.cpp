@@ -291,7 +291,7 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
         if (currentSequenceStart + 1 != currentTarget->left)
             currentTarget->left = currentSequenceStart + 1;
     }
-    currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.Length);
+    currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length());
 }
 
 // intended to load all the sequence covered by reads which overlap our current target
@@ -317,8 +317,16 @@ void AlleleParser::extendReferenceSequence(int rightExtension) {
 // maintain a 10bp window around the curent position
 // to guarantee our ability to process sequence
 void AlleleParser::preserveReferenceSequenceWindow(int bp) {
+
+    // establish left difference between ideal window size and current cached sequence
     int leftdiff = currentSequenceStart - (currentPosition - bp);
+    // guard against falling off the left end of our sequence
+    leftdiff = (currentPosition - leftdiff < 0) ? currentPosition : leftdiff;
+    // right guard is not needed due to the fact that we are just attempting to
+    // append sequence substr will simply return fewer additional characters if
+    // we go past the right end of the ref
     int rightdiff = (currentPosition + bp) - (currentSequenceStart + currentSequence.size());
+
     if (leftdiff > 0) {
         currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
         currentSequenceStart -= leftdiff;
@@ -335,6 +343,7 @@ void AlleleParser::preserveReferenceSequenceWindow(int bp) {
 void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
 
     int leftdiff = currentSequenceStart - alignment.Position;
+    leftdiff = (currentPosition - leftdiff < 0) ? currentPosition : leftdiff;
     if (leftdiff > 0) {
         currentSequenceStart -= leftdiff;
         currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
@@ -485,6 +494,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
     justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
     hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
+    currentSequenceStart = 0;
 
 }
 
@@ -505,6 +515,7 @@ char AlleleParser::currentReferenceBaseChar(void) {
 }
 
 string AlleleParser::currentReferenceBaseString(void) {
+    //cerr << currentPosition << " >= " << currentSequenceStart << endl;
     return currentSequence.substr(currentPosition - currentSequenceStart, 1);
 }
 
@@ -855,7 +866,7 @@ void AlleleParser::updateAlignmentQueue(void) {
 // updates registered alleles and erases the unused portion of our cached reference sequence
 void AlleleParser::updateRegisteredAlleles(void) {
 
-    long unsigned int lowestPosition = currentSequenceStart + currentSequence.size();
+    long int lowestPosition = currentSequenceStart + currentSequence.size();
 
     // remove reference alleles which are no longer overlapping the current position
     // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
@@ -875,9 +886,11 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 
-    int diff = lowestPosition - currentSequenceStart;
-    if (diff > 0 && currentSequenceStart + diff < currentPosition - CACHED_REFERENCE_WINDOW) {
-        eraseReferenceSequence(diff);
+    if (lowestPosition <= currentPosition) {
+        int diff = lowestPosition - currentSequenceStart;
+        if (diff > 0 && currentSequenceStart + diff < currentPosition - CACHED_REFERENCE_WINDOW) {
+            eraseReferenceSequence(diff);
+        }
     }
 }
 

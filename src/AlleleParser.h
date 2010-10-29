@@ -181,7 +181,7 @@ private:
     Allele* currentAlternateAllele;
 
     //BedTarget currentSequenceBounds;
-    long unsigned int currentSequenceStart;
+    long int currentSequenceStart;
     string currentSequenceName;
 
     bool hasMoreAlignments;
