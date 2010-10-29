@@ -527,7 +527,7 @@ bool AlleleParser::isCpG(string& altbase) {
     string nextb = currentSequence.substr(currentPosition - currentSequenceStart - 1, 1);
     string currb = currentSequence.substr(currentPosition - currentSequenceStart, 1);
     string prevb = currentSequence.substr(currentPosition - currentSequenceStart + 1, 1);
-           // 5'-3' CpG <-> TpG
+    // 5'-3' CpG <-> TpG is represented as CpG <-> CpA in on the opposite strand
     if ((nextb == "G" && ((currb == "C" && altbase == "T") || (currb == "T" && altbase == "C")))
         ||
         (prevb == "C" && ((currb == "G" && altbase == "A") || (currb == "A" && altbase == "G"))))
