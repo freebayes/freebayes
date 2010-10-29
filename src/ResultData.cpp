@@ -82,6 +82,7 @@ string vcf(
         Samples& samples,
         string refbase,
         string altbase,
+        Allele& altAllele,
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
@@ -199,10 +200,30 @@ string vcf(
         // homopolymer run length.  number of consecutive nucleotides (prior to this position?) in the genome
         // reference sequence matching the alternate allele, after substituting the
         // alternate in place of the reference sequence allele
-        << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)
-        << "\t"
+        << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";";
 
-        << "GT:GQ:DP:RA:AA:BCF:BCR";
+    // allele class
+    if (altAllele.type == ALLELE_DELETION) {
+        out << "DEL=" << altAllele.length;
+    } else if (altAllele.type == ALLELE_INSERTION) {
+        out << "INS=" << altAllele.length;
+    } else if (altAllele.type == ALLELE_SNP) {
+        out << "SNP";
+    }
+
+    // ts/tv
+    if (isTransition(refbase, altbase)) {
+        out << ";TS";
+    } else {
+        out << ";TV";
+    }
+
+    // CpG
+    if (parser->isCpG(altbase)) {
+        out << ";CpG";
+    }
+
+    out << "\t" << "GT:GQ:DP:RA:AA:BCF:BCR";
     // TODO GL, un-normalized data likelihoods for genotypes
 
     // samples

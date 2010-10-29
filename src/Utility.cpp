@@ -248,6 +248,15 @@ long double beta(const vector<long double>& alphas) {
 }
 
 
+bool isTransition(string& ref, string& alt) {
+    if (((ref == "A" && alt == "G") || (ref == "G" && alt == "A")) ||
+        ((ref == "C" && alt == "T") || (ref == "T" && alt == "C"))) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 // Levenshtein Distance Algorithm: C++ Implementation
 // by Anders Sewerin Johansen
 // http://www.merriampark.com/ldcpp.htm

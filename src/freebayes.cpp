@@ -401,6 +401,7 @@ int main (int argc, char *argv[]) {
                             samples,
                             referenceBase,
                             bestAlt.base(),
+                            bestAlt,
                             parser->sampleList,
                             coverage,
                             bestGenotypeCombo,

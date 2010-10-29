@@ -523,6 +523,17 @@ string::iterator AlleleParser::currentReferenceBaseIterator(void) {
     return currentSequence.begin() + (currentPosition - currentSequenceStart);
 }
 
+bool AlleleParser::isCpG(string& altbase) {
+    string flanking = currentSequence.substr(currentPosition - currentSequenceStart - 1, 3);
+    if (   (flanking[0] == 'G' || flanking[2] == 'G')
+        &&   ((flanking[1] == 'C' && altbase == "T")
+           || (flanking[1] == 'T' && altbase == "C"))) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 // registeredalignment friend
 ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
     out << ra.alignment.Name << " " << ra.alignment.Position << endl

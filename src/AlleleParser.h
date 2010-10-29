@@ -173,6 +173,9 @@ public:
     ofstream logFile, outputFile, traceFile;
     ostream* output;
 
+    // utility
+    bool isCpG(string& altbase);
+
 private:
 
     bool justSwitchedTargets;  // to trigger clearing of queues, maps and such holding Allele*'s on jump
@@ -193,6 +196,5 @@ private:
     BamAlignment currentAlignment;
 
 };
-
 
 #endif

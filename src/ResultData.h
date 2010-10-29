@@ -71,6 +71,7 @@ public:
             Samples& sample,
             string referenceBase,
             string alternateBase,
+            Allele& altAllele,
             vector<string>& samples,
             int coverage,
             GenotypeCombo& genotypeCombo,
