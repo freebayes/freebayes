@@ -209,19 +209,19 @@ string vcf(
         out << "INS=" << altAllele.length;
     } else if (altAllele.type == ALLELE_SNP) {
         out << "SNP";
+        // ts/tv
+        if (isTransition(refbase, altbase)) {
+            out << ";TS";
+        } else {
+            out << ";TV";
+        }
+
+        // CpG
+        if (parser->isCpG(altbase)) {
+            out << ";CpG";
+        }
     }
 
-    // ts/tv
-    if (isTransition(refbase, altbase)) {
-        out << ";TS";
-    } else {
-        out << ";TV";
-    }
-
-    // CpG
-    if (parser->isCpG(altbase)) {
-        out << ";CpG";
-    }
 
     out << "\t" << "GT:GQ:DP:RA:AA:BCF:BCR";
     // TODO GL, un-normalized data likelihoods for genotypes
