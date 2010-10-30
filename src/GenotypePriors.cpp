@@ -1,34 +1,5 @@
 #include "GenotypePriors.h"
 
-/*
-def count_frequencies(genotype_combo):
-    counts = {}
-    alleles = {}
-    for genotype in genotype_combo:
-        for allele, count in genotype:
-            if alleles.has_key(allele):
-                alleles[allele] += count
-            else:
-                alleles[allele] = count
-    for allele, count in alleles.iteritems():
-        if counts.has_key(count):
-            counts[count] += 1
-        else:
-            counts[count] = 1
-    return counts
-*/
-
-/*
-def allele_frequency_probability(allele_frequency_counts, theta=0.001):
-    """Implements Ewens' Sampling Formula.  allele_frequency_counts is a
-    dictionary mapping count -> number of alleles with this count in the
-    population."""
-    M = sum([frequency * count for frequency, count in allele_frequency_counts.iteritems()])
-    return math.factorial(M) \
-        / (theta * product([theta + h for h in range(1, M)])) \
-        * product([math.pow(theta, count) / math.pow(frequency, count) * math.factorial(count) \
-            for frequency, count in allele_frequency_counts.iteritems()])
-*/
 
 long double alleleFrequencyProbability(map<int, int> alleleFrequencyCounts, long double theta) {
 
@@ -50,20 +21,8 @@ long double alleleFrequencyProbability(map<int, int> alleleFrequencyCounts, long
 
 }
 
-/*
-def allele_frequency_probabilityln(allele_frequency_counts, theta=0.001):
-    """Log space version to avoid inevitable overflows with coverage >100.
-    Implements Ewens' Sampling Formula.  allele_frequency_counts is a
-    dictionary mapping count -> number of alleles with this count in the
-    population."""
-    thetaln = math.log(theta)
-    M = sum([frequency * count for frequency, count in allele_frequency_counts.iteritems()])
-    return factorialln(M) \
-        - (thetaln + sum([math.log(theta + h) for h in range(1, M)])) \
-        + sum([powln(thetaln, count) - powln(math.log(frequency), count) + factorialln(count) \
-            for frequency, count in allele_frequency_counts.iteritems()])
-*/
-
+// Implements Ewens' Sampling Formula, which provides probability of a given
+// partition of alleles in a sample from a population
 long double alleleFrequencyProbabilityln(map<int, int> alleleFrequencyCounts, long double theta) {
 
     int M = 0; // multiplicity of site
@@ -102,8 +61,12 @@ long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo&
 }
 
 
-// XXX although this is intended to replace the above diploid-specific
-// function, and will do so with identical results on diploid data, it is
+// the probability of a given combination of genotypes given an allele
+// frequency.  this uses a simple diffusion model to scale  our prior with
+// respect to the number of homozygotes vs. heterozygotes.
+//
+// NB: although this is intended to replace the above diploid-specific
+// function, and will do so with identical results on diploid data, this is
 // unproven theoretically for non-uniform copy number
 long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
 
@@ -136,7 +99,7 @@ genotypeCombinationPriorProbability(
     for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
         long double priorProbabilityOfGenotypeComboG_Af = 
-            probabilityDiploidGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+            probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
         long double priorProbabilityOfGenotypeComboAf = 
             alleleFrequencyProbabilityln(combo->countFrequencies(), theta);
         long double priorProbabilityOfGenotypeCombo = 

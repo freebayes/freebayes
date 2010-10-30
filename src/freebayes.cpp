@@ -252,10 +252,6 @@ int main (int argc, char *argv[]) {
         // calculate marginals
         // and determine best genotype combination
 
-        // TODO add in all-alternate and all-reference
-        // ... or at least very add one which is consistent
-        //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinations(sampleGenotypes, 2, 2);
-        //vector<GenotypeCombo> bandedCombos = bandedGenotypeCombinationsIncludingBestHomozygousCombo(sampleGenotypes, 2, 2);
         DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
         vector<GenotypeCombo> bandedCombos;
         bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypes, parameters.WB, parameters.TB);
@@ -273,7 +269,6 @@ int main (int argc, char *argv[]) {
         GenotypeComboResultSorter gcrSorter;
         sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), gcrSorter);
 
-        // XXX here, we must include the homozygous combos...
         // resize to include only K chains, keeping us in O(NK) space instead
         // of O(N^2) for the ensuing calculations
         if (parameters.posteriorIntegrationDepth > 0) {
