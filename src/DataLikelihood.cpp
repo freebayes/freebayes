@@ -103,21 +103,22 @@ approxProbObservedAllelesGivenGenotype(
 long double
 approxProbObservedAllelesGivenGenotype(
         Sample& sample,
-        Genotype& genotype
+        Genotype& genotype,
+        long double dependenceFactor
         ) {
 
     int observationCount = sample.observationCount();
     vector<long double> alleleProbs = genotype.alleleProbabilities();
     vector<int> observationCounts = genotype.alleleCountsInObservations(sample);
     int countOut = 0;
+    long double prodQout = 0;  // the probability that the reads not in the genotype are all wrong
 
-    long double sumQout  = 0; // 
     for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) {
         const string& base = s->first;
         if (!genotype.containsAllele(base)) {
             vector<Allele*>& alleles = s->second;
             for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a)
-                sumQout += (*a)->lnquality;
+                prodQout += (*a)->lnquality;
             countOut += alleles.size();
         }
     }
@@ -125,13 +126,13 @@ approxProbObservedAllelesGivenGenotype(
     // read dependence factor, asymptotically downgrade quality values of
     // successive reads to dependenceFactor * quality
     if (countOut > 1) {
-        sumQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+        prodQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
     }
     
     if (sum(observationCounts) == 0) {
-        return sumQout;
+        return prodQout;
     } else {
-        return sumQout + multinomialln(alleleProbs, observationCounts);
+        return prodQout + multinomialln(alleleProbs, observationCounts);
     }
 
 }
@@ -145,7 +146,7 @@ bamBayesApproxProbObservedAllelesGivenGenotype(
 
     int observationCount = sample.observationCount();
 
-    long double sumQout = 0;
+    long double prodQout = 0;
     int countOut = 0;
 
     for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) {
@@ -153,17 +154,17 @@ bamBayesApproxProbObservedAllelesGivenGenotype(
         if (!genotype.containsAllele(base)) {
             vector<Allele*>& alleles = s->second;
             for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a)
-                sumQout += (*a)->lnquality;
+                prodQout += (*a)->lnquality;
             countOut += alleles.size();
         }
     }
 
     if (countOut > 1) {
-        sumQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+        prodQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
         //cerr << "dependencefactor," << observedAlleles.front()->sampleID << "," << IUPAC2GenotypeStr(IUPAC(genotype)) << "," << (1 + (countOut - 1) * dependenceFactor) / countOut << endl;
     }
 
-    long double lnprob = sumQout - countOut * log(3);
+    long double lnprob = prodQout - countOut * log(3);
 
     if (!genotype.homozygous) {
         long double lnBinomialfactor = observationCount * log(0.5);
@@ -179,10 +180,11 @@ bamBayesApproxProbObservedAllelesGivenGenotype(
 vector<pair<Genotype*, long double> >
 approxProbObservedAllelesGivenGenotypes(
         Sample& sample,
-        vector<Genotype>& genotypes) {
+        vector<Genotype>& genotypes,
+        long double dependenceFactor) {
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        results.push_back(make_pair(&*g, approxProbObservedAllelesGivenGenotype(sample, *g)));
+        results.push_back(make_pair(&*g, approxProbObservedAllelesGivenGenotype(sample, *g, dependenceFactor)));
     }
     return results;
 }
@@ -190,12 +192,13 @@ approxProbObservedAllelesGivenGenotypes(
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
-        vector<Genotype>& genotypes) {
+        vector<Genotype>& genotypes,
+        long double dependenceFactor) {
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         long double prob;
         Genotype& genotype = *g;
-        results.push_back(make_pair(&genotype, approxProbObservedAllelesGivenGenotype(sample, genotype)));
+        results.push_back(make_pair(&genotype, approxProbObservedAllelesGivenGenotype(sample, genotype, dependenceFactor)));
     }
     return results;
 }

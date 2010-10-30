@@ -199,7 +199,7 @@ int main (int argc, char *argv[]) {
             if (parameters.bamBayesDataLikelihoods) {
                  probs = bamBayesProbObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF);
             } else {
-                 probs = probObservedAllelesGivenGenotypes(sample, genotypes);
+                 probs = probObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF);
             }
 
             map<Genotype*, long double> marginals;
