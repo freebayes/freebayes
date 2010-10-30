@@ -109,22 +109,29 @@ approxProbObservedAllelesGivenGenotype(
     int observationCount = sample.observationCount();
     vector<long double> alleleProbs = genotype.alleleProbabilities();
     vector<int> observationCounts = genotype.alleleCountsInObservations(sample);
+    int countOut = 0;
 
-    long double probInAllCorrect = 0; // 
-    long double probOutAllWrong  = 0; // 
+    long double sumQout  = 0; // 
     for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) {
         const string& base = s->first;
         if (!genotype.containsAllele(base)) {
             vector<Allele*>& alleles = s->second;
             for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a)
-                probOutAllWrong += (*a)->lnquality;
+                sumQout += (*a)->lnquality;
+            countOut += alleles.size();
         }
+    }
+
+    // read dependence factor, asymptotically downgrade quality values of
+    // successive reads to dependenceFactor * quality
+    if (countOut > 1) {
+        sumQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
     }
     
     if (sum(observationCounts) == 0) {
-        return probOutAllWrong;
+        return sumQout;
     } else {
-        return probOutAllWrong + multinomialln(alleleProbs, observationCounts);
+        return sumQout + multinomialln(alleleProbs, observationCounts);
     }
 
 }

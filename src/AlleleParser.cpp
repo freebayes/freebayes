@@ -368,7 +368,7 @@ void AlleleParser::eraseReferenceSequence(int leftErasure) {
 void AlleleParser::loadTargets(void) {
 
     // if we have a region specified, use it to generate a target
-    if (parameters.region != "") {
+    if (!parameters.region.empty()) {
         // drawn from bamtools_utilities.cpp, modified to suit 1-based context, no end sequence
 
         string region = parameters.region;
@@ -390,7 +390,7 @@ void AlleleParser::loadTargets(void) {
                 startPos = atoi(region.substr(foundFirstColon + 1).c_str());
                 // differ from bamtools in this regard, in that we process only
                 // the specified position if a range isn't given
-                stopPos = startPos + 1;
+                stopPos = startPos + 2; // NB: end-inclusive format!
             } else {
                 startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
                 // if we have range dots specified, but no second number, read to the end of sequence
@@ -411,7 +411,7 @@ void AlleleParser::loadTargets(void) {
 
     // if we have a targets file, use it...
     // if target file specified use targets from file
-    if (parameters.targets != "") {
+    if (!parameters.targets.empty()) {
 
         DEBUG("Making BedReader object for target file: " << parameters.targets << " ...");
 
@@ -585,8 +585,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 #endif
 
     /*
-     * This should be simpler, but isn't because the cigar only records matches
-     * for sequences that have embedded mismatches.
+     * The cigar only records matches for sequences that have embedded
+     * mismatches.
      *
      * Also, we don't store the entire undelying sequence; just the subsequence
      * that matches our current target region.
@@ -635,7 +635,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 string sb;
                 TRY { sb = currentSequence.at(csp); } CATCH;
 
-                // XXX XXX XXX THIS DEBUGIC IS ILDEBUGICAL!!!
+                // THIS DEBUGIC IS ILDEBUGICAL!!!
                 //
                 // record mismatch if we have a mismatch here
                 if (b != sb) {
@@ -693,20 +693,19 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             // extract base quality of left and right flanking non-deleted bases
             string qualstr = rQual.substr(rp, 2);
 
+            // TODO make this average quality
             // calculate joint quality of the two flanking qualities
             short qual = max(qualityChar2ShortInt(qualstr[0]), qualityChar2ShortInt(qualstr[1]));
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
             }
-            // XXX indel window exclusion
-            // XXX this only excludes after the deletion
-            //if (qual >= parameters.BQL0) {
+
             if (qual >= parameters.BQL2) {
                 for (int i=0; i<l; i++) {
                     indelMask[sp - alignment.Position + i] = true;
                 }
             }
-            //}
+
             Allele* allele = new Allele(ALLELE_DELETION,
                     currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l,
                     currentSequence.substr(csp, l), "", sampleName, alignment.Name,
@@ -724,6 +723,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             // calculate max quality of the insertion
             // TODO: perhaps average quality makes more sense
+            //  seems we see an insertion bias due to this decision
             vector<short> quals = qualities(qualstr);
             short qual = *max_element(quals.begin(), quals.end());
             if (qual >= parameters.BQL2) {

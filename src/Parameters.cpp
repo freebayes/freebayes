@@ -23,7 +23,8 @@ void Parameters::usage(char** argv) {
          << "   -t --targets FILE" << endl
          << "                   Limit analysis to targets listed in the BED-format FILE." << endl
          << "   -r --region <chrom>:<start_position>..<end_position>" << endl
-         << "                   Limit analysis to the specified region." << endl
+         << "                   Limit analysis to the specified region, 1-base coordinates," << endl
+         << "                   end_position inclusive." << endl
          << "   -s --samples FILE" << endl
          << "                   Limit analysis to samples listed (one per line) in the FILE." << endl
          << "                   By default FreeBayes will analyze all samples in its input" << endl
@@ -521,6 +522,9 @@ Parameters::Parameters(int argc, char** argv) {
  
     // any remaining arguments are considered as bam files
     if (optind < argc) {
+        if (useStdin) {
+            cerr << "--stdin flag specified, but a list of BAM files given.  Jumping disabled." << endl;
+        }
         while (optind < argc) {
             bams.push_back(argv[optind++]);
         }
