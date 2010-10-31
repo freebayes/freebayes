@@ -217,6 +217,8 @@ bamBayesProbObservedAllelesGivenGenotypes(
     return results;
 }
 
+// NB: in practice, caching seems to not provide any perf boost
+// .... but this needs to be tested now with the revised codebase
 /*
 
 // uses caching to reduce computation while generating the exact correct result
