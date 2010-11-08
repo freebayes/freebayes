@@ -63,7 +63,7 @@ using namespace std;
 // Because we are dynamically linked, we have to declare the freelist here,
 // although it exists as a static member of the Allele class.
 //
-AlleleFreeList Allele::_freeList;
+//AlleleFreeList Allele::_freeList;
 
 
 int main (int argc, char *argv[]) {
@@ -131,7 +131,7 @@ int main (int argc, char *argv[]) {
 
         int coverage = countAlleles(samples);
 
-        DEBUG("position: " << parser->currentTarget->seq << ":" << parser->currentPosition << " coverage: " << coverage);
+        DEBUG("position: " << parser->currentTarget->seq << ":" << parser->currentPosition + 1 << " coverage: " << coverage);
 
         // skips 0-coverage regions
         if (coverage == 0) {
@@ -157,6 +157,19 @@ int main (int argc, char *argv[]) {
         map<string, vector<Allele*> > alleleGroups;
         groupAlleles(samples, alleleGroups);
         DEBUG2("grouped alleles by equivalence");
+
+        int containedAlleleTypes = 0;
+        for (map<string, vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
+            containedAlleleTypes |= group->second.front()->type;
+        }
+        /*
+        if (containedAlleleTypes & ALLELE_DELETION) {
+            cerr << "there are deletion observations at this site" << endl;
+        }
+        if (containedAlleleTypes & ALLELE_INSERTION) {
+            cerr << "there are insertion observations at this site" << endl;
+        }
+        */
 
         vector<string> sampleListPlusRef;
         //if (parameters.trace) {
@@ -218,7 +231,7 @@ int main (int argc, char *argv[]) {
         
         DEBUG2("finished calculating data likelihoods");
 
-        // XXX this section is a hack to make output of trace identical to BamBayes
+        // this section is a hack to make output of trace identical to BamBayes trace
         // and also outputs the list of samples
         vector<bool> samplesWithData;
         if (parameters.trace) parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",samples,";
@@ -237,7 +250,6 @@ int main (int argc, char *argv[]) {
         // sort individual genotype data likelihoods
         
         vector<pair<string, vector<pair<Genotype*, long double> > > > sampleGenotypes;
-        //for (Results::iterator s = results.begin(); s != results.end(); ++s) {
         for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
             Results::iterator r = results.find(*s);
             if (r != results.end()) {

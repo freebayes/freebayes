@@ -35,12 +35,20 @@ using namespace BamTools;
 class RegisteredAlignment {
     friend ostream &operator<<(ostream &out, RegisteredAlignment &a);
 public:
-    BamAlignment alignment;
+    //BamAlignment alignment;
+    long unsigned int start;
+    long unsigned int end;
+    int refid;
+    string name;
     vector<Allele*> alleles;
     int mismatches;
 
-    RegisteredAlignment(BamAlignment alignment)
-        : alignment(alignment)
+    RegisteredAlignment(BamAlignment& alignment)
+        //: alignment(alignment)
+        : start(alignment.Position)
+        , end(alignment.GetEndPosition())
+        , refid(alignment.RefID)
+        , name(alignment.Name)
         , mismatches(0)
     { }
 

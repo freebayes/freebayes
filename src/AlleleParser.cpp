@@ -390,12 +390,12 @@ void AlleleParser::loadTargets(void) {
                 startPos = atoi(region.substr(foundFirstColon + 1).c_str());
                 // differ from bamtools in this regard, in that we process only
                 // the specified position if a range isn't given
-                stopPos = startPos + 2; // NB: end-inclusive format!
+                stopPos = startPos + 1;
             } else {
                 startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
                 // if we have range dots specified, but no second number, read to the end of sequence
                 if (foundRangeDots + 2 != region.size()) {
-                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str());
+                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()) + 1; // end-inclusive
                 } else {
                     stopPos = reference->sequenceLength(startSeq);
                 }
@@ -502,6 +502,14 @@ AlleleParser::~AlleleParser(void) {
     // close trace file?  seems to get closed properly on object deletion...
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
     delete reference;
+
+    for (vector<Allele*>::iterator allele = registeredAlleles.begin();
+            allele != registeredAlleles.end(); ++allele) {
+        delete *allele;
+    }
+
+    delete currentTarget;
+
 }
 
 // position of alignment relative to current sequence
@@ -538,15 +546,6 @@ bool AlleleParser::isCpG(string& altbase) {
     }
 }
 
-// registeredalignment friend
-ostream& operator<<(ostream& out, RegisteredAlignment& ra) {
-    out << ra.alignment.Name << " " << ra.alignment.Position << endl
-        << ra.alignment.QueryBases << endl
-        << ra.alignment.Qualities << endl
-        << ra.alleles << endl;
-    return out;
-}
-
 RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, string sampleName) {
 
     RegisteredAlignment ra = RegisteredAlignment(alignment); // result
@@ -557,12 +556,10 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
     int sp = alignment.Position;  // sequence position
 
-    string readName = alignment.Name;
-
 #ifdef VERBOSE_DEBUG
     if (parameters.debug2) {
         DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
-                "alignment readName " << readName << endl <<
+                "alignment readName " << alignment.Name << endl <<
                 "alignment isPaired " << alignment.IsPaired() << endl <<
                 "alignment sampleID " << sampleName << endl << 
                 "alignment position " << alignment.Position << endl <<
@@ -629,7 +626,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 TRY { b = rDna.at(rp); } CATCH;
 
                 // convert base quality value into short int
-                short qual = qualityChar2ShortInt(rQual.at(rp));
+                long double qual = qualityChar2LongDouble(rQual.at(rp));
 
                 // get reference allele
                 string sb;
@@ -651,7 +648,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                         Allele* allele = new Allele(ALLELE_REFERENCE,
                                 currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
                                 matchingSequence, readSequence, sampleName, alignment.Name,
-                                !alignment.IsReverseStrand(), -1, qualstr,
+                                !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                                 alignment.MapQuality);
                         DEBUG2(allele);
                         ra.alleles.push_back(allele);
@@ -683,7 +680,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 Allele* allele = new Allele(ALLELE_REFERENCE,
                         currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
                         matchingSequence, readSequence, sampleName, alignment.Name,
-                        !alignment.IsReverseStrand(), -1, qualstr,
+                        !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                         alignment.MapQuality);
                 DEBUG2(allele);
                 ra.alleles.push_back(allele);
@@ -695,7 +692,9 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             // TODO make this average quality
             // calculate joint quality of the two flanking qualities
-            short qual = max(qualityChar2ShortInt(qualstr[0]), qualityChar2ShortInt(qualstr[1]));
+            //short qual = max(qualityChar2LongDouble(qualstr[0]), qualityChar2LongDouble(qualstr[1]));
+            long double qual = (qualityChar2LongDouble(qualstr[0]) + qualityChar2LongDouble(qualstr[1])) / 2;
+
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
             }
@@ -722,10 +721,15 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             string qualstr = rQual.substr(rp, l);
 
             // calculate max quality of the insertion
-            // TODO: perhaps average quality makes more sense
+            // perhaps average quality makes more sense
             //  seems we see an insertion bias due to this decision
             vector<short> quals = qualities(qualstr);
-            short qual = *max_element(quals.begin(), quals.end());
+            long double qual = 0;
+            for (vector<short>::iterator i = quals.begin(); i != quals.end(); ++i) {
+                qual += *i;
+            }
+            qual /= quals.size();
+
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
             }
@@ -863,17 +867,18 @@ void AlleleParser::updateAlignmentQueue(void) {
 
     // pop from the back until we get to an alignment that overlaps our current position
     if (registeredAlignmentQueue.size() > 0) {
-        BamAlignment* alignment = &registeredAlignmentQueue.back().alignment;
-        while ((currentPosition > alignment->GetEndPosition() || alignment->RefID != currentRefID) && registeredAlignmentQueue.size() > 0) {
-            DEBUG2("popping alignment");
+        RegisteredAlignment* ra = &registeredAlignmentQueue.back();
+        while ((currentPosition > ra->end || ra->refid != currentRefID) && registeredAlignmentQueue.size() > 0) {
+            DEBUG2("popping registered alignment");
             registeredAlignmentQueue.pop_back();
             if (registeredAlignmentQueue.size() > 0) {
-                alignment = &registeredAlignmentQueue.back().alignment;
+                ra = &registeredAlignmentQueue.back();
             } else {
                 break;
             }
         }
     }
+    //cerr << "registered alignment queue size " << registeredAlignmentQueue.size() << endl;
 
     DEBUG2("... finished popping old alignments");
 }
@@ -889,7 +894,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         long unsigned int position = (*allele)->position;
-        if (currentPosition >= position + (*allele)->length) {
+        if (currentPosition > position + (*allele)->length) {
             delete *allele;
             *allele = NULL;
         }
@@ -1162,9 +1167,10 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
             Sample& sample = s->second;
             for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
-                removeNonOverlappingAlleles(g->second); // removes alleles which no longer overlap our current position
-                updateAllelesCachedData(g->second);  // calls allele.update() on each Allele*
-                removeFilteredAlleles(g->second); // removes alleles which are filtered at this position, 
+                vector<Allele*>& alleles = g->second;
+                removeNonOverlappingAlleles(alleles); // removes alleles which no longer overlap our current position
+                updateAllelesCachedData(alleles);  // calls allele.update() on each Allele*
+                removeFilteredAlleles(alleles); // removes alleles which are filtered at this position, 
                                                   // and requeues them for processing by unsetting their 'processed' flag
             }
             sample.sortAlleles();
@@ -1224,6 +1230,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
                 //sample.erase(g);
                 genotypesToErase.push_back(g->first);
             } else {
+                // accumulate bitmap of unique types
                 empty = false;
             }
         }

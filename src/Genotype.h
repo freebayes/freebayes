@@ -66,6 +66,7 @@ public:
     string relativeGenotype(string& refbase, string& altbase);
     bool isHomozygous(void);
     vector<int> alleleCountsInObservations(Sample& observations);
+    int containedAlleleTypes(void);
 
 };
 

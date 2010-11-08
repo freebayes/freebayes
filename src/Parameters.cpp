@@ -316,7 +316,7 @@ Parameters::Parameters(int argc, char** argv) {
             // -n --use-best-n-alleles
             case 'n':
                 if (!convert(optarg, useBestNAlleles)) {
-                    cerr << "could not parse reference-mapping-quality" << endl;
+                    cerr << "could not parse use-best-n-alleles" << endl;
                     exit(1);
                 }
                 break;

@@ -157,7 +157,6 @@ string stringForAllele(Allele &allele) {
             << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\t"
             << allele.referenceSequence << "\t"
             << allele.alternateSequence << "\t"
-            << allele.qualityString << "\t"
             << allele.quality << "\t" << endl;
     } else {
         out << allele.typeStr() << "\t"
@@ -696,10 +695,26 @@ vector<Allele> uniqueAlleleObservations(vector<vector<Allele> > &alleleObservati
 */
 
 
+/*
 void* AlleleFreeList::NewAllele() {
+    if (_allocs > _tick_allocs) {
+        _allocs = 0; // reset allocation counter
+        // cerr << "_size = " << _size
+        //  << " _min_size = " << _min_size
+        //  << " _max_size = " << _max_size << endl;
+        Resize(_size - _min_size);  // resize to max flux in freelist size
+        _min_size = _size; // reset size counters
+        _max_size = _size;
+    } else {
+        ++_allocs;
+    }
     if (_p != NULL) {
         void* mem = _p;
         _p = _p->pNext();
+        --_size;
+        if (_size < _min_size) {
+            _min_size = _size;
+        }
         return mem;
     } else {
         return ::new char [sizeof (Allele)];
@@ -710,7 +725,22 @@ void AlleleFreeList::Recycle(void* mem) {
     Allele* allele = static_cast<Allele*> (mem);
     allele->_pNext = _p;
     _p = allele;
-    //++_allocs;
+    ++_size;
+    ++_allocs;
+    if (_size > _max_size) {
+        _max_size = _size;
+    }
+}
+
+void AlleleFreeList::Resize(int new_size) {
+    //cerr << "resizing free list from " << _size << " to " << new_size << endl;
+    while (_size > new_size && _p != NULL) {
+        char * mem = reinterpret_cast<char *> (_p);
+        _p = _p->pNext();
+        ::delete [] mem;
+        --_size;
+    }
+    //cerr << "new size " << _size << endl;
 }
 
 AlleleFreeList::~AlleleFreeList() {
@@ -722,8 +752,10 @@ void AlleleFreeList::Purge() {
         char * mem = reinterpret_cast<char *> (_p);
         _p = _p->pNext();
         ::delete [] mem;
+        --_size;
     }
 }
+*/
 
 bool sufficientAlternateObservations(Samples& samples, int mincount, float minfraction) {
 

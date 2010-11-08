@@ -541,3 +541,11 @@ vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referen
     return sortedAlternates;
 
 }
+
+int Genotype::containedAlleleTypes(void) {
+    int t = 0;
+    for (Genotype::iterator g = begin(); g != end(); ++g) {
+        t |= g->allele.type;
+    }
+    return t;
+}

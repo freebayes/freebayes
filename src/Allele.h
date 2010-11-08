@@ -23,15 +23,28 @@ class Allele;
 class AlleleFreeList {
 
 public:
-    AlleleFreeList() : _p(NULL), _allocs(0) { }
+    AlleleFreeList()
+        : _p(NULL)
+        , _size(0)
+        , _allocs(0)
+        , _min_size(0)
+        , _max_size(0)
+        , _tick_allocs(1000000)  // attempt realloc every million allocs
+    { }
+
     ~AlleleFreeList();
     void Purge();
+    void Resize(int new_size);
     void* NewAllele();
-    void Recycle(void* link);
+    void Recycle(void* mem);
 
 private:
     Allele* _p;
-    int _allocs;
+    int _size;    // number of alleles on list
+    int _allocs;  // allocation counter
+    int _min_size; // min size within some previous number of calls to new
+    int _max_size;
+    int _tick_allocs; // GC cycle length
 
 };
 
@@ -96,9 +109,8 @@ public:
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
     string readID;          // id of the read which the allele is drawn from
-    string qualityString;   // quality string drawn from sequencer
     vector<short> baseQualities;
-    short quality;          // base quality score associated with this allele, updated every position in the case of reference alleles
+    long double quality;          // base quality score associated with this allele, updated every position in the case of reference alleles
     long double lnquality;  // log version of above
     string currentBase;       // current base, meant to be updated every position
     short mapQuality;       // map quality for the originating read
@@ -119,7 +131,7 @@ public:
                 string sampleid,
                 string readid,
                 bool strnd, 
-                short qual,
+                long double qual,
                 string qstr, 
                 short mapqual)
         : type(t)
@@ -128,7 +140,6 @@ public:
         , currentReferencePosition(crefpos)
         , currentReferenceBase(crefbase)
         , length(len)
-        //, referenceSequence(refallele)
         , currentBase(alt)
         , alternateSequence(alt)
         , sampleID(sampleid)
@@ -136,7 +147,6 @@ public:
         , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
         , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
         , lnquality(log((qual == -1) ? averageQuality(qstr) : qual))
-        , qualityString(qstr)
         , mapQuality(mapqual) 
         , genotypeAllele(false)
         , processed(false)
@@ -161,8 +171,7 @@ public:
         , genotypeAllele(true)
     { }
 
-    // I'm not sure if this explicit copy constructor is necessary
-    // but it improves performance slightly
+    /*
     Allele(const Allele& other) 
         : type(other.type)
         , referenceName(other.referenceName)
@@ -178,12 +187,12 @@ public:
         , quality(other.quality)
         , lnquality(other.lnquality)
         , currentBase(other.currentBase)
-        , qualityString(other.qualityString)
         , baseQualities(other.baseQualities)
         , mapQuality(other.mapQuality) 
         , genotypeAllele(other.genotypeAllele)
         , processed(other.processed)
     { }
+    */
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void); // return a string representation of the allele type, for output
@@ -197,9 +206,9 @@ public:
                                     //  this is used to update cached data in the allele prior to presenting the allele for analysis
                                     //  for the current base, just use allele.currentBase
 
-
     // overload new and delete for object recycling pool
 
+    /*
     void* operator new (size_t size) {
         assert (size == sizeof(Allele));
         return _freeList.NewAllele();
@@ -216,6 +225,7 @@ public:
 private:
     static AlleleFreeList _freeList; // for object recycling
     Allele* _pNext; // for use in object recycling on the AlleleFreeList, used to link freed alleles into a list
+    */
 
 };
 
@@ -328,7 +338,7 @@ public:
 
 };
 
-class Samples : public map<string, Sample> {};
+class Samples : public map<string, Sample> { };
 
 
 void updateAllelesCachedData(vector<Allele*>& alleles);

@@ -6,5 +6,5 @@ template<typename T>
 bool convert(const string& s, T& r) {
     istringstream iss(s);
     iss >> r;
-    return (iss.fail() || iss.tellg() != s.size()) ? false : true;
+    return ((iss.fail() || iss.tellg() != s.size())) ? false : true;
 }

@@ -10,6 +10,10 @@ short qualityChar2ShortInt(char c) {
     return static_cast<short>(c) - 33;
 }
 
+long double qualityChar2LongDouble(char c) {
+    return static_cast<long double>(c) - 33;
+}
+
 long double lnqualityChar2ShortInt(char c) {
     return log(static_cast<short>(c) - 33);
 }
