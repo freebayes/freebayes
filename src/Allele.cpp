@@ -176,62 +176,46 @@ string stringForAlleles(vector<Allele> &alleles) {
     return out.str();
 }
 
-string json(map<string, vector<Allele*> > &alleles) {
-    stringstream out;
-    out << "[";
-    bool first = true;
-    for (map<string, vector<Allele*> >::iterator g = alleles.begin(); g != alleles.end(); ++g) {
-        vector<Allele*>& alleles = g->second;
-        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-            if (!first) { out << ","; } else { first = false; }
-            out << json(**a);
-        }
-    }
-    out << "]";
-    return out.str();
-}
-
 string json(vector<Allele*> &alleles) {
     stringstream out;
     vector<Allele*>::iterator a = alleles.begin();
-    out << "[" << json(**a); ++a;
+    out << "[" << (*a)->json(); ++a;
     for (; a != alleles.end(); ++a)
-        out << "," << json(**a);
+        out << "," << (*a)->json();
     out << "]";
     return out.str();
 }
 
-string json(Allele*& allele) { return json(*allele); }
+string json(Allele*& allele) { return allele->json(); }
 
-string json(Allele& allele) {
-    int referenceOffset = allele.referenceOffset();
+string Allele::json(void) {
     stringstream out;
-    if (!allele.genotypeAllele) {
-        out << "{\"id\":\"" << allele.readID << "\""
-            << ",\"type\":\"" << allele.typeStr() << "\""
-            << ",\"length\":" << ((allele.type == ALLELE_REFERENCE) ? 1 : allele.length)
-            << ",\"position\":" << allele.position 
-            << ",\"strand\":\"" << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\"";
-        if (allele.type == ALLELE_REFERENCE ) {
-            out << ",\"base\":\"" << allele.alternateSequence.at(referenceOffset) << "\""
+    if (!genotypeAllele) {
+        out << "{\"id\":\"" << readID << "\""
+            << ",\"type\":\"" << typeStr() << "\""
+            << ",\"length\":" << ((type == ALLELE_REFERENCE) ? 1 : length)
+            << ",\"position\":" << position 
+            << ",\"strand\":\"" << (strand == STRAND_FORWARD ? "+" : "-") << "\"";
+        if (type == ALLELE_REFERENCE ) {
+            out << ",\"base\":\"" << alternateSequence.at(referenceOffset()) << "\""
                 //<< ",\"reference\":\"" << allele.referenceSequence.at(referenceOffset) << "\""
-                << ",\"quality\":" << allele.currentQuality();
+                << ",\"quality\":" << currentQuality();
         } else {
-            out << ",\"base\":\"" << allele.alternateSequence << "\""
+            out << ",\"base\":\"" << alternateSequence << "\""
                 //<< ",\"reference\":\"" << allele.referenceSequence << "\""
-                << ",\"quality\":" << allele.quality;
+                << ",\"quality\":" << quality;
         }
         out << "}";
 
     } else {
-        out << "{\"type\":\"" << allele.typeStr() << "\"";
-        switch (allele.type) {
+        out << "{\"type\":\"" << typeStr() << "\"";
+        switch (type) {
             case ALLELE_REFERENCE:
                 out << "}";
                 break;
             default:
-                out << "\",\"length\":" << allele.length 
-                    << ",\"alt\":\"" << allele.alternateSequence << "\"}";
+                out << "\",\"length\":" << length 
+                    << ",\"alt\":\"" << alternateSequence << "\"}";
                 break;
         }
     }

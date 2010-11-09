@@ -16,6 +16,7 @@
 using namespace std;
 
 class Allele;
+class Sample;
 
 // Allele recycling allocator
 // without we spend 30% of our runtime deleting Allele instances
@@ -90,11 +91,9 @@ class Allele {
     friend ostream &operator<<(ostream &out, Allele* &a);
 
     friend string json(vector<Allele*> &alleles, long unsigned int &position);
-    friend string json(map<string, vector<Allele*> > &alleles);
     friend string json(vector<Allele*> &alleles);
     friend string json(Allele &allele, long unsigned int &position);
     friend string json(Allele* &allele);
-    friend string json(Allele &allele);
 
 public:
 
@@ -205,6 +204,8 @@ public:
     const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
                                     //  this is used to update cached data in the allele prior to presenting the allele for analysis
                                     //  for the current base, just use allele.currentBase
+
+    string json(void);
 
     // overload new and delete for object recycling pool
 
@@ -334,6 +335,22 @@ public:
         }
         return count;
 
+    }
+
+
+    string json(void) {
+        stringstream out;
+        out << "[";
+        bool first = true;
+        for (map<string, vector<Allele*> >::iterator g = this->begin(); g != this->end(); ++g) {
+            vector<Allele*>& alleles = g->second;
+            for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                if (!first) { out << ","; } else { first = false; }
+                out << (*a)->json();
+            }
+        }
+        out << "]";
+        return out.str();
     }
 
 };

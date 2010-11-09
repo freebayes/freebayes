@@ -18,7 +18,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
         }
         out << "]";
         if (parser->parameters.outputAlleles)
-            out << ",\"alleles\":" << json(*(sample.observations));
+            out << ",\"alleles\":" << sample.observations->json();
         out << "}";
 
     }

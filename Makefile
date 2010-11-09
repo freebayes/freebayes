@@ -1,6 +1,9 @@
 all:
 	cd src && $(MAKE)
 
+debug:
+	cd src && $(MAKE) debug
+
 install:
 	cp bin/freebayes /usr/bin/
 
