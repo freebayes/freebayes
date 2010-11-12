@@ -160,14 +160,35 @@ string vcf(
 
     int allObsCount = alternateObsCount + referenceObsCount;
 
+    string referenceSequence;
+    string alternateSequence;
+    switch (altAllele.type) {
+        case ALLELE_SNP:
+            referenceSequence = refbase;
+            alternateSequence = altbase;
+            break;
+            // XXX deletions... the basing is wrong
+        case ALLELE_DELETION:
+            referenceSequence = parser->referenceSubstr(parser->currentPosition, altAllele.length + 1);
+            alternateSequence = refbase;
+            break;
+        case ALLELE_INSERTION:
+            referenceSequence = refbase;
+            alternateSequence = refbase + altAllele.alternateSequence;
+            break;
+        default:
+            cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
+            break;
+    }
+
     //string refbase = parser->currentReferenceBase();
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
     out << parser->currentTarget->seq << "\t"
-        << parser->currentPosition + 1 << "\t"
+        << (long unsigned int) parser->currentPosition + 1 << "\t"
         << "." << "\t"
-        << refbase << "\t"
-        << altbase << "\t"
+        << referenceSequence << "\t"
+        << alternateSequence << "\t"
         << float2phred(1 - comboProb) << "\t"
         << "." << "\t" // filter, no filter applied
         << "NS=" << samplesWithData << ";"

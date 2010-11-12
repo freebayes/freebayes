@@ -70,7 +70,7 @@ enum AlleleStrand {
     STRAND_REVERSE
 };
 
-typedef long unsigned int Position;
+typedef long double Position;
 
 class Allele {
 
@@ -90,9 +90,9 @@ class Allele {
     friend ostream &operator<<(ostream &out, Allele &a);
     friend ostream &operator<<(ostream &out, Allele* &a);
 
-    friend string json(vector<Allele*> &alleles, long unsigned int &position);
+    friend string json(vector<Allele*> &alleles, long double &position);
     friend string json(vector<Allele*> &alleles);
-    friend string json(Allele &allele, long unsigned int &position);
+    friend string json(Allele &allele, long double &position);
     friend string json(Allele* &allele);
 
 public:
@@ -101,8 +101,8 @@ public:
     string referenceName;   // reference name, for sanity checking
     string referenceSequence; // reference sequence or "" (in case of insertions)
     string alternateSequence; // alternate sequence or "" (in case of deletions and reference alleles)
-    long unsigned int position;      // position 0-based against reference
-    long unsigned int* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
+    long double position;      // position 0-based against reference
+    long double* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     AlleleStrand strand;          // strand, true = +, false = -
@@ -121,8 +121,8 @@ public:
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
                 string refname, 
-                long unsigned int pos, 
-                long unsigned int* crefpos,
+                long double pos, 
+                long double* crefpos,
                 char* crefbase,
                 unsigned int len, 
                 string refallele, 
@@ -158,7 +158,7 @@ public:
     Allele(AlleleType t,
             string alt,
             unsigned int len,
-            long unsigned int pos=0,
+            long double pos=0,
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
@@ -365,7 +365,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
 void filterAlleles(list<Allele*>& alleles, int allowedTypes);
-void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position);
+void removeIndelMaskedAlleles(list<Allele*>& alleles, long double position);
 int countAlleles(Samples& samples);
 int countAlleles(map<string, vector<Allele*> >& sampleGroups);
 int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand);

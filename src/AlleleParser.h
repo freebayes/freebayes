@@ -12,6 +12,7 @@
 #include <time.h>
 #include <assert.h>
 #include <ctype.h>
+#include <math.h>
 #include "split.h"
 #include "join.h"
 #include "BamReader.h"
@@ -136,6 +137,7 @@ public:
     void extendReferenceSequence(int);
     void extendReferenceSequence(BamAlignment& alignment);
     void eraseReferenceSequence(int leftErasure);
+    string referenceSubstr(long double position, unsigned int length);
     void loadTargets(void);
     bool getFirstAlignment(void);
     void loadTargetsFromBams(void);
@@ -171,7 +173,7 @@ public:
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
     BedTarget* currentTarget;
-    long unsigned int currentPosition;  // 0-based current position
+    long double currentPosition;  // 0-based current position
     char currentReferenceBase;
     string currentSequence;
     char currentReferenceBaseChar();

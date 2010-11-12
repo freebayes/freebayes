@@ -148,11 +148,12 @@ string stringForAllele(Allele &allele) {
 
     stringstream out;
     if (!allele.genotypeAllele) {
+        out.precision(1);
         out 
             << allele.sampleID << "\t"
             << allele.readID << "\t"
             << allele.typeStr() << "\t" 
-            << allele.position << "\t"
+            << scientific << fixed << allele.position << "\t"
             << allele.length << "\t"
             << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\t"
             << allele.referenceSequence << "\t"
@@ -255,10 +256,11 @@ ostream &operator<<(ostream &out, Allele &allele) {
 
     if (!allele.genotypeAllele) {
         // << &allele << ":" 
+        out.precision(1);
         out << allele.readID 
             << ":" << allele.typeStr() 
             << ":" << allele.length 
-            << ":" << allele.position 
+            << ":" << scientific << fixed << allele.position 
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence
             //<< ":" << allele.referenceSequence
@@ -805,7 +807,7 @@ void filterAlleles(list<Allele*>& alleles, int allowedTypes) {
 }
 
 // removes alleles which are indelmasked at position
-void removeIndelMaskedAlleles(list<Allele*>& alleles, long unsigned int position) {
+void removeIndelMaskedAlleles(list<Allele*>& alleles, long double position) {
 
     for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         //cerr << *allele << " " << (*allele)->indelMask.size() << " " << (*allele)->referenceOffset() << endl;

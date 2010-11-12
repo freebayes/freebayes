@@ -319,15 +319,17 @@ void AlleleParser::extendReferenceSequence(int rightExtension) {
 void AlleleParser::preserveReferenceSequenceWindow(int bp) {
 
     // establish left difference between ideal window size and current cached sequence
-    int leftdiff = currentSequenceStart - (currentPosition - bp);
+    int leftdiff = currentSequenceStart - (floor(currentPosition) - bp);
     // guard against falling off the left end of our sequence
-    leftdiff = (currentPosition - leftdiff < 0) ? currentPosition : leftdiff;
+    //leftdiff = (floor(currentPosition) - leftdiff < 0) ? floor(currentPosition) : leftdiff;
+    leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
     // right guard is not needed due to the fact that we are just attempting to
     // append sequence substr will simply return fewer additional characters if
     // we go past the right end of the ref
-    int rightdiff = (currentPosition + bp) - (currentSequenceStart + currentSequence.size());
+    int rightdiff = (floor(currentPosition) + bp) - (currentSequenceStart + currentSequence.size());
 
     if (leftdiff > 0) {
+        cerr << currentSequenceStart << endl;
         currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
         currentSequenceStart -= leftdiff;
     }
@@ -343,7 +345,7 @@ void AlleleParser::preserveReferenceSequenceWindow(int bp) {
 void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
 
     int leftdiff = currentSequenceStart - alignment.Position;
-    leftdiff = (currentPosition - leftdiff < 0) ? currentPosition : leftdiff;
+    leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
     if (leftdiff > 0) {
         currentSequenceStart -= leftdiff;
         currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
@@ -508,7 +510,7 @@ AlleleParser::~AlleleParser(void) {
         delete *allele;
     }
 
-    delete currentTarget;
+    //delete currentTarget;
 
 }
 
@@ -524,17 +526,21 @@ char AlleleParser::currentReferenceBaseChar(void) {
 
 string AlleleParser::currentReferenceBaseString(void) {
     //cerr << currentPosition << " >= " << currentSequenceStart << endl;
-    return currentSequence.substr(currentPosition - currentSequenceStart, 1);
+    return currentSequence.substr(floor(currentPosition) - currentSequenceStart, 1);
 }
 
 string::iterator AlleleParser::currentReferenceBaseIterator(void) {
-    return currentSequence.begin() + (currentPosition - currentSequenceStart);
+    return currentSequence.begin() + (floor(currentPosition) - currentSequenceStart);
+}
+
+string AlleleParser::referenceSubstr(long double pos, unsigned int len) {
+    return reference->getSubSequence(currentSequenceName, floor(pos), len);
 }
 
 bool AlleleParser::isCpG(string& altbase) {
-    string prevb = currentSequence.substr(currentPosition - currentSequenceStart - 1, 1);
-    string currb = currentSequence.substr(currentPosition - currentSequenceStart, 1);
-    string nextb = currentSequence.substr(currentPosition - currentSequenceStart + 1, 1);
+    string prevb = currentSequence.substr(floor(currentPosition) - currentSequenceStart - 1, 1);
+    string currb = currentSequence.substr(floor(currentPosition) - currentSequenceStart, 1);
+    string nextb = currentSequence.substr(floor(currentPosition) - currentSequenceStart + 1, 1);
     // 5'-3' CpG <-> TpG is represented as CpG <-> CpA in on the opposite strand
     if ((nextb == "G" && ((currb == "C" && altbase == "T") || (currb == "T" && altbase == "C")))
         ||
@@ -735,11 +741,11 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             }
             if (qual >= parameters.BQL2) {
                 indelMask[sp - alignment.Position] = true;
-                indelMask[sp - alignment.Position + 1] = true;
+                indelMask[sp - alignment.Position + 1] = true; // TODO wrong, but mirrors bambayes behavior
             }
 
             Allele* allele = new Allele(ALLELE_INSERTION,
-                    currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l, "", rDna.substr(rp, l),
+                    currentTarget->seq, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", rDna.substr(rp, l),
                     sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                     qualstr, alignment.MapQuality);
             DEBUG2(allele);
@@ -917,7 +923,8 @@ void AlleleParser::updateRegisteredAlleles(void) {
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         if ((*allele)->type == ALLELE_REFERENCE) {
-            if (currentPosition >= (*allele)->position + (*allele)->length) {
+            //if (currentPosition >= (*allele)->position + (*allele)->length) {
+            if (!(((*allele)->position + (*allele)->length - currentPosition) > 0.5)) {
                 *allele = NULL;
             }
         } else { // snps, insertions, deletions
@@ -1084,7 +1091,11 @@ bool AlleleParser::toNextPosition(void) {
         }
     } 
     else {
-        ++currentPosition;
+        if (!parameters.allowIndels) {
+            ++currentPosition;
+        } else {
+            currentPosition += 0.5;
+        }
     }
 
     if (!targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
@@ -1198,7 +1209,8 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
                 && (
                     (allele.type == ALLELE_REFERENCE 
                       && currentPosition >= allele.position 
-                      && currentPosition < allele.position + allele.length) // 0-based, means position + length - 1 is the last included base
+                      //&& currentPosition < allele.position + allele.length // 0-based, means position + length - 1 is the last included base
+                      && (allele.position + allele.length - currentPosition) > 0.5)
                   || 
                     (allele.position == currentPosition)
                     ) 
