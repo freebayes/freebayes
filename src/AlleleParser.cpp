@@ -510,7 +510,7 @@ AlleleParser::~AlleleParser(void) {
         delete *allele;
     }
 
-    //delete currentTarget;
+    //if (currentTarget != NULL) delete currentTarget;
 
 }
 
@@ -755,9 +755,13 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
         // handle other cigar element types
         } else if (t == 'S') { // soft clip, clipped sequence present in the read not matching the reference
-            rp += l; sp += l; csp += l;
+            // skip these bases in the read
+            rp += l;// sp += l; csp += l;
         } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
-            sp += l; csp += l;
+            // the alignment position is the first non-clipped base.
+            // thus, hard clipping seems to just be an indicator that we clipped something
+            // here we do nothing
+            //sp += l; csp += l;
         } else if (t == 'N') { // skipped region in the reference not present in read, aka splice
             sp += l; csp += l;
         }
@@ -845,6 +849,9 @@ void AlleleParser::updateAlignmentQueue(void) {
             if (!currentAlignment.IsMapped())
                 continue;
 
+            // skip alignments which are non-primary
+            if (!currentAlignment.IsPrimaryAlignment())
+                continue;
 
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
             // we have to register the alignment to acquire some information required by filters

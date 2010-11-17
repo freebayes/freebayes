@@ -187,10 +187,10 @@ long double cofactorln(
   }
 }
 
-// prevent underflows by returning 0 if exponentiation will produce an underflow
+// prevent underflows by returning exp(LDBL_MIN_EXP) if exponentiation will produce an underflow
 long double safe_exp(long double ln) {
     if (ln < LDBL_MIN_EXP) {
-        return 0;
+        return LDBL_MIN;
     } else {
         return exp(ln);
     }
