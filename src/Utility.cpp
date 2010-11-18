@@ -65,11 +65,14 @@ long double jointQuality(const std::vector<short>& quals) {
 
 long double jointQuality(const std::string& qualstr) {
 
-    std::vector<short> quals;
-    for (int i=0; i<qualstr.size(); i++)
-        quals.push_back(qualityChar2ShortInt(qualstr.at(i)));
+    long double jq = 1;
+    // product of probability we don't have a true event for each element
+    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q) {
+        jq *= 1 - phred2float(qualityChar2ShortInt(*q));
+    }
 
-    return jointQuality(quals);
+    // and then invert it again to get probability of an event
+    return 1 - jq;
 
 }
 

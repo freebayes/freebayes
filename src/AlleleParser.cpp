@@ -696,10 +696,9 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             // extract base quality of left and right flanking non-deleted bases
             string qualstr = rQual.substr(rp, 2);
 
-            // TODO make this average quality
-            // calculate joint quality of the two flanking qualities
-            //long double qual = (qualityChar2LongDouble(qualstr[0]) + qualityChar2LongDouble(qualstr[1])) / 2;
-            long double qual = (long double) max(qualityChar2LongDouble(qualstr[0]), qualityChar2LongDouble(qualstr[1]));
+            //long double qual = jointQuality(qualstr);
+            // calculate average quality of the two flanking qualities
+            long double qual = (qualityChar2LongDouble(qualstr[0]) + qualityChar2LongDouble(qualstr[1])) / 2;
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -726,9 +725,12 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             string qualstr = rQual.substr(rp, l);
 
-            // calculate max quality of the insertion
-            vector<short> quals = qualities(qualstr);
-            long double qual = (long double) *max_element(quals.begin(), quals.end());
+            //long double qual = jointQuality(qualstr);
+            // calculate average quality of the insertion
+            long double qual = 0; //(long double) *max_element(quals.begin(), quals.end());
+            for (string::iterator q = qualstr.begin(); q != qualstr.end(); ++q)
+                qual += qualityChar2LongDouble(*q);
+            qual /= l;
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
