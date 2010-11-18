@@ -165,16 +165,15 @@ string vcf(
     switch (altAllele.type) {
         case ALLELE_SNP:
             referenceSequence = refbase;
-            alternateSequence = altbase;
+            alternateSequence = altAllele.alternateSequence;
             break;
-            // XXX deletions... the basing is wrong
         case ALLELE_DELETION:
             referenceSequence = parser->referenceSubstr(parser->currentPosition, altAllele.length + 1);
             alternateSequence = refbase;
             break;
         case ALLELE_INSERTION:
             referenceSequence = refbase;
-            alternateSequence = refbase + altAllele.alternateSequence;
+            alternateSequence = refbase + altAllele.alternateSequence.substr(1); // strip leading "I"
             break;
         default:
             cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;

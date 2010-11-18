@@ -96,8 +96,8 @@ const string Allele::base(void) const { // the base of this allele
         case ALLELE_INSERTION:
             {
                 stringstream s;
-                s << alternateSequence;
-                return s.str(); // unclear what to do here
+                s << "I" << alternateSequence;
+                return s.str();
             }
             break;
         case ALLELE_DELETION:
