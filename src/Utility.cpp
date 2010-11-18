@@ -48,10 +48,8 @@ long double powln(long double m, int n) {
     return m * n;
 }
 
-// TODO do the following in phred (log) space for perf boost
-
 // the probability that we have a completely true vector of qualities
-short jointQuality(const std::vector<short>& quals) {
+long double jointQuality(const std::vector<short>& quals) {
     std::vector<long double> probs;
     for (int i = 0; i<quals.size(); ++i) {
         probs.push_back(phred2float(quals[i]));
@@ -62,10 +60,10 @@ short jointQuality(const std::vector<short>& quals) {
         prod *= 1 - probs.at(i);
     }
     // and then invert it again to get probability of an event
-    return float2phred(1 - prod);
+    return 1 - prod;
 }
 
-short jointQuality(const std::string& qualstr) {
+long double jointQuality(const std::string& qualstr) {
 
     std::vector<short> quals;
     for (int i=0; i<qualstr.size(); i++)

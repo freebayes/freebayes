@@ -25,8 +25,8 @@ long double phred2float(int qual);
 int float2phred(long double prob);
 long double powln(long double m, int n);
 // here 'joint' means 'probability that we have a vector entirely composed of true bases'
-short jointQuality(const std::vector<short>& quals);
-short jointQuality(const std::string& qualstr);
+long double jointQuality(const std::vector<short>& quals);
+long double jointQuality(const std::string& qualstr);
 std::vector<short> qualities(const std::string& qualstr);
 // 
 short averageQuality(const std::string& qualstr);

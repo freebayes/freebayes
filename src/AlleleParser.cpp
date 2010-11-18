@@ -329,7 +329,7 @@ void AlleleParser::preserveReferenceSequenceWindow(int bp) {
     int rightdiff = (floor(currentPosition) + bp) - (currentSequenceStart + currentSequence.size());
 
     if (leftdiff > 0) {
-        cerr << currentSequenceStart << endl;
+        //cerr << currentSequenceStart << endl;
         currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
         currentSequenceStart -= leftdiff;
     }
@@ -698,8 +698,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             // TODO make this average quality
             // calculate joint quality of the two flanking qualities
-            //short qual = max(qualityChar2LongDouble(qualstr[0]), qualityChar2LongDouble(qualstr[1]));
-            long double qual = (qualityChar2LongDouble(qualstr[0]) + qualityChar2LongDouble(qualstr[1])) / 2;
+            //long double qual = (qualityChar2LongDouble(qualstr[0]) + qualityChar2LongDouble(qualstr[1])) / 2;
+            long double qual = (long double) max(qualityChar2LongDouble(qualstr[0]), qualityChar2LongDouble(qualstr[1]));
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -727,14 +727,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
             string qualstr = rQual.substr(rp, l);
 
             // calculate max quality of the insertion
-            // perhaps average quality makes more sense
-            //  seems we see an insertion bias due to this decision
             vector<short> quals = qualities(qualstr);
-            long double qual = 0;
-            for (vector<short>::iterator i = quals.begin(); i != quals.end(); ++i) {
-                qual += *i;
-            }
-            qual /= quals.size();
+            long double qual = (long double) *max_element(quals.begin(), quals.end());
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -1119,7 +1113,6 @@ bool AlleleParser::toNextPosition(void) {
         // implicit step of target sequence
         // XXX this must wait for us to clean out all of our alignments at the end of the target
         if (registeredAlignmentQueue.empty() && currentRefID != currentAlignment.RefID) {
-            cerr << "moving to new reference sequence" << endl;
             clearRegisteredAlignments();
             loadReferenceSequence(currentAlignment);
             justSwitchedTargets = true;
