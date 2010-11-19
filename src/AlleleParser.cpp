@@ -284,10 +284,6 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     currentSequenceStart = alignment.Position;
     currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
-    DEBUG2("currentPosition = " << alignment.Position << endl <<
-           "currentSequenceStart = " <<  alignment.Position << endl <<
-           "currentSequenceName = " << referenceIDToName[alignment.RefID] << endl <<
-           "currentRefID = " << alignment.RefID);
     if (currentTarget == NULL) {
         currentTarget = new BedTarget(currentSequenceName, currentSequenceStart + 1, 0);
     } else {
