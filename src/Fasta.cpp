@@ -205,11 +205,12 @@ FastaIndex::~FastaIndex(void) {
 }
 
 FastaIndexEntry FastaIndex::entry(string name) {
-    try {
-        return (*this)[name];
-    } catch (exception& e) {
-        cerr << e.what() << ": unable to find index entry for " << name << endl;
+    FastaIndex::iterator e = this->find(name);
+    if (e == this->end()) {
+        cerr << "unable to find FASTA index entry for " << name << endl;
         exit(1);
+    } else {
+        return e->second;
     }
 }
 

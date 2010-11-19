@@ -279,10 +279,15 @@ void AlleleParser::loadFastaReference(void) {
 // alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     assert(targets.empty()); // this should only be used in the case that we have no targets
+    DEBUG2("loading reference sequence overlapping first alignment");
     currentPosition = alignment.Position;
     currentSequenceStart = alignment.Position;
     currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
+    DEBUG2("currentPosition = " << alignment.Position << endl <<
+           "currentSequenceStart = " <<  alignment.Position << endl <<
+           "currentSequenceName = " << referenceIDToName[alignment.RefID] << endl <<
+           "currentRefID = " << alignment.RefID);
     if (currentTarget == NULL) {
         currentTarget = new BedTarget(currentSequenceName, currentSequenceStart + 1, 0);
     } else {
@@ -291,6 +296,7 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
         if (currentSequenceStart + 1 != currentTarget->left)
             currentTarget->left = currentSequenceStart + 1;
     }
+    DEBUG2("reference->getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
     currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length());
 }
 
