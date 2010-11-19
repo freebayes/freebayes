@@ -94,12 +94,19 @@ genotypeCombinationPriorProbability(
         vector<GenotypeComboResult>& genotypeComboProbs,
         vector<GenotypeCombo>& bandedCombos,
         Allele& refAllele,
-        long double theta) {
+        long double theta,
+        bool pooled) {
 
     for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
-        long double priorProbabilityOfGenotypeComboG_Af = 
-            probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+        // when we are operating on pooled samples, we will not be able to
+        // ascertain the number of heterozygotes in the pool,
+        // rendering P(Genotype combo | Allele frequency) meaningless
+        long double priorProbabilityOfGenotypeComboG_Af = 0;
+        if (!pooled) {
+            priorProbabilityOfGenotypeComboG_Af = probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+        }
+        // Ewens' Sampling Formula
         long double priorProbabilityOfGenotypeComboAf = 
             alleleFrequencyProbabilityln(combo->countFrequencies(), theta);
         long double priorProbabilityOfGenotypeCombo = 

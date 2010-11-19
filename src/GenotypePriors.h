@@ -16,6 +16,7 @@ void genotypeCombinationPriorProbability(
         vector<GenotypeComboResult>& genotypeComboProbs,
         vector<GenotypeCombo>& bandedCombos,
         Allele& refAllele,
-        long double theta);
+        long double theta,
+        bool pooled);
 
 #endif

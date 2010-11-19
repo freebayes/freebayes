@@ -47,6 +47,9 @@ void Parameters::usage(char** argv) {
          << "                   single parameter to the Ewens Sampling Formula prior model" << endl
          << "                   default: 0.001" << endl
          << "   -p --ploidy N   Sets the default ploidy for the analysis to N.  default: 2" << endl
+         << "   -J --pooled     Assume that samples result from pooled sequencing." << endl
+         << "                   When using this flag, set --ploidy to the number of" << endl
+         << "                   alleles in each sample." << endl
          << "   -i --allow-indels" << endl
          << "                   Include insertion and deletion alleles in the analysis." << endl
          << "                   default: only analyze SNP alleles." << endl
@@ -83,7 +86,7 @@ void Parameters::usage(char** argv) {
          << "   -S --min-supporting-base-quality Q" << endl
          << "                   In order to consider an alternate allele, at least one" << endl
          << "                   supporting alignment must have this base quality at the" << endl
-         << "                   site of the allele.  default: 40" << endl
+         << "                   site of the allele.  default: 30" << endl
          << "   -U --read-mismatch-limit N" << endl
          << "                   The maximum allowable number of mismatches between an" << endl
          << "                   alignment and the reference where each mismatch has" << endl
@@ -165,6 +168,7 @@ Parameters::Parameters(int argc, char** argv) {
     forceRefAllele = false;         // -F --force-reference-allele
     useRefAllele = false;           // -U --use-reference-allele
     allowIndels = false;            // -i --allow-indels
+    pooled = false;                 // -J --pooled
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -212,6 +216,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"reference-mapping-quality", required_argument, 0, 'M'},
         {"reference-base-quality", required_argument, 0, 'B'},
         {"ploidy", required_argument, 0, 'p'},
+        {"pooled", no_argument, 0, 'J'},
         {"min-mapping-quality", required_argument, 0, 'm'},
         {"min-base-quality", required_argument, 0, 'q'},
         {"min-supporting-mapping-quality", required_argument, 0, 'R'},
@@ -236,7 +241,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEXGZAdDib:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
+        c = getopt_long(argc, argv, "hcOEXGZAdDiJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -357,6 +362,11 @@ Parameters::Parameters(int argc, char** argv) {
                     cerr << "cannot set ploidy to less than 1" << endl;
                     exit(1);
                 }
+                break;
+
+            // -J --pooled
+            case 'J':
+                pooled = true;
                 break;
 
             // -m --min-mapping-quality
