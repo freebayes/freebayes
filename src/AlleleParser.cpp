@@ -619,6 +619,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
         if (t == 'M') { // match or mismatch
             int firstMatch = csp; // track the first match after a mismatch, for recording 'reference' alleles
+            int mismatchStart = -1;
+            bool inMismatch = false;
             //cerr << "firstMatch = " << firstMatch << endl;
                                         // we start one back because the first position in a match should match...
 
@@ -668,11 +670,24 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     // always emit a snp, if we have too many mismatches over
                     // BQL2 then we will discard the registered allele in the
                     // calling context
-                    Allele* allele = new Allele(ALLELE_SNP, currentTarget->seq, sp, &currentPosition, &currentReferenceBase, 1, sb, b,
-                            sampleName, alignment.Name, !alignment.IsReverseStrand(), qual, "", alignment.MapQuality);
+                    if (!inMismatch) {
+                        mismatchStart = csp;
+                        inMismatch = true;
+                    }
+                    firstMatch = csp + 1;
+
+                } else if (inMismatch) {
+                    inMismatch = false;
+                    int length = csp - mismatchStart;
+                    string matchingSequence = currentSequence.substr(csp - length, length);
+                    string readSequence = rDna.substr(rp - length, length);
+                    string qualstr = rQual.substr(rp - length, length);
+                    AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
+                    long double lqual = averageQuality(qualstr);
+                    Allele* allele = new Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
+                                sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality);
                     DEBUG2(allele);
                     ra.alleles.push_back(allele);
-                    firstMatch = csp + 1;
                 }
 
                 // update positions
@@ -680,7 +695,21 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 ++csp;
                 ++rp;
             }
-            if (firstMatch < csp) {
+            // catch mismatches at the end of the match
+            if (inMismatch) {
+                inMismatch = false;
+                int length = csp - mismatchStart;
+                string matchingSequence = currentSequence.substr(csp - length, length);
+                string readSequence = rDna.substr(rp - length, length);
+                string qualstr = rQual.substr(rp - length, length);
+                AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
+                long double lqual = averageQuality(qualstr);
+                Allele* allele = new Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
+                            sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality);
+                DEBUG2(allele);
+                ra.alleles.push_back(allele);
+            // or, if we are not in a mismatch, construct the last reference allele of the match
+            } else if (firstMatch < csp) {
                 int length = csp - firstMatch;
                 string matchingSequence = currentSequence.substr(csp - length, length);
                 string readSequence = rDna.substr(rp - length, length);
@@ -700,7 +729,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             //long double qual = jointQuality(qualstr);
             // calculate average quality of the two flanking qualities
-            long double qual = (qualityChar2LongDouble(qualstr[0]) + qualityChar2LongDouble(qualstr[1])) / 2;
+            long double qual = averageQuality(qualstr);
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -729,10 +758,7 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
 
             //long double qual = jointQuality(qualstr);
             // calculate average quality of the insertion
-            long double qual = 0; //(long double) *max_element(quals.begin(), quals.end());
-            for (string::iterator q = qualstr.begin(); q != qualstr.end(); ++q)
-                qual += qualityChar2LongDouble(*q);
-            qual /= l;
+            long double qual = averageQuality(qualstr); //(long double) *max_element(quals.begin(), quals.end());
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;

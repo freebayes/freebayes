@@ -61,13 +61,8 @@ long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo&
 }
 
 
-// the probability of a given combination of genotypes given an allele
-// frequency.  this uses a simple diffusion model to scale  our prior with
-// respect to the number of homozygotes vs. heterozygotes.
-//
-// NB: although this is intended to replace the above diploid-specific
-// function, and will do so with identical results on diploid data, this is
-// unproven theoretically for non-uniform copy number
+// TODO this should return the probability of a given combination of genotypes
+// given an allele frequency following the generalized HWE.
 long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
 
     int n = genotypeCombo.numberOfAlleles();

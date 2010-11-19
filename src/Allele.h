@@ -55,7 +55,7 @@ private:
 enum AlleleType {
     ALLELE_GENOTYPE = 1,
     ALLELE_REFERENCE = 2,
-    ALLELE_MISMATCH = 4,
+    ALLELE_MNP = 4,
     ALLELE_SNP = 8,
     ALLELE_INSERTION = 16,
     ALLELE_DELETION = 32,

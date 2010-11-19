@@ -86,12 +86,13 @@ std::vector<short> qualities(const std::string& qualstr) {
 
 }
 
-short averageQuality(const std::string& qualstr) {
+// crudely averages quality scores in phred space
+long double averageQuality(const std::string& qualstr) {
 
-    long double q = 0;
-    for (int i=0; i<qualstr.size(); i++)
-        q += phred2float(qualityChar2ShortInt(qualstr.at(i)));
-    return float2phred(q / qualstr.size());
+    long double qual = 0; //(long double) *max_element(quals.begin(), quals.end());
+    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
+            qual += qualityChar2LongDouble(*q);
+    return qual /= qualstr.size();
 
 }
 
@@ -104,7 +105,15 @@ bool stringInVector(string item, vector<string> items) {
     return false;
 }
 
-// from Function-Math.cpp
+int binomialCoefficient(int n, int k) {
+    int i = 1;
+    int result = n - k + i++;
+    while (i <= k) {
+        result *= (n - k + i) / i;
+        ++i;
+    }
+    return result;
+}
 
 long double gammaln(
 		     long double x

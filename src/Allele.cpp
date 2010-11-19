@@ -34,6 +34,7 @@ const short Allele::currentQuality(void) const {
         case ALLELE_INSERTION:
         case ALLELE_DELETION:
         case ALLELE_SNP:
+        case ALLELE_MNP:
             return quality;
             break;
     }
@@ -54,7 +55,7 @@ string Allele::typeStr(void) {
         case ALLELE_REFERENCE:
             t = "reference";
             break;
-        case ALLELE_MISMATCH:
+        case ALLELE_MNP:
             t = "mismatch";
             break;
         case ALLELE_SNP:
@@ -91,6 +92,9 @@ const string Allele::base(void) const { // the base of this allele
             return alternateSequence;
             break;
         case ALLELE_SNP:
+            return alternateSequence;
+            break;
+        case ALLELE_MNP:
             return alternateSequence;
             break;
         case ALLELE_INSERTION:
@@ -133,9 +137,8 @@ const bool Allele::masked(void) const {
             return indelMask.at(0);
             break;
         case ALLELE_INSERTION: // XXX presently these are masked by default...
-            return true;
-            break;
         case ALLELE_DELETION:
+        case ALLELE_MNP:
             return true;
             break;
         default:
@@ -300,6 +303,7 @@ bool Allele::equivalent(Allele &b) {
                     return true;
                 break;
             case ALLELE_SNP:
+            case ALLELE_MNP:
                 if (alternateSequence == b.alternateSequence)
                     return true;
                 break;

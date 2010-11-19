@@ -34,7 +34,7 @@ void Parameters::usage(char** argv) {
          << "                   When --json is set, add records to the JSON output stream" << endl
          << "                   describing each allele in the input." << endl
          << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
-         << "   -X --suppress-output" << endl
+         << "   -N --suppress-output" << endl
          << "                   Suppress output.  Used for debugging." << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
          << "                   at the site is greater than N.  default: 0.0" << endl
@@ -50,8 +50,9 @@ void Parameters::usage(char** argv) {
          << "   -J --pooled     Assume that samples result from pooled sequencing." << endl
          << "                   When using this flag, set --ploidy to the number of" << endl
          << "                   alleles in each sample." << endl
-         << "   -i --allow-indels" << endl
-         << "                   Include insertion and deletion alleles in the analysis." << endl
+         << "   -i --indels     Include insertion and deletion alleles in the analysis." << endl
+         << "                   default: only analyze SNP alleles." << endl
+         << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
          << "                   default: only analyze SNP alleles." << endl
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N alleles, ranked by sum of" << endl
@@ -162,12 +163,13 @@ Parameters::Parameters(int argc, char** argv) {
     outputAlleles = false;          // -O --output-alleles
     trace = false;                  // -L --trace
     useDuplicateReads = false;      // -E --use-duplicate-reads
-    suppressOutput = false;         // -S --suppress-output
+    suppressOutput = false;         // -N --suppress-output
     bamBayesDataLikelihoods = false;// -G --factorial-data-likelihoods
     useBestNAlleles = 0;         // -n --use-best-n-alleles
     forceRefAllele = false;         // -F --force-reference-allele
     useRefAllele = false;           // -U --use-reference-allele
-    allowIndels = false;            // -i --allow-indels
+    allowIndels = false;            // -i --indels
+    allowMNPs = false;            // -X --allow-mnps
     pooled = false;                 // -J --pooled
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
@@ -208,7 +210,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"output-alleles", no_argument, 0, 'O'},
         {"trace", required_argument, 0, 'L'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
-        {"suppress-output", no_argument, 0, 'X'},
+        {"suppress-output", no_argument, 0, 'N'},
         {"factorial-data-likelihoods", no_argument, 0, 'G'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"force-reference-allele", no_argument, 0, 'Z'},
@@ -223,7 +225,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-supporting-base-quality", required_argument, 0, 'S'},
         {"mismatch-base-quality-threshold", required_argument, 0, 'Q'},
         {"read-mismatch-limit", required_argument, 0, 'U'},
-        {"allow-indels", no_argument, 0, 'i'},
+        {"indels", no_argument, 0, 'i'},
+        {"mnps", no_argument, 0, 'X'},
         {"indel-exclusion-window", required_argument, 0, 'x'},
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
@@ -241,7 +244,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEXGZAdDiJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
+        c = getopt_long(argc, argv, "hcOENGZAdDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -308,8 +311,8 @@ Parameters::Parameters(int argc, char** argv) {
                 useDuplicateReads = true;
                 break;
 
-            // -X --suppress-output
-            case 'X':
+            // -N --suppress-output
+            case 'N':
                 suppressOutput = true;
                 break;
 
@@ -425,9 +428,14 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -i --allow-indels
+            // -i --indels
             case 'i':
                 allowIndels = true;
+                break;
+
+            // -X --mnps
+            case 'X':
+                allowMNPs = true;
                 break;
 
             // -T --theta

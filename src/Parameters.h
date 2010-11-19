@@ -45,6 +45,7 @@ public:
     bool forceRefAllele;         // -F --force-reference-allele
     bool useRefAllele;           // -U --use-reference-allele
     bool allowIndels;            // -I --allow-indels
+    bool allowMNPs;              // -X --allow-mnps
     bool pooled;                 // -J --pooled
     int MQR;                     // -M --reference-mapping-quality
     int BQR;                     // -B --reference-base-quality

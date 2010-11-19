@@ -89,6 +89,9 @@ int main (int argc, char *argv[]) {
         allowedAlleleTypes |= ALLELE_INSERTION;
         allowedAlleleTypes |= ALLELE_DELETION;
     }
+    if (parameters.allowMNPs) {
+        allowedAlleleTypes |= ALLELE_MNP;
+    }
 
     // output VCF header
     if (parameters.output == "vcf") {

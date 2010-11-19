@@ -167,6 +167,10 @@ string vcf(
             referenceSequence = refbase;
             alternateSequence = altAllele.alternateSequence;
             break;
+        case ALLELE_MNP:
+            referenceSequence = parser->referenceSubstr(parser->currentPosition, altAllele.length);
+            alternateSequence = altAllele.alternateSequence;
+            break;
         case ALLELE_DELETION:
             referenceSequence = parser->referenceSubstr(parser->currentPosition, altAllele.length + 1);
             alternateSequence = refbase;
@@ -246,6 +250,8 @@ string vcf(
         if (parser->isCpG(altbase)) {
             out << ";CpG";
         }
+    } else if (altAllele.type == ALLELE_MNP) {
+        out << "MNP";
     }
 
 
