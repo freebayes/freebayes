@@ -507,13 +507,6 @@ AlleleParser::~AlleleParser(void) {
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
     delete reference;
 
-    for (vector<Allele*>::iterator allele = registeredAlleles.begin();
-            allele != registeredAlleles.end(); ++allele) {
-        delete *allele;
-    }
-
-    //if (currentTarget != NULL) delete currentTarget;
-
 }
 
 // position of alignment relative to current sequence
@@ -554,9 +547,7 @@ bool AlleleParser::isCpG(string& altbase) {
     }
 }
 
-RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, string sampleName) {
-
-    RegisteredAlignment ra = RegisteredAlignment(alignment); // result
+RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string sampleName) {
 
     string rDna = alignment.QueryBases;
     string rQual = alignment.Qualities;
@@ -655,13 +646,12 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                         //cerr << "readSequence " << readSequence << endl;
                         string qualstr = rQual.substr(rp - length, length);
                         // record 'reference' allele for last matching region
-                        Allele* allele = new Allele(ALLELE_REFERENCE,
+                        ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                                 currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
                                 matchingSequence, readSequence, sampleName, alignment.Name,
                                 !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                                alignment.MapQuality);
-                        DEBUG2(allele);
-                        ra.alleles.push_back(allele);
+                                alignment.MapQuality));
+                        DEBUG2(ra.alleles.back());
                     }
                     // register mismatch
                     if (qual >= parameters.BQL2) {
@@ -684,10 +674,9 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                     string qualstr = rQual.substr(rp - length, length);
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                     long double lqual = averageQuality(qualstr);
-                    Allele* allele = new Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
-                                sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality);
-                    DEBUG2(allele);
-                    ra.alleles.push_back(allele);
+                    ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
+                                sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                    DEBUG2(ra.alleles.back());
                 }
 
                 // update positions
@@ -704,23 +693,21 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 string qualstr = rQual.substr(rp - length, length);
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                 long double lqual = averageQuality(qualstr);
-                Allele* allele = new Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
-                            sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality);
-                DEBUG2(allele);
-                ra.alleles.push_back(allele);
+                ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
+                            sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                DEBUG2(ra.alleles.back());
             // or, if we are not in a mismatch, construct the last reference allele of the match
             } else if (firstMatch < csp) {
                 int length = csp - firstMatch;
                 string matchingSequence = currentSequence.substr(csp - length, length);
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
-                Allele* allele = new Allele(ALLELE_REFERENCE,
+                ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                         currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
                         matchingSequence, readSequence, sampleName, alignment.Name,
                         !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                        alignment.MapQuality);
-                DEBUG2(allele);
-                ra.alleles.push_back(allele);
+                        alignment.MapQuality));
+                DEBUG2(ra.alleles.back());
             }
         } else if (t == 'D') { // deletion
 
@@ -741,13 +728,12 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 }
             }
 
-            Allele* allele = new Allele(ALLELE_DELETION,
+            ra.alleles.push_back(Allele(ALLELE_DELETION,
                     currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l,
                     currentSequence.substr(csp, l), "", sampleName, alignment.Name,
                     !alignment.IsReverseStrand(), qual, qualstr,
-                    alignment.MapQuality);
-            DEBUG2(allele);
-            ra.alleles.push_back(allele);
+                    alignment.MapQuality));
+            DEBUG2(ra.alleles.back());
 
             sp += l;  // update sample position
             csp += l;
@@ -768,12 +754,11 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 indelMask[sp - alignment.Position + 1] = true; // TODO wrong, but mirrors bambayes behavior
             }
 
-            Allele* allele = new Allele(ALLELE_INSERTION,
+            ra.alleles.push_back(Allele(ALLELE_INSERTION,
                     currentTarget->seq, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", rDna.substr(rp, l),
                     sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
-                    qualstr, alignment.MapQuality);
-            DEBUG2(allele);
-            ra.alleles.push_back(allele);
+                    qualstr, alignment.MapQuality));
+            DEBUG2(ra.alleles.back());
 
             rp += l;
 
@@ -809,8 +794,8 @@ RegisteredAlignment AlleleParser::registerAlignment(BamAlignment& alignment, str
                 m += parameters.IDW + 1;
             }
         }
-        for (vector<Allele*>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-            Allele& allele = **a;
+        for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+            Allele& allele = *a;
             int start = (allele.position - alignment.Position);
             int end = start + allele.length;
             vector<bool>::iterator im = indelMask.begin();
@@ -887,12 +872,16 @@ void AlleleParser::updateAlignmentQueue(void) {
                 extendReferenceSequence(currentAlignment);
                 string sampleName = readGroupToSampleNames[readGroup];
                 // decomposes alignment into a set of alleles
-                RegisteredAlignment ra = registerAlignment(currentAlignment, sampleName);
-                if (ra.mismatches <= parameters.RMU) {
-                    registeredAlignmentQueue.push_front(ra);
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
+                rq.push_front(RegisteredAlignment(currentAlignment));
+                RegisteredAlignment& ra = rq.front();
+                registerAlignment(currentAlignment, ra, sampleName);
+                if (ra.mismatches > parameters.RMU) {
+                    rq.pop_front(); // backtrack
+                } else {
                     // which we then push into our registered alleles vector
-                    for (vector<Allele*>::const_iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
-                        registeredAlleles.push_back(*allele);
+                    for (vector<Allele>::iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
+                        registeredAlleles.push_back(&*allele);
                     }
                 }
             }
@@ -902,22 +891,6 @@ void AlleleParser::updateAlignmentQueue(void) {
 
     DEBUG2("... finished pushing new alignments");
 
-    // pop from the back until we get to an alignment that overlaps our current position
-    if (registeredAlignmentQueue.size() > 0) {
-        RegisteredAlignment* ra = &registeredAlignmentQueue.back();
-        while ((currentPosition > ra->end || ra->refid != currentRefID) && registeredAlignmentQueue.size() > 0) {
-            DEBUG2("popping registered alignment");
-            registeredAlignmentQueue.pop_back();
-            if (registeredAlignmentQueue.size() > 0) {
-                ra = &registeredAlignmentQueue.back();
-            } else {
-                break;
-            }
-        }
-    }
-    //cerr << "registered alignment queue size " << registeredAlignmentQueue.size() << endl;
-
-    DEBUG2("... finished popping old alignments");
 }
 
 // updates registered alleles and erases the unused portion of our cached reference sequence
@@ -932,7 +905,6 @@ void AlleleParser::updateRegisteredAlleles(void) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         long unsigned int position = (*allele)->position;
         if (currentPosition > position + (*allele)->length) {
-            delete *allele;
             *allele = NULL;
         }
         else {
@@ -1085,10 +1057,7 @@ bool AlleleParser::getFirstAlignment(void) {
 
 void AlleleParser::clearRegisteredAlignments(void) {
     DEBUG2("clearing registered alignments and alleles");
-    registeredAlignmentQueue.clear();
-    for (vector<Allele*>::iterator allele = registeredAlleles.begin(); allele != registeredAlleles.end(); ++allele) {
-        delete *allele;
-    }
+    registeredAlignments.clear();
     registeredAlleles.clear();
 }
 
@@ -1142,11 +1111,11 @@ bool AlleleParser::toNextPosition(void) {
         // TODO rectify this with the other copies of this stanza...
         // implicit step of target sequence
         // XXX this must wait for us to clean out all of our alignments at the end of the target
-        if (registeredAlignmentQueue.empty() && currentRefID != currentAlignment.RefID) {
+        if (registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
             clearRegisteredAlignments();
             loadReferenceSequence(currentAlignment);
             justSwitchedTargets = true;
-        } else if (!hasMoreAlignments && registeredAlignmentQueue.empty()) {
+        } else if (!hasMoreAlignments && registeredAlignments.empty()) {
             DEBUG("no more alignments in input");
             return false;
         }
@@ -1160,6 +1129,12 @@ bool AlleleParser::toNextPosition(void) {
     updateAlignmentQueue();
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles(); // this removes unused left-flanking sequence
+
+    // if we have alignments which ended at the previous base, erase them and their alleles
+    map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.find(currentPosition - 2);
+    if (f != registeredAlignments.end()) {
+        registeredAlignments.erase(f);
+    }
     // so we have to make sure it's still there (this matters in low-coverage)
     preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
 

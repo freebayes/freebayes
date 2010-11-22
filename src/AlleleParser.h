@@ -41,7 +41,7 @@ public:
     long unsigned int end;
     int refid;
     string name;
-    vector<Allele*> alleles;
+    vector<Allele> alleles;
     int mismatches;
 
     RegisteredAlignment(BamAlignment& alignment)
@@ -113,7 +113,7 @@ public:
     // bamreader
     BamMultiReader bamMultiReader;
 
-    deque<RegisteredAlignment> registeredAlignmentQueue;
+    map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
     vector<Allele*> registeredAlleles;
     //list<Allele*> registeredAlleles;
     //map<string, list<Allele*> > allelesBySample;
@@ -142,7 +142,7 @@ public:
     bool getFirstAlignment(void);
     void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
-    RegisteredAlignment registerAlignment(BamAlignment& alignment, string sampleName);
+    RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string sampleName);
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(void);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles);
