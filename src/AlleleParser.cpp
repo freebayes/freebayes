@@ -1045,11 +1045,24 @@ bool AlleleParser::loadTarget(BedTarget* target) {
 
 bool AlleleParser::getFirstAlignment(void) {
 
+    bool hasAlignments = true;
     if (!bamMultiReader.GetNextAlignment(currentAlignment)) {
-        ERROR("Could not find any reads in target region " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
+        hasAlignments = false;
+    } else {
+        while (!currentAlignment.IsMapped()) {
+            if (!bamMultiReader.GetNextAlignment(currentAlignment)) {
+                hasAlignments = false;
+                break;
+            }
+        }
+    }
+
+    if (hasAlignments) {
+        DEBUG2("got first alignment in target region");
+    } else {
+        ERROR("Could not find any mapped reads in target region " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
         return false;
     }
-    DEBUG2("got first alignment in target region");
 
     return true;
 
