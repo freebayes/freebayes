@@ -293,7 +293,7 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
             currentTarget->left = currentSequenceStart + 1;
     }
     DEBUG2("reference->getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
-    currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length());
+    currentSequence = uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length()));
 }
 
 // intended to load all the sequence covered by reads which overlap our current target
@@ -304,15 +304,15 @@ void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int afte
     basesAfterCurrentTarget = after;
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
     string name = reference->sequenceNameStartingWith(target->seq);
-    currentSequence = reference->getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before);
+    currentSequence = uppercase(reference->getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before));
     currentReferenceBase = currentReferenceBaseChar();
 }
 
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
-    currentSequence += reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
+    currentSequence += uppercase(reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
                                                  (currentTarget->right - 1) + basesAfterCurrentTarget,
-                                                 rightExtension);
+                                                 rightExtension));
     basesAfterCurrentTarget += rightExtension;
 }
 
@@ -332,14 +332,14 @@ void AlleleParser::preserveReferenceSequenceWindow(int bp) {
 
     if (leftdiff > 0) {
         //cerr << currentSequenceStart << endl;
-        currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
+        currentSequence.insert(0, uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
         currentSequenceStart -= leftdiff;
     }
     if (rightdiff > 0) {
-        currentSequence += reference->getSubSequence(
+        currentSequence += uppercase(reference->getSubSequence(
                 currentSequenceName,
                 (currentSequenceStart + currentSequence.size()),
-                rightdiff);  // always go 10bp past the end of what we need for alignment registration
+                rightdiff));  // always go 10bp past the end of what we need for alignment registration
     }
 }
 
@@ -350,15 +350,15 @@ void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
     leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
     if (leftdiff > 0) {
         currentSequenceStart -= leftdiff;
-        currentSequence.insert(0, reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff));
+        currentSequence.insert(0, uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
     }
 
     int rightdiff = (alignment.Position + alignment.AlignedBases.size()) - (currentSequenceStart + currentSequence.size());
     if (rightdiff > 0) {
-        currentSequence += reference->getSubSequence(
+        currentSequence += uppercase(reference->getSubSequence(
                 currentSequenceName,
                 (currentSequenceStart + currentSequence.size()),
-                rightdiff);
+                rightdiff));
     }
 
 }
@@ -529,7 +529,7 @@ string::iterator AlleleParser::currentReferenceBaseIterator(void) {
 }
 
 string AlleleParser::referenceSubstr(long double pos, unsigned int len) {
-    return reference->getSubSequence(currentSequenceName, floor(pos), len);
+    return uppercase(reference->getSubSequence(currentSequenceName, floor(pos), len));
 }
 
 bool AlleleParser::isCpG(string& altbase) {
@@ -985,7 +985,7 @@ bool AlleleParser::toNextTarget(void) {
         currentSequenceName = referenceIDToName[currentAlignment.RefID];
         currentRefID = currentAlignment.RefID;
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
-        currentSequence = reference->getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length);
+        currentSequence = uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
     // stdin, no targets cases
     } else if (currentTarget == NULL && targets.empty()) {
         if (!getFirstAlignment()) {

@@ -32,6 +32,8 @@ std::vector<short> qualities(const std::string& qualstr);
 long double averageQuality(const std::string& qualstr);
 //unsigned int factorial(int n);
 bool stringInVector(string item, vector<string> items);
+int upper(int c); // helper to below, wraps toupper
+string uppercase(string s);
 
 int binomialCoefficient(int n, int k);
 long double gammaln( long double x);

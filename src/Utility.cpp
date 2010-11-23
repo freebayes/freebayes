@@ -105,6 +105,15 @@ bool stringInVector(string item, vector<string> items) {
     return false;
 }
 
+int upper(int c) {
+    return toupper((unsigned char) c);
+}
+
+string uppercase(string s) {
+    transform(s.begin(), s.end(), s.begin(), upper);
+    return s;
+}
+
 int binomialCoefficient(int n, int k) {
     int i = 1;
     int result = n - k + i++;
