@@ -834,7 +834,7 @@ void AlleleParser::updateAlignmentQueue(void) {
             << ", currentSequenceStart == " << currentSequenceStart
             << " .. + currentSequence.size() == " << currentSequenceStart + currentSequence.size()
             );
-    if (currentAlignment.Position <= currentPosition && currentAlignment.RefID == currentRefID) {
+    if (hasMoreAlignments && currentAlignment.Position <= currentPosition && currentAlignment.RefID == currentRefID) {
         do {
             DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
             // get read group, and map back to a sample name
