@@ -65,7 +65,7 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\"" << endl
         << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\"" << endl
         << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\"" << endl
-        << "##INFO=<ID=MNP,Number=0,Type=Flag,Description=\"MNP allele\"" << endl
+        << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Lengeth of MNP allele, if present\"" << endl
         << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\"" << endl
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\"" << endl
         << "##FORMAT=<ID=GT,Number=1,Type=String,\"Genotype\">" << endl
@@ -252,7 +252,7 @@ string vcf(
             out << ";CpG";
         }
     } else if (altAllele.type == ALLELE_MNP) {
-        out << "MNP";
+        out << "MNP=" << altAllele.length;
     }
 
 
