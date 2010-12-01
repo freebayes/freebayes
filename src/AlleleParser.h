@@ -127,6 +127,7 @@ public:
  
     void openBams(void);
     void openTraceFile(void);
+    void openFailedPositionsFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
     void loadBamReferenceSequenceNames(void);
@@ -181,7 +182,7 @@ public:
     string::iterator currentReferenceBaseIterator();
 
     // output files
-    ofstream logFile, outputFile, traceFile;
+    ofstream logFile, outputFile, traceFile, failedPositionsFile;
     ostream* output;
 
     // utility

@@ -419,6 +419,20 @@ int main (int argc, char *argv[]) {
                             parser)
                         << endl;
                 }
+            } else if (!parameters.failedPositions.empty()) {
+                // XXX don't repeat yourself
+                // get the unique alternate alleles in this combo, sorted by frequency in the combo
+                long unsigned int position = parser->currentPosition;
+                for (vector<Allele>::iterator ga =  genotypeAlleles.begin(); ga != genotypeAlleles.end(); ++ga) {
+                    if (ga->type == ALLELE_REFERENCE)
+                        continue;
+                    parser->failedPositionsFile
+                        << parser->currentTarget->seq << "\t"
+                        << position << "\t"
+                        << position + ga->length << "\t"
+                        << *ga << endl;
+                }
+                // BED format
             }
         }
         DEBUG2("finished position");

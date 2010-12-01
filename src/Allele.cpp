@@ -56,7 +56,7 @@ string Allele::typeStr(void) {
             t = "reference";
             break;
         case ALLELE_MNP:
-            t = "mismatch";
+            t = "mnp";
             break;
         case ALLELE_SNP:
             t = "snp";

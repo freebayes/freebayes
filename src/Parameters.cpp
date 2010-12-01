@@ -34,6 +34,9 @@ void Parameters::usage(char** argv) {
          << "                   When --json is set, add records to the JSON output stream" << endl
          << "                   describing each allele in the input." << endl
          << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
+         << "   -l --failed-positions FILE" << endl
+         << "                   Write a BED file of the analyzed positions which do not" << endl
+         << "                   pass --pvar to FILE." << endl
          << "   -N --suppress-output" << endl
          << "                   Suppress output.  Used for debugging." << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
@@ -158,6 +161,7 @@ Parameters::Parameters(int argc, char** argv) {
     output = "vcf";               // -v --vcf
     outputFile = "";
     traceFile = "";
+    failedPositions = "";
 
     // operation parameters
     outputAlleles = false;          // -O --output-alleles
@@ -209,6 +213,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"vcf", required_argument, 0, 'v'},
         {"output-alleles", no_argument, 0, 'O'},
         {"trace", required_argument, 0, 'L'},
+        {"failed-positions", required_argument, 0, 'l'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
         {"suppress-output", no_argument, 0, 'N'},
         {"factorial-data-likelihoods", no_argument, 0, 'G'},
@@ -244,7 +249,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZAdDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:",
+        c = getopt_long(argc, argv, "hcOENGZAdDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -304,6 +309,11 @@ Parameters::Parameters(int argc, char** argv) {
             case 'L':
                 traceFile = optarg;
                 trace = true;
+                break;
+
+            // -l --failed-positions
+            case 'l':
+                failedPositions = optarg;
                 break;
 
             // -E --use-duplicate-reads

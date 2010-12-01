@@ -84,6 +84,17 @@ void AlleleParser::openTraceFile(void) {
     }
 }
 
+void AlleleParser::openFailedPositionsFile(void) {
+    if (!parameters.failedPositions.empty()) {
+        failedPositionsFile.open(parameters.failedPositions.c_str(), ios::out);
+        DEBUG("Opening failed positions file: " << parameters.failedPositions << " ...");
+        if (!failedPositionsFile) {
+            ERROR(" unable to open failed positions file: " << parameters.failedPositions );
+            exit(1);
+        }
+    }
+}
+
 void AlleleParser::openOutputFile(void) {
     if (parameters.outputFile != "") {
         outputFile.open(parameters.outputFile.c_str(), ios::out);
@@ -477,6 +488,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 
     // initialization
     openTraceFile();
+    openFailedPositionsFile();
     openOutputFile();
 
     loadFastaReference();
