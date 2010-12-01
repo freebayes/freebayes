@@ -34,7 +34,7 @@ void Parameters::usage(char** argv) {
          << "                   When --json is set, add records to the JSON output stream" << endl
          << "                   describing each allele in the input." << endl
          << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
-         << "   -l --failed-positions FILE" << endl
+         << "   -l --failed-alleles FILE" << endl
          << "                   Write a BED file of the analyzed positions which do not" << endl
          << "                   pass --pvar to FILE." << endl
          << "   -N --suppress-output" << endl
@@ -161,7 +161,7 @@ Parameters::Parameters(int argc, char** argv) {
     output = "vcf";               // -v --vcf
     outputFile = "";
     traceFile = "";
-    failedPositions = "";
+    failedFile = "";
 
     // operation parameters
     outputAlleles = false;          // -O --output-alleles
@@ -213,7 +213,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"vcf", required_argument, 0, 'v'},
         {"output-alleles", no_argument, 0, 'O'},
         {"trace", required_argument, 0, 'L'},
-        {"failed-positions", required_argument, 0, 'l'},
+        {"failed-alleles", required_argument, 0, 'l'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
         {"suppress-output", no_argument, 0, 'N'},
         {"factorial-data-likelihoods", no_argument, 0, 'G'},
@@ -311,9 +311,9 @@ Parameters::Parameters(int argc, char** argv) {
                 trace = true;
                 break;
 
-            // -l --failed-positions
+            // -l --failed-alleles
             case 'l':
-                failedPositions = optarg;
+                failedFile = optarg;
                 break;
 
             // -E --use-duplicate-reads

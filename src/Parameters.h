@@ -34,7 +34,7 @@ public:
     string output;               // -v --vcf
     string outputFile;
     string traceFile;
-    string failedPositions;    // -l --analyzed-positions
+    string failedFile;    // -l --failed-alleles
 
     // operation parameters
     bool outputAlleles;          // -O --output-alleles
