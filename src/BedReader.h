@@ -19,13 +19,13 @@ public:
 
     string seq;  // sequence name
     int left;    // left position
-    int right;   // right position
+    int right;   // right position, adjusted to 0-base
     string desc; // descriptive information, target name typically
 
     BedTarget(string s, int l, int r, string d = "")
         : seq(s)
         , left(l)
-        , right(r)
+        , right(r - 1)
         , desc(d)
     { }
 
