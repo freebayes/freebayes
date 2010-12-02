@@ -207,7 +207,7 @@ FastaIndex::~FastaIndex(void) {
 FastaIndexEntry FastaIndex::entry(string name) {
     FastaIndex::iterator e = this->find(name);
     if (e == this->end()) {
-        cerr << "unable to find FASTA index entry for " << name << endl;
+        cerr << "unable to find FASTA index entry for '" << name << "'" << endl;
         exit(1);
     } else {
         return e->second;

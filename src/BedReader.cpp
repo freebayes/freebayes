@@ -27,7 +27,7 @@ vector<BedTarget> BedReader::entries(void) {
     string line;
     while (std::getline(*this, line)) {
         vector<string> fields = split(line, '\t');
-        BedTarget entry(fields[0], atoi(fields[1].c_str()), atoi(fields[2].c_str()), fields[3]);
+        BedTarget entry(fields[0], atoi(fields[1].c_str()), atoi(fields[2].c_str()), (fields.size() >= 4) ? fields[3] : "");
         entries.push_back(entry);
     }
 

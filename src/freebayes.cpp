@@ -123,7 +123,7 @@ int main (int argc, char *argv[]) {
                     vector<Allele*>& group = g->second;
                     for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
                         Allele& allele = **a;
-                        parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1  
+                        parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1  
                             << ",allele," << name << "," << allele.readID << "," << allele.base() << ","
                             << allele.currentQuality() << "," << allele.mapQuality << endl;
                     }
@@ -223,7 +223,7 @@ int main (int argc, char *argv[]) {
 
             if (parameters.trace) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
-                    parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ","
+                    parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ","
                         << sampleName << ",likelihood," << IUPAC2GenotypeStr(IUPAC(*(p->first))) << "," << p->second << endl;
                 }
             }
@@ -237,7 +237,7 @@ int main (int argc, char *argv[]) {
         // this section is a hack to make output of trace identical to BamBayes trace
         // and also outputs the list of samples
         vector<bool> samplesWithData;
-        if (parameters.trace) parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",samples,";
+        if (parameters.trace) parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ",samples,";
         for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
             if (parameters.trace) parser->traceFile << *s << ":";
             Results::iterator r = results.find(*s);
@@ -313,7 +313,7 @@ int main (int argc, char *argv[]) {
         DEBUG2("got posterior normalizer");
         if (parameters.trace) {
             parser->traceFile << parser->currentTarget->seq << "," 
-                << parser->currentPosition + 1 << ",posterior_normalizer," << posteriorNormalizer << endl;
+                << (long unsigned int) parser->currentPosition + 1 << ",posterior_normalizer," << posteriorNormalizer << endl;
         }
 
         // normalize marginals
@@ -358,7 +358,7 @@ int main (int argc, char *argv[]) {
                 long double priorlnG_Af = gc->priorProbGenotypeComboG_Af;
                 long double priorlnAf = gc->priorProbGenotypeComboAf;
 
-                parser->traceFile << parser->currentTarget->seq << "," << parser->currentPosition + 1 << ",genotypecombo,";
+                parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
 
                 int j = 0;
                 GenotypeCombo::iterator i = gc->combo->begin();
