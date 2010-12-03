@@ -1019,7 +1019,9 @@ bool AlleleParser::toNextTarget(void) {
         bool ok = false;
         // step through targets until we get to one with alignments
         while (currentTarget != &targets.back()) {
-            loadTarget(++currentTarget);
+            if (!loadTarget(++currentTarget)) {
+                continue;
+            }
             if (ok = getFirstAlignment()) {
                 break;
             }
@@ -1063,6 +1065,10 @@ bool AlleleParser::loadTarget(BedTarget* target) {
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
         return false;
     }
+
+    // now that we've jumped, reset the hasMoreAlignments counter
+    hasMoreAlignments = true;
+
     DEBUG2("set region");
 
     return true;

@@ -113,6 +113,7 @@ public:
     long double lnquality;  // log version of above
     string currentBase;       // current base, meant to be updated every position
     short mapQuality;       // map quality for the originating read
+    long double lnmapQuality;       // map quality for the originating read
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
     vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
     const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
@@ -147,6 +148,7 @@ public:
         , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
         , lnquality(log((qual == -1) ? averageQuality(qstr) : qual))
         , mapQuality(mapqual) 
+        , lnmapQuality(log(mapqual)) 
         , genotypeAllele(false)
         , processed(false)
     { 
