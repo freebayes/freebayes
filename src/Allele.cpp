@@ -438,7 +438,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups) {
     for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin(); sample != sampleGroups.end(); ++sample) {
         for (vector<Allele*>::iterator allele = sample->second.begin(); allele != sample->second.end(); ++allele) {
-            alleleGroups[(*allele)->base()].push_back(*allele);
+            alleleGroups[(*allele)->currentBase].push_back(*allele);
         }
     }
 }

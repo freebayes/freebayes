@@ -1398,11 +1398,22 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
     vector<Allele> resultAlleles;
 
+    string refBase = string(1, currentReferenceBase);
+
     if (parameters.useBestNAlleles == 0) {
         // this means "use everything"
+        bool hasRefAllele = false;
         for (map<Allele, int>::iterator p = filteredAlleles.begin();
                 p != filteredAlleles.end(); ++p) {
+            if (p->first.currentBase == refBase)
+                hasRefAllele = true;
+            DEBUG2("adding allele to result alleles " << p->first.currentBase);
             resultAlleles.push_back(p->first);
+        }
+        // and add the reference allele if we need it
+        if (parameters.forceRefAllele && !hasRefAllele) {
+            DEBUG2("including reference allele");
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1));
         }
     } else {
         // this means, use the N best
@@ -1416,13 +1427,14 @@ vector<Allele> AlleleParser::genotypeAlleles(
         sort(sortedAlleles.begin(), sortedAlleles.end(), alleleQualityCompare);
 
         DEBUG2("getting N best alleles");
-        string refBase = string(1, currentReferenceBase);
         bool hasRefAllele = false;
         for (vector<pair<Allele, int> >::iterator a = sortedAlleles.begin(); a != sortedAlleles.end(); ++a) {
             if (a->first.currentBase == refBase)
                 hasRefAllele = true;
+            DEBUG2("adding allele to result alleles " << a->first.currentBase);
             resultAlleles.push_back(a->first);
             if (resultAlleles.size() >= parameters.useBestNAlleles) {
+                DEBUG2("found enough alleles, breaking out");
                 break;
             }
         }
@@ -1442,6 +1454,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
     }
 
+    DEBUG2("found " << resultAlleles.size() << " result alleles");
     return resultAlleles;
 
 }

@@ -153,7 +153,7 @@ int main (int argc, char *argv[]) {
         DEBUG2("grouped alleles by sample");
 
         if (!sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
-            DEBUG2("insufficient observations at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG2("insufficient alternate observations at " << parser->currentTarget->seq << ":" << parser->currentPosition);
             continue;
         }
 
