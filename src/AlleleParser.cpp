@@ -442,11 +442,16 @@ void AlleleParser::loadTargets(void) {
         // check validity of targets wrt. reference
         for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
             BedTarget& bd = *e;
-            if (bd.left < 1 || bd.right < bd.left || bd.right >= reference->sequenceLength(bd.seq)) {
+            if (bd.left < 1 || bd.right >= reference->sequenceLength(bd.seq)) {
                 ERROR("Target region coordinates (" << bd.seq << " "
                         << bd.left << " " << bd.right
                         << ") outside of reference sequence bounds ("
                         << bd.seq << " " << reference->sequenceLength(bd.seq) << ") terminating.");
+                exit(1);
+            }
+            if (bd.right < bd.left) {
+                ERROR("Invalid target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right << ")"
+                        << " right bound is lower than left bound!");
                 exit(1);
             }
         }
@@ -1011,15 +1016,24 @@ bool AlleleParser::toNextTarget(void) {
         ERROR("could not read any alignments");
         return false;
     } else {
-        // step through targets until we get to one with alignments
         bool ok = false;
-        while (!ok && currentTarget != &targets.back()) {
-            ok &= loadTarget(++currentTarget);
-            ok &= getFirstAlignment();
+        // step through targets until we get to one with alignments
+        while (currentTarget != &targets.back()) {
+            loadTarget(++currentTarget);
+            if (ok = getFirstAlignment()) {
+                break;
+            }
         }
-        if (!ok) return false;
+        if (!ok) return false; // last target and couldn't get alignment
+
         clearRegisteredAlignments();
-        loadReferenceSequence(currentAlignment);
+        currentSequenceStart = currentAlignment.Position;
+        currentSequenceName = referenceIDToName[currentAlignment.RefID];
+        currentRefID = currentAlignment.RefID;
+        currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
+        currentSequence = uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
+        //clearRegisteredAlignments();
+        //loadReferenceSequence(currentAlignment);
     }
 
     justSwitchedTargets = true;
