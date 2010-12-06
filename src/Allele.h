@@ -146,9 +146,9 @@ public:
         , readID(readid)
         , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
         , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
-        , lnquality(log((qual == -1) ? averageQuality(qstr) : qual))
+        , lnquality(phred2ln((qual == -1) ? averageQuality(qstr) : qual))
         , mapQuality(mapqual) 
-        , lnmapQuality(log(mapqual)) 
+        , lnmapQuality(phred2ln(mapqual))
         , genotypeAllele(false)
         , processed(false)
     { 

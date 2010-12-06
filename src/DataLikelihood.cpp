@@ -119,7 +119,6 @@ approxProbObservedAllelesGivenGenotype(
             vector<Allele*>& alleles = s->second;
             for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a)
                 prodQout += (*a)->lnquality;
-                //prodQout += (*a)->lnquality + (*a)->lnmapQuality;
             countOut += alleles.size();
         }
     }
