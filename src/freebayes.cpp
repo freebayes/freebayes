@@ -134,7 +134,7 @@ int main (int argc, char *argv[]) {
 
         int coverage = countAlleles(samples);
 
-        DEBUG("position: " << parser->currentTarget->seq << ":" << parser->currentPosition + 1 << " coverage: " << coverage);
+        DEBUG("position: " << parser->currentTarget->seq << ":" << (long unsigned int) parser->currentPosition + 1 << " coverage: " << coverage);
 
         // skips 0-coverage regions
         if (coverage == 0) {

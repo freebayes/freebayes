@@ -583,17 +583,23 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
                 "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
+        stringstream cigarss;
         int alignedLength = 0;
         for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin(); c != alignment.CigarData.end(); ++c) {
+            cigarss << c->Type << c->Length;
             if (c->Type == 'D')
                 alignedLength += c->Length;
             if (c->Type == 'M')
                 alignedLength += c->Length;
         }
 
+        DEBUG2("alignment cigar " << cigarss.str());
+
         DEBUG2("current sequence pointer: " << csp);
 
-        DEBUG2(rDna << endl << alignment.AlignedBases << endl << currentSequence.substr(csp, alignment.AlignedBases.size()));
+        DEBUG2("read:          " << rDna);
+        DEBUG2("aligned bases: " << alignment.AlignedBases);
+        DEBUG2("reference seq: " << currentSequence.substr(csp, alignment.AlignedBases.size()));
     }
 #endif
 
@@ -641,14 +647,30 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
                 // extract aligned base
                 string b;
-                TRY { b = rDna.at(rp); } CATCH;
+                try {
+                    b = rDna.at(rp);
+                } catch (std::out_of_range outOfRange) {
+                    cerr << "Exception: Cannot read past the end of the alignment's sequence." << endl
+                         << alignment.AlignedBases << endl
+                         << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
+                         << currentTarget->seq << ":" << (long unsigned int) currentPosition + 1 << endl;
+                    abort();
+                }
 
                 // convert base quality value into short int
                 long double qual = qualityChar2LongDouble(rQual.at(rp));
 
                 // get reference allele
                 string sb;
-                TRY { sb = currentSequence.at(csp); } CATCH;
+                try {
+                    sb = currentSequence.at(csp);
+                } catch (std::out_of_range outOfRange) {
+                    cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
+                         << alignment.AlignedBases << endl
+                         << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
+                         << currentTarget->seq << ":" << (long unsigned int) currentPosition + 1 << endl;
+                    abort();
+                }
 
                 // THIS DEBUGIC IS ILDEBUGICAL!!!
                 //
@@ -1170,7 +1192,7 @@ bool AlleleParser::toNextPosition(void) {
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
 
-    DEBUG2("processing position " << currentPosition + 1 << " in sequence " << currentTarget->seq);
+    DEBUG2("processing position " << (long unsigned int) currentPosition + 1 << " in sequence " << currentTarget->seq);
     updateAlignmentQueue();
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles(); // this removes unused left-flanking sequence
