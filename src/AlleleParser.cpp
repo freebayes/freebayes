@@ -116,7 +116,7 @@ void AlleleParser::getSampleNames(void) {
     // header to get the sample names.
     //
 
-    if (parameters.samples != "") {
+    if (!parameters.samples.empty()) {
         ifstream sampleFile(parameters.samples.c_str(), ios::in);
         if (! sampleFile) {
             cerr << "unable to open file: " << parameters.samples << endl;
@@ -173,7 +173,7 @@ void AlleleParser::getSampleNames(void) {
     }
     //cout << sampleListFromBam.size() << endl;
      // no samples file given, read from BAM file header for sample names
-    if (sampleList.size() == 0) {
+    if (sampleList.empty()) {
         DEBUG("no sample list file given, reading sample names from bam file");
         for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s) {
             DEBUG2("found sample " << *s);
@@ -181,7 +181,7 @@ void AlleleParser::getSampleNames(void) {
                 sampleList.push_back(*s);
             }
         }
-        DEBUG("found " << sampleList.size() << " samples");
+        DEBUG("found " << sampleList.size() << " samples in BAM file");
     } else {
         // verify that the samples in the sample list are present in the bam,
         // and raise an error and exit if not
@@ -212,10 +212,31 @@ void AlleleParser::getSampleNames(void) {
         }
     }
 
-    if (sampleList.size() == 0) {
-        ERROR("No sample names given, and no @RG tags found in BAM file(s).");
-        exit(1);
+    if (sampleList.empty()) {
+        ERROR(string(80, '-') << endl
+             //--------------------------------------------------------------------------------
+           << "Warning: No sample file given, and no @RG tags found in BAM header." << endl
+           << "All alignments from all input files will be assumed to come from the same" << endl
+           << "individual.  To group alignments by sample, you must add read groups and sample" << endl 
+           << "names to your alignments.  You can do this using ./scripts/sam_add_rg.pl in the" << endl
+           << "freebayes source tree, or by specifying read groups and sample names when you" << endl
+           << "prepare your sequencing data for alignment." << endl
+           << string(80, '-'));
+        sampleList.push_back("unknown");
+        readGroupToSampleNames["unknown"] = "unknown";
+        oneSampleAnalysis = true;
     }
+
+    if (sampleList.size() == 1) {
+        ERROR(string(80, '-') << endl
+            << "Warning: Only one sample found.  Assuming --use-reference-allele" << endl
+            << "and --force-reference-allele, which treat the reference as a separate sample" << endl
+            << "in the analysis." << endl
+            << string(80, '-'));
+        parameters.useRefAllele = true;
+        parameters.forceRefAllele = true;
+    }
+
 }
 
 void AlleleParser::writeVcfHeader(ostream& out) {
@@ -229,6 +250,7 @@ void AlleleParser::writeVcfHeader(ostream& out) {
 
     strftime(datestr, 80, "%Y%m%d %X", timeinfo);
 
+    // TODO add parameter information to this output
     out << "##format=VCFv4.0" << endl
             << "##fileDate=" << datestr << endl
             << "##source=bambayes" << endl
@@ -281,9 +303,9 @@ void AlleleParser::loadFastaReference(void) {
     // it can't find an index file for the reference, it will attempt to
     // generate one alongside it.  Note that this only loads the reference.
     // Sequence data is obtained by progressive calls to
-    // reference->getSubSequence(..), thus keeping our memory requirements low.
+    // reference.getSubSequence(..), thus keeping our memory requirements low.
 
-    reference = new FastaReference(parameters.fasta);
+    reference.open(parameters.fasta);
 
 }
 
@@ -303,8 +325,8 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
         if (currentSequenceStart + 1 != currentTarget->left)
             currentTarget->left = currentSequenceStart + 1;
     }
-    DEBUG2("reference->getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
-    currentSequence = uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length()));
+    DEBUG2("reference.getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
+    currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length()));
 }
 
 // intended to load all the sequence covered by reads which overlap our current target
@@ -314,14 +336,14 @@ void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int afte
     basesBeforeCurrentTarget = before;
     basesAfterCurrentTarget = after;
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
-    string name = reference->sequenceNameStartingWith(target->seq);
-    currentSequence = uppercase(reference->getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before));
+    string name = reference.sequenceNameStartingWith(target->seq);
+    currentSequence = uppercase(reference.getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before));
     currentReferenceBase = currentReferenceBaseChar();
 }
 
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
-    currentSequence += uppercase(reference->getSubSequence(reference->sequenceNameStartingWith(currentTarget->seq), 
+    currentSequence += uppercase(reference.getSubSequence(reference.sequenceNameStartingWith(currentTarget->seq), 
                                                  (currentTarget->right - 1) + basesAfterCurrentTarget,
                                                  rightExtension));
     basesAfterCurrentTarget += rightExtension;
@@ -343,11 +365,11 @@ void AlleleParser::preserveReferenceSequenceWindow(int bp) {
 
     if (leftdiff > 0) {
         //cerr << currentSequenceStart << endl;
-        currentSequence.insert(0, uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
+        currentSequence.insert(0, uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
         currentSequenceStart -= leftdiff;
     }
     if (rightdiff > 0) {
-        currentSequence += uppercase(reference->getSubSequence(
+        currentSequence += uppercase(reference.getSubSequence(
                 currentSequenceName,
                 (currentSequenceStart + currentSequence.size()),
                 rightdiff));  // always go 10bp past the end of what we need for alignment registration
@@ -361,12 +383,12 @@ void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
     leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
     if (leftdiff > 0) {
         currentSequenceStart -= leftdiff;
-        currentSequence.insert(0, uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
+        currentSequence.insert(0, uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
     }
 
     int rightdiff = (alignment.Position + alignment.AlignedBases.size()) - (currentSequenceStart + currentSequence.size());
     if (rightdiff > 0) {
-        currentSequence += uppercase(reference->getSubSequence(
+        currentSequence += uppercase(reference.getSubSequence(
                 currentSequenceName,
                 (currentSequenceStart + currentSequence.size()),
                 rightdiff));
@@ -412,14 +434,14 @@ void AlleleParser::loadTargets(void) {
                 if (foundRangeDots + 2 != region.size()) {
                     stopPos = atoi(region.substr(foundRangeDots + 2).c_str()) + 1; // end-inclusive
                 } else {
-                    stopPos = reference->sequenceLength(startSeq);
+                    stopPos = reference.sequenceLength(startSeq);
                 }
             }
         }
 
         BedTarget bd(startSeq,
                     (startPos == 1) ? 1 : startPos,
-                    (stopPos == -1) ? reference->sequenceLength(startSeq) : stopPos);
+                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos);
         DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
@@ -442,11 +464,11 @@ void AlleleParser::loadTargets(void) {
         // check validity of targets wrt. reference
         for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
             BedTarget& bd = *e;
-            if (bd.left < 1 || bd.right >= reference->sequenceLength(bd.seq)) {
+            if (bd.left < 1 || bd.right >= reference.sequenceLength(bd.seq)) {
                 ERROR("Target region coordinates (" << bd.seq << " "
                         << bd.left << " " << bd.right
                         << ") outside of reference sequence bounds ("
-                        << bd.seq << " " << reference->sequenceLength(bd.seq) << ") terminating.");
+                        << bd.seq << " " << reference.sequenceLength(bd.seq) << ") terminating.");
                 exit(1);
             }
             if (bd.right < bd.left) {
@@ -491,6 +513,15 @@ void AlleleParser::loadTargetsFromBams(void) {
 AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, argv))
 {
 
+    oneSampleAnalysis = false;
+    currentRefID = 0; // will get set properly via toNextRefID
+    currentTarget = NULL; // to be initialized on first call to getNextAlleles
+    currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
+    justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
+    hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
+    currentSequenceStart = 0;
+
+
     // initialization
     openTraceFile();
     openFailedFile();
@@ -505,24 +536,11 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     loadBamReferenceSequenceNames();
     getSampleNames();
 
-    // if we don't have any targets specified, now use the BAM header to get
-    // the targets to analyze
-    //if (targets.empty())
-    //    loadTargetsFromBams();
-
-    currentRefID = 0; // will get set properly via toNextRefID
-    currentTarget = NULL; // to be initialized on first call to getNextAlleles
-    currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
-    justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
-    hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
-    currentSequenceStart = 0;
-
 }
 
 AlleleParser::~AlleleParser(void) {
     // close trace file?  seems to get closed properly on object deletion...
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
-    delete reference;
 
 }
 
@@ -546,7 +564,7 @@ string::iterator AlleleParser::currentReferenceBaseIterator(void) {
 }
 
 string AlleleParser::referenceSubstr(long double pos, unsigned int len) {
-    return uppercase(reference->getSubSequence(currentSequenceName, floor(pos), len));
+    return uppercase(reference.getSubSequence(currentSequenceName, floor(pos), len));
 }
 
 bool AlleleParser::isCpG(string& altbase) {
@@ -879,10 +897,21 @@ void AlleleParser::updateAlignmentQueue(void) {
             // get read group, and map back to a sample name
             string readGroup;
             if (!currentAlignment.GetTag("RG", readGroup)) {
-                ERROR("Couldn't find read group id (@RG tag) for BAM Alignment " <<
-                        currentAlignment.Name << " at position " << currentPosition
-                        << " in sequence " << currentSequence << " EXITING!");
-                exit(1);
+                if (!oneSampleAnalysis) {
+                    ERROR("Couldn't find read group id (@RG tag) for BAM Alignment " <<
+                            currentAlignment.Name << " at position " << currentPosition
+                            << " in sequence " << currentSequence << " EXITING!");
+                    exit(1);
+                } else {
+                    readGroup = "unknown";
+                }
+            } else {
+                if (oneSampleAnalysis) {
+                    ERROR("No read groups specified in BAM header, but alignment " <<
+                            currentAlignment.Name << " at position " << currentPosition
+                            << " in sequence " << currentSequence << " has a read group.");
+                    exit(1);
+                }
             }
 
             // skip this alignment if we are not analyzing the sample it is drawn from
@@ -911,14 +940,17 @@ void AlleleParser::updateAlignmentQueue(void) {
                 extendReferenceSequence(currentAlignment);
                 string sampleName = readGroupToSampleNames[readGroup];
                 // decomposes alignment into a set of alleles
+                // here we get the deque of alignments ending at this alignment's end position
                 deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
+                // and insert the registered alignment into that deque
                 rq.push_front(RegisteredAlignment(currentAlignment));
                 RegisteredAlignment& ra = rq.front();
                 registerAlignment(currentAlignment, ra, sampleName);
+                // backtracking if we have too many mismatches
                 if (ra.mismatches > parameters.RMU) {
                     rq.pop_front(); // backtrack
                 } else {
-                    // which we then push into our registered alleles vector
+                    // push the alleles into our registered alleles vector
                     for (vector<Allele>::iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
                         registeredAlleles.push_back(&*allele);
                     }
@@ -1024,7 +1056,7 @@ bool AlleleParser::toNextTarget(void) {
         currentSequenceName = referenceIDToName[currentAlignment.RefID];
         currentRefID = currentAlignment.RefID;
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
-        currentSequence = uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
+        currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
     // stdin, no targets cases
     } else if (currentTarget == NULL && targets.empty()) {
         if (!getFirstAlignment()) {
@@ -1055,7 +1087,7 @@ bool AlleleParser::toNextTarget(void) {
         currentSequenceName = referenceIDToName[currentAlignment.RefID];
         currentRefID = currentAlignment.RefID;
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
-        currentSequence = uppercase(reference->getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
+        currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
         //clearRegisteredAlignments();
         //loadReferenceSequence(currentAlignment);
     }
@@ -1339,7 +1371,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
 
 Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string base = string(1, currentReferenceBase);
-    //string name = reference->filename;
+    //string name = reference.filename;
     string name = currentTarget->seq; // this behavior matches old bambayes
     string baseQstr = "";
     //baseQstr += qualityInt2Char(baseQ);

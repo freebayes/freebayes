@@ -95,7 +95,7 @@ int main (int argc, char *argv[]) {
 
     // output VCF header
     if (parameters.output == "vcf") {
-        vcfHeader(out, parser->reference->filename, parser->sampleList);
+        vcfHeader(out, parser->reference.filename, parser->sampleList);
     }
 
     unsigned long total_sites = 0;

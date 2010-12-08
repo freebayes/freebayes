@@ -216,7 +216,12 @@ FastaIndexEntry FastaIndex::entry(string name) {
 
 string FastaIndex::indexFileExtension() { return ".fai"; }
 
+/*
 FastaReference::FastaReference(string reffilename) {
+}
+*/
+
+void FastaReference::open(string reffilename) {
     filename = reffilename;
     if (!(file = fopen(filename.c_str(), "r"))) {
         cerr << "could not open " << filename << endl;

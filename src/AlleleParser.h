@@ -101,7 +101,7 @@ public:
     map<string, string> readGroupToSampleNames; // maps read groups to samples
 
     // reference
-    FastaReference* reference;
+    FastaReference reference;
     vector<string> referenceSequenceNames;
     map<int, string> referenceIDToName;
     
@@ -200,6 +200,8 @@ private:
     string currentSequenceName;
 
     bool hasMoreAlignments;
+
+    bool oneSampleAnalysis; // if we are analyzing just one sample, and there are no specified read groups
 
     int basesBeforeCurrentTarget; // number of bases in sequence we're storing before the current target
     int basesAfterCurrentTarget;  // ........................................  after ...................
