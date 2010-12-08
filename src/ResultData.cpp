@@ -43,13 +43,15 @@ string dateStr(void) {
 
 void vcfHeader(ostream& out,
         string referenceName,
-        vector<string>& samples) {
+        vector<string>& samples,
+        Parameters& parameters) {
 
     out << "##fileformat=VCFv4.0" << endl
         << "##fileDate=" << dateStr() << endl
         << "##source=freeBayes version " << FREEBAYES_VERSION << endl
         << "##reference=" << referenceName << endl
         << "##phasing=none" << endl
+        << "##commandline=\"" << parameters.commandline << "\"" << endl
         << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">" << endl
         << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << endl
         << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">" << endl

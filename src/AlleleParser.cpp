@@ -250,19 +250,16 @@ void AlleleParser::writeVcfHeader(ostream& out) {
 
     strftime(datestr, 80, "%Y%m%d %X", timeinfo);
 
-    // TODO add parameter information to this output
     out << "##format=VCFv4.0" << endl
             << "##fileDate=" << datestr << endl
-            << "##source=bambayes" << endl
+            << "##source=freebayes" << endl
             << "##reference=" << parameters.fasta << endl
             << "##phasing=none" << endl
-            << "##notes=\"All FORMAT fields matching *i* (e.g. NiBAll, NiA) refer to individuals.\"" << endl
-
+            << "##commandline=\"" << parameters.commandline << "\"" << endl
             << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
             << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
             << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
             << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
-            //<< "##INFO=AN,1,Integer,\"total number of alleles in called genotypes\"" << endl
 
             // these are req'd
             << "##FORMAT=GT,1,String,\"Genotype\"" << endl // g

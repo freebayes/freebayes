@@ -82,7 +82,7 @@ public:
 };
 
 string dateStr(void);
-void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples);
+void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples, Parameters& parameters);
 
 
 #endif

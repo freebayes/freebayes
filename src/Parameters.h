@@ -81,6 +81,9 @@ public:
     Parameters(int argc, char** argv);
     void usage(char **argv);
 
+    // reporting
+    string commandline;
+
 };
 
 #endif

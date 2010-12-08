@@ -150,6 +150,13 @@ Parameters::Parameters(int argc, char** argv) {
         exit(1);
     }
 
+    // record command line parameters
+    commandline = argv[0];
+    for (int i = 1; i < argc; ++i) {
+        commandline += " ";
+        commandline += argv[i];
+    }
+
     // set defaults
 
     // i/o parameters:
