@@ -12,7 +12,15 @@ map<int, int> countFrequencies(vector<Genotype*>& genotypeCombo);
 long double alleleFrequencyProbability(map<int, int> alleleFrequencyCounts, long double theta);
 long double alleleFrequencyProbabilityln(map<int, int> alleleFrequencyCounts, long double theta);
 long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele);
-void genotypeCombinationPriorProbability(
+
+GenotypeComboResult
+genotypeCombinationsPriorProbability(
+        GenotypeCombo* combo,
+        Allele& refAllele,
+        long double theta,
+        bool pooled);
+
+void genotypeCombinationsPriorProbability(
         vector<GenotypeComboResult>& genotypeComboProbs,
         vector<GenotypeCombo>& bandedCombos,
         Allele& refAllele,

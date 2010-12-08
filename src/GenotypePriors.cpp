@@ -68,31 +68,28 @@ long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genoty
     int n = genotypeCombo.numberOfAlleles();
     int h = 0; // number of heterozygotes
     int f = genotypeCombo.alleleFrequency(allele);
-    long double lnploidyscalar = 0;
+    long double lnhetscalar = 0;
 
     for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
         if (!gc->genotype->homozygous) {
-            lnploidyscalar += log(gc->genotype->ploidy);
+            lnhetscalar += log(gc->genotype->ploidy);
             ++h;
         }
     }
 
-    return lnploidyscalar - (factorialln(n) - (factorialln(f) + factorialln(n - f)));
+    return lnhetscalar - (factorialln(n) - (factorialln(f) + factorialln(n - f)));
 
 }
 
 
 // core calculation of genotype combination likelihoods
 //
-void
+GenotypeComboResult
 genotypeCombinationPriorProbability(
-        vector<GenotypeComboResult>& genotypeComboProbs,
-        vector<GenotypeCombo>& bandedCombos,
+        GenotypeCombo* combo,
         Allele& refAllele,
         long double theta,
         bool pooled) {
-
-    for (vector<GenotypeCombo>::iterator combo = bandedCombos.begin(); combo != bandedCombos.end(); ++combo) {
 
         // when we are operating on pooled samples, we will not be able to
         // ascertain the number of heterozygotes in the pool,
@@ -101,6 +98,7 @@ genotypeCombinationPriorProbability(
         if (!pooled) {
             priorProbabilityOfGenotypeComboG_Af = probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
         }
+
         // Ewens' Sampling Formula
         long double priorProbabilityOfGenotypeComboAf = 
             alleleFrequencyProbabilityln(combo->countFrequencies(), theta);
@@ -108,12 +106,28 @@ genotypeCombinationPriorProbability(
             priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
         long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob;
 
-        genotypeComboProbs.push_back(GenotypeComboResult(&*combo,
+        return GenotypeComboResult(combo,
                     priorComboProb,
                     combo->prob,
                     priorProbabilityOfGenotypeCombo,
                     priorProbabilityOfGenotypeComboG_Af,
-                    priorProbabilityOfGenotypeComboAf));
+                    priorProbabilityOfGenotypeComboAf);
+
+}
+
+void
+genotypeCombinationsPriorProbability(
+        vector<GenotypeComboResult>& genotypeComboProbs,
+        vector<GenotypeCombo>& bandedCombos,
+        Allele& refAllele,
+        long double theta,
+        bool pooled) {
+
+    for (vector<GenotypeCombo>::iterator c = bandedCombos.begin(); c != bandedCombos.end(); ++c) {
+
+        GenotypeCombo* combo = &*c;
+
+        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled));
 
     }
 }

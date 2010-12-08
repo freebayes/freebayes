@@ -237,17 +237,19 @@ int main (int argc, char *argv[]) {
         // this section is a hack to make output of trace identical to BamBayes trace
         // and also outputs the list of samples
         vector<bool> samplesWithData;
-        if (parameters.trace) parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ",samples,";
-        for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
-            if (parameters.trace) parser->traceFile << *s << ":";
-            Results::iterator r = results.find(*s);
-            if (r != results.end()) {
-                samplesWithData.push_back(true);
-            } else {
-                samplesWithData.push_back(false);
+        if (parameters.trace) {
+            parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ",samples,";
+            for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
+                if (parameters.trace) parser->traceFile << *s << ":";
+                Results::iterator r = results.find(*s);
+                if (r != results.end()) {
+                    samplesWithData.push_back(true);
+                } else {
+                    samplesWithData.push_back(false);
+                }
             }
+            parser->traceFile << endl;
         }
-        if (parameters.trace) parser->traceFile << endl;
 
 
         // sort individual genotype data likelihoods
@@ -277,7 +279,7 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("calculating genotype combination likelihoods");
 
-        genotypeCombinationPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled);
+        genotypeCombinationsPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled);
 
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
