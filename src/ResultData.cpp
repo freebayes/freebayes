@@ -163,6 +163,9 @@ string vcf(
 
     int allObsCount = alternateObsCount + referenceObsCount;
 
+    // 0-based variant position
+    long unsigned int variantPosition = (long unsigned int) parser->currentPosition;
+
     string referenceSequence;
     string alternateSequence;
     switch (altAllele.type) {
@@ -171,11 +174,15 @@ string vcf(
             alternateSequence = altAllele.alternateSequence;
             break;
         case ALLELE_MNP:
-            referenceSequence = parser->referenceSubstr(parser->currentPosition, altAllele.length);
+            referenceSequence = parser->referenceSubstr(variantPosition, altAllele.length);
             alternateSequence = altAllele.alternateSequence;
             break;
         case ALLELE_DELETION:
-            referenceSequence = parser->referenceSubstr(parser->currentPosition, altAllele.length + 1);
+            referenceSequence = parser->referenceSubstr(variantPosition - 1, altAllele.length + 1);
+            // this decrement fixes deletion position reporting to match VCF
+            // spec, in which we are reporting the position of the base prior
+            // to the deletion
+            --variantPosition;
             alternateSequence = refbase;
             break;
         case ALLELE_INSERTION:
@@ -191,7 +198,7 @@ string vcf(
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
     out << parser->currentTarget->seq << "\t"
-        << (long unsigned int) parser->currentPosition + 1 << "\t"
+        << variantPosition + 1 << "\t"
         << "." << "\t"
         << referenceSequence << "\t"
         << alternateSequence << "\t"
