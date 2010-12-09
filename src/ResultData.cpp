@@ -183,7 +183,7 @@ string vcf(
             // spec, in which we are reporting the position of the base prior
             // to the deletion
             --variantPosition;
-            alternateSequence = refbase;
+            alternateSequence = referenceSequence.at(0);
             break;
         case ALLELE_INSERTION:
             referenceSequence = refbase;
