@@ -29,6 +29,7 @@ long double jointQuality(const std::vector<short>& quals);
 long double jointQuality(const std::string& qualstr);
 std::vector<short> qualities(const std::string& qualstr);
 // 
+long double sumQuality(const std::string& qualstr);
 long double averageQuality(const std::string& qualstr);
 //unsigned int factorial(int n);
 bool stringInVector(string item, vector<string> items);

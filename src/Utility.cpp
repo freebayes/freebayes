@@ -86,6 +86,13 @@ std::vector<short> qualities(const std::string& qualstr) {
 
 }
 
+long double sumQuality(const std::string& qualstr) {
+    long double qual = 0;
+    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
+            qual += qualityChar2LongDouble(*q);
+    return qual;
+}
+
 // crudely averages quality scores in phred space
 long double averageQuality(const std::string& qualstr) {
 
