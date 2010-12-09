@@ -939,7 +939,7 @@ void AlleleParser::updateAlignmentQueue(void) {
                 string sampleName = readGroupToSampleNames[readGroup];
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.Position + currentAlignment.AlignedBases.size()];
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition(true)];
                 // and insert the registered alignment into that deque
                 rq.push_front(RegisteredAlignment(currentAlignment));
                 RegisteredAlignment& ra = rq.front();
