@@ -596,6 +596,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 "alignment position " << alignment.Position << endl <<
                 "alignment length " << alignment.Length << endl <<
                 "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
+                "alignment GetEndPosition() " << alignment.GetEndPosition() << endl <<
                 "alignment end position " << alignment.Position + alignment.AlignedBases.size());
 
         stringstream cigarss;
@@ -938,7 +939,7 @@ void AlleleParser::updateAlignmentQueue(void) {
                 string sampleName = readGroupToSampleNames[readGroup];
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.Position + currentAlignment.AlignedBases.size()];
                 // and insert the registered alignment into that deque
                 rq.push_front(RegisteredAlignment(currentAlignment));
                 RegisteredAlignment& ra = rq.front();
