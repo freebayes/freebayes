@@ -98,6 +98,8 @@ void Parameters::usage(char** argv) {
          << "   -Q --mismatch-base-quality-threshold Q" << endl
          << "                   Count mismatches toward --read-mismatch-limit if the base" << endl
          << "                   quality of the mismatch is >= Q.  default: 10" << endl
+         << "   -0 --no-filters Do not use any input base and mapping quality filters" << endl
+         << "                   Equivalent to -m 0 -q 0 -R 0 -S 0" << endl
          << "   -x --indel-exclusion-window" << endl
          << "                   Ignore portions of alignments this many bases from a" << endl
          << "                   putative insertion or deletion allele.  default: 0" << endl
@@ -225,7 +227,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"factorial-data-likelihoods", no_argument, 0, 'G'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"ignore-reference-allele", no_argument, 0, 'Z'},
-        //{"use-reference-allele", no_argument, 0, 'A'},
+        {"no-filters", no_argument, 0, '0'},
         {"reference-mapping-quality", required_argument, 0, 'M'},
         {"reference-base-quality", required_argument, 0, 'B'},
         {"ploidy", required_argument, 0, 'p'},
@@ -255,7 +257,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZdDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZ0dDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -351,9 +353,13 @@ Parameters::Parameters(int argc, char** argv) {
                 useRefAllele = false;
                 break;
 
-            // -A --use-reference-allele
-            //case 'A':
-            //    break;
+            // -0 --no-filters
+            case '0':
+                MQL0 = 0;
+                MQL1 = 0;
+                BQL0 = 0;
+                BQL1 = 0;
+                break;
 
             // -M --reference-mapping-quality
             case 'M':
