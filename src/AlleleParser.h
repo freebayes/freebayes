@@ -106,9 +106,10 @@ public:
     map<int, string> referenceIDToName;
     
     // target regions
-    //vector<vector<BedTarget>> targetRegions;  // beddatas indexed by sequence id
-    //map<string, vector<BedTarget> > targetsByRefseq; // same, indexed by sequence name
     vector<BedTarget> targets;
+    // returns true if we are within a target
+    // useful for controlling output when we are reading from stdin
+    bool inTarget(void);
 
     // bamreader
     BamMultiReader bamMultiReader;

@@ -132,6 +132,12 @@ int main (int argc, char *argv[]) {
             DEBUG2("after trace generation");
         }
 
+        if (parameters.useStdin && !parser->inTarget()) {
+            DEBUG("position: " << parser->currentTarget->seq << ":" << (long unsigned int) parser->currentPosition + 1
+                    << " is not inside any targets, skipping");
+            continue;
+        }
+
         int coverage = countAlleles(samples);
 
         DEBUG("position: " << parser->currentTarget->seq << ":" << (long unsigned int) parser->currentPosition + 1 << " coverage: " << coverage);

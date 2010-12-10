@@ -64,7 +64,7 @@ void AlleleParser::openBams(void) {
                     ERROR("    \% bamtools index -bti -in <bam_file>   # for high-performance .bti index");
                     ERROR("    \% bamtools index -in <bam_file>        # for standard .bai index");
                     ERROR("    \% samtools index <bam_file>            # for standard .bai index");
-                    exit(1);
+                    //exit(1);
                 }
             }
         }
@@ -298,7 +298,7 @@ void AlleleParser::loadFastaReference(void) {
 
 // alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
-    assert(targets.empty()); // this should only be used in the case that we have no targets
+    assert(parameters.useStdin); // this should only be used in the case that we are reading from stdin
     DEBUG2("loading reference sequence overlapping first alignment");
     currentPosition = alignment.Position;
     currentSequenceStart = alignment.Position;
@@ -493,6 +493,22 @@ void AlleleParser::loadTargetsFromBams(void) {
         DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
+}
+
+// meant to be used when we are reading from stdin, to check if we are within targets
+bool AlleleParser::inTarget(void) {
+    if (targets.empty()) {
+        return true;  // everything is in target if we don't have targets
+    } else {
+        // otherwise, scan through the targets to establish if the coordinate lies within any
+        for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
+            BedTarget& bd = *e;
+            if (currentTarget->seq == bd.seq && bd.left <= currentPosition && currentPosition <= bd.right) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // initialization function
@@ -1030,7 +1046,7 @@ bool AlleleParser::toNextTarget(void) {
     DEBUG2("seeking to next target with alignments...");
 
     // load first target if we have targets and have not loaded the first
-    if (currentTarget == NULL && !targets.empty()) {
+    if (currentTarget == NULL && !parameters.useStdin && !targets.empty()) {
         if (!loadTarget(&targets.front())) {
             ERROR("Could not load first target");
             return false;
@@ -1047,7 +1063,7 @@ bool AlleleParser::toNextTarget(void) {
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
         currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
     // stdin, no targets cases
-    } else if (currentTarget == NULL && targets.empty()) {
+    } else if (currentTarget == NULL && (parameters.useStdin || targets.empty())) {
         if (!getFirstAlignment()) {
             ERROR("Could not get first alignment from target");
             return false;
@@ -1055,7 +1071,7 @@ bool AlleleParser::toNextTarget(void) {
         clearRegisteredAlignments();
         loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
     // we've reached the end of file, or stdin, before we ever started?
-    } else if (targets.empty()) {
+    } else if (parameters.useStdin || targets.empty()) {
         ERROR("could not read any alignments");
         return false;
     } else {
@@ -1186,7 +1202,7 @@ bool AlleleParser::toNextPosition(void) {
         }
     }
 
-    if (!targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
+    if (!parameters.useStdin && !targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
         DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
@@ -1195,7 +1211,7 @@ bool AlleleParser::toNextPosition(void) {
     }
     
     // stdin, no targets case
-    if (targets.empty()) { 
+    if (parameters.useStdin || targets.empty()) {
         // TODO rectify this with the other copies of this stanza...
         // implicit step of target sequence
         // XXX this must wait for us to clean out all of our alignments at the end of the target
