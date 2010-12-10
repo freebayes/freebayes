@@ -465,7 +465,7 @@ void AlleleParser::loadTargets(void) {
             }
         }
 
-        if (targets.size() == 0) {
+        if (targets.empty()) {
             ERROR("Could not load any targets from " << parameters.targets);
             exit(1);
         }
@@ -474,6 +474,10 @@ void AlleleParser::loadTargets(void) {
 
         DEBUG("done");
 
+    }
+
+    if (!parameters.useStdin && targets.empty()) {
+        loadTargetsFromBams();
     }
 
     DEBUG("Number of target regions: " << targets.size());
@@ -531,12 +535,12 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     openOutputFile();
 
     loadFastaReference();
-    // check how many targets we have specified
-    loadTargets();
     // when we open the bam files we can use the number of targets to decide if
     // we should load the indexes
     openBams();
     loadBamReferenceSequenceNames();
+    // check how many targets we have specified
+    loadTargets();
     getSampleNames();
 
 }
@@ -1109,8 +1113,6 @@ bool AlleleParser::toNextTarget(void) {
         currentRefID = currentAlignment.RefID;
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
         currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
-        //clearRegisteredAlignments();
-        //loadReferenceSequence(currentAlignment);
     }
 
     justSwitchedTargets = true;
