@@ -773,7 +773,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // use the surrounding sequence quality as a proxy
             // to provide quality scores of equivalent magnitude to insertions,
             // take N bp, centered on the position of the deletion
-            long double qual = sumQuality(rQual.substr(rp - (l / 2), l));
+            size_t spanstart = (rp - (l / 2) < 0) ? 0 : rp - (l / 2);
+            long double qual = sumQuality(rQual.substr(spanstart, l));
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
