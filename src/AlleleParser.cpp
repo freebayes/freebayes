@@ -641,8 +641,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             int firstMatch = csp; // track the first match after a mismatch, for recording 'reference' alleles
             int mismatchStart = -1;
             bool inMismatch = false;
-            //cerr << "firstMatch = " << firstMatch << endl;
-                                        // we start one back because the first position in a match should match...
 
             // for each base in the match region
             // increment the csp, sp, and rp
@@ -678,7 +676,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     abort();
                 }
 
+                // this regex-generated nonsense comment maintained for laughs:
+                //
                 // THIS DEBUGIC IS ILDEBUGICAL!!!
+                //
                 //
                 // record mismatch if we have a mismatch here
                 if (b != sb) {
@@ -719,7 +720,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     string qualstr = rQual.substr(rp - length, length);
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                     long double lqual = averageQuality(qualstr);
-                    ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
+                    ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
+                                &currentReferenceBase, length, matchingSequence, readSequence,
                                 sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                     DEBUG2(ra.alleles.back());
                 }
@@ -738,7 +740,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 string qualstr = rQual.substr(rp - length, length);
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                 long double lqual = averageQuality(qualstr);
-                ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, matchingSequence, readSequence,
+                ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
+                            &currentReferenceBase, length, matchingSequence, readSequence,
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                 DEBUG2(ra.alleles.back());
             // or, if we are not in a mismatch, construct the last reference allele of the match
@@ -868,7 +871,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 void AlleleParser::updateAlignmentQueue(void) {
 
     DEBUG2("updating alignment queue");
-    DEBUG2("currentPosition = " << currentPosition << "; currentSequenceStart = " << currentSequenceStart << "; currentSequence end = " << currentSequence.size() + currentSequenceStart);
+    DEBUG2("currentPosition = " << currentPosition 
+            << "; currentSequenceStart = " << currentSequenceStart 
+            << "; currentSequence end = " << currentSequence.size() + currentSequenceStart);
 
     // make sure we have sequence for the *first* alignment
     extendReferenceSequence(currentAlignment);
@@ -1017,14 +1022,7 @@ void AlleleParser::removeFilteredAlleles(vector<Allele*>& alleles) {
 //
 // pushes and pulls alignments out of our queue of overlapping alignments via
 // updateAlignmentQueue() as we progress
-
-/// XXX TODO  ... we MUST deal with updating the target reference sequence here
-//  ... also need to have various checks here; 
-//  1) invalid reference id
-//  2) no alignments in region
-//  3) failed jump to target start
-//  ...
-
+//
 // returns true if we still have more targets to process
 // false otherwise
 bool AlleleParser::toNextTarget(void) {

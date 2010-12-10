@@ -37,8 +37,6 @@ void Parameters::usage(char** argv) {
          << "   -l --failed-alleles FILE" << endl
          << "                   Write a BED file of the analyzed positions which do not" << endl
          << "                   pass --pvar to FILE." << endl
-         << "   -N --suppress-output" << endl
-         << "                   Suppress output.  Used for debugging." << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
          << "                   at the site is greater than N.  default: 0.0" << endl
          << "   -G --factorial-data-likelihoods" << endl
@@ -59,8 +57,9 @@ void Parameters::usage(char** argv) {
          << "                   default: only analyze SNP alleles." << endl
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N alleles, ranked by sum of" << endl
-         << "                   supporting quality scores.  By default, evaluate all" << endl
-         << "                   possible alleles." << endl
+         << "                   supporting quality scores.  default: 2" << endl
+         << "   -N --use-all-alleles" << endl
+         << "                   Evaluate all possible alleles." << endl
          << "   -E --use-duplicate-reads" << endl
          << "                   Include duplicate-marked alignments in the analysis." << endl
          << "                   default: exclude duplicates" << endl
@@ -177,7 +176,7 @@ Parameters::Parameters(int argc, char** argv) {
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
     bamBayesDataLikelihoods = false;// -G --factorial-data-likelihoods
-    useBestNAlleles = 0;         // -n --use-best-n-alleles
+    useBestNAlleles = 2;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
     allowIndels = false;            // -i --indels
@@ -223,9 +222,9 @@ Parameters::Parameters(int argc, char** argv) {
         {"trace", required_argument, 0, 'L'},
         {"failed-alleles", required_argument, 0, 'l'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
-        {"suppress-output", no_argument, 0, 'N'},
         {"factorial-data-likelihoods", no_argument, 0, 'G'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
+        {"use-all-alleles", no_argument, 0, 'N'},
         {"ignore-reference-allele", no_argument, 0, 'Z'},
         {"no-filters", no_argument, 0, '0'},
         {"reference-mapping-quality", required_argument, 0, 'M'},
@@ -329,9 +328,9 @@ Parameters::Parameters(int argc, char** argv) {
                 useDuplicateReads = true;
                 break;
 
-            // -N --suppress-output
+            // -N --use-all-alleles
             case 'N':
-                suppressOutput = true;
+                useBestNAlleles = 0;
                 break;
 
             // -G --factorial-data-likelihoods
