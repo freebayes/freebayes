@@ -775,15 +775,31 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             }
         } else if (t == 'D') { // deletion
 
-            // extract base quality of left and right flanking non-deleted bases
-            string qualstr = rQual.substr(rp, 2);
-
             // because deletions have no quality information,
             // use the surrounding sequence quality as a proxy
             // to provide quality scores of equivalent magnitude to insertions,
             // take N bp, centered on the position of the deletion
-            size_t spanstart = (rp - (l / 2) < 0) ? 0 : rp - (l / 2);
-            long double qual = sumQuality(rQual.substr(spanstart, l));
+            // this logic prevents overflow of the read
+            int spanstart;
+            if (l > rQual.size()) {
+                l = rQual.size();
+                spanstart = 0;
+            } else {
+                // set lower bound to 0
+                if (rp < (l / 2)) {
+                    spanstart = 0;
+                } else {
+                    spanstart = rp - (l / 2);
+                }
+                // set upper bound to the string length
+                if (spanstart + l > rQual.size()) {
+                    spanstart = rQual.size() - l;
+                }
+            }
+
+            string qualstr = rQual.substr(spanstart, l);
+
+            long double qual = sumQuality(qualstr);
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
