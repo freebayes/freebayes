@@ -73,10 +73,9 @@ void Parameters::usage(char** argv) {
          << "   -B --reference-base-quality Q" << endl
          << "                   Assign a base quality of Q to the reference allele at each" << endl
          << "                   site.  default: 60" << endl
-         << "   -Z --force-reference-allele" << endl
-         << "                   Force the use of the reference allele in analysis, even if" << endl
-         << "                   it isn't one of the best N alleles provided its assigned" << endl
-         << "                   base quality." << endl
+         << "   -Z --ignore-reference-allele" << endl
+         << "                   By default, the reference allele is considered as another" << endl
+         << "                   sample.  This flag excludes it from the analysis." << endl
          << "   -m --min-mapping-quality Q" << endl
          << "                   Exclude alignments from analysis if they have a mapping" << endl
          << "                   quality less than Q.  default: 30" << endl
@@ -177,8 +176,8 @@ Parameters::Parameters(int argc, char** argv) {
     suppressOutput = false;         // -N --suppress-output
     bamBayesDataLikelihoods = false;// -G --factorial-data-likelihoods
     useBestNAlleles = 0;         // -n --use-best-n-alleles
-    forceRefAllele = false;         // -F --force-reference-allele
-    useRefAllele = false;           // -U --use-reference-allele
+    forceRefAllele = true;         // -Z --ignore-reference-allele
+    useRefAllele = true;           // .....
     allowIndels = false;            // -i --indels
     allowMNPs = false;            // -X --allow-mnps
     pooled = false;                 // -J --pooled
@@ -225,8 +224,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"suppress-output", no_argument, 0, 'N'},
         {"factorial-data-likelihoods", no_argument, 0, 'G'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
-        {"force-reference-allele", no_argument, 0, 'Z'},
-        {"use-reference-allele", no_argument, 0, 'A'},
+        {"ignore-reference-allele", no_argument, 0, 'Z'},
+        //{"use-reference-allele", no_argument, 0, 'A'},
         {"reference-mapping-quality", required_argument, 0, 'M'},
         {"reference-base-quality", required_argument, 0, 'B'},
         {"ploidy", required_argument, 0, 'p'},
@@ -256,7 +255,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZAdDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZdDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -346,15 +345,15 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -Z --force-reference-allele
+            // -Z --ignore-reference-allele
             case 'Z':
-                forceRefAllele = true;
+                forceRefAllele = false;
+                useRefAllele = false;
                 break;
 
             // -A --use-reference-allele
-            case 'A':
-                useRefAllele = true;
-                break;
+            //case 'A':
+            //    break;
 
             // -M --reference-mapping-quality
             case 'M':

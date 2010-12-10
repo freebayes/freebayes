@@ -227,16 +227,6 @@ void AlleleParser::getSampleNames(void) {
         oneSampleAnalysis = true;
     }
 
-    if (sampleList.size() == 1) {
-        ERROR(string(80, '-') << endl
-            << "Warning: Only one sample found.  Assuming --use-reference-allele" << endl
-            << "and --force-reference-allele, which treat the reference as a separate sample" << endl
-            << "in the analysis." << endl
-            << string(80, '-'));
-        parameters.useRefAllele = true;
-        parameters.forceRefAllele = true;
-    }
-
 }
 
 void AlleleParser::writeVcfHeader(ostream& out) {
