@@ -70,13 +70,13 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Lengeth of MNP allele, if present\">" << endl
         << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
-        << "##FORMAT=<ID=GT,Number=1,Type=String,\"Genotype\">" << endl
-        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,\"Genotype Quality\">" << endl
-        << "##FORMAT=<ID=DP,Number=1,Type=Integer,\"Read Depth\">" << endl
-        << "##FORMAT=<ID=RA,Number=1,Type=Integer,\"Reference allele observations\">" << endl
-        << "##FORMAT=<ID=AA,Number=1,Type=Integer,\"Alternate allele observations\">" << endl
-        << "##FORMAT=<ID=BCF,Number=2,Type=Integer,\"Number of forward-strand reference and alternate allele observations\">" << endl
-        << "##FORMAT=<ID=BCR,Number=2,Type=Integer,\"Number of reverse-strand reference and alternate allele observations\">" << endl
+        << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">" << endl
+        << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
+        << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
+        << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
+        << "##FORMAT=<ID=BCF,Number=2,Type=Integer,Description=\"Number of forward-strand reference and alternate allele observations\">" << endl
+        << "##FORMAT=<ID=BCR,Number=2,Type=Integer,Description=\"Number of reverse-strand reference and alternate allele observations\">" << endl
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
