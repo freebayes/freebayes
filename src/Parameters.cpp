@@ -63,9 +63,6 @@ void Parameters::usage(char** argv) {
          << "   -E --use-duplicate-reads" << endl
          << "                   Include duplicate-marked alignments in the analysis." << endl
          << "                   default: exclude duplicates" << endl
-         << "   -A --use-reference-allele" << endl
-         << "                   Include the reference allele in the analysis as if it is an" << endl
-         << "                   additional sample." << endl
          << "   -M --reference-mapping-quality Q" << endl
          << "                   Assign mapping quality of Q to the reference allele at each" << endl
          << "                   site.  default: 100" << endl
