@@ -63,13 +63,13 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele balance at heterozygous sites: a number beween 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
         << "##INFO=<ID=ABB,Number=2,Type=Integer,Description=\"Allele balance counts: two numbers giving the numbers of sequence reads from apparent heterozygotes which show reference and alternate alleles for the site\">" << endl
         << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
-        << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\"" << endl
-        << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\"" << endl
-        << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\"" << endl
-        << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\"" << endl
-        << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Lengeth of MNP allele, if present\"" << endl
-        << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\"" << endl
-        << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\"" << endl
+        << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\">" << endl
+        << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
+        << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\">" << endl
+        << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
+        << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Lengeth of MNP allele, if present\">" << endl
+        << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
+        << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
         << "##FORMAT=<ID=GT,Number=1,Type=String,\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,\"Genotype Quality\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,\"Read Depth\">" << endl
