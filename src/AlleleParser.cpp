@@ -838,7 +838,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             }
             if (qual >= parameters.BQL2) {
                 indelMask[sp - alignment.Position] = true;
-                indelMask[sp - alignment.Position + 1] = true; // TODO wrong, but mirrors bambayes behavior
             }
 
             ra.alleles.push_back(Allele(ALLELE_INSERTION,
