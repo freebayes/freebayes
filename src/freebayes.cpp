@@ -156,10 +156,10 @@ int main (int argc, char *argv[]) {
         // quality (MQL1) and base quality (BQL1)
 
         //map<string, vector<Allele*> > samples = groupAllelesBySample(alleles);
-        DEBUG2("grouped alleles by sample");
+        //DEBUG2("grouped alleles by sample");
 
         if (!sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
-            DEBUG2("insufficient alternate observations at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG("insufficient alternate observations");
             continue;
         }
 
