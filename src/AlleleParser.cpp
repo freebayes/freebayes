@@ -414,12 +414,12 @@ void AlleleParser::loadTargets(void) {
                 startPos = atoi(region.substr(foundFirstColon + 1).c_str());
                 // differ from bamtools in this regard, in that we process only
                 // the specified position if a range isn't given
-                stopPos = startPos + 2;
+                stopPos = startPos + 1;
             } else {
                 startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
                 // if we have range dots specified, but no second number, read to the end of sequence
                 if (foundRangeDots + 2 != region.size()) {
-                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()) + 1; // end-inclusive
+                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()) + 1; // end-inclusive, bed-format
                 } else {
                     stopPos = reference.sequenceLength(startSeq);
                 }
@@ -428,7 +428,7 @@ void AlleleParser::loadTargets(void) {
 
         BedTarget bd(startSeq,
                     (startPos == 1) ? 1 : startPos,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos);
+                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos + 1);
         DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
