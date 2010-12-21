@@ -62,8 +62,8 @@ long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo&
 
 
 // TODO this should return the probability of a given combination of genotypes
-// given an allele frequency following the generalized HWE.
-long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
+// for the multiploid, multi-allelic case
+long double __probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
 
     int n = genotypeCombo.numberOfAlleles();
     int h = 0; // number of heterozygotes
@@ -78,6 +78,21 @@ long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genoty
     }
 
     return lnhetscalar - (factorialln(n) - (factorialln(f) + factorialln(n - f)));
+
+}
+
+long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
+
+    int n = genotypeCombo.numberOfAlleles();
+    long double lnhetscalar = 0;
+
+    for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
+        if (!gc->genotype->homozygous) {
+            lnhetscalar += multinomialCoefficientLn(gc->genotype->ploidy, gc->genotype->counts());
+        }
+    }
+
+    return lnhetscalar - multinomialCoefficientLn(n, genotypeCombo.counts());
 
 }
 

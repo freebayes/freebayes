@@ -28,6 +28,14 @@ vector<int> Genotype::alleleCountsInObservations(Sample& sample) {
     return counts;
 }
 
+vector<int> Genotype::counts(void) {
+    vector<int> counts;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        counts.push_back(i->count);
+    }
+    return counts;
+}
+
 /*
 void inOutObservationCounts(vector<Allele*> observations,
         map<Allele, int>& inCounts, 

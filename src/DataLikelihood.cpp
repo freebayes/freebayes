@@ -56,9 +56,9 @@ probObservedAllelesGivenGenotype(
                     observationCounts.push_back(0);
                 }
             }
-            //cout << "multinomial: " << exp(multinomialln(alleleProbs, observationCounts)) << endl;
+            //cout << "multinomial: " << exp(multinomialSamplingProbLn(alleleProbs, observationCounts)) << endl;
             //cout << "likelihood: " << exp(likelihoodGivenTrueAlleles(observedAlleles, trueAlleles)) << endl;
-            probs.push_back(multinomialln(alleleProbs, observationCounts) 
+            probs.push_back(multinomialSamplingProbLn(alleleProbs, observationCounts) 
                     + likelihoodGivenTrueAlleles(observedAlleles, trueAlleles)
                     - lnTrueAllelePermutationsCount);
         }
@@ -94,7 +94,7 @@ approxProbObservedAllelesGivenGenotype(
     if (sum(observationCounts) == 0) {
         return probOutAllWrong;
     } else {
-        return probInAllCorrect + probOutAllWrong + multinomialln(alleleProbs, observationCounts);
+        return probInAllCorrect + probOutAllWrong + multinomialSamplingProbLn(alleleProbs, observationCounts);
     }
 
 }
@@ -132,7 +132,7 @@ approxProbObservedAllelesGivenGenotype(
     if (sum(observationCounts) == 0) {
         return prodQout;
     } else {
-        return prodQout + multinomialln(alleleProbs, observationCounts);
+        return prodQout + multinomialSamplingProbLn(alleleProbs, observationCounts);
     }
 
 }

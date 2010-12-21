@@ -4,6 +4,7 @@
 #include <map>
 #include "Allele.h"
 #include "Genotype.h"
+#include "Multinomial.h"
 
 using namespace std;
 

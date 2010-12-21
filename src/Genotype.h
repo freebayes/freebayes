@@ -60,6 +60,7 @@ public:
     bool containsAllele(Allele& allele);
     bool containsAllele(const string& base);
     vector<Allele> alternateAlleles(string& refbase);
+    vector<int> counts(void);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
     string str(void);
@@ -166,6 +167,15 @@ public:
             }
         }
         return frequencyCounts;
+    }
+
+    vector<int> counts(void) {
+        map<string, int> alleleCounts = countAlleles();
+        vector<int> counts;
+        for (map<string, int>::iterator a = alleleCounts.begin(); a != alleleCounts.end(); ++a) {
+            counts.push_back(a->second);
+        }
+        return counts;
     }
 
     // returns true if the combination is 100% homozygous and equale

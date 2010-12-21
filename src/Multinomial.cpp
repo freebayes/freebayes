@@ -3,7 +3,7 @@
 #include "Product.h"
 
 
-long double multinomial(vector<long double> probs, vector<int> obs) {
+long double multinomialSamplingProb(vector<long double> probs, vector<int> obs) {
     vector<long double> factorials;
     vector<long double> probsPowObs;
     factorials.resize(obs.size());
@@ -16,7 +16,9 @@ long double multinomial(vector<long double> probs, vector<int> obs) {
     return factorial(sum(obs)) / product(factorials) * product(probsPowObs);
 }
 
-long double multinomialln(vector<long double> probs, vector<int> obs) {
+// TODO rename to reflect the fact that this is the multinomial sampling
+// probability for obs counts given probs probabilities
+long double multinomialSamplingProbLn(vector<long double> probs, vector<int> obs) {
     vector<long double> factorials;
     vector<long double> probsPowObs;
     factorials.resize(obs.size());
@@ -27,4 +29,11 @@ long double multinomialln(vector<long double> probs, vector<int> obs) {
         probsPowObs.push_back(powln(log(*p), *o));
     }
     return factorialln(sum(obs)) - sum(factorials) + sum(probsPowObs);
+}
+
+long double multinomialCoefficientLn(int n, vector<int> counts) {
+    vector<long double> count_factorials;
+    count_factorials.resize(counts.size());
+    transform(counts.begin(), counts.end(), count_factorials.begin(), factorialln);
+    return factorialln(n) - sum(count_factorials);
 }
