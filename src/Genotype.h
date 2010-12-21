@@ -100,96 +100,16 @@ public:
 
     GenotypeCombo(void) : prob(0) { }
 
-    int numberOfAlleles(void) {
-        int count = 0;
-        for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
-            count += g->genotype->ploidy;
-        }
-        return count;
-    }
+    int numberOfAlleles(void);
+    void initAlleleFrequencies(void);
+    int alleleFrequency(Allele& allele);
+    void updateAlleleFrequencies(Genotype* oldGenotype, Genotype* newGenotype);
+    map<string, int> countAlleles(void);
+    map<int, int> countFrequencies(void);
+    vector<int> counts(void); // the counts of frequencies of the alleles in the genotype
+    bool isHomozygous(void); // returns true if the combination is 100% homozygous across all individuals
+                             // e.g. if there is no variation
 
-    void initAlleleFrequencies(void) {
-        alleleFrequencies = countAlleles();
-    }
-
-    int alleleFrequency(Allele& allele) {
-        map<string, int>::iterator f = alleleFrequencies.find(allele.currentBase);
-        if (f == alleleFrequencies.end()) {
-            return 0;
-        } else {
-            return f->second;
-        }
-    }
-
-
-    void updateAlleleFrequencies(Genotype* oldGenotype, Genotype* newGenotype) {
-        // remove allele frequency information for old genotype
-        for (Genotype::iterator g = oldGenotype->begin(); g != oldGenotype->end(); ++g) {
-            GenotypeElement& ge = *g;
-            alleleFrequencies[ge.allele.currentBase] -= ge.count;
-        }
-        // add allele frequency information for new genotype
-        for (Genotype::iterator g = newGenotype->begin(); g != newGenotype->end(); ++g) {
-            GenotypeElement& ge = *g;
-            alleleFrequencies[ge.allele.currentBase] += ge.count;
-        }
-        // remove allele frequencies which are now 0 or below
-        for (map<string, int>::iterator af = alleleFrequencies.begin(); af != alleleFrequencies.end(); ++af) {
-            if (af->second <= 0) {
-                alleleFrequencies.erase(af);
-            }
-        }
-    }
-
-    map<string, int> countAlleles(void) {
-        map<string, int> alleleCounts;
-        for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
-            for (Genotype::iterator a = g->genotype->begin(); a != g->genotype->end(); ++a) {
-                map<string, int>::iterator c = alleleCounts.find(a->allele.currentBase);
-                if (c != alleleCounts.end()) {
-                    c->second += a->count;
-                } else {
-                    alleleCounts.insert(make_pair(a->allele.currentBase, a->count));
-                }
-            }
-        }
-        return alleleCounts;
-    }
-
-    map<int, int> countFrequencies(void) {
-        map<int, int> frequencyCounts;
-        for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
-            map<int, int>::iterator c = frequencyCounts.find(a->second);
-            if (c != frequencyCounts.end()) {
-                c->second += 1;
-            } else {
-                frequencyCounts[a->second] = 1;
-            }
-        }
-        return frequencyCounts;
-    }
-
-    vector<int> counts(void) {
-        map<string, int> alleleCounts = countAlleles();
-        vector<int> counts;
-        for (map<string, int>::iterator a = alleleCounts.begin(); a != alleleCounts.end(); ++a) {
-            counts.push_back(a->second);
-        }
-        return counts;
-    }
-
-    // returns true if the combination is 100% homozygous and equale
-    bool isHomozygous(void) {
-        GenotypeCombo::iterator g = begin();
-        Genotype* genotype = g->genotype;
-        if (!genotype->homozygous)
-            return false;
-        for (; g != end(); ++g) {
-            if (g->genotype != genotype)
-                return false;
-        }
-        return true;
-    }
 
 };
 
