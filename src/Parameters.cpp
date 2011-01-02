@@ -33,6 +33,9 @@ void Parameters::usage(char** argv) {
          << "   -O --output-alleles" << endl
          << "                   When --json is set, add records to the JSON output stream" << endl
          << "                   describing each allele in the input." << endl
+         << "   -@ --report-all-alternates" << endl
+         << "                   Report (in non-standard VCF format) each alternate allele" << endl
+         << "                   at a site on its own line of VCF." << endl
          << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
          << "   -l --failed-alleles FILE" << endl
          << "                   Write a BED file of the analyzed positions which do not" << endl
@@ -172,6 +175,7 @@ Parameters::Parameters(int argc, char** argv) {
     trace = false;                  // -L --trace
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
+    reportAllAlternates = false;
     bamBayesDataLikelihoods = false;// -G --factorial-data-likelihoods
     useBestNAlleles = 2;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
@@ -244,6 +248,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
         {"posterior-integration-depth", required_argument, 0, 'K'},
+        {"report-all-alternates", no_argument, 0, '@'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -253,7 +258,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZ0dDiXJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZ0dDi@XJb:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -518,6 +523,10 @@ Parameters::Parameters(int argc, char** argv) {
                     cerr << "could not parse posterior-integration-depth" << endl;
                     exit(1);
                 }
+                break;
+
+            case '@':
+                reportAllAlternates = true;
                 break;
 
             // -d --debug

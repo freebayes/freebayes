@@ -782,28 +782,30 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // because deletions have no quality information,
             // use the surrounding sequence quality as a proxy
             // to provide quality scores of equivalent magnitude to insertions,
-            // take N bp, centered on the position of the deletion
+            // take N bp, right-centered on the position of the deletion
             // this logic prevents overflow of the read
             int spanstart;
-            if (l > rQual.size()) {
-                l = rQual.size();
+            int L = l + 1;
+
+            if (L > rQual.size()) {
+                L = rQual.size();
                 spanstart = 0;
             } else {
                 // set lower bound to 0
-                if (rp < (l / 2)) {
+                if (rp < (L / 2)) {
                     spanstart = 0;
                 } else {
-                    spanstart = rp - (l / 2);
+                    spanstart = rp - (L / 2);
                 }
                 // set upper bound to the string length
-                if (spanstart + l > rQual.size()) {
-                    spanstart = rQual.size() - l;
+                if (spanstart + L > rQual.size()) {
+                    spanstart = rQual.size() - L;
                 }
             }
 
-            string qualstr = rQual.substr(spanstart, l);
+            string qualstr = rQual.substr(spanstart, L);
 
-            long double qual = sumQuality(qualstr);
+            long double qual = sumQuality(qualstr) + log((long double) l / (long double) L);
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -827,11 +829,36 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
         } else if (t == 'I') { // insertion
 
-            string qualstr = rQual.substr(rp, l);
+            //string qualstr = rQual.substr(rp, l);
+            int spanstart;
+            int L;
+
+            L  = l + 2;
+
+            if (L > rQual.size()) {
+                L = rQual.size();
+                spanstart = 0;
+            } else {
+                // set lower bound to 0
+                if (rp < 1) {
+                    spanstart = 0;
+                } else {
+                    spanstart = rp - 1;
+                }
+                // set upper bound to the string length
+                if (spanstart + L > rQual.size()) {
+                    spanstart = rQual.size() - L;
+                }
+            }
+
+            string qualstr = rQual.substr(spanstart, L);
+
 
             //long double qual = jointQuality(qualstr);
             // calculate average quality of the insertion
-            long double qual = sumQuality(qualstr); //(long double) *max_element(quals.begin(), quals.end());
+            //long double qual = sumQuality(qualstr); //(long double) *max_element(quals.begin(), quals.end());
+
+            long double qual = sumQuality(qualstr) + log((long double) l / (long double) L);
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -1426,7 +1453,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
     for (map<string, vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
         // for each allele that we're going to evaluate, we have to have at least one supporting read with
         // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
-        DEBUG2("allele group " << group->first);
+        DEBUG("allele group " << group->first);
         bool passesFilters = false;
         int qSum = 0;
         vector<Allele*>& alleles = group->second;
@@ -1460,7 +1487,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
             int observationCount = sample.observationCount();
             if (alleleCount >= parameters.minAltCount 
                     && ((float) alleleCount / (float) observationCount) >= parameters.minAltFraction) {
-                DEBUG2(genotypeAllele << " has support of " << alleleCount 
+                DEBUG(genotypeAllele << " has support of " << alleleCount 
                     << " in individual " << s->first << " and fraction " 
                     << (float) alleleCount / (float) observationCount);
                 filteredAlleles[genotypeAllele] = qSum;

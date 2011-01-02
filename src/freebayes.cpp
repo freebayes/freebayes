@@ -413,19 +413,36 @@ int main (int argc, char *argv[]) {
                     string referenceBase(1, parser->currentReferenceBase);
                     // get the unique alternate alleles in this combo, sorted by frequency in the combo
                     vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
-                    Allele& bestAlt = alternates.front().first;
-                    // TODO update the vcf output function to handle the reporting of multiple alternate alleles
-                    out << vcf(pVar,
-                            samples,
-                            referenceBase,
-                            bestAlt.base(),
-                            bestAlt,
-                            parser->sampleList,
-                            coverage,
-                            bestGenotypeCombo,
-                            results,
-                            parser)
-                        << endl;
+                    if (parameters.reportAllAlternates) {
+                        for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
+                            Allele& alt = a->first;
+                            out << vcf(pVar,
+                                    samples,
+                                    referenceBase,
+                                    alt.base(),
+                                    alt,
+                                    parser->sampleList,
+                                    coverage,
+                                    bestGenotypeCombo,
+                                    results,
+                                    parser)
+                                << endl;
+                        }
+                    } else {
+                        Allele& bestAlt = alternates.front().first;
+                        // TODO update the vcf output function to handle the reporting of multiple alternate alleles
+                        out << vcf(pVar,
+                                samples,
+                                referenceBase,
+                                bestAlt.base(),
+                                bestAlt,
+                                parser->sampleList,
+                                coverage,
+                                bestGenotypeCombo,
+                                results,
+                                parser)
+                            << endl;
+                    }
                 }
             } else if (!parameters.failedFile.empty()) {
                 // XXX don't repeat yourself

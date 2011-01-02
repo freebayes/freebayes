@@ -41,6 +41,7 @@ public:
     bool trace;                  // -L --trace
     bool useDuplicateReads;      // -E --use-duplicate-reads
     bool suppressOutput;         // -S --suppress-output
+    bool reportAllAlternates;    // ...
     bool bamBayesDataLikelihoods;// -G --factorial-data-likelihoods
     int useBestNAlleles;         // -n --use-best-n-alleles
     bool forceRefAllele;         // -F --force-reference-allele
