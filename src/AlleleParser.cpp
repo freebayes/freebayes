@@ -785,7 +785,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // take N bp, right-centered on the position of the deletion
             // this logic prevents overflow of the read
             int spanstart;
-            int L = l + 1;
+            int L = l + 2;
 
             if (L > rQual.size()) {
                 L = rQual.size();
