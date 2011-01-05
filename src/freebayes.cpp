@@ -84,7 +84,10 @@ int main (int argc, char *argv[]) {
     allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
     //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
-    int allowedAlleleTypes = ALLELE_REFERENCE | ALLELE_SNP;
+    int allowedAlleleTypes = ALLELE_REFERENCE;
+    if (parameters.allowSNPs) {
+        allowedAlleleTypes |= ALLELE_SNP;
+    }
     if (parameters.allowIndels) {
         allowedAlleleTypes |= ALLELE_INSERTION;
         allowedAlleleTypes |= ALLELE_DELETION;

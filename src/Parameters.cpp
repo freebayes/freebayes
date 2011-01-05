@@ -58,6 +58,7 @@ void Parameters::usage(char** argv) {
          << "                   default: only analyze SNP alleles." << endl
          << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
          << "                   default: only analyze SNP alleles." << endl
+         << "   -I --no-snps    Ignore SNP alleles.  default: only analyze SNP alleles." << endl
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N alleles, ranked by sum of" << endl
          << "                   supporting quality scores.  default: 2" << endl
@@ -181,7 +182,8 @@ Parameters::Parameters(int argc, char** argv) {
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
     allowIndels = false;            // -i --indels
-    allowMNPs = false;            // -X --allow-mnps
+    allowMNPs = false;            // -X --mnps
+    allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
@@ -240,6 +242,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"read-mismatch-limit", required_argument, 0, 'U'},
         {"indels", no_argument, 0, 'i'},
         {"mnps", no_argument, 0, 'X'},
+        {"no-snps", no_argument, 0, 'I'},
         {"indel-exclusion-window", required_argument, 0, 'x'},
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
@@ -258,7 +261,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZ0dDi@XJb:x:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:I:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZ0dDiI@XJb:x:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -459,6 +462,11 @@ Parameters::Parameters(int argc, char** argv) {
             // -X --mnps
             case 'X':
                 allowMNPs = true;
+                break;
+
+            // -I --no-snps
+            case 'I':
+                allowSNPs = false;
                 break;
 
             // -T --theta
