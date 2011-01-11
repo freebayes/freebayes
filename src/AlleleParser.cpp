@@ -785,6 +785,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // take N bp, right-centered on the position of the deletion
             // this logic prevents overflow of the read
             int spanstart;
+
+            // this is used to calculate the quality string adding 2bp grounds
+            // the indel in the surrounding sequence, which it is dependent
+            // upon
             int L = l + 2;
 
             if (L > rQual.size()) {
@@ -805,7 +809,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string qualstr = rQual.substr(spanstart, L);
 
-            long double qual = sumQuality(qualstr) + log((long double) l / (long double) L);
+            // quality, scaled inversely by the ratio between the quality
+            // string length and the length of the event
+            long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -831,9 +837,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             //string qualstr = rQual.substr(rp, l);
             int spanstart;
-            int L;
 
-            L  = l + 2;
+            // this is used to calculate the quality string adding 2bp grounds
+            // the indel in the surrounding sequence, which it is dependent
+            // upon
+            int L = l + 2;
 
             if (L > rQual.size()) {
                 L = rQual.size();
@@ -853,12 +861,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string qualstr = rQual.substr(spanstart, L);
 
-
-            //long double qual = jointQuality(qualstr);
-            // calculate average quality of the insertion
-            //long double qual = sumQuality(qualstr); //(long double) *max_element(quals.begin(), quals.end());
-
-            long double qual = sumQuality(qualstr) + log((long double) l / (long double) L);
+            // quality, scaled inversely by the ratio between the quality
+            // string length and the length of the event
+            long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
