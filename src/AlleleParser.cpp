@@ -208,7 +208,6 @@ void AlleleParser::getSampleNames(void) {
                     << parameters.bam);
                 exit(1);
             }
-
         }
     }
 
@@ -739,7 +738,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     string readSequence = rDna.substr(rp - length, length);
                     string qualstr = rQual.substr(rp - length, length);
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
-                    long double lqual = averageQuality(qualstr);
+                    long double lqual = sumQuality(qualstr);
                     ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
                                 &currentReferenceBase, length, matchingSequence, readSequence,
                                 sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
@@ -759,7 +758,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
-                long double lqual = averageQuality(qualstr);
+                long double lqual = sumQuality(qualstr);
                 ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
                             &currentReferenceBase, length, matchingSequence, readSequence,
                             sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
