@@ -20,9 +20,10 @@ C=gcc
 # Compiler flags
 CFLAGS=-O3 -Wno-deprecated
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
+LIBS = -lz -lm
 
 
-all: ../bin/freebayes
+all: ../bin/freebayes ../bin/bamleftalign ../bin/bamfiltertech
 
 static:
 	$(MAKE) CFLAGS="$(CFLAGS) -static" all
@@ -41,6 +42,7 @@ gprof:
 OBJECTS=BamAlignment.o \
 		BamMultiReader.o \
 		BamReader.o \
+		BamWriter.o \
 		BamIndex.o \
 		BGZF.o \
 		BedReader.o \
@@ -57,20 +59,28 @@ OBJECTS=BamAlignment.o \
 		ResultData.o \
 		Dirichlet.o \
 		Marginals.o \
-		split.o
+		split.o \
+		LeftAlign.o \
+		IndelAllele.o
 
 HEADERS=multichoose.h
 
 # executables
 
 freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) freebayes.o $(OBJECTS) -o ../bin/freebayes -lz
+	$(CC) $(CFLAGS) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
 alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) alleles.o $(OBJECTS) -o ../bin/alleles -lz
+	$(CC) $(CFLAGS) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
 
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) dummy.o $(OBJECTS) -o ../bin/dummy -lz
+	$(CC) $(CFLAGS) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
+
+bamleftalign ../bin/bamleftalign: bamleftalign.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) bamleftalign.o $(OBJECTS) -o ../bin/bamleftalign $(LIBS)
+
+bamfiltertech ../bin/bamfiltertech: bamfiltertech.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
 # objects
@@ -146,6 +156,18 @@ BedReader.o: BedReader.cpp BedReader.h
 
 split.o: split.h split.cpp
 	$(CC) $(CFLAGS) -c split.cpp
+
+bamleftalign.o: bamleftalign.cpp
+	$(CC) $(CFLAGS) -c bamleftalign.cpp
+
+bamfiltertech.o: bamfiltertech.cpp
+	$(CC) $(CFLAGS) -c bamfiltertech.cpp
+
+LeftAlign.o: LeftAlign.h LeftAlign.cpp
+	$(CC) $(CFLAGS) -c LeftAlign.cpp
+
+IndelAllele.o: IndelAllele.cpp IndelAllele.h
+	$(CC) $(CFLAGS) -c IndelAllele.cpp
 
 # versioning for git point releases
 version:
