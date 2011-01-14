@@ -3,14 +3,14 @@
 Overview:
 
 FreeBayes is a Bayesian genetic variant detector designed to find small
-polymorphisms, specifically SNPs (single-nucleotide polymorphisms) and indels
-(insertions and deletions) smaller than the length of a short-read sequencing
-alignment.  It uses short-read alignments (BAM files) for any number of
-individuals from a population and a reference genome to determine the
-most-likely combination of genotypes for the population at each position in a
-reference genome (FASTA).  It reports positions which it finds to be more
-likely polymorphic than monomorphic in a standard variant interchange format
-(VCF).
+polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels
+(insertions and deletions), and MNPs (multi-nucleotide polymorphisms) smaller
+than the length of a short-read sequencing alignment.  It uses short-read
+alignments (BAM files) for any number of individuals from a population and a
+reference genome to determine the most-likely combination of genotypes for the
+population at each position in a reference genome (FASTA).  It reports
+positions which it finds to be more likely polymorphic than monomorphic in a
+standard variant interchange format (VCF).
 
 
 Compilation:
@@ -19,7 +19,8 @@ FreeBayes requires g++ and the standard C and C++ development libraries.
 
     % make && sudo make install
 
-Will build and install the executable freebayes to /usr/local/bin.
+Will build and install the executable freebayes to /usr/local/bin, as well as
+the utilities bamfiltertech and bamleftalign.
 
 
 Usage:
@@ -35,11 +36,108 @@ produce correct output, the reference supplied must be the reference to which
 NA20504.bam was aligned.
 
 Users may specify any number of BAM files on the command line.  FreeBayes uses
-the BamTools API [2] to open and parse these files in parallel.
+the BamTools API [2] to open and parse these files in parallel, virtually
+merging them at runtime into one logical file with a merged header.  (When
+provided multiple input files, the input to freebayes is the same as the output
+of the bamtools merge utility.)
 
 For a more detailed description of available command-line options, run:
 
     % freebayes --help
+
+
+Calling variants in a population:
+
+FreeBayes is designed to be run on many individuals from the same population
+(e.g. many human samples) simultaneously.  The algorithm exploits a neutral
+model of evolution and allele diffusion to impute most-confident genotypings
+across the entire population.  In practice, the quality and confidence in the
+callset will increase if you run multiple samples simultaneously.  If your
+study has multiple individuals, you should run freebayes against them at the
+same time.
+
+To call variants in a population of samples, the only requirement is that each
+alignment has a read group identifier attached to it, and that the header of
+the BAM file in which it resides has a mapping between read groups and sample
+names.  A script, scripts/sam_add_rg.pl, is included to add RG tags to BAM
+files which were generated without this information.  If you have many files
+corresponding to many individuals, add a unique read group and sample name to
+each, and then open them all simultaneously with freebayes.  The VCF output
+will have one column per sample in the input.
+
+
+Usage, advanced:
+
+FreeBayes can read BAM from standard input (--stdin) instead of directly from
+files.  This allows the application of any number of streaming BAM filters and
+calibrators to its input.  Two filters are of particular interest:
+
+    1) base alignment quality (BAQ) adjustment, a quality smoothing filter
+    which applies a hidden markov model of read genesis to each alignment
+    independently.  This is currently implemented by samtools fillmd.  (See
+    Biological Sequence Analysis Probabilistic Models of Proteins and Nucleic
+    Acids by Durbin et. al. for more details.)
+
+    2) read-independent left realignment of indels.  Aligners may position gaps
+    in reads inconsistently despite the fact that the indels represent identical
+    variation.  By realigning insertions and deletions as far left as they will go
+    without introducing mismatches between read placement and reference, we can
+    evaluate
+
+For example, you can apply BAQ adjustment region 10:6000..7000 to a set of BAM
+files using this pattern:
+
+    % bamtools filter -region 10:6000..7000 -in NA20504 -in NA20507.bam \
+       | samtools fillmd -Aru - reference.fasta \
+       | freebayes --stdin -f reference.fasta
+
+Using this pattern, you can filter out reads with certain criteria using
+bamtools filter without having to modify the input BAM file.  You can also use
+the bamtools API to write your own custom filters in C++.  An example filter is
+bamfiltertech (src/bamfiltertech.cpp), which is provided here to filter out
+technologies which have characteristic errors which may frustrate certain types
+of variant detection.
+
+
+Usage, indels:
+
+FreeBayes has been tested as an indel caller in conjunction with Mosaik [4],
+which uses a seeded Smith-Waterman-Gotoh algorithm for alignment.  In
+principle, any gapped aligner which is sensitive to indels will produce
+satisfactory results.
+
+When calling indels, it is important to homogenize the positional distribution
+of insertions and deletions in the input by using left realignment.  This can
+be done in a streaming fashion as in this indel detection example:
+
+    % bamtools filter -region 10:6000..7000 -in NA20504 -in NA20507.bam \
+       | bamleftalign -f reference.fasta \
+       | samtools fillmd -Aru - reference.fasta \
+       | freebayes --stdin \
+                   -f reference.fasta \
+                   --indels \
+                   --report-all-alternates \
+                   --use-all-alleles
+
+(Note that BAQ is applied after realignment.  Also note the --indels flag,
+which is required for indel detection.)
+
+Left realignment will place all indels in homopolymer and microsatellite
+repeats at the same position, provided that doing so does not introduce
+mismatches between the read and reference other than the indel.  By default
+freebayes only analyzes up to 2 potential alleles, and only reports one
+alternate.  This behavior will cause problems with the detection of indels in
+large populations, as indel alleles of different lengths tend to cluster in
+repeating segments, and will consequently be realigned to the same position.
+In this example, --use-all-alleles allows the analysis of all potential alleles
+at each site, and --report-all-alternates reports all of them in the VCF file
+(one per line, which is nonstandard, but much easier for post-processing
+applications).
+
+Indel detection using left realignment is not perfect, as some classes of
+indels, such as non-homologous insertions in repetitive sequence, are not
+presently handled.  However, this method computationally inexpensive and
+handles the most common classes of alignment inconsistency.
 
 
 Author: Erik Garrison <erik.garrison@bc.edu>
@@ -52,3 +150,4 @@ References:
 [1] http://www.1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf4.0
 [2] http://sourceforge.net/projects/bamtools/
 [3] http://bioinformatics.bc.edu/marthlab/Main_Page
+[4] http://bioinformatics.bc.edu/marthlab/Mosaik

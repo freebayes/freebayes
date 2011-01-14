@@ -5,10 +5,10 @@ debug:
 	cd src && $(MAKE) debug
 
 install:
-	cp bin/freebayes /usr/bin/
+	cp bin/freebayes bin/bamleftalign bin/bamfiltertech /usr/local/bin/
 
 uninstall:
-	rm /usr/bin/freebayes
+	rm /usr/local/bin/freebayes /usr/local/bin/bamleftalign /usr/local/bin/bamfiltertech
 
 clean:
 	cd src && $(MAKE) clean
