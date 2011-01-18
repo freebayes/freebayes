@@ -144,6 +144,20 @@ presently handled.  However, this method computationally inexpensive and
 handles the most common classes of alignment inconsistency.
 
 
+Usage, pooled datasets:
+
+While FreeBayes always 'pools' sequence information from many individuals to
+improve the accuracy of small variant calls, it can also operate on pooled
+sequencing datasets, in which DNA from many individuals is simultaneously
+sequenced.  To run on pooled data, set the --pooled flag (which turns off the
+prior component derived from the probability of a specific distribution of
+heterozygotes and homozygotes given the allele frequency), and set --ploidy to
+the number of total copies of the genome in each pooled sample.  For example,
+if you have 10 individuals in a pool, and each individual is diploid, you would
+set --ploidy 20.  Users should be aware that the current implementation has
+poor memory performance with ploidy set very high (e.g. 40).
+
+
 Author: Erik Garrison <erik.garrison@bc.edu>
         Marth Lab [3], Boston College
 
