@@ -5,6 +5,7 @@
 #include "Allele.h"
 #include "Genotype.h"
 #include "Multinomial.h"
+#include "CNV.h"
 
 using namespace std;
 
@@ -12,7 +13,7 @@ map<Allele, int> countAlleles(vector<Genotype*>& genotypeCombo);
 map<int, int> countFrequencies(vector<Genotype*>& genotypeCombo);
 long double alleleFrequencyProbability(map<int, int> alleleFrequencyCounts, long double theta);
 long double alleleFrequencyProbabilityln(map<int, int> alleleFrequencyCounts, long double theta);
-long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele);
+long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele);
 
 GenotypeComboResult
 genotypeCombinationsPriorProbability(

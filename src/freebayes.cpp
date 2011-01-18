@@ -55,17 +55,8 @@
 
 using namespace std; 
 
-// Allele object recycling:
-//
-// We use the Allele freelist for performance reasons.  When an Allele object
-// is destroyed, it is pushed onto this freelist.  When a new Allele object is
-// created, new first checks if we have a free Allele object on the freelist.
-// Because we are dynamically linked, we have to declare the freelist here,
-// although it exists as a static member of the Allele class.
-//
-//AlleleFreeList Allele::_freeList;
 
-
+// freebayes main
 int main (int argc, char *argv[]) {
 
     AlleleParser* parser = new AlleleParser(argc, argv);
@@ -82,7 +73,6 @@ int main (int argc, char *argv[]) {
     allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "T", 1));
     allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "G", 1));
     allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "C", 1));
-    //vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
 
     int allowedAlleleTypes = ALLELE_REFERENCE;
     if (parameters.allowSNPs) {
@@ -203,11 +193,24 @@ int main (int argc, char *argv[]) {
 
         ++processed_sites;
 
-        vector<Genotype> genotypes = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
+        // for each possible ploidy in the dataset, generate all possible genotypes
+        map<int, vector<Genotype> > genotypesByPloidy;
+
+        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+            string const& name = s->first;
+            int samplePloidy = parser->currentSamplePloidy(name);
+            if (genotypesByPloidy.find(samplePloidy) == genotypesByPloidy.end()) {
+                genotypesByPloidy[samplePloidy] = allPossibleGenotypes(samplePloidy, genotypeAlleles);
+            }
+        }
+
         DEBUG2("generated all possible genotypes:");
         if (parameters.debug2) {
-            for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-                DEBUG2(*g);
+            for (map<int, vector<Genotype> >::iterator s = genotypesByPloidy.begin(); s != genotypesByPloidy.end(); ++s) {
+                vector<Genotype>& genotypes = s->second;
+                for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+                    DEBUG2(*g);
+                }
             }
         }
 
@@ -219,6 +222,7 @@ int main (int argc, char *argv[]) {
 
             string sampleName = s->first;
             Sample& sample = s->second;
+            vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
 
             vector<pair<Genotype*, long double> > probs;
             if (parameters.bamBayesDataLikelihoods) {
@@ -278,9 +282,10 @@ int main (int argc, char *argv[]) {
         // calculate marginals
         // and determine best genotype combination
 
-        DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
+        //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
+        DEBUG2("generating banded genotype combinations");
         vector<GenotypeCombo> bandedCombos;
-        bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypes, parameters.WB, parameters.TB);
+        bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypesByPloidy, parameters.WB, parameters.TB);
 
         vector<GenotypeComboResult> genotypeComboProbs;
 

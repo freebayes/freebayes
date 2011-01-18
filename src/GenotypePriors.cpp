@@ -44,42 +44,6 @@ long double alleleFrequencyProbabilityln(map<int, int> alleleFrequencyCounts, lo
 
 }
 
-// TODO XXX only works for the diploid case!!!
-long double probabilityDiploidGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
-
-    int n = genotypeCombo.size();
-    int h = 0; // number of heterozygotes
-    int f = genotypeCombo.alleleFrequency(allele);
-
-    for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        if (!gc->genotype->homozygous)
-            ++h;
-    }
-
-    return powln(log(2), h) - (factorialln(2 * n) - (factorialln(f) + factorialln(2 * n - f)));
-
-}
-
-
-// TODO this should return the probability of a given combination of genotypes
-// for the multiploid, multi-allelic case
-long double __probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
-
-    int n = genotypeCombo.numberOfAlleles();
-    int h = 0; // number of heterozygotes
-    int f = genotypeCombo.alleleFrequency(allele);
-    long double lnhetscalar = 0;
-
-    for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        if (!gc->genotype->homozygous) {
-            lnhetscalar += log(gc->genotype->ploidy);
-            ++h;
-        }
-    }
-
-    return lnhetscalar - (factorialln(n) - (factorialln(f) + factorialln(n - f)));
-
-}
 
 long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
 

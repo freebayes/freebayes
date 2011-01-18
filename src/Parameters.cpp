@@ -29,6 +29,12 @@ void Parameters::usage(char** argv) {
          << "                   Limit analysis to samples listed (one per line) in the FILE." << endl
          << "                   By default FreeBayes will analyze all samples in its input" << endl
          << "                   BAM files." << endl
+         << "   -A --cnv-map FILE" << endl
+         << "                   Read a copy number map from the BED file FILE, which has" << endl
+         << "                   the format:" << endl
+         << "                      reference sequence, start, end, sample name, copy number" << endl
+         << "                   ... for each region in each sample which does not have the" << endl
+         << "                   default copy number as set by --ploidy." << endl
          << "   -j --json       Toggle JSON output of results on stdout." << endl
          << "   -O --output-alleles" << endl
          << "                   When --json is set, add records to the JSON output stream" << endl
@@ -166,6 +172,7 @@ Parameters::Parameters(int argc, char** argv) {
     targets = "";              // -t --targets
     region = "";               // -r --region
     samples = "";              // -s --samples
+    cnvFile = "";
     output = "vcf";               // -v --vcf
     outputFile = "";
     traceFile = "";
@@ -219,7 +226,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"targets", required_argument, 0, 't'},
         {"region", required_argument, 0, 'r'},
         {"samples", required_argument, 0, 's'},
-        {"json", no_argument, 0, 'v'},
+        {"cnv-map", required_argument, 0, 'A'},
+        {"json", no_argument, 0, 'j'},
         {"vcf", required_argument, 0, 'v'},
         {"output-alleles", no_argument, 0, 'O'},
         {"trace", required_argument, 0, 'L'},
@@ -261,7 +269,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZ0dDiI@XJb:x:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZ0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -299,6 +307,11 @@ Parameters::Parameters(int argc, char** argv) {
             // -s --samples
             case 's':
                 samples = optarg;
+                break;
+
+            // -A --cnv-file
+            case 'A':
+                cnvFile = optarg;
                 break;
 
             // -j --json

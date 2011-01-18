@@ -46,6 +46,7 @@ OBJECTS=BamAlignment.o \
 		BamIndex.o \
 		BGZF.o \
 		BedReader.o \
+		CNV.o \
 		fastlz.o \
 		Fasta.o \
 		Parameters.o \
@@ -153,6 +154,9 @@ ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AllelePa
 
 BedReader.o: BedReader.cpp BedReader.h
 	$(CC) $(CFLAGS) -c BedReader.cpp
+
+CNV.o: CNV.cpp CNV.h
+	$(CC) $(CFLAGS) -c CNV.cpp
 
 split.o: split.h split.cpp
 	$(CC) $(CFLAGS) -c split.cpp

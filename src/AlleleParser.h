@@ -24,6 +24,7 @@
 #include "TryCatch.h"
 #include "BamMultiReader.h"
 #include "Genotype.h"
+#include "CNV.h"
 
 #define CACHED_REFERENCE_WINDOW 10
 
@@ -100,6 +101,8 @@ public:
     vector<string> sampleListFromBam; // sample names drawn from BAM file
     map<string, string> readGroupToSampleNames; // maps read groups to samples
 
+    CNVMap sampleCNV;
+
     // reference
     FastaReference reference;
     vector<string> referenceSequenceNames;
@@ -131,6 +134,8 @@ public:
     void openFailedFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
+    void loadSampleCNVMap(void);
+    int currentSamplePloidy(string const& sample);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
     void loadReferenceSequence(BedTarget*, int, int);

@@ -35,6 +35,7 @@ long double averageQuality(const std::string& qualstr);
 bool stringInVector(string item, vector<string> items);
 int upper(int c); // helper to below, wraps toupper
 string uppercase(string s);
+string strip(string const& str, char const* separators = " \t");
 
 int binomialCoefficient(int n, int k);
 long double gammaln( long double x);

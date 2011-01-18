@@ -79,11 +79,11 @@ vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAllele
 
 class SampleGenotypeProb {
 public:
-    string name;
+    string sampleName;
     Genotype* genotype;
     long double prob;
     SampleGenotypeProb(string n, Genotype* g, long double p)
-        : name(n)
+        : sampleName(n)
         , genotype(g)
         , prob(p)
     { }
@@ -171,7 +171,7 @@ void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
-    vector<Genotype>& genotypes,
+    map<int, vector<Genotype> >& genotypesByPloidy,
     int bandwidth, int banddepth);
 
 vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);

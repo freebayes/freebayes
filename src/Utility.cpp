@@ -121,6 +121,13 @@ string uppercase(string s) {
     return s;
 }
 
+string strip(string const& str, char const* separators) {
+    string::size_type const first = str.find_first_not_of(separators);
+    return (first == string::npos) ? string()
+        : str.substr(first, str.find_last_not_of(separators) - first + 1);
+}
+
+
 int binomialCoefficient(int n, int k) {
     int i = 1;
     int result = n - k + i++;

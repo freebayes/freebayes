@@ -24,8 +24,6 @@
 using namespace std;
 
 
-// XXX TODO change these void functions to bool
-
 // open BAM input file
 void AlleleParser::openBams(void) {
 
@@ -498,6 +496,19 @@ void AlleleParser::loadTargetsFromBams(void) {
     }
 }
 
+void AlleleParser::loadSampleCNVMap(void) {
+    if (!parameters.cnvFile.empty()) {
+        if (!sampleCNV.load(parameters.ploidy, parameters.cnvFile)) {
+            ERROR("could not load sample map " << parameters.cnvFile << " ... exiting!");
+            exit(1);
+        }
+    }
+}
+
+int AlleleParser::currentSamplePloidy(string const& sample) {
+    return sampleCNV.ploidy(sample, currentSequenceName, currentPosition);
+}
+
 // meant to be used when we are reading from stdin, to check if we are within targets
 bool AlleleParser::inTarget(void) {
     if (targets.empty()) {
@@ -541,6 +552,9 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // check how many targets we have specified
     loadTargets();
     getSampleNames();
+
+    // sample CNV
+    loadSampleCNVMap();
 
 }
 

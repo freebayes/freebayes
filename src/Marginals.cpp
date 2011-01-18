@@ -6,7 +6,7 @@ void marginalGenotypeLikelihoods(long double posteriorNormalizer, vector<Genotyp
     // push the marginal likelihoods into the rawMarginals vectors in the results
     for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
         for (GenotypeCombo::iterator i = gc->combo->begin(); i != gc->combo->end(); ++i) {
-            map<Genotype*, vector<long double> >& marginals = results[i->name].rawMarginals;
+            map<Genotype*, vector<long double> >& marginals = results[i->sampleName].rawMarginals;
             marginals[i->genotype].push_back(gc->priorComboProb);
         }
     }

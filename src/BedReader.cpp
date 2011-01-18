@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include "split.h"
+#include "Utility.h"
 #include "BedReader.h"
 
 using namespace std;
@@ -26,8 +27,11 @@ vector<BedTarget> BedReader::entries(void) {
 
     string line;
     while (std::getline(*this, line)) {
-        vector<string> fields = split(line, '\t');
-        BedTarget entry(fields[0], atoi(fields[1].c_str()), atoi(fields[2].c_str()), (fields.size() >= 4) ? fields[3] : "");
+        vector<string> fields = split(line, " \t");
+        BedTarget entry(strip(fields[0]),
+                        atoi(strip(fields[1]).c_str()),
+                        atoi(strip(fields[2]).c_str()),
+                        (fields.size() >= 4) ? strip(fields[3]) : "");
         entries.push_back(entry);
     }
 
