@@ -328,13 +328,16 @@ vector<int> GenotypeCombo::counts(void) {
 bool GenotypeCombo::isHomozygous(void) {
     GenotypeCombo::iterator g = begin();
     Genotype* genotype = g->genotype;
-    if (!genotype->homozygous)
+    if (!genotype->homozygous) {
         return false;
-    for (; g != end(); ++g) {
-        if (g->genotype != genotype)
-            return false;
+    } else {
+        Allele& allele = g->genotype->front().allele;
+        for (; g != end(); ++g) {
+            if (!g->genotype->homozygous || g->genotype->front().allele != allele)
+                return false;
+        }
+        return true;
     }
-    return true;
 }
 
 /*
