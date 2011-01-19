@@ -45,12 +45,12 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             sp += l;
             rp += l;
         } else if (t == 'D') { // deletion
-            indels.push_back(IndelAllele(false, l, sp, referenceSequence.substr(sp, l)));
+            indels.push_back(IndelAllele(false, l, sp, rp, referenceSequence.substr(sp, l)));
             alignmentAlignedBases.insert(rp + aabOffset, string(l, '-'));
             aabOffset += l;
             sp += l;  // update sample position
         } else if (t == 'I') { // insertion
-            indels.push_back(IndelAllele(true, l, sp, alignment.QueryBases.substr(rp, l)));
+            indels.push_back(IndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l)));
             alignedReferenceSequence.insert(sp + arsOffset, string(l, '-'));
             arsOffset += l;
             rp += l;
@@ -79,23 +79,31 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     for (vector<IndelAllele>::iterator id = indels.begin(); id != indels.end(); ++id) {
         IndelAllele& indel = *id;
         int steppos = indel.position - indel.length;
+        int readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
+        DEBUG("read sequence = " << alignment.QueryBases.substr(readsteppos, indel.length) << endl);
         // repeated subunits, single base homopolymers
         while (steppos >= 0
                && indel.sequence == referenceSequence.substr(steppos, indel.length)
+               && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
                && (id == indels.begin()
                    || (previous->insertion && steppos >= previous->position)
                    || (!previous->insertion && steppos >= previous->position + previous->length))) {
             DEBUG("indel " << indel << " shifting " << indel.length << "bp left" << endl);
             indel.position -= indel.length;
+            indel.readPosition -= indel.length;
             steppos = indel.position - indel.length;
+            readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
+            DEBUG("read sequence = " << alignment.QueryBases.substr(readsteppos, indel.length) << endl);
         }
         // multi-base homopolymers
         if (indel.homopolymer()) {
             while (indel.position > 0 
                    && indel.sequence == referenceSequence.substr(indel.position - 1, indel.length)
+                   && indel.sequence == alignment.QueryBases.substr(indel.readPosition - 1, indel.length)
                    && (id == indels.begin() || indel.position >= previous->position + previous->length)) {
                 DEBUG("indel " << indel << " shifting " << 1 << "bp left" << endl);
                 indel.position -= 1;
+                indel.readPosition -= 1;
             }
         }
         previous = id;
@@ -221,7 +229,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     }
     DEBUG(endl);
 
-#ifdef DEBUG_ON
+#ifdef VERBOSE_DEBUG
     if (debug) {
         for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
             c != alignment.CigarData.end(); ++c) {
@@ -258,7 +266,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 //
 bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations, bool debug) {
 
-    if (!leftAlign(alignment, referenceSequence)) {
+    if (!leftAlign(alignment, referenceSequence, debug)) {
 
         DEBUG("did not realign" << endl);
         return true;

@@ -16,12 +16,13 @@ public:
     bool insertion;
     int length;
     int position;
+    int readPosition;
     string sequence;
 
     bool homopolymer(void);
 
-    IndelAllele(bool i, int l, int p, string s)
-        : insertion(i), length(l), position(p), sequence(s)
+    IndelAllele(bool i, int l, int p, int rp, string s)
+        : insertion(i), length(l), position(p), readPosition(rp), sequence(s)
     { }
 };
 

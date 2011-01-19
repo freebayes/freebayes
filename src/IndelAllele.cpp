@@ -23,7 +23,7 @@ bool homopolymer(string sequence) {
 
 ostream& operator<<(ostream& out, const IndelAllele& indel) {
     string t = indel.insertion ? "i" : "d";
-    out << t <<  ":" << indel.position << ":" << indel.sequence;
+    out << t <<  ":" << indel.position << ":" << indel.readPosition << ":" << indel.sequence;
     return out;
 }
 

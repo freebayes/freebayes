@@ -17,7 +17,7 @@
 //#include "IndelAllele.h"
 #include "LeftAlign.h"
 
-#ifdef DEBUG_ON
+#ifdef VERBOSE_DEBUG
 #define DEBUG(msg) \
     if (debug) { cerr << msg; }
 #else
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
         static struct option long_options[] =
         {
             {"help", no_argument, 0, 'h'},
-            {"debug", no_argument, 0, 'v'},
+            {"debug", no_argument, 0, 'd'},
             {"reference", required_argument, 0, 'f'},
             {"max-iterations", required_argument, 0, 'm'},
             {"suppress-output", no_argument, 0, 's'},

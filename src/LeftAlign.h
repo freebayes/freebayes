@@ -20,7 +20,7 @@
 
 #include "IndelAllele.h"
 
-#ifdef DEBUG_ON
+#ifdef VERBOSE_DEBUG
 #define DEBUG(msg) \
     if (debug) { cerr << msg; }
 #else
