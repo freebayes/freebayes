@@ -17,7 +17,9 @@ typedef map<string, map<string, map<pair<long int, long int>, int> > > SampleSeq
 class CNVMap {
 
 public:
-    bool load(int defploidy, string const& filename);
+    CNVMap(void) : defaultPloidy(2) { }
+    void setDefaultPloidy(int defploidy);
+    bool load(string const& filename);
     int ploidy(string const& sample, string const& seq, long int position);
     void setPloidy(string const& sample, string const& seq, long int start, long int end, int ploidy);
 

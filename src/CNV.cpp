@@ -1,7 +1,6 @@
 #include "CNV.h"
 
-bool CNVMap::load(int defploidy, string const& filename) {
-    defaultPloidy = defploidy;
+bool CNVMap::load(string const& filename) {
     string line;
     ifstream cnvFile(filename.c_str(), ios::in);
     if (cnvFile.is_open()) {
@@ -15,22 +14,43 @@ bool CNVMap::load(int defploidy, string const& filename) {
     return true;
 }
 
+void CNVMap::setDefaultPloidy(int defploidy) {
+    defaultPloidy = defploidy;
+}
+
 void CNVMap::setPloidy(string const& sample, string const& seq, long int start, long int end, int ploidy) {
     sampleSeqCNV[sample][seq][make_pair(start, end)] = ploidy;
 }
 
 int CNVMap::ploidy(string const& sample, string const& seq, long int position) {
-    map<pair<long int, long int>, int>& cnvs = sampleSeqCNV[sample][seq];
-    for (map<pair<long int, long int>, int>::iterator i = cnvs.begin(); i != cnvs.end(); ++i) {
-        pair<long int, long int> range = i->first;
-        int copyNumber = i->second;
-        if (range.first <= position && range.second > position) {
-            return copyNumber;
-        } else if (position < range.first) {
-            // we've passed any potential matches in this sequence, and the map
-            // is sorted by pair, so we don't have any matching ranges
-            break;
+
+    if (sampleSeqCNV.empty()) {
+        return defaultPloidy;
+    }
+
+    SampleSeqCNVMap::iterator scnv = sampleSeqCNV.find(sample);
+
+    if (scnv == sampleSeqCNV.end()) {
+        return defaultPloidy;
+    } else {
+        map<string, map<pair<long int, long int>, int> >::iterator c = scnv->second.find(seq);
+        if (c == scnv->second.end()) {
+            return defaultPloidy;
+        } else {
+            map<pair<long int, long int>, int>& cnvs = c->second;
+            for (map<pair<long int, long int>, int>::iterator i = cnvs.begin(); i != cnvs.end(); ++i) {
+                pair<long int, long int> range = i->first;
+                int copyNumber = i->second;
+                if (range.first <= position && range.second > position) {
+                    return copyNumber;
+                } else if (position < range.first) {
+                    // we've passed any potential matches in this sequence, and the map
+                    // is sorted by pair, so we don't have any matching ranges
+                    break;
+                }
+            }
+            return defaultPloidy;
         }
     }
-    return defaultPloidy;
+
 }

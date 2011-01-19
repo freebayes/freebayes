@@ -497,8 +497,12 @@ void AlleleParser::loadTargetsFromBams(void) {
 }
 
 void AlleleParser::loadSampleCNVMap(void) {
+    // set default ploidy
+    sampleCNV.setDefaultPloidy(parameters.ploidy);
+
+    // load CNV map if provided
     if (!parameters.cnvFile.empty()) {
-        if (!sampleCNV.load(parameters.ploidy, parameters.cnvFile)) {
+        if (!sampleCNV.load(parameters.cnvFile)) {
             ERROR("could not load sample map " << parameters.cnvFile << " ... exiting!");
             exit(1);
         }
