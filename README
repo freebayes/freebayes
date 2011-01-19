@@ -41,7 +41,7 @@ merging them at runtime into one logical file with a merged header.  (When
 provided multiple input files, the input to freebayes is the same as the output
 of the bamtools merge utility.)
 
-For a more detailed description of available command-line options, run:
+For a description of available command-line options and their defaults, run:
 
     % freebayes --help
 
@@ -66,6 +66,38 @@ each, and then open them all simultaneously with freebayes.  The VCF output
 will have one column per sample in the input.
 
 
+Input filters:
+
+FreeBayes filters its input so as to ignore low-confidence alignments and
+alleles which are only supported by low-quality sequencing observations (see
+--min-mapping-quality and --min-base-quality).  It also will only evaluate a
+position if at least one read has mapping quality of
+--min-supporting-mapping-quality and one allele has quality of at least
+--min-supporting-base-quality.  All these quality filters are set to sensible
+defaults, but may be turned off by specifying --no-filters on the command line,
+
+Reads with more than a fixed number of high-quality mismatches can be excluded
+by specifying --read-mismatch-limit.
+
+As a guard against spurious variation caused by sequencing artifacts, positions
+are skipped when no more than --min-alternate-count or --min-alternate-fraction
+non-clonal observations of an alternate are found in one sample.
+
+In data with high rates of insertion and deletion errors, you can use
+--indel-exclusion-window to exclude bases from reads within a number of bases
+of a putative indel allele.  (This behavior is incompatible with indel
+detection.)
+
+By default, FreeBayes will only consider the best 2 alleles at a site, but this
+may be set explicitly via --use-best-n-alleles.  Typically the best two alleles
+will be the best alternate and the reference, unless a low
+--reference-base-quality is set.  To allow all alleles to be considered,
+specify --allow-all-alleles.  To report all alternates in the
+highest-confidence genotype combination, specify --report-all-alleles.  (This
+may be useful in indel calling, where alleles cluster at microsatellite
+repeats.)
+
+
 Usage, advanced:
 
 FreeBayes can read BAM from standard input (--stdin) instead of directly from
@@ -82,12 +114,12 @@ calibrators to its input.  Two filters are of particular interest:
     in reads inconsistently despite the fact that the indels represent identical
     variation.  By realigning insertions and deletions as far left as they will go
     without introducing mismatches between read placement and reference, we can
-    evaluate
+    homogenize the input to deal with the most common classes of indels.
 
 For example, you can apply BAQ adjustment region 10:6000..7000 to a set of BAM
 files using this pattern:
 
-    % bamtools filter -region 10:6000..7000 -in NA20504 -in NA20507.bam \
+    % bamtools filter -region 10:6000..7000 -in NA20504.bam -in NA20507.bam \
        | samtools fillmd -Aru - reference.fasta \
        | freebayes --stdin -f reference.fasta
 
@@ -110,7 +142,7 @@ When calling indels, it is important to homogenize the positional distribution
 of insertions and deletions in the input by using left realignment.  This can
 be done in a streaming fashion as in this indel detection example:
 
-    % bamtools filter -region 10:6000..7000 -in NA20504 -in NA20507.bam \
+    % bamtools filter -region 10:6000..7000 -in NA20504.bam -in NA20507.bam \
        | bamleftalign -f reference.fasta \
        | samtools fillmd -Aru - reference.fasta \
        | freebayes --stdin \
