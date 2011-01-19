@@ -340,38 +340,6 @@ bool GenotypeCombo::isHomozygous(void) {
     }
 }
 
-/*
-void
-bandedGenotypeCombinations(
-    vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
-    int bandwidth, int banddepth) {
-
-    int nsamples = sampleGenotypes.size();
-    int ngenotypes = sampleGenotypes.front().second.size();
-    for (int i = 0; i <= min(bandwidth, ngenotypes); ++i) {
-        for (int j = 1; j <= banddepth; ++j) {
-            vector<int> indexes;
-            for (int h = 0; h < j; ++h)
-                indexes.push_back(i);
-            for (int h = 0; h < (nsamples - j); ++h)
-                indexes.push_back(0);
-            vector<vector<int> > indexPermutations = multipermute(indexes);
-            for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
-                GenotypeCombo combo;
-                vector<int>::const_iterator n = p->begin();
-                for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
-                        s != sampleGenotypes.end(); ++s, ++n) {
-                    const pair<Genotype*, long double>& p = s->second.at(*n);
-                    combo.push_back(SampleGenotypeProb(s->first, p.first, p.second));
-                }
-                combos.push_back(combo);
-            }
-        }
-    }
-}
-*/
-
 void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
@@ -389,8 +357,6 @@ bandedGenotypeCombinations(
         comboKing.prob += p.second;
     }
     comboKing.initAlleleFrequencies();
-
-    //combos.push_back(comboKing);
 
     // overview:
     //
