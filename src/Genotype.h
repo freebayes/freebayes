@@ -172,6 +172,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     map<int, vector<Genotype> >& genotypesByPloidy,
+    vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth);
 
 vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);

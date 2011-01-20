@@ -172,7 +172,7 @@ string IUPAC(Genotype& genotype) {
     return g;
 }
 
-string IUPAC2GenotypeStr(string iupac) {
+string IUPAC2GenotypeStr(string iupac, int ploidy) {
     if (iupac == "A") return "AA";
     if (iupac == "M") return "AC";
     if (iupac == "R") return "AG";
@@ -187,7 +187,8 @@ string IUPAC2GenotypeStr(string iupac) {
 }
 
 ostream& operator<<(ostream& out, const GenotypeElement& rhs) {
-    out << rhs.allele.alternateSequence << rhs.count;
+    for (int i = 0; i < rhs.count; ++i)
+        out << rhs.allele.alternateSequence;
     //for (int i = 0; i < rhs.second; ++i)
     //    out << rhs.first.alternateSequence;
     return out;
@@ -457,6 +458,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     map<int, vector<Genotype> >& genotypesByPloidy,
+    vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth) {
 
     // obtain the combos
@@ -491,26 +493,20 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
     map<Allele, GenotypeCombo> homozygousCombos;
 
-    for (map<int, vector<Genotype> >::iterator pg = genotypesByPloidy.begin(); pg != genotypesByPloidy.end(); ++pg) {
-        vector<Genotype>& genotypes = pg->second;
-        for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-            Genotype* genotype = &*g;
-            if (!genotype->homozygous)
-                continue;
-            Allele& allele = genotype->front().allele;
-            map<Allele, bool>::iterator g = allelesWithHomozygousCombos.find(allele);
-            if (g == allelesWithHomozygousCombos.end()) {
-                // we need to make a new combo
-                // iterate through the sample genotype vector
-                GenotypeCombo& combo = homozygousCombos[allele];
-                for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
-                        s != sampleGenotypes.end(); ++s) {
-                    // for each sample genotype, if the genotype is the same as our currently needed genotype, push it back onto a new combo
-                    for (vector<pair<Genotype*, long double> >::const_iterator d = s->second.begin(); d != s->second.end(); ++d) {
-                        // this check is ploidy-independent
-                        if (d->first->homozygous && d->first->front().allele == allele) {
-                            combo.push_back(SampleGenotypeProb(s->first, d->first, d->second));
-                        }
+    for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
+        Allele& allele = *a;
+        map<Allele, bool>::iterator g = allelesWithHomozygousCombos.find(allele);
+        if (g == allelesWithHomozygousCombos.end()) {
+            // we need to make a new combo
+            // iterate through the sample genotype vector
+            GenotypeCombo& combo = homozygousCombos[allele];
+            for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
+                    s != sampleGenotypes.end(); ++s) {
+                // for each sample genotype, if the genotype is the same as our currently needed genotype, push it back onto a new combo
+                for (vector<pair<Genotype*, long double> >::const_iterator d = s->second.begin(); d != s->second.end(); ++d) {
+                    // this check is ploidy-independent
+                    if (d->first->homozygous && d->first->front().allele == allele) {
+                        combo.push_back(SampleGenotypeProb(s->first, d->first, d->second));
                     }
                 }
             }

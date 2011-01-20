@@ -200,7 +200,9 @@ int main (int argc, char *argv[]) {
             string const& name = s->first;
             int samplePloidy = parser->currentSamplePloidy(name);
             if (genotypesByPloidy.find(samplePloidy) == genotypesByPloidy.end()) {
+                DEBUG2("generating all possible genotypes for " << samplePloidy);
                 genotypesByPloidy[samplePloidy] = allPossibleGenotypes(samplePloidy, genotypeAlleles);
+                DEBUG2("done");
             }
         }
 
@@ -237,7 +239,7 @@ int main (int argc, char *argv[]) {
             if (parameters.trace) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
                     parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ","
-                        << sampleName << ",likelihood," << IUPAC2GenotypeStr(IUPAC(*(p->first))) << "," << p->second << endl;
+                        << sampleName << ",likelihood," << *(p->first) << "," << p->second << endl;
                 }
             }
 
@@ -285,7 +287,13 @@ int main (int argc, char *argv[]) {
         //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
         DEBUG2("generating banded genotype combinations");
         vector<GenotypeCombo> bandedCombos;
-        bandedGenotypeCombinationsIncludingAllHomozygousCombos(bandedCombos, sampleGenotypes, genotypesByPloidy, parameters.WB, parameters.TB);
+        bandedGenotypeCombinationsIncludingAllHomozygousCombos(
+                bandedCombos,
+                sampleGenotypes,
+                genotypesByPloidy,
+                genotypeAlleles,
+                parameters.WB,
+                parameters.TB);
 
         vector<GenotypeComboResult> genotypeComboProbs;
 

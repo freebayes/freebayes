@@ -80,7 +80,6 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         IndelAllele& indel = *id;
         int steppos = indel.position - indel.length;
         int readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
-        DEBUG("read sequence = " << alignment.QueryBases.substr(readsteppos, indel.length) << endl);
         // repeated subunits, single base homopolymers
         while (steppos >= 0
                && indel.sequence == referenceSequence.substr(steppos, indel.length)
@@ -93,7 +92,6 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             indel.readPosition -= indel.length;
             steppos = indel.position - indel.length;
             readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
-            DEBUG("read sequence = " << alignment.QueryBases.substr(readsteppos, indel.length) << endl);
         }
         // multi-base homopolymers
         if (indel.homopolymer()) {
