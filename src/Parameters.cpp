@@ -82,6 +82,9 @@ void Parameters::usage(char** argv) {
          << "   -Z --ignore-reference-allele" << endl
          << "                   By default, the reference allele is considered as another" << endl
          << "                   sample.  This flag excludes it from the analysis." << endl
+         << "   -H --haploid-reference" << endl
+         << "                   If using the reference sequence as a sample, consider it" << endl
+         << "                   to be haploid.  default: false" << endl
          << "   -m --min-mapping-quality Q" << endl
          << "                   Exclude alignments from analysis if they have a mapping" << endl
          << "                   quality less than Q.  default: 30" << endl
@@ -188,6 +191,7 @@ Parameters::Parameters(int argc, char** argv) {
     useBestNAlleles = 2;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
+    haploidReference = false;      // -H --haploid-reference
     allowIndels = false;            // -i --indels
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
@@ -237,6 +241,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"use-all-alleles", no_argument, 0, 'N'},
         {"ignore-reference-allele", no_argument, 0, 'Z'},
+        {"haploid-reference", no_argument, 0, 'H'},
         {"no-filters", no_argument, 0, '0'},
         {"reference-mapping-quality", required_argument, 0, 'M'},
         {"reference-base-quality", required_argument, 0, 'B'},
@@ -269,7 +274,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZ0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZH0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -368,6 +373,11 @@ Parameters::Parameters(int argc, char** argv) {
             case 'Z':
                 forceRefAllele = false;
                 useRefAllele = false;
+                break;
+
+            // -H --haploid-reference
+            case 'H':
+                haploidReference = true;
                 break;
 
             // -0 --no-filters

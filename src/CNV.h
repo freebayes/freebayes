@@ -24,6 +24,7 @@ public:
     void setPloidy(string const& sample, string const& seq, long int start, long int end, int ploidy);
 
 private:
+    // note: this map is stored as 0-based, end position exclusive
     SampleSeqCNVMap sampleSeqCNV;
     int defaultPloidy;
 

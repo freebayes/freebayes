@@ -97,6 +97,9 @@ string Genotype::relativeGenotype(string& refbase, string& altbase) {
         if (b.currentBase == altbase && refbase != b.currentBase) {
             for (int j = 0; j < i->count; ++j)
                 rg.push_back("1/");
+        } else if (b.currentBase != altbase && refbase != b.currentBase) {
+            for (int j = 0; j < i->count; ++j)
+                rg.push_back("./");
         } else {
             for (int j = 0; j < i->count; ++j)
                 rg.push_back("0/");

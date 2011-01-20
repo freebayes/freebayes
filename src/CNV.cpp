@@ -6,7 +6,8 @@ bool CNVMap::load(string const& filename) {
     if (cnvFile.is_open()) {
         while (getline (cnvFile, line)) {
             vector<string> fields = split(line, " \t");
-            setPloidy(fields.at(3), fields.at(0), atol(fields.at(1).c_str()), atol(fields.at(2).c_str()), atoi(fields.at(4).c_str()));
+            // note conversion between 1 and 0 based
+            setPloidy(fields.at(3), fields.at(0), atol(fields.at(1).c_str()) - 1, atol(fields.at(2).c_str()) - 1, atoi(fields.at(4).c_str()));
         }
     } else {
         return false;
@@ -43,7 +44,7 @@ int CNVMap::ploidy(string const& sample, string const& seq, long int position) {
                 int copyNumber = i->second;
                 if (range.first <= position && range.second > position) {
                     return copyNumber;
-                } else if (position < range.first) {
+                } else if (position > range.first && position > range.second) {
                     // we've passed any potential matches in this sequence, and the map
                     // is sorted by pair, so we don't have any matching ranges
                     break;
