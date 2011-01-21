@@ -6,11 +6,12 @@ FreeBayes is a Bayesian genetic variant detector designed to find small
 polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels
 (insertions and deletions), and MNPs (multi-nucleotide polymorphisms) smaller
 than the length of a short-read sequencing alignment.  It uses short-read
-alignments (BAM files) for any number of individuals from a population and a
-reference genome to determine the most-likely combination of genotypes for the
-population at each position in a reference genome (FASTA).  It reports
-positions which it finds to be more likely polymorphic than monomorphic in a
-standard variant interchange format (VCF).
+alignments (BAM files with Phred+33 encoded quality scores) for any number of
+individuals from a population and a reference genome to determine the
+most-likely combination of genotypes for the population at each position in a
+reference genome (FASTA).  It reports positions which it finds to be more
+likely polymorphic than monomorphic in a standard variant interchange format
+(VCF).
 
 
 Compilation:
