@@ -301,7 +301,7 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("calculating genotype combination likelihoods");
 
-        genotypeCombinationsPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled);
+        genotypeCombinationsPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled, parameters.diffusionPriorScalar);
 
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");

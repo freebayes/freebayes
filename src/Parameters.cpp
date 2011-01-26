@@ -102,8 +102,13 @@ void Parameters::usage(char** argv) {
          << "   -U --read-mismatch-limit N" << endl
          << "                   The maximum allowable number of mismatches between an" << endl
          << "                   alignment and the reference where each mismatch has" << endl
-         << "                   base quality >= the mismatch-base-quality-threshold." << endl
+         << "                   base quality >= mismatch-base-quality-threshold." << endl
          << "                   default: ~unbounded" << endl
+         << "   -z --read-max-mismatch-fraction N" << endl
+         << "                   The maximum fraction [0, 1] of allowable mismatches" << endl
+         << "                   between an alignment and the reference where each mismatch" << endl
+         << "                   has base quality >= mismatch-base-quality-threshold" << endl
+         << "                   default: 1.0" << endl
          << "   -e --read-indel-limit N" << endl
          << "                   Exclude reads with this many separate indel events." << endl
          << "                   default: ~unbounded" << endl
@@ -119,6 +124,10 @@ void Parameters::usage(char** argv) {
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
          << "                   calculations.  default: 0.9" << endl
+         << "   -V --diffusion-prior-scalar N" << endl
+         << "                   Downgrade the significance of P(genotype combo | allele frequency)" << endl
+         << "                   by taking the Nth root of this component of the prior." << endl
+         << "                   default: 1" << endl
          << "   -W --posterior-integration-bandwidth N" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which lie no more than N steps from the most likely" << endl
@@ -208,11 +217,13 @@ Parameters::Parameters(int argc, char** argv) {
     BQL1 = 30;                    // -S --min-supporting-base-quality
     BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
     RMU = 10000000;                     // -U --read-mismatch-limit
+    readMaxMismatchFraction = 1.0;    //  -z --read-max-mismatch-fraction
     readIndelLimit = 10000000;     // -e --read-indel-limit
     IDW = -1;                     // -x --indel-exclusion-window
     TH = 10e-3;              // -T --theta
     PVL = 0.0;             // -P --pvar
     RDF = 0.9;             // -D --read-dependence-factor
+    diffusionPriorScalar = 1.0;     // -V --diffusion-prior-scalar
     WB = 2;                      // -W --posterior-integration-bandwidth
     TB = 1;                 // -Y --posterior-integration-banddepth
     posteriorIntegrationDepth = 0;
@@ -257,6 +268,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-supporting-base-quality", required_argument, 0, 'S'},
         {"mismatch-base-quality-threshold", required_argument, 0, 'Q'},
         {"read-mismatch-limit", required_argument, 0, 'U'},
+        {"read-max-mismatch-fraction", required_argument, 0, 'z'},
         {"read-indel-limit", required_argument, 0, 'e'},
         {"indels", no_argument, 0, 'i'},
         {"mnps", no_argument, 0, 'X'},
@@ -265,6 +277,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
         {"read-dependence-factor", required_argument, 0, 'D'},
+        {"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
@@ -279,7 +292,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZH0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:e:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZH0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:e:T:P:D:V:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -474,6 +487,14 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
+            // -z --read-max-mismatch-fraction
+            case 'z':
+                if (!convert(optarg, readMaxMismatchFraction)) {
+                    cerr << "could not parse read-mismatch-limit" << endl;
+                    exit(1);
+                }
+                break;
+
             // -e --read-indel-limit
             case 'e':
                 if (!convert(optarg, readIndelLimit)) {
@@ -525,6 +546,14 @@ Parameters::Parameters(int argc, char** argv) {
             case 'D':
                 if (!convert(optarg, RDF)) {
                     cerr << "could not parse read-dependence-factor" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -V --diffusion-prior-scalar
+            case 'V':
+                if (!convert(optarg, diffusionPriorScalar)) {
+                    cerr << "could not parse diffusion-prior-scalar" << endl;
                     exit(1);
                 }
                 break;

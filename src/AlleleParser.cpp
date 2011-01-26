@@ -1048,7 +1048,9 @@ void AlleleParser::updateAlignmentQueue(void) {
                 RegisteredAlignment& ra = rq.front();
                 registerAlignment(currentAlignment, ra, sampleName);
                 // backtracking if we have too many mismatches
-                if (ra.mismatches > parameters.RMU || ra.indelCount > parameters.readIndelLimit) {
+                if (((float) ra.mismatches / (float) currentAlignment.QueryBases.size()) > parameters.readMaxMismatchFraction
+                        || ra.mismatches > parameters.RMU
+                        || ra.indelCount > parameters.readIndelLimit) {
                     rq.pop_front(); // backtrack
                 } else {
                     // push the alleles into our registered alleles vector

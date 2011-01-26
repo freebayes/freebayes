@@ -68,7 +68,8 @@ genotypeCombinationPriorProbability(
         GenotypeCombo* combo,
         Allele& refAllele,
         long double theta,
-        bool pooled) {
+        bool pooled,
+        long double diffusionPriorScalar) {
 
         // when we are operating on pooled samples, we will not be able to
         // ascertain the number of heterozygotes in the pool,
@@ -76,6 +77,14 @@ genotypeCombinationPriorProbability(
         long double priorProbabilityOfGenotypeComboG_Af = 0;
         if (!pooled) {
             priorProbabilityOfGenotypeComboG_Af = probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+        }
+
+        // with larger population samples, the effect of 
+        // P(Genotype combo | Allele frequency) may bias us against reporting
+        // true variants which are under selection despite overwhelming evidence
+        // for variation.  this allows us to scale the effect of this prior
+        if (diffusionPriorScalar != 1) {
+            priorProbabilityOfGenotypeComboG_Af /= diffusionPriorScalar;
         }
 
         // Ewens' Sampling Formula
@@ -100,13 +109,14 @@ genotypeCombinationsPriorProbability(
         vector<GenotypeCombo>& bandedCombos,
         Allele& refAllele,
         long double theta,
-        bool pooled) {
+        bool pooled,
+        long double diffusionPriorScalar) {
 
     for (vector<GenotypeCombo>::iterator c = bandedCombos.begin(); c != bandedCombos.end(); ++c) {
 
         GenotypeCombo* combo = &*c;
 
-        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled));
+        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled, diffusionPriorScalar));
 
     }
 }

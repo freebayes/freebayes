@@ -61,6 +61,7 @@ public:
     int BQL1;                    // -S --min-supporting-base-quality
     int BQL2;                    // -Q --mismatch-base-quality-threshold
     int RMU;                     // -U --read-mismatch-limit
+    float readMaxMismatchFraction;  // -z --read-max-mismatch-fraction
     int readIndelLimit;          // -e --read-indel-limit
     int IDW;                     // -I --indel-exclusion-window
     long double TH;              // -T --theta
@@ -69,6 +70,7 @@ public:
     int posteriorIntegrationDepth;
     string algorithm;
     long double RDF;             // -D --read-dependence-factor
+    long double diffusionPriorScalar; // -V --diffusion-prior-scalar
     int WB;                      // -W --posterior-integration-bandwidth
     // XXX adjusting this to anything other than 1 may have bad consequences
     // for large numbers of samples

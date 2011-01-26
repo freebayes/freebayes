@@ -20,13 +20,15 @@ genotypeCombinationsPriorProbability(
         GenotypeCombo* combo,
         Allele& refAllele,
         long double theta,
-        bool pooled);
+        bool pooled,
+        long double diffusionPriorScalarln);
 
 void genotypeCombinationsPriorProbability(
         vector<GenotypeComboResult>& genotypeComboProbs,
         vector<GenotypeCombo>& bandedCombos,
         Allele& refAllele,
         long double theta,
-        bool pooled);
+        bool pooled,
+        long double diffusionPriorScalarln);
 
 #endif
