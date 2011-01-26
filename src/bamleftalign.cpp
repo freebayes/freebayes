@@ -34,7 +34,7 @@ void printUsage(char** argv) {
          << "Iterates until each alignment is stable through a left-realignment step." << endl
          << endl
          << "arguments:" << endl
-         << "      -f --reference FILE    FASTA reference file to use for realignment (required)" << endl
+         << "      -f --fasta-reference FILE   FASTA reference file to use for realignment (required)" << endl
          << "      -d --debug             Print debugging information about realignment process" << endl
          << "      -s --suppress-output   Don't write BAM output stream (for debugging)" << endl
          << "      -m --max-iterations N  Iterate the left-realignment no more than this many times" << endl;
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         {
             {"help", no_argument, 0, 'h'},
             {"debug", no_argument, 0, 'd'},
-            {"reference", required_argument, 0, 'f'},
+            {"fasta-reference", required_argument, 0, 'f'},
             {"max-iterations", required_argument, 0, 'm'},
             {"suppress-output", no_argument, 0, 's'},
             {0, 0, 0, 0}
