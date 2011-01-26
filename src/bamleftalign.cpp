@@ -147,17 +147,25 @@ int main(int argc, char** argv) {
                 */
             DEBUG("---------------------------   read    --------------------------" << endl);
             DEBUG("| " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl);
+            // DEBUG("| " << alignment.Name << ":" << alignment.GetEndPosition() << endl);
+            // DEBUG("| " << alignment.Name << ":" << (alignment.IsMapped() ? " mapped" : " unmapped") << endl);
+            // DEBUG("| " << alignment.Name << ":" << " cigar data size: " << alignment.CigarData.size() << endl);
             DEBUG("--------------------------- realigned --------------------------" << endl);
 
-            if (!stablyLeftAlign(alignment,
-                        reference.getSubSequence(
-                            referenceIDToName[alignment.RefID],
-                            alignment.Position,
-                            alignment.GetEndPosition() - alignment.Position + 1),
-                        maxiterations, debug)) {
-                cerr << "unstable realignment of " << alignment.Name 
-                     << " at " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl 
-                     << alignment.AlignedBases << endl;
+            // skip unmapped alignments, as they cannot be left-realigned without CIGAR data
+            if (alignment.IsMapped()) {
+
+                if (!stablyLeftAlign(alignment,
+                            reference.getSubSequence(
+                                referenceIDToName[alignment.RefID],
+                                alignment.Position,
+                                alignment.GetEndPosition() - alignment.Position + 1),
+                            maxiterations, debug)) {
+                    cerr << "unstable realignment of " << alignment.Name
+                         << " at " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl
+                         << alignment.AlignedBases << endl;
+                }
+
             }
             DEBUG("----------------------------------------------------------------" << endl);
             DEBUG(endl);
