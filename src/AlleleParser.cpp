@@ -706,7 +706,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                          << alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
                          << currentTarget->seq << ":" << (long unsigned int) currentPosition + 1 << endl;
-                    abort();
+                    //abort();
+                    goto bailout;
                 }
 
                 // convert base quality value into short int
@@ -721,7 +722,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                          << alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
                          << currentTarget->seq << ":" << (long unsigned int) currentPosition + 1 << endl;
-                    abort();
+                    //abort();
+                    goto bailout;
                 }
 
                 // this regex-generated nonsense comment maintained for laughs:
@@ -841,9 +843,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // string length and the length of the event
             long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
 
+            // now handled separately for indels via ra.indelCount
+            /*
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
             }
+            */
 
             if (qual >= parameters.BQL2) {
                 for (int i=0; i<l; i++) {
@@ -857,6 +862,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     !alignment.IsReverseStrand(), qual, qualstr,
                     alignment.MapQuality));
             DEBUG2(ra.alleles.back());
+            ++ra.indelCount;
 
             sp += l;  // update sample position
             csp += l;
@@ -893,9 +899,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // string length and the length of the event
             long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
 
+            /*
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
             }
+            */
             if (qual >= parameters.BQL2) {
                 indelMask[sp - alignment.Position] = true;
             }
@@ -905,6 +913,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                     qualstr, alignment.MapQuality));
             DEBUG2(ra.alleles.back());
+            ++ra.indelCount;
 
             rp += l;
 
@@ -926,6 +935,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         //}
     } // end cigar iter loop
 
+bailout:
 
     // mark positions in each alignment which are within IDW bases of an indel
     // these are then filtered at each call to getAlleles()
@@ -1038,7 +1048,7 @@ void AlleleParser::updateAlignmentQueue(void) {
                 RegisteredAlignment& ra = rq.front();
                 registerAlignment(currentAlignment, ra, sampleName);
                 // backtracking if we have too many mismatches
-                if (ra.mismatches > parameters.RMU) {
+                if (ra.mismatches > parameters.RMU || ra.indelCount > parameters.readIndelLimit) {
                     rq.pop_front(); // backtrack
                 } else {
                     // push the alleles into our registered alleles vector
@@ -1286,7 +1296,7 @@ bool AlleleParser::toNextPosition(void) {
             return false;
         }
     }
-    
+
     // stdin, no targets case
     if (parameters.useStdin || targets.empty()) {
         // TODO rectify this with the other copies of this stanza...
@@ -1299,8 +1309,12 @@ bool AlleleParser::toNextPosition(void) {
         } else if (!hasMoreAlignments && registeredAlignments.empty()) {
             DEBUG("no more alignments in input");
             return false;
+        } else if (!hasMoreAlignments && currentPosition > currentSequence.size() + currentSequenceStart) {
+            DEBUG("at end of sequence");
+            return false;
         }
     }
+
 
     currentReferenceBase = currentReferenceBaseChar();
 

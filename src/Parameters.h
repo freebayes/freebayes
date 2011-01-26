@@ -61,6 +61,7 @@ public:
     int BQL1;                    // -S --min-supporting-base-quality
     int BQL2;                    // -Q --mismatch-base-quality-threshold
     int RMU;                     // -U --read-mismatch-limit
+    int readIndelLimit;          // -e --read-indel-limit
     int IDW;                     // -I --indel-exclusion-window
     long double TH;              // -T --theta
     long double PVL;             // -P --pvar

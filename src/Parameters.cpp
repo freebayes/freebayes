@@ -104,6 +104,9 @@ void Parameters::usage(char** argv) {
          << "                   alignment and the reference where each mismatch has" << endl
          << "                   base quality >= the mismatch-base-quality-threshold." << endl
          << "                   default: ~unbounded" << endl
+         << "   -e --read-indel-limit N" << endl
+         << "                   Exclude reads with this many separate indel events." << endl
+         << "                   default: ~unbounded" << endl
          << "   -Q --mismatch-base-quality-threshold Q" << endl
          << "                   Count mismatches toward --read-mismatch-limit if the base" << endl
          << "                   quality of the mismatch is >= Q.  default: 10" << endl
@@ -205,6 +208,7 @@ Parameters::Parameters(int argc, char** argv) {
     BQL1 = 30;                    // -S --min-supporting-base-quality
     BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
     RMU = 10000000;                     // -U --read-mismatch-limit
+    readIndelLimit = 10000000;     // -e --read-indel-limit
     IDW = -1;                     // -x --indel-exclusion-window
     TH = 10e-3;              // -T --theta
     PVL = 0.0;             // -P --pvar
@@ -253,6 +257,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-supporting-base-quality", required_argument, 0, 'S'},
         {"mismatch-base-quality-threshold", required_argument, 0, 'Q'},
         {"read-mismatch-limit", required_argument, 0, 'U'},
+        {"read-indel-limit", required_argument, 0, 'e'},
         {"indels", no_argument, 0, 'i'},
         {"mnps", no_argument, 0, 'X'},
         {"no-snps", no_argument, 0, 'I'},
@@ -274,7 +279,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZH0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:T:P:D:W:F:C:K:Y:L:l:",
+        c = getopt_long(argc, argv, "hcOENGZH0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:e:T:P:D:W:F:C:K:Y:L:l:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -465,6 +470,14 @@ Parameters::Parameters(int argc, char** argv) {
             case 'U':
                 if (!convert(optarg, RMU)) {
                     cerr << "could not parse read-mismatch-limit" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -e --read-indel-limit
+            case 'e':
+                if (!convert(optarg, readIndelLimit)) {
+                    cerr << "could not parse read-indel-limit" << endl;
                     exit(1);
                 }
                 break;

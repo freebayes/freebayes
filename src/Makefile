@@ -161,7 +161,7 @@ CNV.o: CNV.cpp CNV.h
 split.o: split.h split.cpp
 	$(CC) $(CFLAGS) -c split.cpp
 
-bamleftalign.o: bamleftalign.cpp
+bamleftalign.o: bamleftalign.cpp LeftAlign.cpp
 	$(CC) $(CFLAGS) -c bamleftalign.cpp
 
 bamfiltertech.o: bamfiltertech.cpp
