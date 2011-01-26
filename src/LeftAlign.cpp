@@ -116,6 +116,16 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                 indel.readPosition -= 1;
             }
         }
+        // deletions with exchangeable flanking sequence
+        if (!indel.insertion) {
+            while (indel.position > 0
+                   && indel.sequence.at(indel.sequence.size() - 1) == referenceSequence.at(indel.position - 1)
+                   && (id == indels.begin() || indel.position >= previous->position + previous->length)) {
+                indel.sequence = indel.sequence.at(indel.sequence.size() - 1) + indel.sequence.substr(0, indel.sequence.size() - 1);
+                indel.position -= 1;
+                indel.readPosition -= 1;
+            }
+        }
         previous = id;
     }
 
