@@ -148,6 +148,7 @@ int main(int argc, char** argv) {
             DEBUG("---------------------------   read    --------------------------" << endl);
             DEBUG("| " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl);
             DEBUG("--------------------------- realigned --------------------------" << endl);
+
             if (!stablyLeftAlign(alignment,
                         reference.getSubSequence(
                             referenceIDToName[alignment.RefID],

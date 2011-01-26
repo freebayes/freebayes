@@ -35,6 +35,9 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     int rp = 0;  // read position, 0-based relative to read
     int sp = 0;  // sequence position
 
+    string softBegin;
+    string softEnd;
+
     stringstream cigar_before, cigar_after;
     for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
         c != alignment.CigarData.end(); ++c) {
@@ -51,10 +54,18 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             sp += l;  // update sample position
         } else if (t == 'I') { // insertion
             indels.push_back(IndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l)));
-            alignedReferenceSequence.insert(sp + arsOffset, string(l, '-'));
+            alignedReferenceSequence.insert(sp + softBegin.size() + arsOffset, string(l, '-'));
             arsOffset += l;
             rp += l;
         } else if (t == 'S') { // soft clip, clipped sequence present in the read not matching the reference
+            // remove these bases from the refseq and read seq, but don't modify the alignment sequence
+            if (rp == 0) {
+                alignedReferenceSequence = string(l, '*') + alignedReferenceSequence;
+                softBegin = alignmentAlignedBases.substr(0, l);
+            } else {
+                alignedReferenceSequence = alignedReferenceSequence + string(l, '*');
+                softEnd = alignmentAlignedBases.substr(alignmentAlignedBases.size() - l, l);
+            }
             rp += l;
         } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
         } else if (t == 'N') { // skipped region in the reference not present in read, aka splice
@@ -193,6 +204,11 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     //         merge the indels
 
     vector<CigarOp> newCigar;
+
+    if (!softBegin.empty()) {
+        newCigar.push_back(CigarOp('S', softBegin.size()));
+    }
+
     vector<IndelAllele>::iterator id = indels.begin();
     IndelAllele last = *id++;
     if (last.position > 0) {
@@ -225,6 +241,11 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     if ((last.position + last.length) < alignedLength) {
         newCigar.push_back(CigarOp('M', alignedLength - lastend));
     }
+
+    if (!softEnd.empty()) {
+        newCigar.push_back(CigarOp('S', softEnd.size()));
+    }
+
     DEBUG(endl);
 
 #ifdef VERBOSE_DEBUG
