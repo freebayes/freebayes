@@ -147,9 +147,9 @@ int main(int argc, char** argv) {
                 */
             DEBUG("---------------------------   read    --------------------------" << endl);
             DEBUG("| " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl);
-            // DEBUG("| " << alignment.Name << ":" << alignment.GetEndPosition() << endl);
-            // DEBUG("| " << alignment.Name << ":" << (alignment.IsMapped() ? " mapped" : " unmapped") << endl);
-            // DEBUG("| " << alignment.Name << ":" << " cigar data size: " << alignment.CigarData.size() << endl);
+            DEBUG("| " << alignment.Name << ":" << alignment.GetEndPosition() << endl);
+            DEBUG("| " << alignment.Name << ":" << (alignment.IsMapped() ? " mapped" : " unmapped") << endl);
+            DEBUG("| " << alignment.Name << ":" << " cigar data size: " << alignment.CigarData.size() << endl);
             DEBUG("--------------------------- realigned --------------------------" << endl);
 
             // skip unmapped alignments, as they cannot be left-realigned without CIGAR data

@@ -73,6 +73,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         }
     }
 
+
     int alignedLength = sp;
 
     DEBUG("| " << cigar_before.str() << endl
@@ -92,7 +93,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         int steppos = indel.position - indel.length;
         int readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
         // repeated subunits, single base homopolymers
-        while (steppos >= 0
+        while (steppos >= 0 && readsteppos >= 0
                && indel.sequence == referenceSequence.substr(steppos, indel.length)
                && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
                && (id == indels.begin()
