@@ -57,10 +57,17 @@ callset will increase if you run multiple samples simultaneously.  If your
 study has multiple individuals, you should run freebayes against them at the
 same time.
 
-To call variants in a population of samples, the only requirement is that each
-alignment has a read group identifier attached to it, and that the header of
-the BAM file in which it resides has a mapping between read groups and sample
-names.  A script, scripts/sam_add_rg.pl, is included to add RG tags to BAM
+To call variants in a population of samples, each alignment must have a read
+group identifier attached to it (RG tag), and the header of the BAM file in
+which it resides must map the RG tags to sample names (SM).  Furthermore, read
+group IDs must be unique across all the files used in the analysis.  One read
+group cannot map to multiple samples.  The reason this is required is that
+freebayes operates on a virtually merged BAM stream provided by the BamTools
+API.  If merging the files in your analysis using bamtools merge would generate
+a file in which multiple samples map to the same RG, the files are not suitable
+for use in population calling, and they must be modified.
+
+A script, scripts/sam_add_rg.pl, is included to add RG tags to BAM
 files which were generated without this information.  If you have many files
 corresponding to many individuals, add a unique read group and sample name to
 each, and then open them all simultaneously with freebayes.  The VCF output

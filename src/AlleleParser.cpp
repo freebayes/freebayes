@@ -166,6 +166,27 @@ void AlleleParser::getSampleNames(void) {
             //mergedHeader.append(1, '\n');
             DEBUG2("found read group id " << readGroupID << " containing sample " << name);
             sampleListFromBam.push_back(name);
+
+            map<string, string>::iterator s = readGroupToSampleNames.find(readGroupID);
+            if (s != readGroupToSampleNames.end()) {
+                if (s->second != name) {
+                    ERROR("ERROR: multiple samples (SM) map to the same read group (RG)" << endl
+                       << endl
+                       << "samples " << name << " and " << s->second << " map to " << readGroupID << endl
+                       << endl
+                       << "As freebayes operates on a virtually merged stream of its input files," << endl 
+                       << "it will not be possible to determine what sample an alignment belongs to" << endl
+                       << "at runtime." << endl
+                       << endl
+                       << "To resolve the issue, ensure that RG ids are unique to one sample" << endl
+                       << "across all the input files to freebayes." << endl
+                       << endl
+                       << "See ./scripts/sam_add_rg.pl in the freebayes source tree for a method" << endl
+                       << "to modify the RG tags in a SAM stream." << endl);
+                    exit(1);
+                }
+                // if it's the same sample name and RG combo, no worries
+            }
             readGroupToSampleNames[readGroupID] = name;
         }
     }
