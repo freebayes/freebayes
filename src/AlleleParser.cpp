@@ -437,12 +437,14 @@ void AlleleParser::loadTargets(void) {
                 startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
                 // if we have range dots specified, but no second number, read to the end of sequence
                 if (foundRangeDots + 2 != region.size()) {
-                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()) + 1; // end-inclusive, bed-format
+                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // end-inclusive, bed-format
                 } else {
                     stopPos = reference.sequenceLength(startSeq);
                 }
             }
         }
+
+        cerr << "stopPos == " << stopPos << endl;
 
         BedTarget bd(startSeq,
                     (startPos == 1) ? 1 : startPos,
@@ -553,7 +555,7 @@ bool AlleleParser::inTarget(void) {
         // otherwise, scan through the targets to establish if the coordinate lies within any
         for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
             BedTarget& bd = *e;
-            if (currentTarget->seq == bd.seq && bd.left <= currentPosition && currentPosition <= bd.right) {
+            if (currentTarget->seq == bd.seq && bd.left <= currentPosition && currentPosition < bd.right) {
                 return true;
             }
         }
@@ -1158,38 +1160,16 @@ bool AlleleParser::toNextTarget(void) {
     DEBUG2("seeking to next target with alignments...");
 
     // load first target if we have targets and have not loaded the first
-    if (currentTarget == NULL && !parameters.useStdin && !targets.empty()) {
-        if (!loadTarget(&targets.front())) {
-            ERROR("Could not load first target");
-            return false;
-        }
-        if (!getFirstAlignment()) {
-            ERROR("Could not get first alignment from target");
-            return false;
-        }
-        // XXX hack
-        clearRegisteredAlignments();
-        currentSequenceStart = currentAlignment.Position;
-        currentSequenceName = referenceIDToName[currentAlignment.RefID];
-        currentRefID = currentAlignment.RefID;
-        currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
-        currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
-    // stdin, no targets cases
-    } else if (currentTarget == NULL && (parameters.useStdin || targets.empty())) {
-        if (!getFirstAlignment()) {
-            ERROR("Could not get first alignment from target");
-            return false;
-        }
-        clearRegisteredAlignments();
-        loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
-    // we've reached the end of file, or stdin, before we ever started?
-    } else if (parameters.useStdin || targets.empty()) {
-        ERROR("could not read any alignments");
-        return false;
-    } else {
+    if (!parameters.useStdin && !targets.empty()) {
+
         bool ok = false;
+
+        // try to load the first target if we need to
+        if (currentTarget == NULL)
+            ok = loadTarget(&targets.front()) && getFirstAlignment();
+
         // step through targets until we get to one with alignments
-        while (currentTarget != &targets.back()) {
+        while (!ok && currentTarget != &targets.back()) {
             if (!loadTarget(++currentTarget)) {
                 continue;
             }
@@ -1197,14 +1177,34 @@ bool AlleleParser::toNextTarget(void) {
                 break;
             }
         }
+
         if (!ok) return false; // last target and couldn't get alignment
 
+        // XXX hack
         clearRegisteredAlignments();
         currentSequenceStart = currentAlignment.Position;
         currentSequenceName = referenceIDToName[currentAlignment.RefID];
         currentRefID = currentAlignment.RefID;
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
         currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
+
+    // stdin, no targets cases
+    } else if (currentTarget == NULL && (parameters.useStdin || targets.empty())) {
+        // if we have a target for limiting the analysis, use it
+        // this happens when you specify stdin + a region string
+        if (!targets.empty()) {
+            currentTarget = &targets.front();
+        }
+        if (!getFirstAlignment()) {
+            ERROR("Could not get first alignment from target");
+            return false;
+        }
+        clearRegisteredAlignments();
+        loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
+
+    // we've reached the end of file, or stdin
+    } else if (parameters.useStdin || targets.empty()) {
+        return false;
     }
 
     justSwitchedTargets = true;
@@ -1312,8 +1312,10 @@ bool AlleleParser::toNextPosition(void) {
         }
     }
 
-    if (!parameters.useStdin && !targets.empty() && currentPosition >= currentTarget->right - 1) { // time to move to a new target
-        DEBUG2("next position " << currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
+    if (!targets.empty() && (
+                (!parameters.allowIndels && currentPosition >= currentTarget->right - 1)
+                || currentPosition >= currentTarget->right - 0.5)) { // time to move to a new target
+        DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
             return false;
