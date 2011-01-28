@@ -106,14 +106,16 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
         }
         // multi-base homopolymers
-        if (indel.homopolymer()) {
-            while (indel.position > 0 
-                   && indel.sequence == referenceSequence.substr(indel.position - 1, indel.length)
-                   && indel.sequence == alignment.QueryBases.substr(indel.readPosition - 1, indel.length)
-                   && (id == indels.begin() || indel.position >= previous->position + previous->length)) {
-                DEBUG("indel " << indel << " shifting " << 1 << "bp left" << endl);
-                indel.position -= 1;
-                indel.readPosition -= 1;
+        for (int i = 1; i < indel.length; ++i) {
+            while (indel.position - i > 0 
+                   && indel.sequence == referenceSequence.substr(indel.position - i, indel.length)
+                   && indel.sequence == alignment.QueryBases.substr(indel.readPosition - i, indel.length)
+                   && (id == indels.begin()
+                       || (previous->insertion && steppos >= previous->position)
+                       || (!previous->insertion && steppos >= previous->position + previous->length))) {
+                DEBUG("indel " << indel << " shifting " << i << "bp left" << endl);
+                indel.position -= i;
+                indel.readPosition -= i;
             }
         }
         // deletions with exchangeable flanking sequence
