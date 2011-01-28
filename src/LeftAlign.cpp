@@ -89,81 +89,77 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 
     vector<IndelAllele>::iterator previous = indels.begin();
     for (vector<IndelAllele>::iterator id = indels.begin(); id != indels.end(); ++id) {
+
+        // left shift
+        //
+        // from 1 base to the length of the indel, attempt to shift left
+        // if the move would cause no change in alignment optimality (no
+        // introduction of mismatches, and by definition no change in gap
+        // length), move to the new position.
+        // in practice this moves the indel left when we reach the size of
+        // the repeat unit.
+        //
+        int steppos, readsteppos;
         IndelAllele& indel = *id;
-        int steppos = indel.position - indel.length;
-        int readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
-        // repeated subunits, single base homopolymers
-        while (steppos >= 0 && readsteppos >= 0
-               && indel.sequence == referenceSequence.substr(steppos, indel.length)
-               && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
-               && (id == indels.begin()
-                   || (previous->insertion && steppos >= previous->position)
-                   || (!previous->insertion && steppos >= previous->position + previous->length))) {
-            DEBUG("indel " << indel << " shifting " << indel.length << "bp left" << endl);
-            indel.position -= indel.length;
-            indel.readPosition -= indel.length;
-            steppos = indel.position - indel.length;
-            readsteppos = (indel.insertion ? indel.readPosition - indel.length : indel.readPosition) - 1;
-        }
-        // multi-base homopolymers
-        for (int i = 1; i < indel.length; ++i) {
-            while (indel.position - i > 0 
-                   && indel.sequence == referenceSequence.substr(indel.position - i, indel.length)
-                   && indel.sequence == alignment.QueryBases.substr(indel.readPosition - i, indel.length)
+        int i = 1;
+        while (i <= indel.length) {
+
+            int steppos = indel.position - i;
+            int readsteppos = (indel.insertion ? indel.readPosition - i : indel.readPosition) - 1;
+
+#ifdef VERBOSE_DEBUG
+            if (debug) {
+                if (steppos >= 0 && readsteppos >= 0) {
+                    cerr << referenceSequence.substr(steppos, indel.length) << endl;
+                    if (indel.insertion) {
+                        cerr << alignment.QueryBases.substr(readsteppos, indel.length) << endl;
+                    } else {
+                        cerr << indel.sequence << endl;
+                    }
+                }
+            }
+#endif
+            while (steppos >= 0 && readsteppos >= 0
+                   && indel.sequence == referenceSequence.substr(steppos, indel.length)
+                   && (!indel.insertion || indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length))
                    && (id == indels.begin()
                        || (previous->insertion && steppos >= previous->position)
                        || (!previous->insertion && steppos >= previous->position + previous->length))) {
                 DEBUG("indel " << indel << " shifting " << i << "bp left" << endl);
                 indel.position -= i;
                 indel.readPosition -= i;
+                steppos = indel.position - i;
+                readsteppos = (indel.insertion ? indel.readPosition - i : indel.readPosition) - 1;
             }
+            ++i;
         }
-        // deletions with exchangeable flanking sequence
-        if (!indel.insertion) {
-            while (indel.position > 0
-                   && indel.sequence.at(indel.sequence.size() - 1) == referenceSequence.at(indel.position - 1)
-                   && (id == indels.begin() || indel.position >= previous->position + previous->length)) {
-                indel.sequence = indel.sequence.at(indel.sequence.size() - 1) + indel.sequence.substr(0, indel.sequence.size() - 1);
-                indel.position -= 1;
-                indel.readPosition -= 1;
-            }
+
+        // left shift deletions with exchangeable flanking sequence
+        //
+        // for example:
+        //
+        // GTTACGTT           GTTACGTT
+        // GT-----T  becomes  G-----TT
+        //
+        steppos = indel.position - 1;
+        readsteppos = (indel.insertion ? indel.readPosition - 1 : indel.readPosition) - 1;
+        while (indel.position > 0
+               && indel.sequence.at(indel.sequence.size() - 1) == referenceSequence.at(indel.position - 1)
+               && indel.sequence == referenceSequence.substr(steppos, indel.length)
+               && (!indel.insertion || indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length))
+               && (id == indels.begin()
+                   || (previous->insertion && indel.position - 1 >= previous->position)
+                   || (!previous->insertion && indel.position - 1 >= previous->position + previous->length))) {
+            DEBUG("indel " << indel << " exchanging bases " << 1 << "bp left" << endl);
+            indel.sequence = indel.sequence.at(indel.sequence.size() - 1) + indel.sequence.substr(0, indel.sequence.size() - 1);
+            indel.position -= 1;
+            indel.readPosition -= 1;
+            steppos = indel.position - 1;
+            readsteppos = (indel.insertion ? indel.readPosition - 1 : indel.readPosition) - 1;
         }
+        // tracks previous indel, so we don't run into it with the next shift
         previous = id;
     }
-
-    // unhandled:
-    // attempt to shift in lengths below the tandem dup size
-    // replaces above loop, but...
-    // buggy code:
-    /*
-    vector<IndelAllele>::iterator previous = indels.begin();
-    for (vector<IndelAllele>::iterator id = indels.begin(); id != indels.end(); ++id) {
-        IndelAllele& indel = *id;
-        int steppos = indel.position - indel.length;
-        int step = indel.length;
-        while (steppos >= 0 && step > 0) {
-            step = indel.length;
-            steppos = indel.position - step;
-            while (step > 0) {
-                DEBUG(step << endl);
-                if (indel.sequence == referenceSequence.substr(steppos, indel.length)
-                   && (id == indels.begin()
-                       || (previous->insertion && steppos >= previous->position)
-                       || (!previous->insertion && steppos >= previous->position + previous->length))) {
-
-                    DEBUG("indel " << indel << " shifting " << indel.length << "bp left" << endl);
-                    indel.position -= step;
-                    steppos = indel.position;
-                    break;
-                } else {
-                    --step;
-                }
-            }
-        }
-        // multi-base homopolymers
-        previous = id;
-    }
-       */
 
     // bring together floating indels
     // from left to right
