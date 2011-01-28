@@ -64,6 +64,14 @@ public:
                 datalikelihoodCompare);
     }
 
+    long double genotypeLikelihood(Genotype* g) {
+        for (vector<pair<Genotype*, long double> >::iterator gl = dataLikelihoods.begin();
+                gl != dataLikelihoods.end(); ++gl) {
+            if (gl->first == g)
+                return gl->second;
+        }
+    }
+
     friend void json(ostream& out, Results& results, AlleleParser* parser);
     friend string vcf(
             long double comboProb,

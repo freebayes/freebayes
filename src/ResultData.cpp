@@ -72,6 +72,7 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
         << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">" << endl
+        << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
@@ -265,7 +266,7 @@ string vcf(
     }
 
 
-    out << "\t" << "GT:GQ:DP:RA:AA:BCF:BCR";
+    out << "\t" << "GT:GQ:GL:DP:RA:AA:BCF:BCR";
     // TODO GL, un-normalized data likelihoods for genotypes
 
     // samples
@@ -279,6 +280,7 @@ string vcf(
             out << "\t"
                 << genotype->relativeGenotype(refbase, altbase)
                 << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]))
+                << ":" << sample.genotypeLikelihood(genotype)
                 << ":" << sample.observations->observationCount()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first
