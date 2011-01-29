@@ -143,7 +143,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         //
         steppos = indel.position - 1;
         readsteppos = (indel.insertion ? indel.readPosition - 1 : indel.readPosition) - 1;
-        while (indel.position > 0
+        while (steppos >= 0 && readsteppos >= 0
                && indel.sequence.at(indel.sequence.size() - 1) == referenceSequence.at(indel.position - 1)
                && indel.sequence == referenceSequence.substr(steppos, indel.length)
                && (!indel.insertion || indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length))
