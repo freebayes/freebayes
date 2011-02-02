@@ -23,6 +23,7 @@
 #include "TryCatch.h"
 #include "Parameters.h"
 #include "Allele.h"
+#include "Sample.h"
 #include "AlleleParser.h"
 #include "Utility.h"
 
@@ -164,24 +165,15 @@ int main (int argc, char *argv[]) {
         for (map<string, vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
             containedAlleleTypes |= group->second.front()->type;
         }
-        /*
-        if (containedAlleleTypes & ALLELE_DELETION) {
-            cerr << "there are deletion observations at this site" << endl;
-        }
-        if (containedAlleleTypes & ALLELE_INSERTION) {
-            cerr << "there are insertion observations at this site" << endl;
-        }
-        */
 
+        // to ensure proper ordering of output stream
         vector<string> sampleListPlusRef;
-        //if (parameters.trace) {
-            // figure out which samples have no data so we can print ?'s in the genotype combo trace
+
         for (vector<string>::iterator s = parser->sampleList.begin(); s != parser->sampleList.end(); ++s) {
             sampleListPlusRef.push_back(*s);
         }
         if (parameters.useRefAllele)
             sampleListPlusRef.push_back(parser->currentTarget->seq);
-        //}
 
         vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, allGenotypeAlleles);
 
@@ -226,12 +218,7 @@ int main (int argc, char *argv[]) {
             Sample& sample = s->second;
             vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
 
-            vector<pair<Genotype*, long double> > probs;
-            if (parameters.bamBayesDataLikelihoods) {
-                 probs = bamBayesProbObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF);
-            } else {
-                 probs = probObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF);
-            }
+            vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF);
 
             map<Genotype*, long double> marginals;
             map<Genotype*, vector<long double> > rawMarginals;
@@ -293,7 +280,8 @@ int main (int argc, char *argv[]) {
                 genotypesByPloidy,
                 genotypeAlleles,
                 parameters.WB,
-                parameters.TB);
+                parameters.TB,
+                parameters.genotypeComboStepMax);
 
         vector<GenotypeComboResult> genotypeComboProbs;
 

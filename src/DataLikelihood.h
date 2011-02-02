@@ -9,6 +9,7 @@
 #include <vector>
 #include <iterator>
 #include "Allele.h"
+#include "Sample.h"
 #include "Genotype.h"
 #include "Utility.h"
 #include "Multinomial.h"
@@ -43,12 +44,6 @@ vector<pair<Genotype*, long double> >
 bamBayesProbObservedAllelesGivenGenotypes(
         Sample& sample,
         vector<Genotype>& genotype,
-        long double dependenceFactor);
-
-vector<pair<Genotype*, long double> >
-approxProbObservedAllelesGivenGenotypes(
-        Sample& sample,
-        vector<Genotype>& genotypes,
         long double dependenceFactor);
 
 long double

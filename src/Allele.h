@@ -16,7 +16,6 @@
 using namespace std;
 
 class Allele;
-class Sample;
 
 // Allele recycling allocator
 // without we spend 30% of our runtime deleting Allele instances
@@ -241,124 +240,6 @@ public:
 };
 
 
-// sample tracking and allele sorting
-class Sample : public map<string, vector<Allele*> > {
-
-public:
-
-    // the number of observations for this allele
-    int observationCount(Allele& allele) {
-        return observationCount(allele.currentBase);
-    }
-
-    // the number of observations for this base
-    int observationCount(const string& base) {
-        Sample::iterator g = find(base);
-        if (g != end())
-            return g->second.size();
-        else
-            return 0;
-    }
-
-    // the total number of observations
-    int observationCount(void) {
-        int count = 0;
-        for (Sample::iterator g = begin(); g != end(); ++g) {
-            count += g->second.size();
-        }
-        return count;
-    }
-
-    // puts alleles into the right bins if they have changed their base (as
-    // occurs in the case of reference alleles)
-    void sortAlleles(void) {
-        for (Sample::iterator g = begin(); g != end(); ++g) {
-            const string& groupBase = g->first;
-            vector<Allele*>& alleles = g->second;
-            for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                const string& base = (*a)->currentBase;
-                if (base != groupBase) {
-                    Sample::iterator g = find(base);
-                    if (g != end()) {
-                        g->second.push_back(*a);
-                    } else {
-                        vector<Allele*> alleles;
-                        alleles.push_back(*a);
-                        insert(begin(), make_pair(base, alleles));
-                    }
-                    *a = NULL;
-                }
-            }
-            alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-        }
-    }
-
-    pair<pair<int, int>, pair<int, int> >
-    baseCount(string refbase, string altbase) {
-
-        int forwardRef = 0;
-        int reverseRef = 0;
-        int forwardAlt = 0;
-        int reverseAlt = 0;
-
-        for (Sample::iterator s = begin(); s != end(); ++s) {
-            vector<Allele*>& alleles = s->second;
-            for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                string base = (*a)->currentBase;
-                AlleleStrand strand = (*a)->strand;
-                if (base == refbase) {
-                    if (strand == STRAND_FORWARD)
-                        ++forwardRef;
-                    else if (strand == STRAND_REVERSE)
-                        ++reverseRef;
-                } else if (base == altbase) {
-                    if (strand == STRAND_FORWARD)
-                        ++forwardAlt;
-                    else if (strand == STRAND_REVERSE)
-                        ++reverseAlt;
-                }
-            }
-        }
-
-        return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
-
-    }
-
-
-    int baseCount(string base, AlleleStrand strand) {
-
-        int count = 0;
-        for (Sample::iterator g = begin(); g != end(); ++g) {
-            vector<Allele*>& alleles = g->second;
-            for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                if ((*a)->currentBase == base && (*a)->strand == strand)
-                    ++count;
-            }
-        }
-        return count;
-
-    }
-
-
-    string json(void) {
-        stringstream out;
-        out << "[";
-        bool first = true;
-        for (map<string, vector<Allele*> >::iterator g = this->begin(); g != this->end(); ++g) {
-            vector<Allele*>& alleles = g->second;
-            for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                if (!first) { out << ","; } else { first = false; }
-                out << (*a)->json();
-            }
-        }
-        out << "]";
-        return out.str();
-    }
-
-};
-
-class Samples : public map<string, Sample> { };
-
 
 void updateAllelesCachedData(vector<Allele*>& alleles);
 
@@ -368,7 +249,6 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
 void filterAlleles(list<Allele*>& alleles, int allowedTypes);
 void removeIndelMaskedAlleles(list<Allele*>& alleles, long double position);
-int countAlleles(Samples& samples);
 int countAlleles(map<string, vector<Allele*> >& sampleGroups);
 int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand);
 pair<pair<int, int>, pair<int, int> >
@@ -393,9 +273,6 @@ bool allelesEquivalent(Allele &a, Allele &b);
 bool allelesSameSample(Allele &a, Allele &b);
 bool allelesEqual(Allele &a, Allele &b);
 
-// using this one...
-void groupAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups);
-
 void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups);
 
 // XXX cleanup
@@ -415,8 +292,6 @@ vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
 Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0);
 
-// filters... maybe move to its own file?
-bool sufficientAlternateObservations(Samples& observations, int mincount, float minfraction);
 
 //AlleleFreeList Allele::_freeList;
 

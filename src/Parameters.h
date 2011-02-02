@@ -43,7 +43,6 @@ public:
     bool useDuplicateReads;      // -E --use-duplicate-reads
     bool suppressOutput;         // -S --suppress-output
     bool reportAllAlternates;    // ...
-    bool bamBayesDataLikelihoods;// -G --factorial-data-likelihoods
     int useBestNAlleles;         // -n --use-best-n-alleles
     bool forceRefAllele;         // -F --force-reference-allele
     bool useRefAllele;           // -U --use-reference-allele
@@ -63,6 +62,7 @@ public:
     int RMU;                     // -U --read-mismatch-limit
     float readMaxMismatchFraction;  // -z --read-max-mismatch-fraction
     int readIndelLimit;          // -e --read-indel-limit
+    float genotypeComboStepMax;  // -^ --genotype-combo-step-max
     int IDW;                     // -I --indel-exclusion-window
     long double TH;              // -T --theta
     long double PVL;             // -P --pvar
@@ -80,6 +80,7 @@ public:
     int I;
     long double minAltFraction;  // -F --min-alternate-fraction
     int minAltCount;             // -C --min-alternate-count
+    int minAltTotal;             // -G --min-alternate-total
     int debuglevel;              // -d --debug increments
     bool debug; // set if debuglevel >=1
     bool debug2; // set if debuglevel >=2

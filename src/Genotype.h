@@ -66,7 +66,6 @@ public:
     string str(void);
     string relativeGenotype(string& refbase, string& altbase);
     bool isHomozygous(void);
-    vector<int> alleleCountsInObservations(Sample& observations);
     int containedAlleleTypes(void);
 
 };
@@ -159,13 +158,15 @@ void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
-    int bandwidth, int banddepth);
+    int bandwidth, int banddepth,
+    float logStepMax);
 
 void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
-    int bandwidth, int banddepth);
+    int bandwidth, int banddepth,
+    float logStepMax);
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
@@ -173,7 +174,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     SampleGenotypesAndProbs& sampleGenotypes,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
-    int bandwidth, int banddepth);
+    int bandwidth, int banddepth,
+    float logStepMax);
 
 vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);
 

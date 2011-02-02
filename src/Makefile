@@ -51,6 +51,7 @@ OBJECTS=BamAlignment.o \
 		Fasta.o \
 		Parameters.o \
 		Allele.o \
+		Sample.o \
 		AlleleParser.o \
 		Utility.o \
 		Genotype.o \
@@ -124,6 +125,9 @@ Parameters.o: Parameters.cpp Parameters.h Version.h
 
 Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
 	$(CC) $(CFLAGS) -c Allele.cpp
+
+Sample.o: Sample.cpp Sample.h
+	$(CC) $(CFLAGS) -c Sample.cpp
 
 Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 	$(CC) $(CFLAGS) -c Genotype.cpp

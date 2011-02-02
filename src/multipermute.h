@@ -130,3 +130,56 @@ std::vector< std::vector<T> > multipermute(std::vector<T>& multiset) {
 
 }
 
+
+template <class T>
+class MultisetPermutations {
+
+public:
+
+    std::vector<T> multiset;
+    ListElement<T> *h, *i, *j, *s, *t;
+    bool firstPermutation;
+
+    MultisetPermutations(std::vector<T>& m_multiset)
+        : multiset(m_multiset)
+        , firstPermutation(true)
+    {
+        h = list_init(multiset);
+        i = h->nth(multiset.size() - 2);
+        j = h->nth(multiset.size() - 1);
+    }
+
+    std::vector<T> next(void) {
+
+        if (firstPermutation) {
+            firstPermutation = false;
+            return linked_list_to_vector(h);
+        }
+
+        while (j->next != NULL || j->value < h->value) {
+            if (j->next != NULL && i->value >= j->next->value) {
+                s = j;
+            } else {
+                s = i;
+            }
+            t = s->next;
+            s->next = t->next;
+            t->next = h;
+            if (t->value < h->value) {
+                i = t;
+            }
+            j = i->next;
+            h = t;
+            return linked_list_to_vector(h);
+        }
+
+        std::vector<T> empty;
+        return empty;
+
+    }
+
+    ~MultisetPermutations(void) {
+        delete h;
+    }
+
+};

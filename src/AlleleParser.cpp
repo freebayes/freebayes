@@ -1409,7 +1409,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
                 removeFilteredAlleles(alleles); // removes alleles which are filtered at this position, 
                                                   // and requeues them for processing by unsetting their 'processed' flag
             }
-            sample.sortAlleles();
+            sample.sortReferenceAlleles();  // put reference alleles into the correct group, according to their current base
         }
     }
 
@@ -1455,8 +1455,9 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
         const string& name = s->first;
         Sample& sample = s->second;
 
-        // move updated alleles to the right bin
-        sample.sortAlleles();
+        // move updated reference alleles to the right bin
+        // everything else will get axed
+        //sample.sortReferenceAlleles();
 
         bool empty = true;
         vector<string> genotypesToErase;
@@ -1526,17 +1527,26 @@ vector<Allele> AlleleParser::genotypeAlleles(
         // for each allele that we're going to evaluate, we have to have at least one supporting read with
         // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
         DEBUG("allele group " << group->first);
+        vector<Allele*>& alleles = group->second;
+        if (alleles.size() < parameters.minAltTotal) {
+            DEBUG2("allele group lacks sufficient observations in the whole population (min-alternate-total)");
+            continue;
+        }
         bool passesFilters = false;
         int qSum = 0;
-        vector<Allele*>& alleles = group->second;
         for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
             DEBUG2("allele " << **a);
             Allele& allele = **a;
             qSum += allele.quality;
+            if (!passesFilters && allele.quality >= parameters.BQL1 && allele.mapQuality >= parameters.MQL1) {
+                passesFilters = true;
+            }
         }
-        Allele& allele = *(alleles.front());
-        int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-        unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length), qSum));
+        if (passesFilters) {
+            Allele& allele = *(alleles.front());
+            int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length), qSum));
+        }
     }
     DEBUG2("found genotype alleles");
 

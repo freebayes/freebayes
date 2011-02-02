@@ -56,12 +56,15 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << endl
         << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">" << endl
         << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">" << endl
-        //<< "##INFO=<ID=AF,Number=1,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
-        << "##INFO=<ID=BCF,Number=2,Type=Integer,Description=\"Forward-strand base count: the number of observations on the forward strand for, the reference, the first alternate, the second alternate, and so on for each alternate\">" << endl
-        << "##INFO=<ID=BCR,Number=2,Type=Integer,Description=\"Reverse-strand base count: the number of observations on the reverse strand for, the reference, the first alternate, the second alternate, and so on for each alternate\">" << endl
+        << "##INFO=<ID=AF,Number=1,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
+        << "##INFO=<ID=SR,Number=1,Type=Integer,Description=\"Number of reference observations by strand, delimited by |: [forward]|[reverse]\">" << endl
+        << "##INFO=<ID=SA,Number=1,Type=Integer,Description=\"Number of alternate observations by strand, delimited by |: [forward]|[reverse]\">" << endl
+        << "##INFO=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
+        << "##INFO=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
         << "##INFO=<ID=SB,Number=1,Type=Float,Description=\"Strand bias for the alternate allele: a number between 0 and 1 representing the ratio of forward strand sequence reads showing the alternate allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
         << "##INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele balance at heterozygous sites: a number between 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
-        << "##INFO=<ID=ABB,Number=2,Type=Integer,Description=\"Allele balance counts: two numbers giving the numbers of sequence reads from apparent heterozygotes which show reference and alternate alleles for the site\">" << endl
+        << "##INFO=<ID=ABR,Number=1,Type=Integer,Description=\"Reference allele balance count: the number of sequence reads from apparent heterozygotes supporting the reference allele\">" << endl
+        << "##INFO=<ID=ABA,Number=1,Type=Integer,Description=\"Alternate allele balance count: the number of sequence reads from apparent heterozygotes supporting the alternate allele\">" << endl
         << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
         << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\">" << endl
         << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
@@ -76,8 +79,8 @@ void vcfHeader(ostream& out,
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
-        << "##FORMAT=<ID=BCF,Number=2,Type=Integer,Description=\"Number of forward-strand reference and alternate allele observations\">" << endl
-        << "##FORMAT=<ID=BCR,Number=2,Type=Integer,Description=\"Number of reverse-strand reference and alternate allele observations\">" << endl
+        << "##FORMAT=<ID=SR,Number=1,Type=Integer,Description=\"Number of reference observations by strand, delimited by |: [forward]|[reverse]\">" << endl
+        << "##FORMAT=<ID=SA,Number=1,Type=Integer,Description=\"Number of alternate observations by strand, delimited by |: [forward]|[reverse]\">" << endl
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
@@ -118,6 +121,8 @@ string vcf(
     int hetReferenceObsCount = 0;
     int hetAlternateObsCount = 0;
     int hetAllObsCount = 0;
+    int altAlleleObservations = 0;
+    int refAlleleObservations = 0;
     pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
     pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
     map<string, pair<int, int> > baseCountsForwardBySample;
@@ -152,6 +157,7 @@ string vcf(
             alternateObsCount += altAndRefCounts.first;
             referenceObsCount += altAndRefCounts.second;
 
+            // TODO cleanup
             pair<pair<int,int>, pair<int,int> > baseCounts = sample.baseCount(refbase, altbase);
             baseCountsForwardBySample[*sampleName] = baseCounts.first;
             baseCountsReverseBySample[*sampleName] = baseCounts.second;
@@ -159,6 +165,8 @@ string vcf(
             baseCountsForwardTotal.second += baseCounts.first.second;
             baseCountsReverseTotal.first += baseCounts.second.first;
             baseCountsReverseTotal.second += baseCounts.second.second;
+            refAlleleObservations += baseCounts.first.first + baseCounts.second.first;
+            altAlleleObservations += baseCounts.first.second + baseCounts.second.second;
         }
     }
 
@@ -209,38 +217,15 @@ string vcf(
         << "DP=" << coverage << ";"
         << "AC=" << alternateCount << ";"
         << "AN=" << alleleCount << ";"
-        //<< "AF=" << (double) alternateCount / (double) alleleCount << ";" // estimated alternate allele frequency in the range (0,1]
-        // strand specific base counts, forward strand, reference and alternate, colon separated, comma separated for each alternate
-        << "BCF=" << baseCountsForwardTotal.first << "," << baseCountsForwardTotal.second << ";"
-        // strand specific base counts, reverse strand, reference and alternate, colon separated, comma separated for each alternate
-        << "BCR=" << baseCountsReverseTotal.first << "," << baseCountsReverseTotal.second << ";"
-        // strand bias for the alternate allele, a number between 0 and 1 representing the (weighted) ratio 
-        // of forward strand sequence reads showing the alternate
-        // allele to all sequence reads showing the alternate allele
+        << "AF=" << (double) alternateCount / (double) alleleCount << ";"
+        << "RA=" << refAlleleObservations << ";"
+        << "AA=" << altAlleleObservations << ";"
+        << "SR=" << baseCountsForwardTotal.first << "|" << baseCountsReverseTotal.first << ";"
+        << "SA=" << baseCountsForwardTotal.second << "|" << baseCountsReverseTotal.second << ";"
         << "SB=" << (double) baseCountsForwardTotal.second / (double) alternateObsCount << ";"
-        // allele balance at heterozygous sites, a number between 0 and 1 representing the weighted ratio of 
-        // reads showing the reference allele to all reads,
-        // restricted to sequence data from individuals who appear
-        // to be heterozygous at this site.
         << "AB=" << ((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ) << ";"
-        // allele balance counts, two numbers, comma separated, giving the numbers of sequence reads
-        // from apparent heterozygotes which show the reference and
-        // alternate alleles for this site.  ignores mapping strand
-        // information.  these could be totals of numbers from the
-        // bc fields for individual genotypes, counting only
-        // individuals who are heterozygous.
-        << "ABB=" << hetReferenceObsCount << "," << hetAlternateObsCount <<  ";"
-        //<< "PRSQ=;" // TODO predicted R-squared number between 0 and 1 which estimates the correlation at 
-                    // each site between imputed genotypes and the actual
-                    // alternate allele counts that would be found if
-                    // experimental genotyping were done on this panel of
-                    // individuals
-        //<< "AVPR=;" // TODO average posterior probability for genotype calls,
-                    // average across all individuals of the posterior probability for the
-                    // most probable discrete genotype call
-        // homopolymer run length.  number of consecutive nucleotides (prior to this position?) in the genome
-        // reference sequence matching the alternate allele, after substituting the
-        // alternate in place of the reference sequence allele
+        << "ABR=" << hetReferenceObsCount <<  ";"
+        << "ABA=" << hetAlternateObsCount <<  ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";";
 
     // allele class
@@ -266,7 +251,7 @@ string vcf(
     }
 
 
-    out << "\t" << "GT:GQ:GL:DP:RA:AA:BCF:BCR";
+    out << "\t" << "GT:GQ:GL:DP:RA:AA:SR:SA";
     // TODO GL, un-normalized data likelihoods for genotypes
 
     // samples
@@ -284,8 +269,8 @@ string vcf(
                 << ":" << sample.observations->observationCount()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first
-                << ":" << sample.observations->baseCount(refbase, STRAND_FORWARD) << "," << sample.observations->baseCount(altbase, STRAND_FORWARD) // TODO
-                << ":" << sample.observations->baseCount(refbase, STRAND_REVERSE) << "," << sample.observations->baseCount(altbase, STRAND_REVERSE) // TODO
+                << ":" << sample.observations->baseCount(refbase, STRAND_FORWARD) << "|" << sample.observations->baseCount(refbase, STRAND_REVERSE) 
+                << ":" << sample.observations->baseCount(altbase, STRAND_FORWARD) << "|" << sample.observations->baseCount(altbase, STRAND_REVERSE) // TODO
                 ;
                 //<< ":" << "GL"  // TODO
         } else {

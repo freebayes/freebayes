@@ -443,19 +443,6 @@ void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vecto
     }
 }
 
-void groupAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups) {
-    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-        Sample& sample = s->second;
-        for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
-            const string& base = g->first;
-            const vector<Allele*>& alleles = g->second;
-            vector<Allele*>& group = alleleGroups[base];
-            group.reserve(group.size() + distance(alleles.begin(), alleles.end()));
-            group.insert(group.end(), alleles.begin(), alleles.end());
-        }
-    }
-}
-
 vector<vector<Allele*> > groupAlleles(map<string, vector<Allele*> > &sampleGroups, bool (*fncompare)(Allele &a, Allele &b)) {
     vector<vector<Allele*> > groups;
     for (map<string, vector<Allele*> >::iterator sg = sampleGroups.begin(); sg != sampleGroups.end(); ++sg) {
@@ -747,50 +734,6 @@ void AlleleFreeList::Purge() {
 }
 */
 
-bool sufficientAlternateObservations(Samples& samples, int mincount, float minfraction) {
-
-    int totalAlternateCount = 0;
-    int totalReferenceCount = 0;
-
-    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-
-        //cerr << s->first << endl;
-        Sample& sample = s->second;
-        int alternateCount = 0;
-        int observationCount = 0;
-
-        for (Sample::iterator group = sample.begin(); group != sample.end(); ++group) {
-            const string& base = group->first;
-            //cerr << base << endl;
-            vector<Allele*>& alleles = group->second;
-            //cerr << alleles.size() << endl;
-            if (alleles.size() == 0)
-                continue;
-            if (alleles.front()->type != ALLELE_REFERENCE) {
-                alternateCount += alleles.size();
-            } else {
-                totalReferenceCount += alleles.size();
-            }
-            observationCount += alleles.size();
-        }
-
-        if (alternateCount >= mincount && ((float) alternateCount / (float) observationCount) >= minfraction)
-            return true;
-        totalAlternateCount += alternateCount;
-    
-    }
-
-    // always analyze if we have more alternate observations than reference observations
-    // this is meant to catch the case in which the reference is the rare allele
-    // it will probably also catch cases in which we have very low coverage
-    if (totalReferenceCount < totalAlternateCount) {
-        return true;
-    }
-
-    return false;
-
-}
-
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes) {
     int allowedTypes = 0;// (numberOfPossibleAlleleTypes, false);
     for (vector<AlleleType>::iterator t = allowedEnumeratedTypes.begin(); t != allowedEnumeratedTypes.end(); ++t) {
@@ -820,19 +763,6 @@ void removeIndelMaskedAlleles(list<Allele*>& alleles, long double position) {
         }
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-
-}
-
-int countAlleles(Samples& samples) {
-
-    int count = 0;
-    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-        Sample& sample = s->second;
-        for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
-            count += sg->second.size();
-        }
-    }
-    return count;
 
 }
 

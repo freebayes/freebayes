@@ -20,6 +20,7 @@
 #include "Parameters.h"
 #include "Utility.h"
 #include "Allele.h"
+#include "Sample.h"
 #include "Fasta.h"
 #include "TryCatch.h"
 #include "BamMultiReader.h"

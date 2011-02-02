@@ -18,16 +18,6 @@ int Genotype::getPloidy(void) {
     return result;
 }
 
-vector<int> Genotype::alleleCountsInObservations(Sample& sample) {
-    vector<int> counts;
-    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
-        int count = 0;
-        Allele& b = i->allele;
-        counts.push_back(sample.observationCount(b));
-    }
-    return counts;
-}
-
 vector<int> Genotype::counts(void) {
     vector<int> counts;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
@@ -320,9 +310,9 @@ map<int, int> GenotypeCombo::countFrequencies(void) {
 }
 
 vector<int> GenotypeCombo::counts(void) {
-    map<string, int> alleleCounts = countAlleles();
+    //map<string, int> alleleCounts = countAlleles();
     vector<int> counts;
-    for (map<string, int>::iterator a = alleleCounts.begin(); a != alleleCounts.end(); ++a) {
+    for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
         counts.push_back(a->second);
     }
     return counts;
@@ -348,7 +338,8 @@ void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
-    int bandwidth, int banddepth) {
+    int bandwidth, int banddepth,
+    float logStepMax) {
 
     int nsamples = sampleGenotypes.size();
 
@@ -425,6 +416,12 @@ bandedGenotypeCombinations(
                             useCombo = false;
                             break;
                         }
+                        // ignore this combo if the swapped genotype has a data likelihood more than logStepMax
+                        // from the best data likelihood.  logStepMax == -1 indicates no filtering
+                        if (offset > 0 && logStepMax >= 0 && s->second.at(0).second - s->second.at(offset).second > logStepMax) {
+                            useCombo = false;
+                            break;
+                        }
                         const pair<Genotype*, long double>& p = s->second.at(offset);
                         // get the old and new genotypes, which we compare to
                         // change the cached counts and probability of the
@@ -459,11 +456,12 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     SampleGenotypesAndProbs& sampleGenotypes,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
-    int bandwidth, int banddepth) {
+    int bandwidth, int banddepth,
+    float logStepMax) {
 
     // obtain the combos
 
-    bandedGenotypeCombinations(combos, sampleGenotypes, bandwidth, banddepth);
+    bandedGenotypeCombinations(combos, sampleGenotypes, bandwidth, banddepth, logStepMax);
 
     // determine which homozygous combos we already have
 
@@ -530,9 +528,9 @@ void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
-    int bandwidth, int banddepth) {
+    int bandwidth, int banddepth, float logStepMax) {
 
-    bandedGenotypeCombinations(combos, sampleGenotypes, bandwidth, banddepth);
+    bandedGenotypeCombinations(combos, sampleGenotypes, bandwidth, banddepth, logStepMax);
     // is there already a homozygous combo?
     bool hasHomozygousCombo = false;
     for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {

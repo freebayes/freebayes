@@ -48,10 +48,6 @@ void Parameters::usage(char** argv) {
          << "                   pass --pvar to FILE." << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
          << "                   at the site is greater than N.  default: 0.0" << endl
-         << "   -G --factorial-data-likelihoods" << endl
-         << "                   Use the factorial/gamma distribution for calculating the" << endl
-         << "                   sampling component of data likelihoods.  Default is to use" << endl
-         << "                   the multinomial distribution." << endl
          << "   -T --theta N    The expected mutation rate or pairwise nucleotide diversity" << endl
          << "                   among the population under analysis.  This serves as the" << endl
          << "                   single parameter to the Ewens Sampling Formula prior model" << endl
@@ -138,6 +134,10 @@ void Parameters::usage(char** argv) {
          << "                   Generate all genotype combinations for which up to this" << endl
          << "                   number of samples have up to their -W'th worst genotype" << endl
          << "                   according to data likelihood.  default: 2" << endl
+         << "   -^ --genotype-combo-step-max N" << endl
+         << "                   When generating genotype combinations, do not include genotypes" << endl
+         << "                   where the genotype data likelihood is log(N) from the highest" << endl
+         << "                   likelihood genotype for that individual.  default: ~unbounded" << endl
          << "   -K --posterior-integration-depth N" << endl
          << "                   Keep this many genotype combinations for calculating genotype" << endl
          << "                   marginal probabilities for each sample and overall variant" << endl
@@ -156,6 +156,10 @@ void Parameters::usage(char** argv) {
          << "                   Require at least this count of observations supporting" << endl
          << "                   an alternate allele within a single individual in order" << endl
          << "                   to evaluate the position.  default: 1" << endl
+         << "   -G --min-alternate-total N" << endl
+         << "                   Require at least this count of observations supporting" << endl
+         << "                   an alternate allele within the total population in order" << endl
+         << "                   to use the allele in analysis.  default: 1" << endl
          << "   -d --debug      Print debugging output." << endl
          << "   -dd             Print more verbose debugging output" << endl
          << endl
@@ -199,7 +203,6 @@ Parameters::Parameters(int argc, char** argv) {
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
     reportAllAlternates = false;
-    bamBayesDataLikelihoods = false;// -G --factorial-data-likelihoods
     useBestNAlleles = 2;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
@@ -219,6 +222,7 @@ Parameters::Parameters(int argc, char** argv) {
     RMU = 10000000;                     // -U --read-mismatch-limit
     readMaxMismatchFraction = 1.0;    //  -z --read-max-mismatch-fraction
     readIndelLimit = 10000000;     // -e --read-indel-limit
+    genotypeComboStepMax = -1.0;                // -^ --genotype-combo-step-max
     IDW = -1;                     // -x --indel-exclusion-window
     TH = 10e-3;              // -T --theta
     PVL = 0.0;             // -P --pvar
@@ -229,6 +233,7 @@ Parameters::Parameters(int argc, char** argv) {
     posteriorIntegrationDepth = 0;
     minAltFraction = 0.0;
     minAltCount = 1;
+    minAltTotal = 1;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -252,7 +257,6 @@ Parameters::Parameters(int argc, char** argv) {
         {"trace", required_argument, 0, 'L'},
         {"failed-alleles", required_argument, 0, 'l'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
-        {"factorial-data-likelihoods", no_argument, 0, 'G'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"use-all-alleles", no_argument, 0, 'N'},
         {"ignore-reference-allele", no_argument, 0, 'Z'},
@@ -270,6 +274,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"read-mismatch-limit", required_argument, 0, 'U'},
         {"read-max-mismatch-fraction", required_argument, 0, 'z'},
         {"read-indel-limit", required_argument, 0, 'e'},
+        {"genotype-combo-step-max", required_argument, 0, '^'},
         {"indels", no_argument, 0, 'i'},
         {"mnps", no_argument, 0, 'X'},
         {"no-snps", no_argument, 0, 'I'},
@@ -281,6 +286,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
+        {"min-alternate-total", required_argument, 0, 'G'},
         {"posterior-integration-depth", required_argument, 0, 'K'},
         {"report-all-alternates", no_argument, 0, '@'},
         {"debug", no_argument, 0, 'd'},
@@ -292,7 +298,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENGZH0dDiI@XJb:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:e:T:P:D:V:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZH0dDiI@XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -374,9 +380,12 @@ Parameters::Parameters(int argc, char** argv) {
                 useBestNAlleles = 0;
                 break;
 
-            // -G --factorial-data-likelihoods
+            // -G --min-alternate-total
             case 'G':
-                bamBayesDataLikelihoods = true;
+                if (!convert(optarg, minAltTotal)) {
+                    cerr << "could not parse min-alternate-total" << endl;
+                    exit(1);
+                }
                 break;
 
             // -n --use-best-n-alleles
@@ -499,6 +508,13 @@ Parameters::Parameters(int argc, char** argv) {
             case 'e':
                 if (!convert(optarg, readIndelLimit)) {
                     cerr << "could not parse read-indel-limit" << endl;
+                    exit(1);
+                }
+                break;
+
+            case '^':
+                if (!convert(optarg, genotypeComboStepMax)) {
+                    cerr << "could not parse genotype-combo-step-max" << endl;
                     exit(1);
                 }
                 break;
