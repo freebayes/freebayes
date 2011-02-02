@@ -90,11 +90,11 @@ void Parameters::usage(char** argv) {
          << "   -R --min-supporting-mapping-quality Q" << endl
          << "                   In order to consider an alternate allele, at least one" << endl
          << "                   supporting alignment must have this mapping quality." << endl
-         << "                   default: 40" << endl
+         << "                   default: 0, unset" << endl
          << "   -S --min-supporting-base-quality Q" << endl
          << "                   In order to consider an alternate allele, at least one" << endl
          << "                   supporting alignment must have this base quality at the" << endl
-         << "                   site of the allele.  default: 30" << endl
+         << "                   site of the allele.  default: 0, unset" << endl
          << "   -U --read-mismatch-limit N" << endl
          << "                   The maximum allowable number of mismatches between an" << endl
          << "                   alignment and the reference where each mismatch has" << endl
@@ -216,8 +216,8 @@ Parameters::Parameters(int argc, char** argv) {
     ploidy = 2;                  // -p --ploidy
     MQL0 = 30;                    // -m --min-mapping-quality
     BQL0 = 20;                    // -q --min-base-quality
-    MQL1 = 40;                    // -R --min-supporting-mapping-quality
-    BQL1 = 30;                    // -S --min-supporting-base-quality
+    MQL1 = 0;                    // -R --min-supporting-mapping-quality
+    BQL1 = 0;                    // -S --min-supporting-base-quality
     BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
     RMU = 10000000;                     // -U --read-mismatch-limit
     readMaxMismatchFraction = 1.0;    //  -z --read-max-mismatch-fraction
