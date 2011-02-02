@@ -322,14 +322,6 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     currentSequenceStart = alignment.Position;
     currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
-    if (currentTarget == NULL) {
-        currentTarget = new BedTarget(currentSequenceName, currentSequenceStart + 1, 0);
-    } else {
-        if (currentSequenceName != currentTarget->seq)
-            currentTarget->seq = currentSequenceName;
-        if (currentSequenceStart + 1 != currentTarget->left)
-            currentTarget->left = currentSequenceStart + 1;
-    }
     DEBUG2("reference.getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
     currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length()));
 }
@@ -437,19 +429,20 @@ void AlleleParser::loadTargets(void) {
                 startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
                 // if we have range dots specified, but no second number, read to the end of sequence
                 if (foundRangeDots + 2 != region.size()) {
-                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // end-inclusive, bed-format
+                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // end-exclusive, bed-format
                 } else {
-                    stopPos = reference.sequenceLength(startSeq);
+                    stopPos = reference.sequenceLength(startSeq) + 1;
                 }
             }
         }
 
-        cerr << "stopPos == " << stopPos << endl;
+        //DEBUG("startPos == " << startPos);
+        //DEBUG("stopPos == " << stopPos);
 
         BedTarget bd(startSeq,
                     (startPos == 1) ? 1 : startPos,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos + 1);
-        DEBUG2("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
+                    (stopPos == -1) ? reference.sequenceLength(startSeq) + 1 : stopPos);
+        DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
 
@@ -555,7 +548,8 @@ bool AlleleParser::inTarget(void) {
         // otherwise, scan through the targets to establish if the coordinate lies within any
         for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
             BedTarget& bd = *e;
-            if (currentTarget->seq == bd.seq && bd.left <= currentPosition && currentPosition < bd.right) {
+            DEBUG(currentTarget->seq << " " << (long int) currentPosition << " ..... " << bd.seq << ":" << bd.left << ".." << bd.right);
+            if (currentTarget->seq == bd.seq && (currentPosition + 1) >= bd.left && (currentPosition + 1) < bd.right) {
                 return true;
             }
         }

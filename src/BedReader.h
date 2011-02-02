@@ -25,7 +25,7 @@ public:
     BedTarget(string s, int l, int r, string d = "")
         : seq(s)
         , left(l)
-        , right(r - 1)
+        , right(r)
         , desc(d)
     { }
 
