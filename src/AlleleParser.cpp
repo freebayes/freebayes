@@ -341,7 +341,7 @@ void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int afte
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
     currentSequence += uppercase(reference.getSubSequence(reference.sequenceNameStartingWith(currentTarget->seq), 
-                                                 (currentTarget->right - 1) + basesAfterCurrentTarget,
+                                                 currentTarget->right + basesAfterCurrentTarget,
                                                  rightExtension));
     basesAfterCurrentTarget += rightExtension;
 }
@@ -439,9 +439,11 @@ void AlleleParser::loadTargets(void) {
         //DEBUG("startPos == " << startPos);
         //DEBUG("stopPos == " << stopPos);
 
+        // REAL BED format is 0 based, half open (end base not included)
+        // range strings are 1-base, like VCF, so we don't go crazy
         BedTarget bd(startSeq,
-                    (startPos == 1) ? 1 : startPos,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) + 1 : stopPos);
+                    (startPos == 1) ? 1 : startPos - 1,
+                    (stopPos == -1) ? reference.sequenceLength(startSeq) + 1 : stopPos - 1);
         DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
@@ -464,7 +466,7 @@ void AlleleParser::loadTargets(void) {
         // check validity of targets wrt. reference
         for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
             BedTarget& bd = *e;
-            if (bd.left < 1 || bd.right >= reference.sequenceLength(bd.seq)) {
+            if (bd.left < 0 || bd.right - 1 > reference.sequenceLength(bd.seq)) {
                 ERROR("Target region coordinates (" << bd.seq << " "
                         << bd.left << " " << bd.right
                         << ") outside of reference sequence bounds ("
@@ -506,7 +508,7 @@ void AlleleParser::loadTargetsFromBams(void) {
     for( ; refIter != refEnd; ++refIter) {
         RefData refData = *refIter;
         string refName = refData.RefName;
-        BedTarget bd(refName, 1, refData.RefLength);
+        BedTarget bd(refName, 0, refData.RefLength + 1); // 0-based half open
         DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
@@ -545,7 +547,7 @@ bool AlleleParser::inTarget(void) {
     if (targets.empty()) {
         return true;  // everything is in target if we don't have targets
     } else {
-        if ((currentPosition + 1) >= currentTarget->left && (currentPosition + 1) < currentTarget->right) {
+        if (currentPosition >= currentTarget->left && currentPosition < currentTarget->right) {
             return true;
         } else {
             return false;
@@ -1232,9 +1234,9 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     DEBUG2("reference sequence id " << refSeqID);
 
     DEBUG2("setting new position " << currentTarget->left);
-    currentPosition = currentTarget->left - 1;
+    currentPosition = currentTarget->left;
 
-    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left - 1, refSeqID, currentTarget->right - 1)) {
+    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right - 1)) {
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
         return false;
     }
@@ -1317,9 +1319,9 @@ bool AlleleParser::toNextPosition(void) {
     }
 
     if (!targets.empty() && (
-                (!parameters.allowIndels && currentPosition >= currentTarget->right - 1)
-                || currentPosition >= currentTarget->right - 0.5)) { // time to move to a new target
-        DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right);
+                (!parameters.allowIndels && currentPosition >= currentTarget->right)
+                || currentPosition > currentTarget->right - 0.5)) { // time to move to a new target
+        DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right + 1);
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
             return false;

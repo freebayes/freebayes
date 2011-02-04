@@ -150,9 +150,6 @@ int main (int argc, char *argv[]) {
         // only evaluate alleles with at least one supporting read with mapping
         // quality (MQL1) and base quality (BQL1)
 
-        //map<string, vector<Allele*> > samples = groupAllelesBySample(alleles);
-        //DEBUG2("grouped alleles by sample");
-
         if (!sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
             DEBUG("insufficient alternate observations");
             continue;

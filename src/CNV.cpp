@@ -7,7 +7,7 @@ bool CNVMap::load(string const& filename) {
         while (getline (cnvFile, line)) {
             vector<string> fields = split(line, " \t");
             // note conversion between 1 and 0 based
-            setPloidy(fields.at(3), fields.at(0), atol(fields.at(1).c_str()) - 1, atol(fields.at(2).c_str()) - 1, atoi(fields.at(4).c_str()));
+            setPloidy(fields.at(3), fields.at(0), atol(fields.at(1).c_str()), atol(fields.at(2).c_str()), atoi(fields.at(4).c_str()));
         }
     } else {
         return false;
