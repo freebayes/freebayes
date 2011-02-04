@@ -545,16 +545,12 @@ bool AlleleParser::inTarget(void) {
     if (targets.empty()) {
         return true;  // everything is in target if we don't have targets
     } else {
-        // otherwise, scan through the targets to establish if the coordinate lies within any
-        for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
-            BedTarget& bd = *e;
-            DEBUG(currentTarget->seq << " " << (long int) currentPosition << " ..... " << bd.seq << ":" << bd.left << ".." << bd.right);
-            if (currentTarget->seq == bd.seq && (currentPosition + 1) >= bd.left && (currentPosition + 1) < bd.right) {
-                return true;
-            }
+        if ((currentPosition + 1) >= currentTarget->left && (currentPosition + 1) < currentTarget->right) {
+            return true;
+        } else {
+            return false;
         }
     }
-    return false;
 }
 
 // initialization function
@@ -759,12 +755,14 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         //cerr << "readSequence " << readSequence << endl;
                         string qualstr = rQual.substr(rp - length, length);
                         // record 'reference' allele for last matching region
-                        ra.alleles.push_back(Allele(ALLELE_REFERENCE,
-                                currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
-                                matchingSequence, readSequence, sampleName, alignment.Name,
-                                !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                                alignment.MapQuality));
-                        DEBUG2(ra.alleles.back());
+                        if (allATGC(readSequence)) {
+                            ra.alleles.push_back(Allele(ALLELE_REFERENCE,
+                                    currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
+                                    matchingSequence, readSequence, sampleName, alignment.Name,
+                                    !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
+                                    alignment.MapQuality));
+                            DEBUG2(ra.alleles.back());
+                        }
                     }
                     // register mismatch
                     if (qual >= parameters.BQL2) {
@@ -787,10 +785,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     string qualstr = rQual.substr(rp - length, length);
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                     long double lqual = sumQuality(qualstr);
-                    ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
-                                &currentReferenceBase, length, matchingSequence, readSequence,
-                                sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
-                    DEBUG2(ra.alleles.back());
+                    if (allATGC(readSequence)) {
+                        ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
+                                    &currentReferenceBase, length, matchingSequence, readSequence,
+                                    sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                        DEBUG2(ra.alleles.back());
+                    }
                 }
 
                 // update positions
@@ -807,22 +807,26 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 string qualstr = rQual.substr(rp - length, length);
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                 long double lqual = sumQuality(qualstr);
-                ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
-                            &currentReferenceBase, length, matchingSequence, readSequence,
-                            sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
-                DEBUG2(ra.alleles.back());
+                if (allATGC(readSequence)) {
+                    ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
+                                &currentReferenceBase, length, matchingSequence, readSequence,
+                                sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                    DEBUG2(ra.alleles.back());
+                }
             // or, if we are not in a mismatch, construct the last reference allele of the match
             } else if (firstMatch < csp) {
                 int length = csp - firstMatch;
                 string matchingSequence = currentSequence.substr(csp - length, length);
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
-                ra.alleles.push_back(Allele(ALLELE_REFERENCE,
-                        currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
-                        matchingSequence, readSequence, sampleName, alignment.Name,
-                        !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                        alignment.MapQuality));
-                DEBUG2(ra.alleles.back());
+                if (allATGC(readSequence)) {
+                    ra.alleles.push_back(Allele(ALLELE_REFERENCE,
+                            currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length,
+                            matchingSequence, readSequence, sampleName, alignment.Name,
+                            !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
+                            alignment.MapQuality));
+                    DEBUG2(ra.alleles.back());
+                }
             }
         } else if (t == 'D') { // deletion
 
@@ -873,12 +877,15 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 }
             }
 
-            ra.alleles.push_back(Allele(ALLELE_DELETION,
-                    currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l,
-                    currentSequence.substr(csp, l), "", sampleName, alignment.Name,
-                    !alignment.IsReverseStrand(), qual, qualstr,
-                    alignment.MapQuality));
-            DEBUG2(ra.alleles.back());
+            string refseq = currentSequence.substr(csp, l);
+            if (allATGC(refseq)) {
+                ra.alleles.push_back(Allele(ALLELE_DELETION,
+                        currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l,
+                        refseq, "", sampleName, alignment.Name,
+                        !alignment.IsReverseStrand(), qual, qualstr,
+                        alignment.MapQuality));
+                DEBUG2(ra.alleles.back());
+            }
             ++ra.indelCount;
 
             sp += l;  // update sample position
@@ -925,11 +932,14 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 indelMask[sp - alignment.Position] = true;
             }
 
-            ra.alleles.push_back(Allele(ALLELE_INSERTION,
-                    currentTarget->seq, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", rDna.substr(rp, l),
-                    sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
-                    qualstr, alignment.MapQuality));
-            DEBUG2(ra.alleles.back());
+            string readseq = rDna.substr(rp, l);
+            if (allATGC(readseq)) {
+                ra.alleles.push_back(Allele(ALLELE_INSERTION,
+                        currentTarget->seq, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", readseq,
+                        sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
+                        qualstr, alignment.MapQuality));
+                DEBUG2(ra.alleles.back());
+            }
             ++ra.indelCount;
 
             rp += l;

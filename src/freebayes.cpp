@@ -101,8 +101,9 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("at start of main loop");
 
-        // don't process reference N's
-        if (parser->currentReferenceBaseString() == "N") {
+        // don't process non-ATGC's
+        string cb = parser->currentReferenceBaseString();
+        if (cb != "A" && cb != "T" && cb != "C" && cb != "G") {
             DEBUG2("current reference base is N");
             continue;
         }
@@ -126,7 +127,7 @@ int main (int argc, char *argv[]) {
             DEBUG2("after trace generation");
         }
 
-        if (parameters.useStdin && !parser->inTarget()) {
+        if (!parser->inTarget()) {
             DEBUG("position: " << parser->currentTarget->seq << ":" << (long unsigned int) parser->currentPosition + 1
                     << " is not inside any targets, skipping");
             continue;

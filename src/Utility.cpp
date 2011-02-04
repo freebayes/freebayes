@@ -112,6 +112,16 @@ bool stringInVector(string item, vector<string> items) {
     return false;
 }
 
+bool allATGC(string& s) {
+    for (string::iterator c = s.begin(); c != s.end(); ++c) {
+        char b = *c;
+        if (b != 'A' && b != 'T' && b != 'G' && b != 'C') {
+            return false;
+        }
+    }
+    return true;
+}
+
 int upper(int c) {
     return toupper((unsigned char) c);
 }
