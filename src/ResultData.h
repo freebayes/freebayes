@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <ostream>
+#include <iomanip>
 #include <time.h>
 #include "Genotype.h"
 #include "Allele.h"

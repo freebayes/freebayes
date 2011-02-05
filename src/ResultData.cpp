@@ -206,13 +206,16 @@ string vcf(
     //string refbase = parser->currentReferenceBase();
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
+    //out.setf(ios::fixed,ios::floatfield);
+    out.precision(3);
     out << parser->currentTarget->seq << "\t"
         << variantPosition + 1 << "\t"
         << "." << "\t"
         << referenceSequence << "\t"
         << alternateSequence << "\t"
-        << float2phred(1 - comboProb) << "\t"
-        << "." << "\t" // filter, no filter applied
+        << float2phred(1 - comboProb) << "\t";
+    out.precision(5);
+    out << "." << "\t" // filter, no filter applied
         << "NS=" << samplesWithData << ";"
         << "DP=" << coverage << ";"
         << "AC=" << alternateCount << ";"

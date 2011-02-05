@@ -20,9 +20,9 @@ long double lnqualityChar2ShortInt(char c);
 char qualityInt2Char(short i);
 //long double phred2float(int qual);
 long double phred2ln(int qual);
-int ln2phred(long double prob);
+long double ln2phred(long double prob);
 long double phred2float(int qual);
-int float2phred(long double prob);
+long double float2phred(long double prob);
 long double powln(long double m, int n);
 // here 'joint' means 'probability that we have a vector entirely composed of true bases'
 long double jointQuality(const std::vector<short>& quals);

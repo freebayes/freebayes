@@ -26,7 +26,7 @@ long double phred2ln(int qual) {
     return M_LN10 * qual * -.1;
 }
 
-int ln2phred(long double prob) {
+long double ln2phred(long double prob) {
     return -10 * M_LOG10E * prob;
 }
 
@@ -34,10 +34,10 @@ long double phred2float(int qual) {
     return pow(10,qual * -.1);
 }
 
-int float2phred(long double prob) {
+long double float2phred(long double prob) {
     if (prob == 1)
         return 99;
-    int p = -10 * (long double) log10(prob);
+    long double p = -10 * (long double) log10(prob);
     if (p < 0 || p > 99) // int overflow guard
         return 99;
     else
