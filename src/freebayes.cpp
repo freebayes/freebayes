@@ -346,15 +346,30 @@ int main (int argc, char *argv[]) {
 
         long double pVar = 1.0;
 
+        bool hasHetCombo = false;
+        GenotypeCombo* bestCombo = NULL;
+        long double bestComboProb;
+
         for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
             if (gc->combo->isHomozygous()) {
                 pVar -= safe_exp(gc->priorComboProb - posteriorNormalizer);
+            } else if (!hasHetCombo) {
+                bestCombo = gc->combo;
+                bestComboProb = genotypeComboProbs.front().priorComboProb;
+                hasHetCombo = true;
             }
         }
+
+        if (!hasHetCombo) {
+            bestCombo = genotypeComboProbs.front().combo;
+            bestComboProb = genotypeComboProbs.front().priorComboProb;
+        }
+
         DEBUG2("calculated pVar");
 
-        GenotypeCombo& bestGenotypeCombo = *genotypeComboProbs.front().combo; //*besthc;
-        long double bestGenotypeComboProb = genotypeComboProbs.front().priorComboProb;
+        // get the best heteroz
+        GenotypeCombo& bestGenotypeCombo = *bestCombo; //*besthc;
+        long double bestGenotypeComboProb = bestComboProb;
         long double bestGenotypeComboAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(bestGenotypeCombo.countFrequencies(), parameters.TH));
 
         if (parameters.trace) {
@@ -410,7 +425,7 @@ int main (int argc, char *argv[]) {
                 json(out, results, parser);
                 out << "}" << endl;
             }
-            if (pVar >= parameters.PVL && !bestGenotypeCombo.isHomozygous()) {
+            if (pVar >= parameters.PVL) {
                 if (parameters.output == "vcf") {
                     string referenceBase(1, parser->currentReferenceBase);
                     // get the unique alternate alleles in this combo, sorted by frequency in the combo
