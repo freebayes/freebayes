@@ -142,6 +142,9 @@ int main (int argc, char *argv[]) {
             //cerr << "no alleles found at " << parser->currentTarget->seq << ":" << parser->currentPosition << endl;
             DEBUG("no alleles left at this site after filtering");
             continue;
+        } else if (coverage < parameters.minCoverage) {
+            DEBUG("post-filtering coverage of " << coverage << " is less than --min-coverage of " << parameters.minCoverage);
+            continue;
         }
 
         DEBUG2("coverage " << parser->currentTarget->seq << ":" << parser->currentPosition << " == " << coverage);

@@ -234,6 +234,10 @@ string vcf(
     // allele class
     if (altAllele.type == ALLELE_DELETION) {
         out << "DEL=" << altAllele.length;
+        // what is the class of deletion
+        // microsatellite repeat?
+        // "novel"?
+        // how large is the repeat, if there is one?
     } else if (altAllele.type == ALLELE_INSERTION) {
         out << "INS=" << altAllele.length;
     } else if (altAllele.type == ALLELE_SNP) {

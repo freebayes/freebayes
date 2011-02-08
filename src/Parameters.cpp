@@ -160,6 +160,8 @@ void Parameters::usage(char** argv) {
          << "                   Require at least this count of observations supporting" << endl
          << "                   an alternate allele within the total population in order" << endl
          << "                   to use the allele in analysis.  default: 1" << endl
+         << "   -! --min-coverage N" << endl
+         << "                   Require at least this coverage to process a site.  default: 0" << endl
          << "   -d --debug      Print debugging output." << endl
          << "   -dd             Print more verbose debugging output" << endl
          << endl
@@ -234,6 +236,7 @@ Parameters::Parameters(int argc, char** argv) {
     minAltFraction = 0.0;
     minAltCount = 1;
     minAltTotal = 1;
+    minCoverage = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -287,6 +290,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
         {"min-alternate-total", required_argument, 0, 'G'},
+        {"min-coverage", required_argument, 0, '!'},
         {"posterior-integration-depth", required_argument, 0, 'K'},
         {"report-all-alternates", no_argument, 0, '@'},
         {"debug", no_argument, 0, 'd'},
@@ -384,6 +388,14 @@ Parameters::Parameters(int argc, char** argv) {
             case 'G':
                 if (!convert(optarg, minAltTotal)) {
                     cerr << "could not parse min-alternate-total" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -! --min-coverage
+            case '!':
+                if (!convert(optarg, minCoverage)) {
+                    cerr << "could not parse min-coverage" << endl;
                     exit(1);
                 }
                 break;
