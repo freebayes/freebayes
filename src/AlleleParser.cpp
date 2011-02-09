@@ -340,7 +340,7 @@ void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int afte
 
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
-    currentSequence += uppercase(reference.getSubSequence(reference.sequenceNameStartingWith(currentTarget->seq), 
+    currentSequence += uppercase(reference.getSubSequence(reference.sequenceNameStartingWith(currentSequenceName), 
                                                  currentTarget->right + basesAfterCurrentTarget,
                                                  rightExtension));
     basesAfterCurrentTarget += rightExtension;
@@ -508,7 +508,7 @@ void AlleleParser::loadTargetsFromBams(void) {
     for( ; refIter != refEnd; ++refIter) {
         RefData refData = *refIter;
         string refName = refData.RefName;
-        BedTarget bd(refName, 0, refData.RefLength + 1); // 0-based half open
+        BedTarget bd(refName, 0, refData.RefLength); // 0-based half open
         DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
@@ -720,7 +720,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     cerr << "Exception: Cannot read past the end of the alignment's sequence." << endl
                          << alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
-                         << currentTarget->seq << ":" << (long unsigned int) currentPosition + 1 << endl;
+                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl;
                     //abort();
                     goto bailout;
                 }
@@ -736,7 +736,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
                          << alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
-                         << currentTarget->seq << ":" << (long unsigned int) currentPosition + 1 << endl;
+                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl;
                     //abort();
                     goto bailout;
                 }
@@ -759,7 +759,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         // record 'reference' allele for last matching region
                         if (allATGC(readSequence)) {
                             ra.alleles.push_back(Allele(ALLELE_REFERENCE,
-                                    currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length, 
+                                    currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
                                     matchingSequence, readSequence, sampleName, alignment.Name,
                                     !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                                     alignment.MapQuality));
@@ -788,7 +788,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                     long double lqual = sumQuality(qualstr);
                     if (allATGC(readSequence)) {
-                        ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
+                        ra.alleles.push_back(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
                                     &currentReferenceBase, length, matchingSequence, readSequence,
                                     sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                         DEBUG2(ra.alleles.back());
@@ -810,7 +810,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                 long double lqual = sumQuality(qualstr);
                 if (allATGC(readSequence)) {
-                    ra.alleles.push_back(Allele(mismatchtype, currentTarget->seq, sp - length, &currentPosition,
+                    ra.alleles.push_back(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
                                 &currentReferenceBase, length, matchingSequence, readSequence,
                                 sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                     DEBUG2(ra.alleles.back());
@@ -823,7 +823,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 string qualstr = rQual.substr(rp - length, length);
                 if (allATGC(readSequence)) {
                     ra.alleles.push_back(Allele(ALLELE_REFERENCE,
-                            currentTarget->seq, sp - length, &currentPosition, &currentReferenceBase, length,
+                            currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
                             matchingSequence, readSequence, sampleName, alignment.Name,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                             alignment.MapQuality));
@@ -882,7 +882,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             string refseq = currentSequence.substr(csp, l);
             if (allATGC(refseq)) {
                 ra.alleles.push_back(Allele(ALLELE_DELETION,
-                        currentTarget->seq, sp, &currentPosition, &currentReferenceBase, l,
+                        currentSequenceName, sp, &currentPosition, &currentReferenceBase, l,
                         refseq, "", sampleName, alignment.Name,
                         !alignment.IsReverseStrand(), qual, qualstr,
                         alignment.MapQuality));
@@ -937,7 +937,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             string readseq = rDna.substr(rp, l);
             if (allATGC(readseq)) {
                 ra.alleles.push_back(Allele(ALLELE_INSERTION,
-                        currentTarget->seq, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", readseq,
+                        currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", readseq,
                         sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                         qualstr, alignment.MapQuality));
                 DEBUG2(ra.alleles.back());
@@ -1057,7 +1057,7 @@ void AlleleParser::updateAlignmentQueue(void) {
                 continue;
 
             // skip alignments which are non-primary
-            if (!currentAlignment.IsPrimaryAlignment())
+            if (!currentAlignment.IsPrimaryAlignment()) // TODO add flag to optionally allow this
                 continue;
 
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
@@ -1229,7 +1229,9 @@ bool AlleleParser::loadTarget(BedTarget* target) {
             currentTarget->right);
     DEBUG2("loading target reference subsequence");
 
-    int refSeqID = bamMultiReader.GetReferenceID(currentTarget->seq);
+    currentSequenceName = currentTarget->seq;
+
+    int refSeqID = bamMultiReader.GetReferenceID(currentSequenceName);
 
     DEBUG2("reference sequence id " << refSeqID);
 
@@ -1267,7 +1269,11 @@ bool AlleleParser::getFirstAlignment(void) {
     if (hasAlignments) {
         DEBUG2("got first alignment in target region");
     } else {
-        ERROR("Could not find any mapped reads in target region " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
+        if (currentTarget != NULL) {
+            ERROR("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right);
+        } else {
+            ERROR("Could not find any mapped reads in target region " << currentSequenceName);
+        }
         return false;
     }
 
@@ -1304,7 +1310,7 @@ void AlleleParser::clearRegisteredAlignments(void) {
 // if none exist, return false
 bool AlleleParser::toNextPosition(void) {
 
-    if (currentTarget == NULL) {
+    if (currentSequenceName.empty()) {
         DEBUG2("loading first target");
         if (!toNextTarget()) {
             return false;
@@ -1351,7 +1357,7 @@ bool AlleleParser::toNextPosition(void) {
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
 
-    DEBUG2("processing position " << (long unsigned int) currentPosition + 1 << " in sequence " << currentTarget->seq);
+    DEBUG2("processing position " << (long unsigned int) currentPosition + 1 << " in sequence " << currentSequenceName);
     updateAlignmentQueue();
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles(); // this removes unused left-flanking sequence
@@ -1379,7 +1385,6 @@ bool AlleleParser::dummyProcessNextTarget(void) {
     while (bamMultiReader.GetNextAlignment(currentAlignment)) {
     }
 
-    //DEBUG2("processing position " << currentPosition + 1 << " in sequence " << currentTarget->seq);
     return true;
 }
 
@@ -1426,8 +1431,8 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
     if (parameters.useRefAllele) {
         if (currentReferenceAllele != NULL) delete currentReferenceAllele; // clean up after last position
         currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
-        samples[currentTarget->seq].clear();
-        samples[currentTarget->seq][currentReferenceAllele->currentBase].push_back(currentReferenceAllele);
+        samples[currentSequenceName].clear();
+        samples[currentSequenceName][currentReferenceAllele->currentBase].push_back(currentReferenceAllele);
         //alleles.push_back(currentReferenceAllele);
     }
 
@@ -1500,11 +1505,11 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
 Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string base = string(1, currentReferenceBase);
     //string name = reference.filename;
-    string name = currentTarget->seq; // this behavior matches old bambayes
+    string name = currentSequenceName; // this behavior matches old bambayes
     string baseQstr = "";
     //baseQstr += qualityInt2Char(baseQ);
     Allele* allele = new Allele(ALLELE_REFERENCE, 
-            currentTarget->seq,
+            currentSequenceName,
             currentPosition,
             &currentPosition, 
             &currentReferenceBase,
@@ -1679,4 +1684,58 @@ int AlleleParser::homopolymerRunRight(string altbase) {
     }
     return runlength;
 
+}
+
+// returns the number of repeats for each subsequence at the current position
+// of size up to maxsize.  filters out repeat sequences which are redundant
+// (e.g. TATA -> TA)
+map<string, int> AlleleParser::repeatCounts(int maxsize) {
+    map<string, int> counts;
+    int position = currentPosition;
+    int sequenceposition = position - currentSequenceStart;
+    for (int i = 1; i <= maxsize; ++i) {
+        // subseq here i bases
+        string seq = currentSequence.substr(sequenceposition, i);
+        // go left.
+        int j = sequenceposition - i;
+        int left = 0;
+        while (j - i >= 0 && seq == currentSequence.substr(j, i)) {
+            j -= i;
+            ++left;
+        }
+        // go right.
+        j = sequenceposition + i;
+        int right = 0;
+        while (j + i < currentSequence.size() && seq == currentSequence.substr(j, i)) {
+            j += i;
+            ++right;
+        }
+        // if we went left and right a non-zero number of times, 
+        if (right > 0 || left > 0) {
+            counts[seq] = right + left + 1;
+        }
+    }
+
+    // filter out redundant repeat information
+    if (counts.size() > 1) {
+        map<string, int> filteredcounts;
+        map<string, int>::iterator c = counts.begin();
+        string prev = c->first;
+        filteredcounts[prev] = c->second;  // shortest sequence
+        ++c;
+        for (; c != counts.end(); ++c) {
+            int i = 0;
+            string seq = c->first;
+            while (i + prev.length() <= seq.length() && seq.substr(i, prev.length()) == prev) {
+                i += prev.length();
+            }
+            if (i < seq.length()) {
+                filteredcounts[seq] = c->second;
+                prev = seq;
+            }
+        }
+        return filteredcounts;
+    } else {
+        return counts;
+    }
 }

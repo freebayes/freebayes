@@ -81,6 +81,7 @@ public:
             string referenceBase,
             string alternateBase,
             Allele& altAllele,
+            map<string, int> repeats,
             vector<string>& samples,
             int coverage,
             GenotypeCombo& genotypeCombo,

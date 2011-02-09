@@ -96,6 +96,7 @@ string vcf(
         string refbase,
         string altbase,
         Allele& altAllele,
+        map<string, int> repeats,
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
@@ -203,12 +204,13 @@ string vcf(
             break;
     }
 
+
     //string refbase = parser->currentReferenceBase();
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
     //out.setf(ios::fixed,ios::floatfield);
     out.precision(3);
-    out << parser->currentTarget->seq << "\t"
+    out << parser->currentSequenceName << "\t"
         << variantPosition + 1 << "\t"
         << "." << "\t"
         << referenceSequence << "\t"
@@ -230,6 +232,16 @@ string vcf(
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";";
+
+    if (!repeats.empty()) {
+        stringstream repeatsstr;
+        for (map<string, int>::iterator c = repeats.begin(); c != repeats.end(); ++c) {
+            repeatsstr << c->first << ":" << c->second << "|";
+        }
+        string repeatstr = repeatsstr.str();
+        repeatstr = repeatstr.substr(0, repeatstr.size() - 1);
+        out << "REPEAT=" << repeatstr << ";";
+    }
 
     // allele class
     if (altAllele.type == ALLELE_DELETION) {

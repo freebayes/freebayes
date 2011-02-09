@@ -118,7 +118,7 @@ int main (int argc, char *argv[]) {
                     vector<Allele*>& group = g->second;
                     for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
                         Allele& allele = **a;
-                        parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1  
+                        parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1  
                             << ",allele," << name << "," << allele.readID << "," << allele.base() << ","
                             << allele.currentQuality() << "," << allele.mapQuality << endl;
                     }
@@ -128,18 +128,17 @@ int main (int argc, char *argv[]) {
         }
 
         if (!parser->inTarget()) {
-            DEBUG("position: " << parser->currentTarget->seq << ":" << (long unsigned int) parser->currentPosition + 1
+            DEBUG("position: " << parser->currentSequenceName << ":" << (long unsigned int) parser->currentPosition + 1
                     << " is not inside any targets, skipping");
             continue;
         }
 
         int coverage = countAlleles(samples);
 
-        DEBUG("position: " << parser->currentTarget->seq << ":" << (long unsigned int) parser->currentPosition + 1 << " coverage: " << coverage);
+        DEBUG("position: " << parser->currentSequenceName << ":" << (long unsigned int) parser->currentPosition + 1 << " coverage: " << coverage);
 
         // skips 0-coverage regions
         if (coverage == 0) {
-            //cerr << "no alleles found at " << parser->currentTarget->seq << ":" << parser->currentPosition << endl;
             DEBUG("no alleles left at this site after filtering");
             continue;
         } else if (coverage < parameters.minCoverage) {
@@ -147,7 +146,7 @@ int main (int argc, char *argv[]) {
             continue;
         }
 
-        DEBUG2("coverage " << parser->currentTarget->seq << ":" << parser->currentPosition << " == " << coverage);
+        DEBUG2("coverage " << parser->currentSequenceName << ":" << parser->currentPosition << " == " << coverage);
 
         // establish a set of possible alternate alleles to evaluate at this location
         // only evaluate alleles with at least one supporting read with mapping
@@ -174,12 +173,12 @@ int main (int argc, char *argv[]) {
             sampleListPlusRef.push_back(*s);
         }
         if (parameters.useRefAllele)
-            sampleListPlusRef.push_back(parser->currentTarget->seq);
+            sampleListPlusRef.push_back(parser->currentSequenceName);
 
         vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, allGenotypeAlleles);
 
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
-            DEBUG2("no alternate genotype alleles passed filters at " << parser->currentTarget->seq << ":" << parser->currentPosition);
+            DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;
         }
         DEBUG2("genotype alleles: " << genotypeAlleles);
@@ -226,7 +225,7 @@ int main (int argc, char *argv[]) {
 
             if (parameters.trace) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
-                    parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ","
+                    parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
                         << sampleName << ",likelihood," << *(p->first) << "," << p->second << endl;
                 }
             }
@@ -241,7 +240,7 @@ int main (int argc, char *argv[]) {
         // and also outputs the list of samples
         vector<bool> samplesWithData;
         if (parameters.trace) {
-            parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ",samples,";
+            parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",samples,";
             for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
                 if (parameters.trace) parser->traceFile << *s << ":";
                 Results::iterator r = results.find(*s);
@@ -325,7 +324,7 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("got posterior normalizer");
         if (parameters.trace) {
-            parser->traceFile << parser->currentTarget->seq << "," 
+            parser->traceFile << parser->currentSequenceName << "," 
                 << (long unsigned int) parser->currentPosition + 1 << ",posterior_normalizer," << posteriorNormalizer << endl;
         }
 
@@ -386,7 +385,7 @@ int main (int argc, char *argv[]) {
                 long double priorlnG_Af = gc->priorProbGenotypeComboG_Af;
                 long double priorlnAf = gc->priorProbGenotypeComboAf;
 
-                parser->traceFile << parser->currentTarget->seq << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
+                parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
 
                 int j = 0;
                 GenotypeCombo::iterator i = gc->combo->begin();
@@ -417,7 +416,7 @@ int main (int argc, char *argv[]) {
 
             if (parameters.output == "json") {
                 out << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
-                    << ", \"sequence\": " << parser->currentTarget->seq
+                    << ", \"sequence\": " << parser->currentSequenceName
                     << ", \"best_genotype_combo\":" << bestGenotypeCombo
                     << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
                     << ", \"best_genotype_combo_ewens_sampling_probability\":" << bestGenotypeComboAlleleSamplingProb
@@ -431,6 +430,7 @@ int main (int argc, char *argv[]) {
             if (pVar >= parameters.PVL) {
                 if (parameters.output == "vcf") {
                     string referenceBase(1, parser->currentReferenceBase);
+                    map<string, int> repeats = parser->repeatCounts(12);
                     // get the unique alternate alleles in this combo, sorted by frequency in the combo
                     vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
                     if (parameters.reportAllAlternates) {
@@ -441,6 +441,7 @@ int main (int argc, char *argv[]) {
                                     referenceBase,
                                     alt.base(),
                                     alt,
+                                    repeats,
                                     parser->sampleList,
                                     coverage,
                                     bestGenotypeCombo,
@@ -456,6 +457,7 @@ int main (int argc, char *argv[]) {
                                 referenceBase,
                                 bestAlt.base(),
                                 bestAlt,
+                                repeats,
                                 parser->sampleList,
                                 coverage,
                                 bestGenotypeCombo,
@@ -472,7 +474,7 @@ int main (int argc, char *argv[]) {
                     if (ga->type == ALLELE_REFERENCE)
                         continue;
                     parser->failedFile
-                        << parser->currentTarget->seq << "\t"
+                        << parser->currentSequenceName << "\t"
                         << position << "\t"
                         << position + ga->length << "\t"
                         << *ga << endl;

@@ -27,7 +27,7 @@
 #include "Genotype.h"
 #include "CNV.h"
 
-#define CACHED_REFERENCE_WINDOW 10
+#define CACHED_REFERENCE_WINDOW 100
 
 using namespace std;
 using namespace BamTools;
@@ -173,6 +173,7 @@ public:
     Allele* alternateAllele(int mapQ, int baseQ);
     int homopolymerRunLeft(string altbase);
     int homopolymerRunRight(string altbase);
+    map<string, int> repeatCounts(int maxsize);
 
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters
@@ -182,6 +183,7 @@ public:
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
+    bool hasTarget;
     BedTarget* currentTarget;
     long double currentPosition;  // 0-based current position
     char currentReferenceBase;
@@ -197,6 +199,8 @@ public:
     // utility
     bool isCpG(string& altbase);
 
+    string currentSequenceName;
+
 private:
 
     bool justSwitchedTargets;  // to trigger clearing of queues, maps and such holding Allele*'s on jump
@@ -206,7 +210,6 @@ private:
 
     //BedTarget currentSequenceBounds;
     long int currentSequenceStart;
-    string currentSequenceName;
 
     bool hasMoreAlignments;
 
