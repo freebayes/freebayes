@@ -316,7 +316,6 @@ void AlleleParser::loadFastaReference(void) {
 
 // alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
-    assert(parameters.useStdin); // this should only be used in the case that we are reading from stdin
     DEBUG2("loading reference sequence overlapping first alignment");
     currentPosition = alignment.Position;
     currentSequenceStart = alignment.Position;
@@ -489,10 +488,6 @@ void AlleleParser::loadTargets(void) {
 
         DEBUG("done");
 
-    }
-
-    if (!parameters.useStdin && targets.empty()) {
-        loadTargetsFromBams();
     }
 
     DEBUG("Number of target regions: " << targets.size());
