@@ -102,6 +102,9 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         int steppos, readsteppos;
         IndelAllele& indel = *id;
         int i = 1;
+        if (!indel.homopolymer() && indel.length % 2 != 0) {
+            i = indel.length;
+        }
         while (i <= indel.length) {
 
             int steppos = indel.position - i;
