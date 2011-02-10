@@ -87,6 +87,8 @@ public:
     bool debug; // set if debuglevel >=1
     bool debug2; // set if debuglevel >=2
 
+    bool showReferenceRepeats;
+
     // functions
     Parameters(int argc, char** argv);
     void usage(char **argv);

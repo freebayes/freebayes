@@ -43,6 +43,9 @@ void Parameters::usage(char** argv) {
          << "   -@ --report-all-alternates" << endl
          << "                   Report (in non-standard VCF format) each alternate allele" << endl
          << "                   at a site on its own line of VCF." << endl
+         << "   -_ --show-reference-repeats" << endl
+         << "                   Calculate and show information about reference repeats in" << endl
+         << "                   the VCF output." << endl
          << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
          << "   -l --failed-alleles FILE" << endl
          << "                   Write a BED file of the analyzed positions which do not" << endl
@@ -250,6 +253,7 @@ Parameters::Parameters(int argc, char** argv) {
     debug = false;
     debug2 = false;
 
+    showReferenceRepeats = false;
 
     int c; // counter for getopt
 
@@ -303,6 +307,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-coverage", required_argument, 0, '!'},
         {"posterior-integration-depth", required_argument, 0, 'K'},
         {"report-all-alternates", no_argument, 0, '@'},
+        {"show-reference-repeats", no_argument, 0, '_'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -312,7 +317,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZH0dDiI@XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZH0dDiI@_XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -646,6 +651,10 @@ Parameters::Parameters(int argc, char** argv) {
 
             case '@':
                 reportAllAlternates = true;
+                break;
+
+            case '_':
+                showReferenceRepeats = true;
                 break;
 
             // -d --debug

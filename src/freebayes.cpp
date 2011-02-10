@@ -430,7 +430,10 @@ int main (int argc, char *argv[]) {
             if (pVar >= parameters.PVL) {
                 if (parameters.output == "vcf") {
                     string referenceBase(1, parser->currentReferenceBase);
-                    map<string, int> repeats = parser->repeatCounts(12);
+                    map<string, int> repeats;
+                    if (parameters.showReferenceRepeats) {
+                        repeats = parser->repeatCounts(12);
+                    }
                     // get the unique alternate alleles in this combo, sorted by frequency in the combo
                     vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
                     if (parameters.reportAllAlternates) {
