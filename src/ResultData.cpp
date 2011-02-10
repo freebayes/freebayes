@@ -73,6 +73,7 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Length of MNP allele, if present\">" << endl
         << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
+        << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl
         << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">" << endl
         << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood\">" << endl
