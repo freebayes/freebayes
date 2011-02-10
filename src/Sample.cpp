@@ -28,32 +28,24 @@ int Sample::observationCount(void) {
 // puts alleles into the right bins if they have changed their base (as
 // occurs in the case of reference alleles)
 void Sample::sortReferenceAlleles(void) {
-
-    for (Sample::iterator group = begin(); group != end(); ++group) {
-
-        const string& groupBase = group->first;
-        vector<Allele*>& alleles = group->second;
-
-        if (alleles.empty())
-            continue;
-
-        const string& base = alleles.front()->currentBase;
-
-        if (base != groupBase && alleles.front()->type == ALLELE_REFERENCE) {
-            Sample::iterator g = find(base);
-            if (g != end()) {
-                vector<Allele*> newgroup = g->second;
-                newgroup.reserve(newgroup.size() + distance(alleles.begin(), alleles.end()));
-                newgroup.insert(newgroup.end(), alleles.begin(), alleles.end());
-            } else {
-                insert(begin(), make_pair(base, alleles));
-            }
-            alleles.clear();
-        } else {
-            if (!(alleles.front()->type == ALLELE_REFERENCE) && base != groupBase) {
-                cerr << alleles.front() << endl;
+    for (Sample::iterator g = begin(); g != end(); ++g) {
+        const string& groupBase = g->first;
+        vector<Allele*>& alleles = g->second;
+        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            const string& base = (*a)->currentBase;
+            if (base != groupBase) {
+                Sample::iterator g = find(base);
+                if (g != end()) {
+                    g->second.push_back(*a);
+                } else {
+                    vector<Allele*> alleles;
+                    alleles.push_back(*a);
+                    insert(begin(), make_pair(base, alleles));
+                }
+                *a = NULL;
             }
         }
+        alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
     }
 }
 
