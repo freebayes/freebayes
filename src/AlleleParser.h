@@ -45,6 +45,7 @@ public:
     string name;
     vector<Allele> alleles;
     int mismatches;
+    int snpCount;
     int indelCount;
 
     RegisteredAlignment(BamAlignment& alignment)
@@ -54,6 +55,7 @@ public:
         , refid(alignment.RefID)
         , name(alignment.Name)
         , mismatches(0)
+        , snpCount(0)
         , indelCount(0)
     { }
 

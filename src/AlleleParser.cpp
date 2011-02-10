@@ -763,8 +763,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     }
                     // register mismatch
                     if (qual >= parameters.BQL2) {
-                        ra.mismatches++;  // increment our mismatch counter if we're over BQL2
+                        ++ra.mismatches;  // increment our mismatch counter if we're over BQL2
+                        ++ra.snpCount; // always increment snp counter
                     }
+
                     // always emit a snp, if we have too many mismatches over
                     // BQL2 then we will discard the registered allele in the
                     // calling context
@@ -861,14 +863,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // string length and the length of the event
             long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
 
-            // now handled separately for indels via ra.indelCount
-            /*
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
-            }
-            */
-
-            if (qual >= parameters.BQL2) {
                 for (int i=0; i<l; i++) {
                     indelMask[sp - alignment.Position + i] = true;
                 }
@@ -920,12 +916,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // string length and the length of the event
             long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
 
-            /*
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
-            }
-            */
-            if (qual >= parameters.BQL2) {
                 indelMask[sp - alignment.Position] = true;
             }
 
@@ -1074,6 +1066,7 @@ void AlleleParser::updateAlignmentQueue(void) {
                 // backtracking if we have too many mismatches
                 if (((float) ra.mismatches / (float) currentAlignment.QueryBases.size()) > parameters.readMaxMismatchFraction
                         || ra.mismatches > parameters.RMU
+                        || ra.snpCount > parameters.readSnpLimit
                         || ra.indelCount > parameters.readIndelLimit) {
                     rq.pop_front(); // backtrack
                 } else {

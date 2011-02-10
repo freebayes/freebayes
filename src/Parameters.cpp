@@ -11,6 +11,7 @@ void Parameters::usage(char** argv) {
          << endl
          << "options:" << endl
          << endl
+         // input, algorithmic parameters
          << "   -h --help       Prints this help dialog." << endl
          << "   -b --bam FILE   Add FILE to the set of BAM files to be analyzed." << endl
          << "   -c --stdin      Read BAM input on stdin." << endl
@@ -61,6 +62,7 @@ void Parameters::usage(char** argv) {
          << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
          << "                   default: only analyze SNP alleles." << endl
          << "   -I --no-snps    Ignore SNP alleles.  default: only analyze SNP alleles." << endl
+         // TODO merge with filters below
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N alleles, ranked by sum of" << endl
          << "                   supporting quality scores.  default: 2" << endl
@@ -69,6 +71,7 @@ void Parameters::usage(char** argv) {
          << "   -E --use-duplicate-reads" << endl
          << "                   Include duplicate-marked alignments in the analysis." << endl
          << "                   default: exclude duplicates" << endl
+         // reference, copy number
          << "   -M --reference-mapping-quality Q" << endl
          << "                   Assign mapping quality of Q to the reference allele at each" << endl
          << "                   site.  default: 100" << endl
@@ -81,6 +84,7 @@ void Parameters::usage(char** argv) {
          << "   -H --haploid-reference" << endl
          << "                   If using the reference sequence as a sample, consider it" << endl
          << "                   to be haploid.  default: false" << endl
+         // filters
          << "   -m --min-mapping-quality Q" << endl
          << "                   Exclude alignments from analysis if they have a mapping" << endl
          << "                   quality less than Q.  default: 30" << endl
@@ -95,27 +99,31 @@ void Parameters::usage(char** argv) {
          << "                   In order to consider an alternate allele, at least one" << endl
          << "                   supporting alignment must have this base quality at the" << endl
          << "                   site of the allele.  default: 0, unset" << endl
-         << "   -U --read-mismatch-limit N" << endl
-         << "                   The maximum allowable number of mismatches between an" << endl
-         << "                   alignment and the reference where each mismatch has" << endl
-         << "                   base quality >= mismatch-base-quality-threshold." << endl
-         << "                   default: ~unbounded" << endl
-         << "   -z --read-max-mismatch-fraction N" << endl
-         << "                   The maximum fraction [0, 1] of allowable mismatches" << endl
-         << "                   between an alignment and the reference where each mismatch" << endl
-         << "                   has base quality >= mismatch-base-quality-threshold" << endl
-         << "                   default: 1.0" << endl
-         << "   -e --read-indel-limit N" << endl
-         << "                   Exclude reads with this many separate indel events." << endl
-         << "                   default: ~unbounded" << endl
          << "   -Q --mismatch-base-quality-threshold Q" << endl
          << "                   Count mismatches toward --read-mismatch-limit if the base" << endl
          << "                   quality of the mismatch is >= Q.  default: 10" << endl
+         << "   -U --read-mismatch-limit N" << endl
+         << "                   Exclude reads with N mismatches where each mismatch has" << endl
+         << "                   base quality >= mismatch-base-quality-threshold." << endl
+         << "                   default: ~unbounded" << endl
+         << "   -z --read-max-mismatch-fraction N" << endl
+         << "                   Exclude reads with more than N [0,1] fraction of mismatches where" << endl
+         << "                   each mismatch has base quality >= mismatch-base-quality-threshold" << endl
+         << "                   default: 1.0" << endl
+         << "   -$ --read-snp-limit N" << endl
+         << "                   Exclude reads with more than N base mismatches, ignoring gaps" << endl
+         << "                   with quality >= mismatch-base-quality-threshold." << endl
+         << "                   default: ~unbounded" << endl
+         << "   -e --read-indel-limit N" << endl
+         << "                   Exclude reads with more than N separate gaps." << endl
+         << "                   default: ~unbounded" << endl
          << "   -0 --no-filters Do not use any input base and mapping quality filters" << endl
          << "                   Equivalent to -m 0 -q 0 -R 0 -S 0" << endl
          << "   -x --indel-exclusion-window" << endl
          << "                   Ignore portions of alignments this many bases from a" << endl
          << "                   putative insertion or deletion allele.  default: 0" << endl
+         // algorithmic switches, mixed with optimizations
+         // TODO cleanup
          << "   -D --read-dependence-factor N" << endl
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
@@ -223,6 +231,7 @@ Parameters::Parameters(int argc, char** argv) {
     BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
     RMU = 10000000;                     // -U --read-mismatch-limit
     readMaxMismatchFraction = 1.0;    //  -z --read-max-mismatch-fraction
+    readSnpLimit = 10000000;       // -$ --read-snp-limit
     readIndelLimit = 10000000;     // -e --read-indel-limit
     genotypeComboStepMax = -1.0;                // -^ --genotype-combo-step-max
     IDW = -1;                     // -x --indel-exclusion-window
@@ -276,6 +285,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"mismatch-base-quality-threshold", required_argument, 0, 'Q'},
         {"read-mismatch-limit", required_argument, 0, 'U'},
         {"read-max-mismatch-fraction", required_argument, 0, 'z'},
+        {"read-snp-limit", required_argument, 0, '$'},
         {"read-indel-limit", required_argument, 0, 'e'},
         {"genotype-combo-step-max", required_argument, 0, '^'},
         {"indels", no_argument, 0, 'i'},
@@ -302,7 +312,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZH0dDiI@XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZH0dDiI@XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -512,6 +522,14 @@ Parameters::Parameters(int argc, char** argv) {
             case 'z':
                 if (!convert(optarg, readMaxMismatchFraction)) {
                     cerr << "could not parse read-mismatch-limit" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -$ --read-snp-limit
+            case '$':
+                if (!convert(optarg, readSnpLimit)) {
+                    cerr << "could not parse read-snp-limit" << endl;
                     exit(1);
                 }
                 break;

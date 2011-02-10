@@ -61,6 +61,7 @@ public:
     int BQL2;                    // -Q --mismatch-base-quality-threshold
     int RMU;                     // -U --read-mismatch-limit
     float readMaxMismatchFraction;  // -z --read-max-mismatch-fraction
+    int readSnpLimit;            // -$ --read-snp-limit
     int readIndelLimit;          // -e --read-indel-limit
     float genotypeComboStepMax;  // -^ --genotype-combo-step-max
     int IDW;                     // -I --indel-exclusion-window
