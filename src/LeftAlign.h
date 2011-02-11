@@ -32,5 +32,6 @@ using namespace BamTools;
 
 bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug = false);
 bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations = 20, bool debug = false);
+int countMismatches(BamAlignment& alignment, string referenceSequence);
 
 #endif

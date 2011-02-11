@@ -141,10 +141,6 @@ int main(int argc, char** argv) {
 
     while (reader.GetNextAlignment(alignment)) {
 
-        /*
-        if ((unsigned int) (alignment.GetEndPosition(true) - alignment.Position)
-                != (unsigned int) (alignment.QueryBases.size() - 1)) {
-                */
             DEBUG("---------------------------   read    --------------------------" << endl);
             DEBUG("| " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl);
             DEBUG("| " << alignment.Name << ":" << alignment.GetEndPosition() << endl);
@@ -155,21 +151,25 @@ int main(int argc, char** argv) {
             // skip unmapped alignments, as they cannot be left-realigned without CIGAR data
             if (alignment.IsMapped()) {
 
-                if (!stablyLeftAlign(alignment,
-                            reference.getSubSequence(
-                                referenceIDToName[alignment.RefID],
-                                alignment.Position,
-                                alignment.GetEndPosition() - alignment.Position + 1),
-                            maxiterations, debug)) {
-                    cerr << "unstable realignment of " << alignment.Name
-                         << " at " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl
-                         << alignment.AlignedBases << endl;
+                int endpos = alignment.GetEndPosition();
+                int length = endpos - alignment.Position + 1;
+                if (alignment.Position >= 0 && length > 0) {
+                    if (!stablyLeftAlign(alignment,
+                                reference.getSubSequence(
+                                    referenceIDToName[alignment.RefID],
+                                    alignment.Position,
+                                    length),
+                                maxiterations, debug)) {
+                        cerr << "unstable realignment of " << alignment.Name
+                             << " at " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl
+                             << alignment.AlignedBases << endl;
+                    }
                 }
 
             }
+
             DEBUG("----------------------------------------------------------------" << endl);
             DEBUG(endl);
-        //}
 
         if (!suppress_output)
             writer.SaveAlignment(alignment);
