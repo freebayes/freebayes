@@ -45,6 +45,8 @@ long double factorialln( int n);
 long double cofactor( int n, int i);
 long double cofactorln( int n, int i);
 
+long double harmonicSum(int n);
+
 long double safe_exp(long double ln);
 long double logsumexp_probs(const vector<long double>& lnv);
 long double logsumexp(const vector<long double>& lnv);

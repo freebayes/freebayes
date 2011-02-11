@@ -294,6 +294,16 @@ long double beta(const vector<long double>& alphas) {
     return exp(betaln(alphas));
 }
 
+// the sum of the harmonic series 1, n
+long double harmonicSum(int n) {
+    long double r = 0;
+    long double i = 1;
+    while (i <= n) {
+        r += 1 / i;
+        ++i;
+    }
+    return r;
+}
 
 bool isTransition(string& ref, string& alt) {
     if (((ref == "A" && alt == "G") || (ref == "G" && alt == "A")) ||

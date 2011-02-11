@@ -861,7 +861,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             // quality, scaled inversely by the ratio between the quality
             // string length and the length of the event
-            long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
+            long double qual = sumQuality(qualstr);
+
+            // scale the quality by the inverse harmonic sum of the length of the quality string X a scaling constant
+            qual += ln2phred(log((long double) L / (long double) l));
+            qual /= harmonicSum(l);
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -914,7 +918,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             // quality, scaled inversely by the ratio between the quality
             // string length and the length of the event
-            long double qual = sumQuality(qualstr) + ln2phred(log((long double) L / (long double) l));
+            long double qual = sumQuality(qualstr);
+
+            // scale the quality by the inverse harmonic sum of the length of the quality string X a scaling constant
+            qual += ln2phred(log((long double) L / (long double) l));
+            qual /= harmonicSum(l);
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
