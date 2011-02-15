@@ -349,16 +349,20 @@ int main (int argc, char *argv[]) {
         long double pVar = 1.0;
 
         bool hasHetCombo = false;
+        bool bestOverallComboIsHet = false;
         GenotypeCombo* bestCombo = NULL;
         long double bestComboProb;
 
         for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
             if (gc->combo->isHomozygous()) {
                 pVar -= safe_exp(gc->priorComboProb - posteriorNormalizer);
-            } else if (!hasHetCombo) {
+            } else if (!hasHetCombo) { // get the first het combo
                 bestCombo = gc->combo;
                 bestComboProb = genotypeComboProbs.front().priorComboProb;
                 hasHetCombo = true;
+                if (gc == genotypeComboProbs.begin()) {
+                    bestOverallComboIsHet = true;
+                }
             }
         }
 
@@ -448,6 +452,7 @@ int main (int argc, char *argv[]) {
                                     parser->sampleList,
                                     coverage,
                                     bestGenotypeCombo,
+                                    bestOverallComboIsHet,
                                     results,
                                     parser)
                                 << endl;
@@ -464,6 +469,7 @@ int main (int argc, char *argv[]) {
                                 parser->sampleList,
                                 coverage,
                                 bestGenotypeCombo,
+                                bestOverallComboIsHet,
                                 results,
                                 parser)
                             << endl;

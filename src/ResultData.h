@@ -85,6 +85,7 @@ public:
             vector<string>& samples,
             int coverage,
             GenotypeCombo& genotypeCombo,
+            bool bestOverallComboIsHet,
             Results& results,
             AlleleParser* parser);
     pair<Genotype*, long double> bestMarginalGenotype(void);

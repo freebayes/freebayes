@@ -66,6 +66,7 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=ABR,Number=1,Type=Integer,Description=\"Reference allele balance count: the number of sequence reads from apparent heterozygotes supporting the reference allele\">" << endl
         << "##INFO=<ID=ABA,Number=1,Type=Integer,Description=\"Alternate allele balance count: the number of sequence reads from apparent heterozygotes supporting the alternate allele\">" << endl
         << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
+        << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
         << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\">" << endl
         << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
         << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\">" << endl
@@ -101,6 +102,7 @@ string vcf(
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
+        bool bestOverallComboIsHet,
         Results& results,
         AlleleParser* parser) {
 
@@ -233,6 +235,10 @@ string vcf(
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";";
+
+    if (bestOverallComboIsHet) {
+        out << "BVAR;";
+    }
 
     if (!repeats.empty()) {
         stringstream repeatsstr;
