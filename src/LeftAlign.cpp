@@ -37,7 +37,6 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 
     string softBegin;
     string softEnd;
-    int softBeginPos = 0;
 
     stringstream cigar_before, cigar_after;
     for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
@@ -63,7 +62,6 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             if (rp == 0) {
                 alignedReferenceSequence = string(l, '*') + alignedReferenceSequence;
                 softBegin = alignmentAlignedBases.substr(0, l);
-                softBeginPos = l;
             } else {
                 alignedReferenceSequence = alignedReferenceSequence + string(l, '*');
                 softEnd = alignmentAlignedBases.substr(alignmentAlignedBases.size() - l, l);
@@ -92,7 +90,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     vector<IndelAllele>::iterator previous = indels.begin();
     for (vector<IndelAllele>::iterator id = indels.begin(); id != indels.end(); ++id) {
 
-        // left shift
+        // left shift by repeats
         //
         // from 1 base to the length of the indel, attempt to shift left
         // if the move would cause no change in alignment optimality (no
@@ -113,17 +111,14 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             if (debug) {
                 if (steppos >= 0 && readsteppos >= 0) {
                     cerr << referenceSequence.substr(steppos, indel.length) << endl;
-                    if (indel.insertion) {
-                        cerr << alignment.QueryBases.substr(readsteppos, indel.length) << endl;
-                    } else {
-                        cerr << indel.sequence << endl;
-                    }
+                    cerr << alignment.QueryBases.substr(readsteppos, indel.length) << endl;
+                    cerr << indel.sequence << endl;
                 }
             }
 #endif
             while (steppos >= 0 && readsteppos >= 0
                    && indel.sequence == referenceSequence.substr(steppos, indel.length)
-                   && (!indel.insertion || indel.insertion && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length))
+                   && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
                    && (id == indels.begin()
                        || (previous->insertion && steppos >= previous->position)
                        || (!previous->insertion && steppos >= previous->position + previous->length))) {
@@ -179,16 +174,21 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         previous = indels.begin();
         for (vector<IndelAllele>::iterator id = (indels.begin() + 1); id != indels.end(); ++id) {
             IndelAllele& indel = *id;
-            // could we shift right and merge with the previous indel?
+            // parsimony: could we shift right and merge with the previous indel?
             // if so, do it
-            int prev_end = previous->insertion ? previous->position : previous->position + previous->length;
+            int prev_end_ref = previous->insertion ? previous->position : previous->position + previous->length;
+            int prev_end_read = !previous->insertion ? previous->readPosition : previous->readPosition + previous->length;
             if (previous->insertion == indel.insertion
                     && ((previous->insertion && previous->position < indel.position)
                         ||
                         (!previous->insertion && previous->position + previous->length < indel.position))) {
                 if (previous->homopolymer()) {
-                    string seq = referenceSequence.substr(prev_end, indel.position - prev_end);
-                    if (previous->sequence.at(0) == seq.at(0) && homopolymer(seq)) {
+                    string seq = referenceSequence.substr(prev_end_ref, indel.position - prev_end_ref);
+                    string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
+                    LEFTALIGN_DEBUG("seq: " << seq << endl << "readseq: " << readseq << endl);
+                    if (previous->sequence.at(0) == seq.at(0)
+                            && homopolymer(seq)
+                            && homopolymer(readseq)) {
                         LEFTALIGN_DEBUG("moving " << *previous << " right to " 
                                 << (indel.insertion ? indel.position : indel.position - previous->length) << endl);
                         previous->position = indel.insertion ? indel.position : indel.position - previous->length;
