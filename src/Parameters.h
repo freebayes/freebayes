@@ -38,7 +38,7 @@ public:
     string failedFile;    // -l --failed-alleles
 
     // operation parameters
-    bool outputAlleles;          // -O --output-alleles
+    bool outputAlleles;          //  unused...
     bool trace;                  // -L --trace
     bool useDuplicateReads;      // -E --use-duplicate-reads
     bool suppressOutput;         // -S --suppress-output
@@ -48,6 +48,7 @@ public:
     bool useRefAllele;           // -U --use-reference-allele
     bool haploidReference;       // -H --haploid-reference
     bool allowIndels;            // -I --allow-indels
+    bool leftAlignIndels;        // -O --left-align-indels
     bool allowMNPs;              // -X --allow-mnps
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled

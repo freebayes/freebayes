@@ -26,6 +26,7 @@
 #include "BamMultiReader.h"
 #include "Genotype.h"
 #include "CNV.h"
+#include "LeftAlign.h"
 
 #define CACHED_REFERENCE_WINDOW 100
 

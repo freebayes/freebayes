@@ -1063,6 +1063,13 @@ void AlleleParser::updateAlignmentQueue(void) {
             if (currentAlignment.MapQuality >= parameters.MQL0) {
                 // extend our cached reference sequence to allow processing of this alignment
                 extendReferenceSequence(currentAlignment);
+                // left realign indels
+                if (parameters.leftAlignIndels) {
+                    int length = currentAlignment.GetEndPosition() - currentAlignment.Position + 1;
+                    stablyLeftAlign(currentAlignment,
+                        currentSequence.substr(currentSequencePosition(currentAlignment), length));
+                }
+                // get sample name
                 string sampleName = readGroupToSampleNames[readGroup];
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position

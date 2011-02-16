@@ -37,6 +37,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 
     string softBegin;
     string softEnd;
+    int softBeginPos = 0;
 
     stringstream cigar_before, cigar_after;
     for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
@@ -62,6 +63,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             if (rp == 0) {
                 alignedReferenceSequence = string(l, '*') + alignedReferenceSequence;
                 softBegin = alignmentAlignedBases.substr(0, l);
+                softBeginPos = l;
             } else {
                 alignedReferenceSequence = alignedReferenceSequence + string(l, '*');
                 softEnd = alignmentAlignedBases.substr(alignmentAlignedBases.size() - l, l);
@@ -76,7 +78,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 
     int alignedLength = sp;
 
-    DEBUG("| " << cigar_before.str() << endl
+    LEFTALIGN_DEBUG("| " << cigar_before.str() << endl
        << "| " << alignedReferenceSequence << endl
        << "| " << alignmentAlignedBases << endl);
 
@@ -125,7 +127,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                    && (id == indels.begin()
                        || (previous->insertion && steppos >= previous->position)
                        || (!previous->insertion && steppos >= previous->position + previous->length))) {
-                DEBUG((indel.insertion ? "insertion " : "deletion ") << indel << " shifting " << i << "bp left" << endl);
+                LEFTALIGN_DEBUG((indel.insertion ? "insertion " : "deletion ") << indel << " shifting " << i << "bp left" << endl);
                 indel.position -= i;
                 indel.readPosition -= i;
                 steppos = indel.position - i;
@@ -158,7 +160,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                && (id == indels.begin()
                    || (previous->insertion && indel.position - 1 >= previous->position)
                    || (!previous->insertion && indel.position - 1 >= previous->position + previous->length))) {
-            DEBUG((indel.insertion ? "insertion " : "deletion ") << indel << " exchanging bases " << 1 << "bp left" << endl);
+            LEFTALIGN_DEBUG((indel.insertion ? "insertion " : "deletion ") << indel << " exchanging bases " << 1 << "bp left" << endl);
             indel.sequence = indel.sequence.at(indel.sequence.size() - 1) + indel.sequence.substr(0, indel.sequence.size() - 1);
             indel.position -= 1;
             indel.readPosition -= 1;
@@ -187,7 +189,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                 if (previous->homopolymer()) {
                     string seq = referenceSequence.substr(prev_end, indel.position - prev_end);
                     if (previous->sequence.at(0) == seq.at(0) && homopolymer(seq)) {
-                        DEBUG("moving " << *previous << " right to " 
+                        LEFTALIGN_DEBUG("moving " << *previous << " right to " 
                                 << (indel.insertion ? indel.position : indel.position - previous->length) << endl);
                         previous->position = indel.insertion ? indel.position : indel.position - previous->length;
                     }
@@ -207,7 +209,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                         ||
                         (!previous->insertion && pos == indel.position - previous->length))
                        ) {
-                        DEBUG("right-merging tandem repeat: moving " << *previous << " right to " << pos << endl);
+                        LEFTALIGN_DEBUG("right-merging tandem repeat: moving " << *previous << " right to " << pos << endl);
                         previous->position = pos;
                     }
                 }
@@ -237,11 +239,11 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         newCigar.push_back(CigarOp((last.insertion ? 'I' : 'D'), last.length));
     }
     int lastend = last.insertion ? last.position : (last.position + last.length);
-    DEBUG(last << ",");
+    LEFTALIGN_DEBUG(last << ",");
 
     for (; id != indels.end(); ++id) {
         IndelAllele& indel = *id;
-        DEBUG(indel << ",");
+        LEFTALIGN_DEBUG(indel << ",");
         if (indel.position < lastend) {
             cerr << "impossibility?: indel realigned left of another indel" << endl << alignment.Name
                 << " " << alignment.Position << endl << alignment.QueryBases << endl;
@@ -265,7 +267,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         newCigar.push_back(CigarOp('S', softEnd.size()));
     }
 
-    DEBUG(endl);
+    LEFTALIGN_DEBUG(endl);
 
 #ifdef VERBOSE_DEBUG
     if (debug) {
@@ -287,7 +289,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         char t = c->Type;
         cigar_after << l << t;
     }
-    DEBUG(cigar_after.str() << endl);
+    LEFTALIGN_DEBUG(cigar_after.str() << endl);
 
     // check if we're realigned
     if (cigar_after.str() == cigar_before.str()) {
@@ -342,13 +344,13 @@ bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxi
 
     if (!leftAlign(alignment, referenceSequence, debug)) {
 
-        DEBUG("did not realign" << endl);
+        LEFTALIGN_DEBUG("did not realign" << endl);
         return true;
 
     } else {
 
         while (leftAlign(alignment, referenceSequence, debug) && --maxiterations > 0) {
-            DEBUG("realigning ..." << endl);
+            LEFTALIGN_DEBUG("realigning ..." << endl);
         }
 
 #ifdef VERBOSE_DEBUG

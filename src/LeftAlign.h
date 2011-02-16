@@ -21,10 +21,10 @@
 #include "IndelAllele.h"
 
 #ifdef VERBOSE_DEBUG
-#define DEBUG(msg) \
+#define LEFTALIGN_DEBUG(msg) \
     if (debug) { cerr << msg; }
 #else
-#define DEBUG(msg)
+#define LEFTALIGN_DEBUG(msg)
 #endif
 
 using namespace std;

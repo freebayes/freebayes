@@ -37,9 +37,6 @@ void Parameters::usage(char** argv) {
          << "                   ... for each region in each sample which does not have the" << endl
          << "                   default copy number as set by --ploidy." << endl
          << "   -j --json       Toggle JSON output of results on stdout." << endl
-         << "   -O --output-alleles" << endl
-         << "                   When --json is set, add records to the JSON output stream" << endl
-         << "                   describing each allele in the input." << endl
          << "   -@ --report-all-alternates" << endl
          << "                   Report (in non-standard VCF format) each alternate allele" << endl
          << "                   at a site on its own line of VCF." << endl
@@ -62,12 +59,14 @@ void Parameters::usage(char** argv) {
          << "                   alleles in each sample." << endl
          << "   -i --indels     Include insertion and deletion alleles in the analysis." << endl
          << "                   default: only analyze SNP alleles." << endl
+         << "   -O --left-align-indels" << endl
+         << "                   Left-realign and merge gaps embedded in reads. default: false" << endl
          << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
          << "                   default: only analyze SNP alleles." << endl
          << "   -I --no-snps    Ignore SNP alleles.  default: only analyze SNP alleles." << endl
          // TODO merge with filters below
          << "   -n --use-best-n-alleles N" << endl
-         << "                   Evaluate only the best N alleles, ranked by sum of" << endl
+         << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
          << "                   supporting quality scores.  default: 2" << endl
          << "   -N --use-all-alleles" << endl
          << "                   Evaluate all possible alleles." << endl
@@ -211,7 +210,7 @@ Parameters::Parameters(int argc, char** argv) {
     failedFile = "";
 
     // operation parameters
-    outputAlleles = false;          // -O --output-alleles
+    outputAlleles = false;          //
     trace = false;                  // -L --trace
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
@@ -221,6 +220,7 @@ Parameters::Parameters(int argc, char** argv) {
     useRefAllele = true;           // .....
     haploidReference = false;      // -H --haploid-reference
     allowIndels = false;            // -i --indels
+    leftAlignIndels = false;       // -O --left-align-indels
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
@@ -293,6 +293,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"read-indel-limit", required_argument, 0, 'e'},
         {"genotype-combo-step-max", required_argument, 0, '^'},
         {"indels", no_argument, 0, 'i'},
+        {"left-align-indels", no_argument, 0, 'O'},
         {"mnps", no_argument, 0, 'X'},
         {"no-snps", no_argument, 0, 'I'},
         {"indel-exclusion-window", required_argument, 0, 'x'},
@@ -317,7 +318,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZH0dDiI@_XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZH0diI@_XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -373,9 +374,9 @@ Parameters::Parameters(int argc, char** argv) {
                 outputFile = optarg;
                 break;
 
-            // -O --output-alleles
+            // -O --left-align-indels
             case 'O':
-                outputAlleles = true;
+                leftAlignIndels = true;
                 break;
 
             // -L --trace
@@ -565,6 +566,7 @@ Parameters::Parameters(int argc, char** argv) {
             // -i --indels
             case 'i':
                 allowIndels = true;
+                reportAllAlternates = true;
                 break;
 
             // -X --mnps
