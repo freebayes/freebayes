@@ -1596,7 +1596,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
 
     vector<Allele> resultAlleles;
-    vector<Allele> resultSnpAlleles;
+    vector<Allele> resultIndelAndMNPAlleles;
 
     string refBase = string(1, currentReferenceBase);
 
@@ -1630,33 +1630,34 @@ vector<Allele> AlleleParser::genotypeAlleles(
         bool hasRefAllele = false;
         for (vector<pair<Allele, int> >::iterator a = sortedAlleles.begin(); a != sortedAlleles.end(); ++a) {
             Allele& allele = a->first;
-            if (allele.currentBase == refBase)
+            if (allele.currentBase == refBase) {
                 hasRefAllele = true;
-            if (allele.type == ALLELE_SNP) {
-                DEBUG2("adding allele to SNP alleles " << allele.currentBase);
-                resultSnpAlleles.push_back(allele);
-            } else {
+            }
+            if (allele.type & (ALLELE_DELETION | ALLELE_INSERTION | ALLELE_MNP)) {
                 DEBUG2("adding allele to result alleles " << allele.currentBase);
+                resultIndelAndMNPAlleles.push_back(allele);
+            } else {
+                DEBUG2("adding allele to SNP alleles " << allele.currentBase);
                 resultAlleles.push_back(allele);
             }
         }
-        DEBUG2("found " << sortedAlleles.size() << " SNP alleles of which we now have " << resultSnpAlleles.size() << endl
-               << "and " << resultAlleles.size() << " non-SNP alleles");
+        DEBUG2("found " << sortedAlleles.size() << " SNP/ref alleles of which we now have " << resultAlleles.size() << endl
+               << "and " << resultIndelAndMNPAlleles.size() << " INDEL and MNP alleles");
 
         // if we have reached the limit of allowable alleles, and still
         // haven't included the reference allele, include it
         if (parameters.forceRefAllele && !hasRefAllele) {
             DEBUG2("including reference allele in analysis");
-            resultSnpAlleles.insert(resultSnpAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1));
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1));
         }
 
         // if we now have too many alleles (most likely one too many), get rid of some
-        while (resultSnpAlleles.size() > parameters.useBestNAlleles) {
-            resultSnpAlleles.pop_back();
+        while (resultAlleles.size() > parameters.useBestNAlleles) {
+            resultAlleles.pop_back();
         }
 
         // drop the SNPs back into the set of alleles
-        for (vector<Allele>::iterator a = resultSnpAlleles.begin(); a != resultSnpAlleles.end(); ++a) {
+        for (vector<Allele>::iterator a = resultIndelAndMNPAlleles.begin(); a != resultIndelAndMNPAlleles.end(); ++a) {
             resultAlleles.push_back(*a);
         }
 
