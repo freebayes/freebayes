@@ -3,7 +3,7 @@
 #ifndef _UTILITY_H
 #define _UTILITY_H
 
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include <string>
 #include <algorithm>

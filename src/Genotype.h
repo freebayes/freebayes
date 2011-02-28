@@ -8,7 +8,7 @@
 #include <numeric>
 #include <vector>
 #include <iterator>
-#include <math.h>
+#include <cmath>
 #include <numeric>
 #include "Allele.h"
 

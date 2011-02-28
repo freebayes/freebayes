@@ -76,8 +76,8 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
         << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl
         << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
-        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">" << endl
-        << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the PHRED-scaled marginal (or unconditional) probability of the called genotype\">" << endl
+        << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the called genotype\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
@@ -92,7 +92,7 @@ void vcfHeader(ostream& out,
 }
 
 string vcf(
-        long double comboProb,
+        long double pHom,
         //long double alleleSamplingProb,
         Samples& samples,
         string refbase,
@@ -212,13 +212,13 @@ string vcf(
     // positional information
     // CHROM  POS  ID  REF  ALT  QUAL  FILTER  INFO  FORMAT
     //out.setf(ios::fixed,ios::floatfield);
-    out.precision(3);
+    out.precision(5);
     out << parser->currentSequenceName << "\t"
         << variantPosition + 1 << "\t"
         << "." << "\t"
         << referenceSequence << "\t"
         << alternateSequence << "\t"
-        << float2phred(1 - comboProb) << "\t";
+        << float2phred(pHom) << "\t";
     out.precision(5);
     out << "." << "\t" // filter, no filter applied
         << "NS=" << samplesWithData << ";"

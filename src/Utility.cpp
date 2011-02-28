@@ -4,6 +4,8 @@
 #include "Sum.h"
 #include "Product.h"
 
+#define PHRED_MAX 99999.0
+
 using namespace std;
 
 short qualityChar2ShortInt(char c) {
@@ -31,15 +33,15 @@ long double ln2phred(long double prob) {
 }
 
 long double phred2float(int qual) {
-    return pow(10,qual * -.1);
+    return pow(10, qual * -.1);
 }
 
 long double float2phred(long double prob) {
     if (prob == 1)
-        return 99;
+        return PHRED_MAX;
     long double p = -10 * (long double) log10(prob);
-    if (p < 0 || p > 99) // int overflow guard
-        return 99;
+    if (p < 0 || p > PHRED_MAX) // int overflow guard
+        return PHRED_MAX;
     else
         return p;
 }
@@ -232,8 +234,8 @@ long double cofactorln(
 
 // prevent underflows by returning exp(LDBL_MIN_EXP) if exponentiation will produce an underflow
 long double safe_exp(long double ln) {
-    if (ln < LDBL_MIN_EXP) {
-        return LDBL_MIN;
+    if (ln < LDBL_MIN_EXP) {  // -16381
+        return LDBL_MIN;      // 3.3621e-4932
     } else {
         return exp(ln);
     }

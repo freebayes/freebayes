@@ -347,6 +347,7 @@ int main (int argc, char *argv[]) {
         // and then subtract this from 1... resolving p(var|d)
 
         long double pVar = 1.0;
+        long double pHom = 0.0;
 
         bool hasHetCombo = false;
         bool bestOverallComboIsHet = false;
@@ -356,6 +357,7 @@ int main (int argc, char *argv[]) {
         for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
             if (gc->combo->isHomozygous()) {
                 pVar -= safe_exp(gc->priorComboProb - posteriorNormalizer);
+                pHom += safe_exp(gc->priorComboProb - posteriorNormalizer);
             } else if (!hasHetCombo) { // get the first het combo
                 bestCombo = gc->combo;
                 bestComboProb = genotypeComboProbs.front().priorComboProb;
@@ -443,7 +445,7 @@ int main (int argc, char *argv[]) {
                     if (parameters.reportAllAlternates) {
                         for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
                             Allele& alt = a->first;
-                            out << vcf(pVar,
+                            out << vcf(pHom,
                                     samples,
                                     referenceBase,
                                     alt.base(),
@@ -460,7 +462,7 @@ int main (int argc, char *argv[]) {
                     } else {
                         Allele& bestAlt = alternates.front().first;
                         // TODO update the vcf output function to handle the reporting of multiple alternate alleles
-                        out << vcf(pVar,
+                        out << vcf(pHom,
                                 samples,
                                 referenceBase,
                                 bestAlt.base(),

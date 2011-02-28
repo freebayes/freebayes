@@ -12,7 +12,7 @@
 #include <time.h>
 #include <assert.h>
 #include <ctype.h>
-#include <math.h>
+#include <cmath>
 #include "split.h"
 #include "join.h"
 #include "BamReader.h"

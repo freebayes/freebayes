@@ -8,7 +8,7 @@
 #include <sstream>
 #include <signal.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <map>
 #include <vector>
