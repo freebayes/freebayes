@@ -755,6 +755,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         if (allATGC(readSequence)) {
                             ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                                     currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
+                                    rp - length, // bases left
+                                    alignment.QueryBases.size() - rp, // bases right
                                     matchingSequence, readSequence, sampleName, alignment.Name,
                                     !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                                     alignment.MapQuality));
@@ -786,7 +788,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     long double lqual = sumQuality(qualstr);
                     if (allATGC(readSequence)) {
                         ra.alleles.push_back(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
-                                    &currentReferenceBase, length, matchingSequence, readSequence,
+                                    &currentReferenceBase, length,
+                                    rp - length, // bases left
+                                    alignment.QueryBases.size() - rp, // bases right
+                                    matchingSequence, readSequence,
                                     sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                         DEBUG2(ra.alleles.back());
                     }
@@ -808,7 +813,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 long double lqual = sumQuality(qualstr);
                 if (allATGC(readSequence)) {
                     ra.alleles.push_back(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
-                                &currentReferenceBase, length, matchingSequence, readSequence,
+                                &currentReferenceBase, length,
+                                rp - length, // bases left
+                                alignment.QueryBases.size() - rp, // bases right
+                                matchingSequence, readSequence,
                                 sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                     DEBUG2(ra.alleles.back());
                 }
@@ -821,6 +829,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 if (allATGC(readSequence)) {
                     ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                             currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
+                            rp - length, // bases left
+                            alignment.QueryBases.size() - rp, // bases right
                             matchingSequence, readSequence, sampleName, alignment.Name,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                             alignment.MapQuality));
@@ -878,6 +888,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             if (allATGC(refseq)) {
                 ra.alleles.push_back(Allele(ALLELE_DELETION,
                         currentSequenceName, sp, &currentPosition, &currentReferenceBase, l,
+                        rp, // bases left
+                        alignment.QueryBases.size() - rp, // bases right
                         refseq, "", sampleName, alignment.Name,
                         !alignment.IsReverseStrand(), qual, qualstr,
                         alignment.MapQuality));
@@ -932,7 +944,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             string readseq = rDna.substr(rp, l);
             if (allATGC(readseq)) {
                 ra.alleles.push_back(Allele(ALLELE_INSERTION,
-                        currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l, "", readseq,
+                        currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l,
+                        rp - l, // bases left
+                        alignment.QueryBases.size() - rp, // bases right
+                        "", readseq,
                         sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
                         qualstr, alignment.MapQuality));
                 DEBUG2(ra.alleles.back());
@@ -1516,7 +1531,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             currentPosition,
             &currentPosition, 
             &currentReferenceBase,
-            1, base, base, name, name,
+            1, 0, 0, base, base, name, name,
             true, baseQ,
             baseQstr,
             mapQ);

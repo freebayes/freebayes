@@ -86,6 +86,7 @@ public:
             int coverage,
             GenotypeCombo& genotypeCombo,
             bool bestOverallComboIsHet,
+            map<string, vector<Allele*> >& alleleGroups,
             Results& results,
             AlleleParser* parser);
     pair<Genotype*, long double> bestMarginalGenotype(void);

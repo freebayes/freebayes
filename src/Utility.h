@@ -39,6 +39,10 @@ bool allATGC(string& s);
 string strip(string const& str, char const* separators = " \t");
 
 int binomialCoefficient(int n, int k);
+long double poissonpln(int observed, int expected);
+long double poissonp(int observed, int expected);
+long double poissonPvalLn(int a, int b);
+
 long double gammaln( long double x);
 long double factorial( int n);
 long double factorialln( int n);

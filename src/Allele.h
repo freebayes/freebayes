@@ -104,6 +104,8 @@ public:
     long double* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
+    int basesLeft; // how many bases are in the read to the left of the allele
+    int basesRight; // how many bases are in the read to the left of the allele
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
     string readID;          // id of the read which the allele is drawn from
@@ -125,6 +127,8 @@ public:
                 long double* crefpos,
                 char* crefbase,
                 unsigned int len, 
+                int bleft,
+                int bright,
                 string refallele, 
                 string alt, 
                 string sampleid,
@@ -139,6 +143,8 @@ public:
         , currentReferencePosition(crefpos)
         , currentReferenceBase(crefbase)
         , length(len)
+        , basesLeft(bleft)
+        , basesRight(bright)
         , currentBase(alt)
         , alternateSequence(alt)
         , sampleID(sampleid)

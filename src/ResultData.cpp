@@ -75,8 +75,11 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
         << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl
+        << "##INFO=<ID=BPL,Number=1,Type=Integer,Description=\"Total number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
+        << "##INFO=<ID=BPR,Number=1,Type=Integer,Description=\"Total number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
+        << "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"max(BPR, BPL) / (BPR + BPL) : The proportion of base pairs in reads on one side of the alternate allele relative to total bases\">" << endl
         << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
-        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the PHRED-scaled marginal (or unconditional) probability of the called genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the called genotype\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
@@ -103,6 +106,7 @@ string vcf(
         int coverage,
         GenotypeCombo& genotypeCombo,
         bool bestOverallComboIsHet,
+        map<string, vector<Allele*> >& alleleGroups,
         Results& results,
         AlleleParser* parser) {
 
@@ -176,6 +180,16 @@ string vcf(
 
     int allObsCount = alternateObsCount + referenceObsCount;
 
+    unsigned int basesLeft = 0;
+    unsigned int basesRight = 0;
+
+    vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
+    for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
+        Allele& allele = **app;
+        basesLeft += allele.basesLeft;
+        basesRight += allele.basesRight;
+    }
+
     // 0-based variant position
     long unsigned int variantPosition = (long unsigned int) parser->currentPosition;
 
@@ -234,7 +248,10 @@ string vcf(
         << "AB=" << ((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ) << ";"
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
-        << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";";
+        << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";"
+        << "BPL="  << basesLeft << ";"
+        << "BPR="  << basesRight << ";"
+        << "LRB=" << (double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) << ";";
 
     if (bestOverallComboIsHet) {
         out << "BVAR;";

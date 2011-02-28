@@ -4,7 +4,7 @@
 #include "Sum.h"
 #include "Product.h"
 
-#define PHRED_MAX 99999.0
+#define PHRED_MAX 99999.0 // max phred should be ~ 71141.779, so PHRED_MAX effectively means "1.0"
 
 using namespace std;
 
@@ -149,6 +149,36 @@ int binomialCoefficient(int n, int k) {
     }
     return result;
 }
+
+long double poissonpln(int observed, int expected) {
+    return ((log(expected) * observed) - expected) - factorialln(observed);
+}
+
+long double poissonp(int observed, int expected) {
+    return pow(expected, observed) * pow(M_E, -expected) / factorial(observed);
+}
+
+
+// given the expected number of events is the max of a and b
+// what is the probability that we might observe less than the observed?
+long double poissonPvalLn(int a, int b) {
+
+    int expected, observed;
+    if (a > b) {
+        expected = a; observed = b;
+    } else {
+        expected = b; observed = a;
+    }
+
+    vector<long double> probs;
+    for (int i = 0; i < observed; ++i) {
+        probs.push_back(poissonpln(i, expected));
+    }
+
+    return logsumexp_probs(probs);
+
+}
+
 
 long double gammaln(
 		     long double x
