@@ -10,7 +10,7 @@ long double alleleFrequencyProbability(map<int, int> alleleFrequencyCounts, long
         int frequency = f->first;
         int count = f->second;
         M += frequency * count;
-        p *= pow(theta, count) / pow(frequency, count) * factorial(count);
+        p *= (double) pow((double) theta, (double) count) / (double) pow((double) frequency, (double) count) * factorial(count);
     }
 
     long double thetaH = 1;
