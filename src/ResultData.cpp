@@ -75,6 +75,7 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
         << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl
+        << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
         << "##INFO=<ID=BPL,Number=1,Type=Integer,Description=\"Total number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
         << "##INFO=<ID=BPR,Number=1,Type=Integer,Description=\"Total number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
         << "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"max(BPR, BPL) / (BPR + BPL) : The proportion of base pairs in reads on one side of the alternate allele relative to total bases\">" << endl
@@ -183,11 +184,13 @@ string vcf(
     unsigned int basesLeft = 0;
     unsigned int basesRight = 0;
 
+    unsigned int mqsum = 0;
     vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
     for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
         Allele& allele = **app;
         basesLeft += allele.basesLeft;
         basesRight += allele.basesRight;
+        mqsum += allele.mapQuality;
     }
 
     // 0-based variant position
@@ -249,6 +252,7 @@ string vcf(
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";"
+        << "MQM=" << (double) mqsum / (double) alternateAlleles.size() << ";"
         << "BPL="  << basesLeft << ";"
         << "BPR="  << basesRight << ";"
         << "LRB=" << (double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) << ";";
