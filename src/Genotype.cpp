@@ -242,8 +242,8 @@ vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAllele
 
 int GenotypeCombo::numberOfAlleles(void) {
     int count = 0;
-    for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
-        count += g->genotype->ploidy;
+    for (map<string, int>::iterator f = alleleFrequencies.begin(); f != alleleFrequencies.end(); ++f) {
+        count += f->second;
     }
     return count;
 }
