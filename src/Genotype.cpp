@@ -401,10 +401,14 @@ bandedGenotypeCombinations(
             for (int h = 0; h < (nsamples - j); ++h)
                 indexes.push_back(0);
             vector<vector<int> > indexPermutations = multipermute(indexes);
+            bool reuseLastCombo = false;
             for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
-                combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
+                if (reuseLastCombo) {  // reuse the last combo if we've skipped it, saving a few % runtime copying combos
+                    reuseLastCombo = false;
+                } else {
+                    combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
+                }
                 GenotypeCombo& combo = combos.back();
-                bool useCombo = true;
                 GenotypeCombo::iterator currentSampleGenotype = combo.begin();
                 vector<int>::const_iterator n = p->begin();
                 for (SampleGenotypesAndProbs::const_iterator s = sampleGenotypes.begin();
@@ -413,13 +417,13 @@ bandedGenotypeCombinations(
                     if (offset > 0) {
                         // ignore this combo if it's beyond the bounds of the individual's set of genotypes
                         if (offset >= s->second.size()) {
-                            useCombo = false;
+                            reuseLastCombo = true;
                             break;
                         }
                         // ignore this combo if the swapped genotype has a data likelihood more than logStepMax
                         // from the best data likelihood.  logStepMax == -1 indicates no filtering
                         if (offset > 0 && logStepMax >= 0 && s->second.at(0).second - s->second.at(offset).second > logStepMax) {
-                            useCombo = false;
+                            reuseLastCombo = true;
                             break;
                         }
                         const pair<Genotype*, long double>& p = s->second.at(offset);
@@ -438,11 +442,10 @@ bandedGenotypeCombinations(
                         // adjust combination total data likelihood
                         combo.prob -= diff;
                     }
-                    //combo.push_back(SampleGenotypeProb(s->first, p.first, dataLikelihood));
                 }
-                if (!useCombo) {
-                    combos.erase(combos.end() - 1);
-                }
+            }
+            if (reuseLastCombo) {
+                combos.erase(combos.end() - 1);
             }
         }
     }
