@@ -36,7 +36,6 @@ void Parameters::usage(char** argv) {
          << "                      reference sequence, start, end, sample name, copy number" << endl
          << "                   ... for each region in each sample which does not have the" << endl
          << "                   default copy number as set by --ploidy." << endl
-         << "   -j --json       Toggle JSON output of results on stdout." << endl
          << "   -@ --report-all-alternates" << endl
          << "                   Report (in non-standard VCF format) each alternate allele" << endl
          << "                   at a site on its own line of VCF." << endl
@@ -73,6 +72,8 @@ void Parameters::usage(char** argv) {
          << "   -E --use-duplicate-reads" << endl
          << "                   Include duplicate-marked alignments in the analysis." << endl
          << "                   default: exclude duplicates" << endl
+         << "   -j --use-mapping-quality" << endl
+         << "                   Use mapping quality of alleles when calculating data likelihoods." << endl
          // reference, copy number
          << "   -M --reference-mapping-quality Q" << endl
          << "                   Assign mapping quality of Q to the reference allele at each" << endl
@@ -224,6 +225,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
+    useMappingQuality = false;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -267,7 +269,6 @@ Parameters::Parameters(int argc, char** argv) {
         {"region", required_argument, 0, 'r'},
         {"samples", required_argument, 0, 's'},
         {"cnv-map", required_argument, 0, 'A'},
-        {"json", no_argument, 0, 'j'},
         {"vcf", required_argument, 0, 'v'},
         {"output-alleles", no_argument, 0, 'O'},
         {"trace", required_argument, 0, 'L'},
@@ -282,6 +283,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"reference-base-quality", required_argument, 0, 'B'},
         {"ploidy", required_argument, 0, 'p'},
         {"pooled", no_argument, 0, 'J'},
+        {"use-mapping-quality", no_argument, 0, 'j'},
         {"min-mapping-quality", required_argument, 0, 'm'},
         {"min-base-quality", required_argument, 0, 'q'},
         {"min-supporting-mapping-quality", required_argument, 0, 'R'},
@@ -318,7 +320,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZH0diI@_XJb:G:x:A:f:t:r:s:v:j:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZjH0diI@_XJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -363,9 +365,9 @@ Parameters::Parameters(int argc, char** argv) {
                 cnvFile = optarg;
                 break;
 
-            // -j --json
+            // -j --use-mapping-quality
             case 'j':
-                output = "json";
+                useMappingQuality = true;
                 break;
 
             // -v --vcf

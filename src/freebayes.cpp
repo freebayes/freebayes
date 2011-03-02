@@ -218,7 +218,7 @@ int main (int argc, char *argv[]) {
             Sample& sample = s->second;
             vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
 
-            vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF);
+            vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF, parameters.useMappingQuality);
 
             map<Genotype*, long double> marginals;
             map<Genotype*, vector<long double> > rawMarginals;
@@ -420,54 +420,22 @@ int main (int argc, char *argv[]) {
 
         if (!parameters.suppressOutput) {
 
-            if (parameters.output == "json") {
-                out << "{ \"position\": " << parser->currentPosition + 1 // 1-based reporting, to match vcf
-                    << ", \"sequence\": " << parser->currentSequenceName
-                    << ", \"best_genotype_combo\":" << bestGenotypeCombo
-                    << ", \"best_genotype_combo_prob\":" << bestGenotypeComboProb 
-                    << ", \"best_genotype_combo_ewens_sampling_probability\":" << bestGenotypeComboAlleleSamplingProb
-                    << ", \"combos_tested\":" << bandedCombos.size()
-                    << ", \"coverage\":" << coverage
-                    << ", \"posterior_normalizer\":" << safe_exp(posteriorNormalizer)
-                    << ", \"samples\":";
-                json(out, results, parser);
-                out << "}" << endl;
-            }
             if (pVar >= parameters.PVL) {
-                if (parameters.output == "vcf") {
-                    string referenceBase(1, parser->currentReferenceBase);
-                    map<string, int> repeats;
-                    if (parameters.showReferenceRepeats) {
-                        repeats = parser->repeatCounts(12);
-                    }
-                    // get the unique alternate alleles in this combo, sorted by frequency in the combo
-                    vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
-                    if (parameters.reportAllAlternates) {
-                        for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
-                            Allele& alt = a->first;
-                            out << vcf(pHom,
-                                    samples,
-                                    referenceBase,
-                                    alt.base(),
-                                    alt,
-                                    repeats,
-                                    parser->sampleList,
-                                    coverage,
-                                    bestGenotypeCombo,
-                                    bestOverallComboIsHet,
-                                    alleleGroups,
-                                    results,
-                                    parser)
-                                << endl;
-                        }
-                    } else {
-                        Allele& bestAlt = alternates.front().first;
-                        // TODO update the vcf output function to handle the reporting of multiple alternate alleles
+                string referenceBase(1, parser->currentReferenceBase);
+                map<string, int> repeats;
+                if (parameters.showReferenceRepeats) {
+                    repeats = parser->repeatCounts(12);
+                }
+                // get the unique alternate alleles in this combo, sorted by frequency in the combo
+                vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
+                if (parameters.reportAllAlternates) {
+                    for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
+                        Allele& alt = a->first;
                         out << vcf(pHom,
                                 samples,
                                 referenceBase,
-                                bestAlt.base(),
-                                bestAlt,
+                                alt.base(),
+                                alt,
                                 repeats,
                                 parser->sampleList,
                                 coverage,
@@ -478,6 +446,23 @@ int main (int argc, char *argv[]) {
                                 parser)
                             << endl;
                     }
+                } else {
+                    Allele& bestAlt = alternates.front().first;
+                    // TODO update the vcf output function to handle the reporting of multiple alternate alleles
+                    out << vcf(pHom,
+                            samples,
+                            referenceBase,
+                            bestAlt.base(),
+                            bestAlt,
+                            repeats,
+                            parser->sampleList,
+                            coverage,
+                            bestGenotypeCombo,
+                            bestOverallComboIsHet,
+                            alleleGroups,
+                            results,
+                            parser)
+                        << endl;
                 }
             } else if (!parameters.failedFile.empty()) {
                 // XXX don't repeat yourself

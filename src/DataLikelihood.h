@@ -20,35 +20,15 @@ using namespace std;
 long double
 probObservedAllelesGivenGenotype(
         Sample& sample,
-        Genotype& genotype);
-
-long double
-bamBayesProbObservedAllelesGivenGenotype(
-        Sample& sample,
         Genotype& genotype,
-        long double dependenceFactor);
-
-long double
-approxProbObservedAllelesGivenGenotype(
-        Sample& sample,
-        Genotype& genotype,
-        long double dependenceFactor);
+        long double dependenceFactor,
+        bool useMapQ);
 
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
-        vector<Genotype>& genotype,
-        long double dependenceFactor);
-
-vector<pair<Genotype*, long double> >
-bamBayesProbObservedAllelesGivenGenotypes(
-        Sample& sample,
-        vector<Genotype>& genotype,
-        long double dependenceFactor);
-
-long double
-likelihoodGivenTrueAlleles(
-        const vector<Allele*>& observedAlleles,
-        const vector<Allele*>& trueAlleles);
+        vector<Genotype>& genotypes,
+        long double dependenceFactor,
+        bool useMapQ);
 
 #endif

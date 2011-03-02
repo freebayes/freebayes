@@ -52,6 +52,7 @@ public:
     bool allowMNPs;              // -X --allow-mnps
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled
+    bool useMappingQuality;      //
     int MQR;                     // -M --reference-mapping-quality
     int BQR;                     // -B --reference-base-quality
     int ploidy;                  // -p --ploidy
