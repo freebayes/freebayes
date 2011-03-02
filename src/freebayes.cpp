@@ -332,9 +332,12 @@ int main (int argc, char *argv[]) {
         // note that this operation is O(N^2) in the number of combinations which we still
         // have after trimming the number of combos to parameters.posteriorIntegrationDepth
 
-        DEBUG2("calculating marginal likelihoods");
-
-        marginalGenotypeLikelihoods(posteriorNormalizer, genotypeComboProbs, results);
+        if (parameters.calculateMarginals) {
+            DEBUG2("calculating marginal likelihoods");
+            marginalGenotypeLikelihoods(posteriorNormalizer, genotypeComboProbs, results);
+        } else {
+            DEBUG2("not calculating marginal likelihoods due to limitation of posterior-integration-depth");
+        }
 
         // we provide p(var|data), or the probability that the location has
         // variation between individuals relative to the probability that it

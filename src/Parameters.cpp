@@ -159,6 +159,9 @@ void Parameters::usage(char** argv) {
          << "                   (0.1N to 0.25N) will help improve scalability in large" << endl
          << "                   datasets at the cost of accuracy in calcuating marginal" << endl
          << "                   genotype probabilites." << endl
+         << "   -= --no-marginals" << endl
+         << "                   Do not calculate the marginal probability of genotypes.  Saves" << endl
+         << "                   time.  Useful when setting --posterior-integration-depth." << endl
          << "   -F --min-alternate-fraction N" << endl
          << "                   Require at least this fraction of observations supporting" << endl
          << "                   an alternate allele within a single individual in the" << endl
@@ -247,6 +250,7 @@ Parameters::Parameters(int argc, char** argv) {
     WB = 2;                      // -W --posterior-integration-bandwidth
     TB = 1;                 // -Y --posterior-integration-banddepth
     posteriorIntegrationDepth = 0;
+    calculateMarginals = true;
     minAltFraction = 0.0;
     minAltCount = 1;
     minAltTotal = 1;
@@ -309,6 +313,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-alternate-total", required_argument, 0, 'G'},
         {"min-coverage", required_argument, 0, '!'},
         {"posterior-integration-depth", required_argument, 0, 'K'},
+        {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
         {"debug", no_argument, 0, 'd'},
@@ -320,7 +325,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZjH0diI@_XJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZjH0diI@_=XJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -651,6 +656,10 @@ Parameters::Parameters(int argc, char** argv) {
                     cerr << "could not parse posterior-integration-depth" << endl;
                     exit(1);
                 }
+                break;
+
+            case '=':
+                calculateMarginals = false;
                 break;
 
             case '@':

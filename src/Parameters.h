@@ -71,6 +71,7 @@ public:
     long double PVL;             // -P --pvar
                                  // -K --posterior-integration-depth
     int posteriorIntegrationDepth;
+    bool calculateMarginals;
     string algorithm;
     long double RDF;             // -D --read-dependence-factor
     long double diffusionPriorScalar; // -V --diffusion-prior-scalar

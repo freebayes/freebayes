@@ -122,6 +122,8 @@ string vcf(
 
     stringstream out;
 
+    Parameters& parameters = parser->parameters;
+
     // TODO make it so you use the genotypeCombo... 
 
     GenotypeComboMap comboMap;
@@ -323,8 +325,7 @@ string vcf(
     }
 
 
-    out << "\t" << "GT:GQ:GL:DP:RA:AA:SR:SA";
-    // TODO GL, un-normalized data likelihoods for genotypes
+    out << "\t" << "GT:" << (parameters.calculateMarginals ? "GQ:" : "") << "GL:DP:RA:AA:SR:SA";
 
     // samples
     for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
@@ -335,9 +336,11 @@ string vcf(
             Genotype* genotype = gc->second.first;
             pair<int, int> altAndRefCounts = altAndRefCountsBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);
             out << "\t"
-                << genotype->relativeGenotype(refbase, altbase)
-                << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]))
-                << ":" << sample.genotypeLikelihood(genotype)
+                << genotype->relativeGenotype(refbase, altbase);
+            if (parameters.calculateMarginals) {
+                out << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]));
+            }
+            out << ":" << sample.genotypeLikelihood(genotype)
                 << ":" << sample.observations->observationCount()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first
