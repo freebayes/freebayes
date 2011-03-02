@@ -155,7 +155,7 @@ long double poissonpln(int observed, int expected) {
 }
 
 long double poissonp(int observed, int expected) {
-    return pow(expected, observed) * pow(M_E, -expected) / factorial(observed);
+    return (double) pow((double) expected, (double) observed) * (double) pow(M_E, (double) -expected) / factorial(observed);
 }
 
 
