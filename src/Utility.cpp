@@ -326,6 +326,10 @@ long double beta(const vector<long double>& alphas) {
     return exp(betaln(alphas));
 }
 
+long double hoeffding(double successes, double trials, double prob) {
+    return 0.5 * exp(-2 * pow(trials * prob - successes, 2) / trials);
+}
+
 // the sum of the harmonic series 1, n
 long double harmonicSum(int n) {
     long double r = 0;
