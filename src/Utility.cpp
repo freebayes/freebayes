@@ -4,7 +4,7 @@
 #include "Sum.h"
 #include "Product.h"
 
-#define PHRED_MAX 99999.0 // max phred should be ~ 71141.779, so PHRED_MAX effectively means "1.0"
+#define PHRED_MAX 50000.0 // max Phred seems to be about 43015 (?), could be an underflow bug...
 
 using namespace std;
 
