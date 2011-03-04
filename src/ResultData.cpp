@@ -57,6 +57,9 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">" << endl
         << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">" << endl
         << "##INFO=<ID=AF,Number=1,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
+        << "##INFO=<ID=HETAR,Number=1,Type=Integer,Description=\"Number of individuals heterozygous alternate / reference\">" << endl
+        << "##INFO=<ID=HOMA,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the alternate\">" << endl
+        << "##INFO=<ID=HOMR,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the reference\">" << endl
         << "##INFO=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##INFO=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
         << "##INFO=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
@@ -143,6 +146,10 @@ string vcf(
     int hetAllObsCount = 0;
     int altAlleleObservations = 0;
     int refAlleleObservations = 0;
+    int hetAltRefSamples = 0;
+    int homAltSamples = 0;
+    int homRefSamples = 0;
+
     pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
     pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
     map<string, pair<int, int> > baseCountsForwardBySample;
@@ -167,9 +174,18 @@ string vcf(
             alleleCount += genotype->ploidy;
 
             if (!genotype->homozygous) {
-                hetAllObsCount += observationCount;
-                hetReferenceObsCount += sample[refbase].size();
-                hetAlternateObsCount += sample[altbase].size();
+                hetReferenceObsCount += sample.observationCount(refbase);
+                hetAlternateObsCount += sample.observationCount(altbase);
+                if (hetAlternateObsCount > 0) {
+                    ++hetAltRefSamples;
+                }
+                hetAllObsCount += hetReferenceObsCount + hetAlternateObsCount;
+            } else {
+                if (genotype->alleleFrequency(refbase) > 0) {
+                    ++homRefSamples;
+                } else {
+                    ++homAltSamples;
+                }
             }
 
             pair<int, int> altAndRefCounts = make_pair(sample.observationCount(altbase), sample.observationCount(refbase));
@@ -260,23 +276,26 @@ string vcf(
         << "DP=" << coverage << ";"
         << "AC=" << alternateCount << ";"
         << "AN=" << alleleCount << ";"
-        << "AF=" << (double) alternateCount / (double) alleleCount << ";"
+        << "AF=" << ((alleleCount == 0) ? 0 : (double) alternateCount / (double) alleleCount) << ";"
         << "RA=" << refAlleleObservations << ";"
         << "AA=" << altAlleleObservations << ";"
+        << "HETAR=" << hetAltRefSamples << ";"
+        << "HOMA=" << homAltSamples << ";"
+        << "HOMR=" << homRefSamples << ";"
         << "SRF=" << baseCountsForwardTotal.first << ";"
         << "SRR=" << baseCountsReverseTotal.first << ";"
         << "SAF=" << baseCountsForwardTotal.second << ";"
         << "SAR=" << baseCountsReverseTotal.second << ";"
-        << "SRB=" << (double) baseCountsForwardTotal.first / (double) referenceObsCount << ";"
-        << "SAB=" << (double) baseCountsForwardTotal.second / (double) alternateObsCount << ";"
-        << "SRP=" << float2phred(hoeffding(baseCountsForwardTotal.first, referenceObsCount, 0.5)) << ";"
-        << "SAP=" << float2phred(hoeffding(baseCountsForwardTotal.second, alternateObsCount, 0.5)) << ";"
+        << "SRB=" << ((referenceObsCount == 0) ? 0 : (double) baseCountsForwardTotal.first / (double) referenceObsCount) << ";"
+        << "SAB=" << ((alternateObsCount == 0) ? 0 : (double) baseCountsForwardTotal.second / (double) alternateObsCount) << ";"
+        << "SRP=" << ((referenceObsCount == 0) ? 0 : float2phred(hoeffding(baseCountsForwardTotal.first, referenceObsCount, 0.5))) << ";"
+        << "SAP=" << ((alternateObsCount == 0) ? 0 : float2phred(hoeffding(baseCountsForwardTotal.second, alternateObsCount, 0.5))) << ";"
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
         << "AB="  << ((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ) << ";"
         << "ABP=" << ((hetAllObsCount == 0) ? 0 : float2phred(hoeffding(hetAlternateObsCount, hetAllObsCount, 0.5))) << ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";"
-        << "MQM=" << (double) mqsum / (double) alternateAlleles.size() << ";"
+        << "MQM=" << ((alternateAlleles.size() == 0) ? 0 : (double) mqsum / (double) alternateAlleles.size()) << ";"
         << "BPL=" << basesLeft << ";"
         << "BPR=" << basesRight << ";"
         << "RPL=" << readsLeft << ";"
