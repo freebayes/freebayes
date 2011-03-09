@@ -24,7 +24,7 @@ void Parameters::usage(char** argv) {
          << "   -t --targets FILE" << endl
          << "                   Limit analysis to targets listed in the BED-format FILE." << endl
          << "   -r --region <chrom>:<start_position>..<end_position>" << endl
-         << "                   Limit analysis to the specified region, 1-base coordinates," << endl
+         << "                   Limit analysis to the specified region, 0-base coordinates," << endl
          << "                   end_position not included (same as BED format)." << endl
          << "   -s --samples FILE" << endl
          << "                   Limit analysis to samples listed (one per line) in the FILE." << endl

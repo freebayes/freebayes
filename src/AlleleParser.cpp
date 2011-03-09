@@ -414,7 +414,7 @@ void AlleleParser::loadTargets(void) {
         // we only have a single string, use the whole sequence as the target
         if (foundFirstColon == string::npos) {
             startSeq = region;
-            startPos = 1;
+            startPos = 0;
             stopPos = -1;
         } else {
             startSeq = region.substr(0, foundFirstColon);
@@ -430,7 +430,7 @@ void AlleleParser::loadTargets(void) {
                 if (foundRangeDots + 2 != region.size()) {
                     stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // end-exclusive, bed-format
                 } else {
-                    stopPos = reference.sequenceLength(startSeq) + 1;
+                    stopPos = reference.sequenceLength(startSeq);
                 }
             }
         }
@@ -439,10 +439,9 @@ void AlleleParser::loadTargets(void) {
         //DEBUG("stopPos == " << stopPos);
 
         // REAL BED format is 0 based, half open (end base not included)
-        // range strings are 1-base, like VCF, so we don't go crazy
         BedTarget bd(startSeq,
-                    (startPos == 1) ? 1 : startPos - 1,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) + 1 : stopPos - 1);
+                    (startPos == 0) ? 0 : startPos,
+                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos);
         DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
     }
