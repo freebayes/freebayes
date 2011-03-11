@@ -1,4 +1,5 @@
 #include "ResultData.h"
+#include "TryCatch.h"
 
 using namespace std;
 
@@ -251,7 +252,8 @@ string vcf(
             break;
         case ALLELE_INSERTION:
             referenceSequence = refbase;
-            alternateSequence = refbase + altAllele.alternateSequence.substr(1); // strip leading "I"
+            TRY { alternateSequence = refbase + altAllele.alternateSequence.substr(1); // strip leading "I"
+            } CATCH;
             break;
         default:
             cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
@@ -313,7 +315,7 @@ string vcf(
             repeatsstr << c->first << ":" << c->second << "|";
         }
         string repeatstr = repeatsstr.str();
-        repeatstr = repeatstr.substr(0, repeatstr.size() - 1);
+        TRY { repeatstr = repeatstr.substr(0, repeatstr.size() - 1); } CATCH;
         out << "REPEAT=" << repeatstr << ";";
     }
 
