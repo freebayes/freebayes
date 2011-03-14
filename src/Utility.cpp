@@ -152,11 +152,11 @@ int binomialCoefficient(int n, int k) {
 
 // k successes in n trials with prob of success p
 long double binomialProb(int k, int n, long double p) {
-    return factorial(n) / (factorial(k) * factorial(n - k)) * pow(p, k) * pow(1 - p, n - k)
+    return factorial(n) / (factorial(k) * factorial(n - k)) * pow(p, k) * pow(1 - p, n - k);
 }
 
 long double binomialProbln(int k, int n, long double p) {
-    return factorialln(n) - (factorialln(k) + factorialln(n - k)) + powln(log(p), k) + powln(log(1 - p), n - k)
+    return factorialln(n) - (factorialln(k) + factorialln(n - k)) + powln(log(p), k) + powln(log(1 - p), n - k);
 }
 
 long double poissonpln(int observed, int expected) {
