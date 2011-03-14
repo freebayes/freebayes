@@ -295,7 +295,7 @@ string vcf(
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
         << "AB="  << ((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ) << ";"
-        << "ABP=" << ((hetAllObsCount == 0) ? 0 : float2phred(hoeffding(hetAlternateObsCount, hetAllObsCount, 0.5))) << ";"
+        << "ABP=" << ((hetAllObsCount == 0) ? 0 : float2phred(hoeffding(hetReferenceObsCount, hetAllObsCount, 0.5))) << ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";"
         << "MQM=" << ((alternateAlleles.size() == 0) ? 0 : (double) mqsum / (double) alternateAlleles.size()) << ";"
         << "BPL=" << basesLeft << ";"
