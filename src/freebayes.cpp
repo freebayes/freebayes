@@ -256,12 +256,21 @@ int main (int argc, char *argv[]) {
 
         // sort individual genotype data likelihoods
         
-        vector<pair<string, vector<pair<Genotype*, long double> > > > sampleGenotypes;
+        // this is a vector of unpacked sample-name-genotype-prob structures,
+        // which are then referred to by pointer when generating genotype
+        // combinations
+        vector<vector<SampleDataLikelihood> > sampleDataLikelihoods;
         for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
-            Results::iterator r = results.find(*s);
+            const string& name = *s;
+            Results::iterator r = results.find(name);
             if (r != results.end()) {
                 r->second.sortDataLikelihoods();
-                sampleGenotypes.push_back(make_pair(r->first, r->second.dataLikelihoods));
+                vector<pair<Genotype*, long double> >& dataLikelihoods = r->second.dataLikelihoods;
+                vector<SampleDataLikelihood> thisSampleDataLikelihoods;
+                for (vector<pair<Genotype*, long double> >::iterator p = dataLikelihoods.begin(); p != dataLikelihoods.end(); ++p) {
+                    thisSampleDataLikelihoods.push_back(SampleDataLikelihood(name, &samples[name], p->first, p->second));
+                }
+                sampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
             }
         }
 
@@ -271,12 +280,12 @@ int main (int argc, char *argv[]) {
         // calculate marginals
         // and determine best genotype combination
 
-        //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleGenotypes.size() << " sample genotypes");
+        //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleDataLikelihoods.size() << " sample genotypes");
         DEBUG2("generating banded genotype combinations");
         vector<GenotypeCombo> bandedCombos;
         bandedGenotypeCombinationsIncludingAllHomozygousCombos(
                 bandedCombos,
-                sampleGenotypes,
+                sampleDataLikelihoods,
                 samples,
                 parameters.useBinomialObsPriors,
                 genotypesByPloidy,
@@ -345,7 +354,7 @@ int main (int argc, char *argv[]) {
             DEBUG2("calculating marginal likelihoods");
             marginalGenotypeLikelihoods(posteriorNormalizer, genotypeComboProbs, results);
         } else {
-            DEBUG2("not calculating marginal likelihoods due to limitation of posterior-integration-depth");
+            DEBUG2("not calculating marginal likelihoods");
         }
 
         // we provide p(var|data), or the probability that the location has
@@ -396,7 +405,7 @@ int main (int argc, char *argv[]) {
             for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
                 vector<Genotype*> comboGenotypes;
                 for (GenotypeCombo::iterator g = gc->combo->begin(); g != gc->combo->end(); ++g)
-                    comboGenotypes.push_back(g->genotype);
+                    comboGenotypes.push_back((*g)->genotype);
                 long double priorComboProb = gc->priorComboProb;
                 long double dataLikelihoodln = gc->probObsGivenGenotypes;
                 long double priorln = gc->priorProbGenotypeCombo;
@@ -410,7 +419,7 @@ int main (int argc, char *argv[]) {
                 GenotypeCombo::iterator i = gc->combo->begin();
                 for (vector<bool>::iterator d = samplesWithData.begin(); d != samplesWithData.end(); ++d) {
                     if (*d) {
-                        parser->traceFile << IUPAC(*i->genotype);
+                        parser->traceFile << IUPAC(*(*i)->genotype);
                         ++i;
                     } else {
                         parser->traceFile << "?";

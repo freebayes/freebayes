@@ -51,8 +51,9 @@ long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genoty
     long double lnhetscalar = 0;
 
     for (GenotypeCombo::iterator gc = genotypeCombo.begin(); gc != genotypeCombo.end(); ++gc) {
-        if (!gc->genotype->homozygous) {
-            lnhetscalar += multinomialCoefficientLn(gc->genotype->ploidy, gc->genotype->counts());
+        SampleDataLikelihood& sgp = **gc;
+        if (!sgp.genotype->homozygous) {
+            lnhetscalar += multinomialCoefficientLn(sgp.genotype->ploidy, sgp.genotype->counts());
         }
     }
 

@@ -78,14 +78,14 @@ string IUPAC2GenotypeStr(string iupac);
 
 vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
 
-class SampleGenotypeProb {
+class SampleDataLikelihood {
 public:
-    string sampleName;
+    string name;
     Genotype* genotype;
     long double prob;
     Sample* sample;
-    SampleGenotypeProb(string n, Sample* s, Genotype* g, long double p)
-        : sampleName(n)
+    SampleDataLikelihood(string n, Sample* s, Genotype* g, long double p)
+        : name(n)
         , sample(s)
         , genotype(g)
         , prob(p)
@@ -93,7 +93,7 @@ public:
 };
 
 // a combination of genotypes for the population of samples in the analysis
-class GenotypeCombo : public vector<SampleGenotypeProb> {
+class GenotypeCombo : public vector<SampleDataLikelihood*> {
 public:
     // GenotypeCombo::prob is equal to the sum of probs in the combo.  We
     // factor it out so that we can construct the probabilities efficiently as
@@ -163,16 +163,16 @@ public:
 };
 
 // a set of probabilities for a set of genotypes for a set of samples
-typedef vector<pair<string, vector<pair<Genotype*, long double> > > > SampleGenotypesAndProbs;
+typedef vector<vector<SampleDataLikelihood> > SampleDataLikelihoods;
 
-typedef map<string, pair<Genotype*, long double> > GenotypeComboMap;
+typedef map<string, SampleDataLikelihood*> GenotypeComboMap;
 
 void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 
 void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
+    SampleDataLikelihoods& sampleGenotypes,
     Samples& samples,
     bool useBinomialProbs,
     int bandwidth, int banddepth,
@@ -181,7 +181,7 @@ bandedGenotypeCombinations(
 void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
+    SampleDataLikelihoods& sampleGenotypes,
     Samples& samples,
     bool useBinomialProbs,
     int bandwidth, int banddepth,
@@ -190,7 +190,7 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
+    SampleDataLikelihoods& sampleGenotypes,
     Samples& samples,
     bool useBinomialProbs,
     map<int, vector<Genotype> >& genotypesByPloidy,

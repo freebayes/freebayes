@@ -159,9 +159,9 @@ string vcf(
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
         //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
         if (gc != comboMap.end()) {
-            Genotype* genotype = gc->second.first;
+            Genotype* genotype = gc->second->genotype;
 
-            Sample& sample = samples[*sampleName];
+            Sample& sample = *gc->second->sample;
 
             // check that we actually have observations for this sample
             int observationCount = sample.observationCount();
@@ -354,7 +354,7 @@ string vcf(
         Results::iterator s = results.find(*sampleName);
         if (gc != comboMap.end() && s != results.end()) {
             ResultData& sample = s->second;
-            Genotype* genotype = gc->second.first;
+            Genotype* genotype = gc->second->genotype;
             pair<int, int> altAndRefCounts = altAndRefCountsBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);
             out << "\t"
                 << genotype->relativeGenotype(refbase, altbase);

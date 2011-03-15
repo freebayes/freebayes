@@ -176,9 +176,9 @@ ostream& operator<<(ostream& out, vector<GenotypeCombo>& g) {
 
 ostream& operator<<(ostream& out, GenotypeCombo& g) {
     GenotypeCombo::iterator i = g.begin(); ++i;
-    out << "{\"" << g.front().sampleName << "\":[\"" << *(g.front().genotype) << "\"," << exp(g.front().prob) << "]";
+    out << "{\"" << g.front()->name << "\":[\"" << *(g.front()->genotype) << "\"," << exp(g.front()->prob) << "]";
     for (;i != g.end(); ++i) {
-        out << ", \"" << i->sampleName << "\":[\"" << *(i->genotype) << "\"," << exp(i->prob) << "]";
+        out << ", \"" << (*i)->name << "\":[\"" << *((*i)->genotype) << "\"," << exp((*i)->prob) << "]";
     }
     out << "}";
     return out;
@@ -225,8 +225,9 @@ int GenotypeCombo::numberOfAlleles(void) {
 // initializes cached counts associated with each GenotypeCombo
 void GenotypeCombo::init(bool useBinomialProbs) {
     for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
-        Sample& sample = *s->sample;
-        for (Genotype::iterator a = s->genotype->begin(); a != s->genotype->end(); ++a) {
+        const SampleDataLikelihood& sdl = **s;
+        const Sample& sample = *sdl.sample;
+        for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
             const string& alleleBase = a->allele.currentBase;
 
             // allele frequencies in selected genotypes in combo
@@ -239,7 +240,7 @@ void GenotypeCombo::init(bool useBinomialProbs) {
 
             if (useBinomialProbs) {
                 // observational frequencies for binomial priors
-                Sample::iterator as = sample.find(alleleBase);
+                Sample::const_iterator as = sample.find(alleleBase);
                 if (as != sample.end()) {
                     vector<Allele*> alleles = as->second;
                     for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
@@ -393,7 +394,8 @@ void GenotypeCombo::updateCachedCounts(
 map<string, int> GenotypeCombo::countAlleles(void) {
     map<string, int> alleleCounts;
     for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
-        for (Genotype::iterator a = g->genotype->begin(); a != g->genotype->end(); ++a) {
+        SampleDataLikelihood& sdl = **g;
+        for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
             map<string, int>::iterator c = alleleCounts.find(a->allele.currentBase);
             if (c != alleleCounts.end()) {
                 c->second += a->count;
@@ -438,13 +440,13 @@ vector<string> GenotypeCombo::alleles(void) {
 // returns true if the combination is 100% homozygous
 bool GenotypeCombo::isHomozygous(void) {
     GenotypeCombo::iterator g = begin();
-    Genotype* genotype = g->genotype;
+    Genotype* genotype = (*g)->genotype;
     if (!genotype->homozygous) {
         return false;
     } else {
-        Allele& allele = g->genotype->front().allele;
+        Allele& allele = (*g)->genotype->front().allele;
         for (; g != end(); ++g) {
-            if (!g->genotype->homozygous || g->genotype->front().allele != allele)
+            if (!(*g)->genotype->homozygous || (*g)->genotype->front().allele != allele)
                 return false;
         }
         return true;
@@ -454,22 +456,21 @@ bool GenotypeCombo::isHomozygous(void) {
 void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
+    SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
     bool useBinomialProbs,
     int bandwidth, int banddepth,
     float logStepMax) {
 
-    int nsamples = sampleGenotypes.size();
+    int nsamples = sampleDataLikelihoods.size();
 
     // generate the best genotype combination according to data likelihoods
     GenotypeCombo comboKing;
-    for (SampleGenotypesAndProbs::const_iterator s = sampleGenotypes.begin();
-            s != sampleGenotypes.end(); ++s) {
-        const pair<Genotype*, long double>& p = s->second.at(0);
-        const string& name = s->first;
-        comboKing.push_back(SampleGenotypeProb(name, &samples[name], p.first, p.second));
-        comboKing.prob += p.second;
+    for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+            s != sampleDataLikelihoods.end(); ++s) {
+        SampleDataLikelihood* sdl = &s->front();
+        comboKing.push_back(sdl);
+        comboKing.prob += sdl->prob;
     }
     comboKing.init(useBinomialProbs);
 
@@ -478,7 +479,7 @@ bandedGenotypeCombinations(
     // For each order of indexes in the bandwidth and banddepth, Obtain all
     // multiset permutations of a set of indexes.  Then use these indexes to
     // get the nth-best genotype from each individual's set of genotypes for
-    // which we have data likelihoods (sampleGenotypes), and turn this set into
+    // which we have data likelihoods (sampleDataLikelihoods), and turn this set into
     // a genotype combination.  Update the combination probability inline here
     // so we don't incur O(N^2) penalty calculating the probability within our
     // genotypeCombinationPriors calculation loop, where we estimate the
@@ -529,36 +530,35 @@ bandedGenotypeCombinations(
                     combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
                 }
                 GenotypeCombo& combo = combos.back();
-                GenotypeCombo::iterator currentSampleGenotype = combo.begin();
+                GenotypeCombo::iterator currentSampleGenotypeItr = combo.begin();
                 vector<int>::const_iterator n = p->begin();
-                for (SampleGenotypesAndProbs::const_iterator s = sampleGenotypes.begin();
-                        s != sampleGenotypes.end(); ++s, ++n, ++currentSampleGenotype) {
+                for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+                        s != sampleDataLikelihoods.end(); ++s, ++n, ++currentSampleGenotypeItr) {
+                    SampleDataLikelihood& oldsdl = **currentSampleGenotypeItr;
+                    SampleDataLikelihood*& oldsdl_ptr = *currentSampleGenotypeItr;
+                    vector<SampleDataLikelihood>& sdls = *s;
                     int offset = *n;
                     if (offset > 0) {
                         // ignore this combo if it's beyond the bounds of the individual's set of genotypes
-                        if (offset >= s->second.size()) {
+                        if (offset >= s->size()) {
                             reuseLastCombo = true;
                             break;
                         }
                         // ignore this combo if the swapped genotype has a data likelihood more than logStepMax
                         // from the best data likelihood.  logStepMax == -1 indicates no filtering
-                        if (offset > 0 && logStepMax >= 0 && s->second.at(0).second - s->second.at(offset).second > logStepMax) {
+                        if (offset > 0 && logStepMax >= 0 && sdls.front().prob - sdls.at(offset).prob > logStepMax) {
                             reuseLastCombo = true;
                             break;
                         }
-                        const pair<Genotype*, long double>& p = s->second.at(offset);
+                        SampleDataLikelihood* newsdl = &sdls.at(offset);
                         // get the old and new genotypes, which we compare to
                         // change the cached counts and probability of the
                         // combo
-                        Genotype* oldGenotype = currentSampleGenotype->genotype;
-                        Genotype* newGenotype = p.first;
-                        combo.updateCachedCounts(currentSampleGenotype->sample, oldGenotype, newGenotype, useBinomialProbs);
+                        combo.updateCachedCounts(oldsdl.sample, oldsdl.genotype, newsdl->genotype, useBinomialProbs);
                         // replace genotype with new genotype
-                        currentSampleGenotype->genotype = newGenotype;
-                        // update data likelihood sum for combo
-                        long double dataLikelihood = p.second;
-                        // find difference
-                        long double diff = s->second.at(0).second - dataLikelihood;
+                        oldsdl_ptr = newsdl;
+                        // find data likelihood difference from ComboKing
+                        long double diff = oldsdl.prob - newsdl->prob;
                         // adjust combination total data likelihood
                         combo.prob -= diff;
                     }
@@ -569,14 +569,13 @@ bandedGenotypeCombinations(
             }
         }
     }
-
 }
 
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
+    SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
     bool useBinomialProbs,
     map<int, vector<Genotype> >& genotypesByPloidy,
@@ -586,7 +585,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
     // obtain the combos
 
-    bandedGenotypeCombinations(combos, sampleGenotypes, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
 
     // determine which homozygous combos we already have
 
@@ -596,13 +595,13 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
         bool allSameAndHomozygous = true;
         GenotypeCombo::iterator gc = c->begin();
         Genotype* genotype;
-        if (gc->genotype->homozygous) {
-            genotype = gc->genotype;
+        if ((*gc)->genotype->homozygous) {
+            genotype = (*gc)->genotype;
         } else {
             continue;
         }
         for (; gc != c->end(); ++gc) {
-            if (! (gc->genotype == genotype) ) {
+            if (! ((*gc)->genotype == genotype) ) {
                 allSameAndHomozygous = false;
                 break;
             }
@@ -623,13 +622,15 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             // we need to make a new combo
             // iterate through the sample genotype vector
             GenotypeCombo& combo = homozygousCombos[allele];
-            for (vector<pair<string, vector<pair<Genotype*, long double> > > >::const_iterator s = sampleGenotypes.begin();
-                    s != sampleGenotypes.end(); ++s) {
+            for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+                    s != sampleDataLikelihoods.end(); ++s) {
                 // for each sample genotype, if the genotype is the same as our currently needed genotype, push it back onto a new combo
-                for (vector<pair<Genotype*, long double> >::const_iterator d = s->second.begin(); d != s->second.end(); ++d) {
+                for (vector<SampleDataLikelihood>::iterator d = s->begin(); d != s->end(); ++d) {
+                    SampleDataLikelihood& sdl = *d;
                     // this check is ploidy-independent
-                    if (d->first->homozygous && d->first->front().allele == allele) {
-                        combo.push_back(SampleGenotypeProb(s->first, &samples[s->first], d->first, d->second));
+                    if (sdl.genotype->homozygous && sdl.genotype->front().allele == allele) {
+                        combo.push_back(&sdl);
+                        break;
                     }
                 }
             }
@@ -640,8 +641,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     for (map<Allele, GenotypeCombo>::iterator c = homozygousCombos.begin(); c != homozygousCombos.end(); ++c) {
         GenotypeCombo& gc = c->second;
         gc.prob = 0;
-        for (GenotypeCombo::iterator sgp = gc.begin(); sgp != gc.end(); ++sgp) {
-            gc.prob += sgp->prob; // set up data likelihood for combo
+        for (GenotypeCombo::iterator sdl = gc.begin(); sdl != gc.end(); ++sdl) {
+            gc.prob += (*sdl)->prob; // set up data likelihood for combo
         }
         gc.init(useBinomialProbs);  // cache allele frequency information
         combos.push_back(gc);
@@ -652,18 +653,18 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
-    SampleGenotypesAndProbs& sampleGenotypes,
+    SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
     bool useBinomialProbs,
     int bandwidth, int banddepth, float logStepMax) {
 
-    bandedGenotypeCombinations(combos, sampleGenotypes, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
     // is there already a homozygous combo?
     bool hasHomozygousCombo = false;
     for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
         bool allhomozygous = true;
         for (GenotypeCombo::iterator gc = c->begin(); gc != c->end(); ++gc) {
-            if (!gc->genotype->homozygous) {
+            if (!(*gc)->genotype->homozygous) {
                 allhomozygous = false;
                 break;
             }
@@ -676,11 +677,11 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     if (!hasHomozygousCombo) {
         GenotypeCombo homozygousCombo;
         // push back the best homozygous combo
-        for(vector<pair<string, vector<pair<Genotype*, long double> > > >::iterator s = sampleGenotypes.begin();
-                s != sampleGenotypes.end(); ++s) {
-            for (vector<pair<Genotype*, long double> >::iterator g = s->second.begin(); g != s->second.end(); ++g) {
-                if (g->first->homozygous) {
-                    homozygousCombo.push_back(SampleGenotypeProb(s->first, &samples[s->first], g->first, g->second));
+        for(SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+                s != sampleDataLikelihoods.end(); ++s) {
+            for (vector<SampleDataLikelihood>::iterator g = s->begin(); g != s->end(); ++g) {
+                if (g->genotype->homozygous) {
+                    homozygousCombo.push_back(&*g);
                     break;
                 }
             }
@@ -705,7 +706,7 @@ pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string&
 
 void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm) {
     for (GenotypeCombo::iterator g = gc.begin(); g != gc.end(); ++g) {
-        gcm[g->sampleName] = make_pair(g->genotype, g->prob);
+        gcm[(*g)->name] = *g;;
     }
 }
 
@@ -717,7 +718,7 @@ vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referen
     map<Allele, int> alternates;
 
     for (GenotypeCombo::iterator g = combo.begin(); g != combo.end(); ++g) {
-        vector<Allele> alts = g->genotype->alternateAlleles(referenceBase);
+        vector<Allele> alts = (*g)->genotype->alternateAlleles(referenceBase);
         for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a) {
             if (alternates.find(*a) == alternates.end()) {
                 alternates[*a] = 1;
