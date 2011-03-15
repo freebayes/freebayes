@@ -87,8 +87,12 @@ genotypeCombinationPriorProbability(
             vector<string> alleles = combo->alleles();
             for (vector<string>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 const string& allele = *a;
-                priorBionimalProbability += binomialProbln(combo->alleleStrandCounts[allele].first, combo->alleleFrequencies[allele], 0.5);
-                priorBionimalProbability += binomialProbln(combo->alleleReadPlacementCounts[allele].first, combo->alleleFrequencies[allele], 0.5);
+                priorBionimalProbability += binomialProbln(combo->alleleStrandCounts[allele].first,
+                        combo->alleleStrandCounts[allele].first + combo->alleleStrandCounts[allele].second,
+                        0.5);
+                priorBionimalProbability += binomialProbln(combo->alleleReadPlacementCounts[allele].first,
+                        combo->alleleReadPlacementCounts[allele].first + combo->alleleReadPlacementCounts[allele].second,
+                        0.5);
             }
         }
 

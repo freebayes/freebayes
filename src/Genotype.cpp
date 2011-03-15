@@ -227,22 +227,31 @@ void GenotypeCombo::init(void) {
     for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
         Sample& sample = *s->sample;
         for (Genotype::iterator a = s->genotype->begin(); a != s->genotype->end(); ++a) {
-            const string& alleleName = a->allele.currentBase;
-            Sample::iterator as = sample.find(alleleName);
+            const string& alleleBase = a->allele.currentBase;
+
+            // allele frequencies in selected genotypes in combo
+            map<string, int>::iterator c = alleleFrequencies.find(alleleBase);
+            if (c != alleleFrequencies.end()) {
+                c->second += a->count;
+            } else {
+                alleleFrequencies.insert(make_pair(alleleBase, a->count));
+            }
+
+            // observational frequencies for binomial priors
+            Sample::iterator as = sample.find(alleleBase);
             if (as != sample.end()) {
                 vector<Allele*> alleles = as->second;
-                alleleFrequencies[alleleName] += alleles.size();
                 for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
                     const Allele& allele = **o;
                     if (allele.basesLeft >= allele.basesRight) {
-                        alleleReadPlacementCounts[alleleName].first += 1;
+                        alleleReadPlacementCounts[alleleBase].first += 1;
                     } else {
-                        alleleReadPlacementCounts[alleleName].second += 1;
+                        alleleReadPlacementCounts[alleleBase].second += 1;
                     }
                     if (allele.strand == STRAND_FORWARD) {
-                        alleleStrandCounts[alleleName].first += 1;
+                        alleleStrandCounts[alleleBase].first += 1;
                     } else {
-                        alleleStrandCounts[alleleName].second += 1;
+                        alleleStrandCounts[alleleBase].second += 1;
                     }
                 }
             }
