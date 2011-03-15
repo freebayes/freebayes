@@ -12,7 +12,7 @@ probObservedAllelesGivenGenotype(
 
     int observationCount = sample.observationCount();
     vector<long double> alleleProbs = genotype.alleleProbabilities();
-    vector<int> observationCounts = sample.alleleObservationCounts(genotype);
+    vector<int> observationCounts = genotype.alleleObservationCounts(sample);
     int countOut = 0;
     long double prodQout = 0;  // the probability that the reads not in the genotype are all wrong
 

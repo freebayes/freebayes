@@ -131,10 +131,9 @@ void Parameters::usage(char** argv) {
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
          << "                   calculations.  default: 0.9" << endl
-         << "   -V --diffusion-prior-scalar N" << endl
-         << "                   Downgrade the significance of P(genotype combo | allele frequency)" << endl
-         << "                   by taking the Nth root of this component of the prior." << endl
-         << "                   default: 1" << endl
+         << "   -V --binomial-obs-priors" << endl
+         << "                   Include binomial probabilities for read placement and" << endl
+         << "                   strand balance in priors calculations." << endl
          << "   -W --posterior-integration-bandwidth N" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which lie no more than N steps from the most likely" << endl
@@ -229,6 +228,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
     useMappingQuality = false;
+    useBinomialObsPriors = false; // TODO
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -274,7 +274,6 @@ Parameters::Parameters(int argc, char** argv) {
         {"samples", required_argument, 0, 's'},
         {"cnv-map", required_argument, 0, 'A'},
         {"vcf", required_argument, 0, 'v'},
-        {"output-alleles", no_argument, 0, 'O'},
         {"trace", required_argument, 0, 'L'},
         {"failed-alleles", required_argument, 0, 'l'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
@@ -306,7 +305,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
         {"read-dependence-factor", required_argument, 0, 'D'},
-        {"diffusion-prior-scalar", required_argument, 0, 'V'},
+        {"binomial-obs-priors", no_argument, 0, 'V'},
+        //{"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
@@ -325,7 +325,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZjH0diI@_=XJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:V:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZjH0diI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -610,12 +610,9 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -V --diffusion-prior-scalar
+            // binomial priors
             case 'V':
-                if (!convert(optarg, diffusionPriorScalar)) {
-                    cerr << "could not parse diffusion-prior-scalar" << endl;
-                    exit(1);
-                }
+                useBinomialObsPriors = true;
                 break;
 
             // -W --posterior-integration-bandwidth

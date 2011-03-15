@@ -80,20 +80,6 @@ Sample::baseCount(string refbase, string altbase) {
 
 }
 
-vector<Genotype*> Sample::genotypesWithEvidence(vector<Genotype>& genotypes) {
-    vector<Genotype*> supportedGenotypes;
-    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        Genotype& genotype = *g;
-        for (map<string, int>::iterator c = genotype.alleleCounts.begin(); c != genotype.alleleCounts.end(); ++c) {
-            if (this->find(c->first) != this->end()) {
-                supportedGenotypes.push_back(&genotype);
-                break;
-            }
-        }
-    }
-    return supportedGenotypes;
-}
-
 int Sample::baseCount(string base, AlleleStrand strand) {
 
     int count = 0;
@@ -122,16 +108,6 @@ string Sample::json(void) {
     }
     out << "]";
     return out.str();
-}
-
-vector<int> Sample::alleleObservationCounts(Genotype& genotype) {
-    vector<int> counts;
-    for (Genotype::iterator i = genotype.begin(); i != genotype.end(); ++i) {
-        int count = 0;
-        Allele& b = i->allele;
-        counts.push_back(observationCount(b));
-    }
-    return counts;
 }
 
 void groupAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups) {

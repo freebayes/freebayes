@@ -69,6 +69,7 @@ genotypeCombinationPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
+        bool useBinomialProbs,
         long double diffusionPriorScalar) {
 
         // when we are operating on pooled samples, we will not be able to
@@ -77,6 +78,18 @@ genotypeCombinationPriorProbability(
         long double priorProbabilityOfGenotypeComboG_Af = 0;
         if (!pooled) {
             priorProbabilityOfGenotypeComboG_Af = probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
+        }
+
+        long double priorBionimalProbability = 0;
+        if (useBinomialProbs) {
+            // for each alternate and the reference allele
+            // calculate the binomial probability that we see the given strand balance and read placement prob
+            vector<string> alleles = combo->alleles();
+            for (vector<string>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                const string& allele = *a;
+                priorBionimalProbability += binomialProbln(combo->alleleStrandCounts[allele].first, combo->alleleFrequencies[allele], 0.5);
+                priorBionimalProbability += binomialProbln(combo->alleleReadPlacementCounts[allele].first, combo->alleleFrequencies[allele], 0.5);
+            }
         }
 
         // with larger population samples, the effect of 
@@ -92,14 +105,15 @@ genotypeCombinationPriorProbability(
             alleleFrequencyProbabilityln(combo->countFrequencies(), theta);
         long double priorProbabilityOfGenotypeCombo = 
             priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
-        long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob;
+        long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob + priorBionimalProbability;
 
         return GenotypeComboResult(combo,
                     priorComboProb,
                     combo->prob,
                     priorProbabilityOfGenotypeCombo,
                     priorProbabilityOfGenotypeComboG_Af,
-                    priorProbabilityOfGenotypeComboAf);
+                    priorProbabilityOfGenotypeComboAf,
+                    priorBionimalProbability);
 
 }
 
@@ -110,13 +124,14 @@ genotypeCombinationsPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
+        bool useBinomialProbs,
         long double diffusionPriorScalar) {
 
     for (vector<GenotypeCombo>::iterator c = bandedCombos.begin(); c != bandedCombos.end(); ++c) {
 
         GenotypeCombo* combo = &*c;
 
-        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled, diffusionPriorScalar));
+        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled, useBinomialProbs, diffusionPriorScalar));
 
     }
 }

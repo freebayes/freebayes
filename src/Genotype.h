@@ -11,6 +11,7 @@
 #include <cmath>
 #include <numeric>
 #include "Allele.h"
+#include "Sample.h"
 
 using namespace std;
 
@@ -67,6 +68,7 @@ public:
     string relativeGenotype(string& refbase, string& altbase);
     bool isHomozygous(void);
     int containedAlleleTypes(void);
+    vector<int> alleleObservationCounts(Sample& sample);
 
 };
 
@@ -81,8 +83,10 @@ public:
     string sampleName;
     Genotype* genotype;
     long double prob;
-    SampleGenotypeProb(string n, Genotype* g, long double p)
+    Sample* sample;
+    SampleGenotypeProb(string n, Sample* s, Genotype* g, long double p)
         : sampleName(n)
+        , sample(s)
         , genotype(g)
         , prob(p)
     { }
@@ -95,20 +99,28 @@ public:
     // factor it out so that we can construct the probabilities efficiently as
     // we generate the genotype combinations
     long double prob;
-    map<string, int> alleleFrequencies;  // *must* be generated at construction time
+
+    // these *must* be generated at construction time
+    // for efficiency they can be updated as each genotype combo is generated
+    map<string, int> alleleFrequencies; // frequencies of each allele in the combo
+    map<string, pair<int, int> > alleleStrandCounts; // map from allele spec to (forword, reverse) counts
+    map<string, pair<int, int> > alleleReadPlacementCounts; // map from allele spec to (left, right) counts
+    map<string, pair<int, int> > alleleHetRefAltCounts; // map from allele spec to (ref, alt) counts
 
     GenotypeCombo(void) : prob(0) { }
+
+    void init(void);
 
     int numberOfAlleles(void);
     void initAlleleFrequencies(void);
     int alleleFrequency(Allele& allele);
-    void updateAlleleFrequencies(Genotype* oldGenotype, Genotype* newGenotype);
+    void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype);
     map<string, int> countAlleles(void);
     map<int, int> countFrequencies(void);
-    vector<int> counts(void); // the counts of frequencies of the alleles in the genotype
+    vector<int> counts(void); // the counts of frequencies of the alleles in the genotype combo
+    vector<string> alleles(void);  // the string representations of alleles in the genotype combo
     bool isHomozygous(void); // returns true if the combination is 100% homozygous across all individuals
                              // e.g. if there is no variation
-
 
 };
 
@@ -123,19 +135,22 @@ public:
     long double priorProbGenotypeCombo;
     long double priorProbGenotypeComboG_Af;
     long double priorProbGenotypeComboAf;
+    long double priorProbBinomialObservations;
 
     GenotypeComboResult(GenotypeCombo* gc,
             long double cp,
             long double pogg,
             long double ppgc,
             long double ppgcgaf,
-            long double ppgcaf)
+            long double ppgcaf,
+            long double ppbo)
         : combo(gc)
         , priorComboProb(cp)
         , probObsGivenGenotypes(pogg)
         , priorProbGenotypeCombo(ppgc)
         , priorProbGenotypeComboG_Af(ppgcgaf)
         , priorProbGenotypeComboAf(ppgcaf)
+        , priorProbBinomialObservations(ppbo)
     { }
 
 };
@@ -158,6 +173,7 @@ void
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
+    Samples& samples,
     int bandwidth, int banddepth,
     float logStepMax);
 
@@ -165,6 +181,7 @@ void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
+    Samples& samples,
     int bandwidth, int banddepth,
     float logStepMax);
 
@@ -172,6 +189,7 @@ void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
+    Samples& samples,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,

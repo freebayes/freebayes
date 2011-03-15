@@ -277,6 +277,7 @@ int main (int argc, char *argv[]) {
         bandedGenotypeCombinationsIncludingAllHomozygousCombos(
                 bandedCombos,
                 sampleGenotypes,
+                samples,
                 genotypesByPloidy,
                 genotypeAlleles,
                 parameters.WB,
@@ -289,7 +290,7 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("calculating genotype combination likelihoods");
 
-        genotypeCombinationsPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled, parameters.diffusionPriorScalar);
+        genotypeCombinationsPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled, parameters.useBinomialObsPriors, parameters.diffusionPriorScalar);
 
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
@@ -393,6 +394,7 @@ int main (int argc, char *argv[]) {
                 long double priorln = gc->priorProbGenotypeCombo;
                 long double priorlnG_Af = gc->priorProbGenotypeComboG_Af;
                 long double priorlnAf = gc->priorProbGenotypeComboAf;
+                long double priorlnBin = gc->priorProbBinomialObservations;
 
                 parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
 
@@ -412,8 +414,9 @@ int main (int argc, char *argv[]) {
                     << "," << priorln
                     << "," << priorlnG_Af
                     << "," << priorlnAf
-                    << "," << dataLikelihoodln + priorln
-                    << "," << safe_exp(dataLikelihoodln + priorln - posteriorNormalizer)
+                    << "," << priorlnBin
+                    << "," << dataLikelihoodln + priorln + priorlnBin
+                    << "," << safe_exp(dataLikelihoodln + priorln + priorlnBin - posteriorNormalizer)
                     << endl;
             }
         }

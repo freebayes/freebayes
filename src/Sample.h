@@ -7,7 +7,6 @@
 #include <utility>
 #include "Utility.h"
 #include "Allele.h"
-#include "Genotype.h"
 
 using namespace std;
 
@@ -32,13 +31,9 @@ public:
     pair<pair<int, int>, pair<int, int> >
     baseCount(string refbase, string altbase);
 
-    vector<Genotype*> genotypesWithEvidence(vector<Genotype>& genotypes);
-
     int baseCount(string base, AlleleStrand strand);
 
     string json(void);
-
-    vector<int> alleleObservationCounts(Genotype& genotype);
 
 };
 

@@ -21,6 +21,7 @@ genotypeCombinationsPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
+        bool useBinomialProbs,
         long double diffusionPriorScalarln);
 
 void genotypeCombinationsPriorProbability(
@@ -29,6 +30,7 @@ void genotypeCombinationsPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
+        bool useBinomialProbs,
         long double diffusionPriorScalarln);
 
 #endif
