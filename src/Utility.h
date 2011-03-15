@@ -62,6 +62,7 @@ long double betaln(const vector<long double>& alphas);
 long double beta(const vector<long double>& alphas);
 
 long double hoeffding(double successes, double trials, double prob);
+long double hoeffdingln(double successes, double trials, double prob);
 
 int levenshteinDistance(const std::string source, const std::string target);
 bool isTransition(string& ref, string& alt);

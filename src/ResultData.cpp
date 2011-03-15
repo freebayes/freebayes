@@ -290,19 +290,19 @@ string vcf(
         << "SAR=" << baseCountsReverseTotal.second << ";"
         << "SRB=" << ((referenceObsCount == 0) ? 0 : (double) baseCountsForwardTotal.first / (double) referenceObsCount) << ";"
         << "SAB=" << ((alternateObsCount == 0) ? 0 : (double) baseCountsForwardTotal.second / (double) alternateObsCount) << ";"
-        << "SRP=" << ((referenceObsCount == 0) ? 0 : float2phred(hoeffding(baseCountsForwardTotal.first, referenceObsCount, 0.5))) << ";"
-        << "SAP=" << ((alternateObsCount == 0) ? 0 : float2phred(hoeffding(baseCountsForwardTotal.second, alternateObsCount, 0.5))) << ";"
+        << "SRP=" << ((referenceObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.first, referenceObsCount, 0.5))) << ";"
+        << "SAP=" << ((alternateObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.second, alternateObsCount, 0.5))) << ";"
         << "ABR=" << hetReferenceObsCount <<  ";"
         << "ABA=" << hetAlternateObsCount <<  ";"
         << "AB="  << ((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ) << ";"
-        << "ABP=" << ((hetAllObsCount == 0) ? 0 : float2phred(hoeffding(hetReferenceObsCount, hetAllObsCount, 0.5))) << ";"
+        << "ABP=" << ((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetReferenceObsCount, hetAllObsCount, 0.5))) << ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";"
         << "MQM=" << ((alternateAlleles.size() == 0) ? 0 : (double) mqsum / (double) alternateAlleles.size()) << ";"
         << "BPL=" << basesLeft << ";"
         << "BPR=" << basesRight << ";"
         << "RPL=" << readsLeft << ";"
         << "RPR=" << readsRight << ";"
-        << "RPP=" << float2phred(hoeffding(readsLeft, readsRight + readsLeft, 0.5)) << ";"  // estimates upper bound for the lower tail of the binomial distribution
+        << "RPP=" << ln2phred(hoeffdingln(readsLeft, readsRight + readsLeft, 0.5)) << ";"  // estimates upper bound for the lower tail of the binomial distribution
         << "LRB=" << ((double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) - 0.5) * 2 << ";";
 
     if (bestOverallComboIsHet) {
