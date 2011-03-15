@@ -223,7 +223,7 @@ int GenotypeCombo::numberOfAlleles(void) {
 }
 
 // initializes cached counts associated with each GenotypeCombo
-void GenotypeCombo::init(void) {
+void GenotypeCombo::init(bool useBinomialProbs) {
     for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
         Sample& sample = *s->sample;
         for (Genotype::iterator a = s->genotype->begin(); a != s->genotype->end(); ++a) {
@@ -237,21 +237,23 @@ void GenotypeCombo::init(void) {
                 alleleFrequencies.insert(make_pair(alleleBase, a->count));
             }
 
-            // observational frequencies for binomial priors
-            Sample::iterator as = sample.find(alleleBase);
-            if (as != sample.end()) {
-                vector<Allele*> alleles = as->second;
-                for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
-                    const Allele& allele = **o;
-                    if (allele.basesLeft >= allele.basesRight) {
-                        alleleReadPlacementCounts[alleleBase].first += 1;
-                    } else {
-                        alleleReadPlacementCounts[alleleBase].second += 1;
-                    }
-                    if (allele.strand == STRAND_FORWARD) {
-                        alleleStrandCounts[alleleBase].first += 1;
-                    } else {
-                        alleleStrandCounts[alleleBase].second += 1;
+            if (useBinomialProbs) {
+                // observational frequencies for binomial priors
+                Sample::iterator as = sample.find(alleleBase);
+                if (as != sample.end()) {
+                    vector<Allele*> alleles = as->second;
+                    for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
+                        const Allele& allele = **o;
+                        if (allele.basesLeft >= allele.basesRight) {
+                            alleleReadPlacementCounts[alleleBase].first += 1;
+                        } else {
+                            alleleReadPlacementCounts[alleleBase].second += 1;
+                        }
+                        if (allele.strand == STRAND_FORWARD) {
+                            alleleStrandCounts[alleleBase].first += 1;
+                        } else {
+                            alleleStrandCounts[alleleBase].second += 1;
+                        }
                     }
                 }
             }
@@ -272,38 +274,45 @@ int GenotypeCombo::alleleFrequency(Allele& allele) {
     }
 }
 
-void GenotypeCombo::updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype) {
-    // TODO improve efficiency by only adjusting for bases which are actually changed
+void GenotypeCombo::updateCachedCounts(
+        Sample* sample,
+        Genotype* oldGenotype,
+        Genotype* newGenotype,
+        bool useBinomialProbs) {
+
+    // TODO can we improve efficiency by only adjusting for bases which are actually changed
 
     // remove allele frequency information for old genotype
     for (Genotype::iterator g = oldGenotype->begin(); g != oldGenotype->end(); ++g) {
         GenotypeElement& ge = *g;
         const string& base = ge.allele.currentBase;
         alleleFrequencies[base] -= ge.count;
-        Sample::iterator s = sample->find(base);
-        if (s != sample->end()) {
-            const vector<Allele*>& alleles = s->second;
-            int forward_strand = 0;
-            int reverse_strand = 0;
-            int placed_left = 0;
-            int placed_right = 0;
-            for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                const Allele& allele = **a;
-                if (allele.strand == STRAND_FORWARD) {
-                    ++forward_strand;
-                } else {
-                    ++reverse_strand;
+        if (useBinomialProbs) {
+            Sample::iterator s = sample->find(base);
+            if (s != sample->end()) {
+                const vector<Allele*>& alleles = s->second;
+                int forward_strand = 0;
+                int reverse_strand = 0;
+                int placed_left = 0;
+                int placed_right = 0;
+                for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                    const Allele& allele = **a;
+                    if (allele.strand == STRAND_FORWARD) {
+                        ++forward_strand;
+                    } else {
+                        ++reverse_strand;
+                    }
+                    if (allele.basesLeft >= allele.basesRight) {
+                        ++placed_left;
+                    } else {
+                        ++placed_right;
+                    }
                 }
-                if (allele.basesLeft >= allele.basesRight) {
-                    ++placed_left;
-                } else {
-                    ++placed_right;
-                }
+                alleleStrandCounts[base].first -= forward_strand;
+                alleleStrandCounts[base].second -= forward_strand;
+                alleleReadPlacementCounts[base].first -= placed_left;
+                alleleReadPlacementCounts[base].second -= placed_right;
             }
-            alleleStrandCounts[base].first -= forward_strand;
-            alleleStrandCounts[base].second -= forward_strand;
-            alleleReadPlacementCounts[base].first -= placed_left;
-            alleleReadPlacementCounts[base].second -= placed_right;
         }
     }
 
@@ -312,62 +321,71 @@ void GenotypeCombo::updateCachedCounts(Sample* sample, Genotype* oldGenotype, Ge
         GenotypeElement& ge = *g;
         const string& base = ge.allele.currentBase;
         alleleFrequencies[base] += ge.count;
-        Sample::iterator s = sample->find(base);
-        if (s != sample->end()) {
-            const vector<Allele*>& alleles = s->second;
-            int forward_strand = 0;
-            int reverse_strand = 0;
-            int placed_left = 0;
-            int placed_right = 0;
-            for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                const Allele& allele = **a;
-                if (allele.strand == STRAND_FORWARD) {
-                    ++forward_strand;
-                } else {
-                    ++reverse_strand;
+        if (useBinomialProbs) {
+            Sample::iterator s = sample->find(base);
+            if (s != sample->end()) {
+                const vector<Allele*>& alleles = s->second;
+                int forward_strand = 0;
+                int reverse_strand = 0;
+                int placed_left = 0;
+                int placed_right = 0;
+                for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                    const Allele& allele = **a;
+                    if (allele.strand == STRAND_FORWARD) {
+                        ++forward_strand;
+                    } else {
+                        ++reverse_strand;
+                    }
+                    if (allele.basesLeft >= allele.basesRight) {
+                        ++placed_left;
+                    } else {
+                        ++placed_right;
+                    }
                 }
-                if (allele.basesLeft >= allele.basesRight) {
-                    ++placed_left;
-                } else {
-                    ++placed_right;
-                }
+                alleleStrandCounts[base].first += forward_strand;
+                alleleStrandCounts[base].second += forward_strand;
+                alleleReadPlacementCounts[base].first += placed_left;
+                alleleReadPlacementCounts[base].second += placed_right;
             }
-            alleleStrandCounts[base].first += forward_strand;
-            alleleStrandCounts[base].second += forward_strand;
-            alleleReadPlacementCounts[base].first += placed_left;
-            alleleReadPlacementCounts[base].second += placed_right;
         }
     }
 
     // remove allele frequencies which are now 0 or below
-    for (map<string, int>::iterator af = alleleFrequencies.begin(); af != alleleFrequencies.end(); ++af) {
+    for (map<string, int>::iterator af = alleleFrequencies.begin();
+            af != alleleFrequencies.end(); ++af) {
         if (af->second <= 0) {
             alleleFrequencies.erase(af);
         }
     }
 
-    for (map<string, pair<int, int> >::iterator as = alleleStrandCounts.begin(); as != alleleStrandCounts.end(); ++as) {
-        if (as->second.first <= 0) {
-            as->second.first = 0;
-        }
-        if (as->second.second <= 0) {
-            as->second.second = 0;
-        }
-        if (as->second.first == 0 && as->second.second == 0) {
-            alleleStrandCounts.erase(as);
-        }
-    }
+    if (useBinomialProbs) {
 
-    for (map<string, pair<int, int> >::iterator ap = alleleReadPlacementCounts.begin(); ap != alleleReadPlacementCounts.end(); ++ap) {
-        if (ap->second.first <= 0) {
-            ap->second.first = 0;
+        for (map<string, pair<int, int> >::iterator as = alleleStrandCounts.begin();
+                as != alleleStrandCounts.end(); ++as) {
+            if (as->second.first <= 0) {
+                as->second.first = 0;
+            }
+            if (as->second.second <= 0) {
+                as->second.second = 0;
+            }
+            if (as->second.first == 0 && as->second.second == 0) {
+                alleleStrandCounts.erase(as);
+            }
         }
-        if (ap->second.second <= 0) {
-            ap->second.second = 0;
+
+        for (map<string, pair<int, int> >::iterator ap = alleleReadPlacementCounts.begin();
+                ap != alleleReadPlacementCounts.end(); ++ap) {
+            if (ap->second.first <= 0) {
+                ap->second.first = 0;
+            }
+            if (ap->second.second <= 0) {
+                ap->second.second = 0;
+            }
+            if (ap->second.first == 0 && ap->second.second == 0) {
+                alleleReadPlacementCounts.erase(ap);
+            }
         }
-        if (ap->second.first == 0 && ap->second.second == 0) {
-            alleleReadPlacementCounts.erase(ap);
-        }
+
     }
 
 }
@@ -438,6 +456,7 @@ bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     Samples& samples,
+    bool useBinomialProbs,
     int bandwidth, int banddepth,
     float logStepMax) {
 
@@ -452,7 +471,7 @@ bandedGenotypeCombinations(
         comboKing.push_back(SampleGenotypeProb(name, &samples[name], p.first, p.second));
         comboKing.prob += p.second;
     }
-    comboKing.init();
+    comboKing.init(useBinomialProbs);
 
     // overview:
     //
@@ -533,7 +552,7 @@ bandedGenotypeCombinations(
                         // combo
                         Genotype* oldGenotype = currentSampleGenotype->genotype;
                         Genotype* newGenotype = p.first;
-                        combo.updateCachedCounts(currentSampleGenotype->sample, oldGenotype, newGenotype);
+                        combo.updateCachedCounts(currentSampleGenotype->sample, oldGenotype, newGenotype, useBinomialProbs);
                         // replace genotype with new genotype
                         currentSampleGenotype->genotype = newGenotype;
                         // update data likelihood sum for combo
@@ -559,6 +578,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     Samples& samples,
+    bool useBinomialProbs,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
@@ -566,7 +586,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
     // obtain the combos
 
-    bandedGenotypeCombinations(combos, sampleGenotypes, samples, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(combos, sampleGenotypes, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
 
     // determine which homozygous combos we already have
 
@@ -623,7 +643,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
         for (GenotypeCombo::iterator sgp = gc.begin(); sgp != gc.end(); ++sgp) {
             gc.prob += sgp->prob; // set up data likelihood for combo
         }
-        gc.init();  // cache allele frequency information
+        gc.init(useBinomialProbs);  // cache allele frequency information
         combos.push_back(gc);
     }
 
@@ -634,9 +654,10 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     Samples& samples,
+    bool useBinomialProbs,
     int bandwidth, int banddepth, float logStepMax) {
 
-    bandedGenotypeCombinations(combos, sampleGenotypes, samples, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(combos, sampleGenotypes, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
     // is there already a homozygous combo?
     bool hasHomozygousCombo = false;
     for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {

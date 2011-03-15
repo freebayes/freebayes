@@ -109,12 +109,12 @@ public:
 
     GenotypeCombo(void) : prob(0) { }
 
-    void init(void);
+    void init(bool useBinomialProbs);
 
     int numberOfAlleles(void);
     void initAlleleFrequencies(void);
     int alleleFrequency(Allele& allele);
-    void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype);
+    void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype, bool useBinomialProbs);
     map<string, int> countAlleles(void);
     map<int, int> countFrequencies(void);
     vector<int> counts(void); // the counts of frequencies of the alleles in the genotype combo
@@ -174,6 +174,7 @@ bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     Samples& samples,
+    bool useBinomialProbs,
     int bandwidth, int banddepth,
     float logStepMax);
 
@@ -182,6 +183,7 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     Samples& samples,
+    bool useBinomialProbs,
     int bandwidth, int banddepth,
     float logStepMax);
 
@@ -190,6 +192,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleGenotypesAndProbs& sampleGenotypes,
     Samples& samples,
+    bool useBinomialProbs,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,

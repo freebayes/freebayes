@@ -278,6 +278,7 @@ int main (int argc, char *argv[]) {
                 bandedCombos,
                 sampleGenotypes,
                 samples,
+                parameters.useBinomialObsPriors,
                 genotypesByPloidy,
                 genotypeAlleles,
                 parameters.WB,
@@ -290,7 +291,14 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("calculating genotype combination likelihoods");
 
-        genotypeCombinationsPriorProbability(genotypeComboProbs, bandedCombos, refAllele, parameters.TH, parameters.pooled, parameters.useBinomialObsPriors, parameters.diffusionPriorScalar);
+        genotypeCombinationsPriorProbability(
+                genotypeComboProbs,
+                bandedCombos,
+                refAllele,
+                parameters.TH,
+                parameters.pooled,
+                parameters.useBinomialObsPriors,
+                parameters.diffusionPriorScalar);
 
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
