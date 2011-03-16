@@ -245,7 +245,7 @@ void GenotypeCombo::init(bool useBinomialProbs) {
                     vector<Allele*> alleles = as->second;
                     for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
                         const Allele& allele = **o;
-                        if (allele.basesLeft >= allele.basesRight) {
+                        if (allele.basesLeft() >= allele.basesRight()) {
                             alleleReadPlacementCounts[alleleBase].first += 1;
                         } else {
                             alleleReadPlacementCounts[alleleBase].second += 1;
@@ -303,7 +303,7 @@ void GenotypeCombo::updateCachedCounts(
                     } else {
                         ++reverse_strand;
                     }
-                    if (allele.basesLeft >= allele.basesRight) {
+                    if (allele.basesLeft() >= allele.basesRight()) {
                         ++placed_left;
                     } else {
                         ++placed_right;
@@ -337,7 +337,7 @@ void GenotypeCombo::updateCachedCounts(
                     } else {
                         ++reverse_strand;
                     }
-                    if (allele.basesLeft >= allele.basesRight) {
+                    if (allele.basesLeft() >= allele.basesRight()) {
                         ++placed_left;
                     } else {
                         ++placed_right;

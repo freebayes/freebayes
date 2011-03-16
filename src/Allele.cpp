@@ -23,6 +23,22 @@ void updateAllelesCachedData(vector<Allele*>& alleles) {
     }
 }
 
+const int Allele::basesLeft(void) const {
+    if (type == ALLELE_REFERENCE) {
+        return bpLeft + referenceOffset();
+    } else {
+        return bpLeft;
+    }
+}
+
+const int Allele::basesRight(void) const {
+    if (type == ALLELE_REFERENCE) {
+        return bpRight - referenceOffset();
+    } else {
+        return bpRight;
+    }
+}
+
 // quality at a given reference position
 const short Allele::currentQuality(void) const {
     switch (this->type) {

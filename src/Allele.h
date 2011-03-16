@@ -104,8 +104,8 @@ public:
     long double* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
-    int basesLeft; // how many bases are in the read to the left of the allele
-    int basesRight; // how many bases are in the read to the left of the allele
+    int bpLeft; // how many bases are in the read to the left of the allele
+    int bpRight; // how many bases are in the read to the left of the allele
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
     string readID;          // id of the read which the allele is drawn from
@@ -143,8 +143,8 @@ public:
         , currentReferencePosition(crefpos)
         , currentReferenceBase(crefbase)
         , length(len)
-        , basesLeft(bleft)
-        , basesRight(bright)
+        , bpLeft(bleft)
+        , bpRight(bright)
         , currentBase(alt)
         , alternateSequence(alt)
         , sampleID(sampleid)
@@ -205,6 +205,8 @@ public:
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;
+    const int basesLeft(void) const; // returns the bases left within the read of the current position within the allele
+    const int basesRight(void) const; // returns the bases right within the read of the current position within the allele
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
     void update(void); // for reference alleles, updates currentBase and quality
     // TODO update this to reflect different insertions (e.g. IATGC instead of I4)
