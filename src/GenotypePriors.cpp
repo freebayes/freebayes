@@ -104,7 +104,7 @@ genotypeCombinationPriorProbability(
             }
             // ok... now do the same move for the observation counts
             // --- this should capture "Allele Balance"
-            priorObservationExpectationProb += multinomialSamplingProb(combo->alleleProbs(), observationCounts);
+            priorObservationExpectationProb += multinomialSamplingProbLn(combo->alleleProbs(), observationCounts);
         }
 
         // with larger population samples, the effect of 

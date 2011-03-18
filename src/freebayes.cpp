@@ -181,7 +181,7 @@ int main (int argc, char *argv[]) {
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;
         }
-        DEBUG2("genotype alleles: " << genotypeAlleles);
+        DEBUG("genotype alleles: " << genotypeAlleles);
 
         ++processed_sites;
 
@@ -439,7 +439,7 @@ int main (int argc, char *argv[]) {
         }
 
         DEBUG2("got bestAlleleSamplingProb");
-        DEBUG2("pVar = " << pVar << " " << parameters.PVL);
+        DEBUG("pVar = " << pVar << " " << parameters.PVL);
 
         if (!parameters.suppressOutput) {
 

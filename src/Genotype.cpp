@@ -431,7 +431,7 @@ vector<int> GenotypeCombo::counts(void) {
 
 // how many copies of the locus are in the whole genotype combination?
 int GenotypeCombo::ploidy(void) {
-    int copies;
+    int copies = 0;
     for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
         copies += a->second;
     }
