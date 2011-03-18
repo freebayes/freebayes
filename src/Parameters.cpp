@@ -127,20 +127,21 @@ void Parameters::usage(char** argv) {
          << "                   putative insertion or deletion allele.  default: 0" << endl
          // algorithmic switches, mixed with optimizations
          // TODO cleanup
-         << "   -D --read-dependence-factor N" << endl
-         << "                   Incorporate non-independence of reads by scaling successive" << endl
-         << "                   observations by this factor during data likelihood" << endl
-         << "                   calculations.  default: 0.9" << endl
          << "   -V --obs-priors" << endl
          << "                   Incorporate expectations about osbervations into the priors," << endl
          << "                   Uses read placement probability, strand balance probability," << endl
          << "                   and allele balance probability." << endl
+         << "   -D --read-dependence-factor N" << endl
+         << "                   Incorporate non-independence of reads by scaling successive" << endl
+         << "                   observations by this factor during data likelihood" << endl
+         << "                   calculations.  default: 0.9" << endl
          << "   -W --posterior-integration-bandwidth N" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which lie no more than N steps from the most likely" << endl
-         << "                   combination in terms of data likelihoods, taking the N" << endl
-         << "                   steps from the most to least likely genotype for each" << endl
-         << "                   individual.  default: 2" << endl
+         << "                   combination in terms of data likelihoods." << endl
+         // taking the N" << endl
+         // << "                   steps from the most to least likely genotype for each" << endl
+         // << "                   individual.  default: 2" << endl
          << "   -Y --posterior-integration-banddepth N" << endl
          << "                   Generate all genotype combinations for which up to this" << endl
          << "                   number of samples have up to their -W'th worst genotype" << endl
@@ -152,13 +153,14 @@ void Parameters::usage(char** argv) {
          << "   -K --posterior-integration-depth N" << endl
          << "                   Keep this many genotype combinations for calculating genotype" << endl
          << "                   marginal probabilities for each sample and overall variant" << endl
-         << "                   quality.  Default behavior is to keep all.  For the default" << endl
-         << "                   value of -W (2) each variant site will require 3N^2 calculations" << endl
-         << "                   to establish marginal genotype probabilities where N is the" << endl
-         << "                   number of individuals, so setting a sensible number here" << endl
-         << "                   (0.1N to 0.25N) will help improve scalability in large" << endl
-         << "                   datasets at the cost of accuracy in calcuating marginal" << endl
-         << "                   genotype probabilites." << endl
+         << "                   quality." << endl
+         //Default behavior is to keep all.  For the default" << endl
+         //<< "                   value of -W (2) each variant site will require 3N^2 calculations" << endl
+         //<< "                   to establish marginal genotype probabilities where N is the" << endl
+         //<< "                   number of individuals, so setting a sensible number here" << endl
+         //<< "                   (0.1N to 0.25N) will help improve scalability in large" << endl
+         //<< "                   datasets at the cost of accuracy in calcuating marginal" << endl
+         //<< "                   genotype probabilites." << endl
          << "   -= --no-marginals" << endl
          << "                   Do not calculate the marginal probability of genotypes.  Saves" << endl
          << "                   time.  Useful when setting --posterior-integration-depth." << endl
