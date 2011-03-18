@@ -181,7 +181,6 @@ string vcf(
                 if (hetAlternateObsCount > 0) {
                     ++hetAltRefSamples;
                 }
-                hetAllObsCount += hetReferenceObsCount + hetAlternateObsCount;
             } else {
                 if (genotype->alleleFrequency(refbase) > 0) {
                     ++homRefSamples;
@@ -209,6 +208,7 @@ string vcf(
     }
 
     int allObsCount = alternateObsCount + referenceObsCount;
+    hetAllObsCount = hetReferenceObsCount + hetAlternateObsCount;
 
     unsigned int basesLeft = 0;
     unsigned int basesRight = 0;
