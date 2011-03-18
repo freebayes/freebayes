@@ -223,7 +223,7 @@ int GenotypeCombo::numberOfAlleles(void) {
 }
 
 // initializes cached counts associated with each GenotypeCombo
-void GenotypeCombo::init(bool useBinomialProbs) {
+void GenotypeCombo::init(bool useObsExpectations) {
     for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
         const SampleDataLikelihood& sdl = **s;
         const Sample& sample = *sdl.sample;
@@ -238,7 +238,7 @@ void GenotypeCombo::init(bool useBinomialProbs) {
                 alleleFrequencies.insert(make_pair(alleleBase, a->count));
             }
 
-            if (useBinomialProbs) {
+            if (useObsExpectations) {
                 // observational frequencies for binomial priors
                 Sample::const_iterator as = sample.find(alleleBase);
                 if (as != sample.end()) {
@@ -279,7 +279,7 @@ void GenotypeCombo::updateCachedCounts(
         Sample* sample,
         Genotype* oldGenotype,
         Genotype* newGenotype,
-        bool useBinomialProbs) {
+        bool useObsExpectations) {
 
     // TODO can we improve efficiency by only adjusting for bases which are actually changed
 
@@ -288,7 +288,7 @@ void GenotypeCombo::updateCachedCounts(
         GenotypeElement& ge = *g;
         const string& base = ge.allele.currentBase;
         alleleFrequencies[base] -= ge.count;
-        if (useBinomialProbs) {
+        if (useObsExpectations) {
             Sample::iterator s = sample->find(base);
             if (s != sample->end()) {
                 const vector<Allele*>& alleles = s->second;
@@ -322,7 +322,7 @@ void GenotypeCombo::updateCachedCounts(
         GenotypeElement& ge = *g;
         const string& base = ge.allele.currentBase;
         alleleFrequencies[base] += ge.count;
-        if (useBinomialProbs) {
+        if (useObsExpectations) {
             Sample::iterator s = sample->find(base);
             if (s != sample->end()) {
                 const vector<Allele*>& alleles = s->second;
@@ -359,7 +359,7 @@ void GenotypeCombo::updateCachedCounts(
         }
     }
 
-    if (useBinomialProbs) {
+    if (useObsExpectations) {
 
         for (map<string, pair<int, int> >::iterator as = alleleStrandCounts.begin();
                 as != alleleStrandCounts.end(); ++as) {
@@ -429,6 +429,24 @@ vector<int> GenotypeCombo::counts(void) {
     return counts;
 }
 
+// how many copies of the locus are in the whole genotype combination?
+int GenotypeCombo::ploidy(void) {
+    int copies;
+    for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
+        copies += a->second;
+    }
+    return copies;
+}
+
+vector<long double> GenotypeCombo::alleleProbs(void) {
+    vector<long double> probs;
+    long double copies = ploidy();
+    for (map<string,int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
+        probs.push_back(a->second / copies);
+    }
+    return probs;
+}
+
 vector<string> GenotypeCombo::alleles(void) {
     vector<string> bases;
     for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
@@ -458,7 +476,7 @@ bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
-    bool useBinomialProbs,
+    bool useObsExpectations,
     int bandwidth, int banddepth,
     float logStepMax) {
 
@@ -472,7 +490,7 @@ bandedGenotypeCombinations(
         comboKing.push_back(sdl);
         comboKing.prob += sdl->prob;
     }
-    comboKing.init(useBinomialProbs);
+    comboKing.init(useObsExpectations);
 
     // overview:
     //
@@ -554,7 +572,7 @@ bandedGenotypeCombinations(
                         // get the old and new genotypes, which we compare to
                         // change the cached counts and probability of the
                         // combo
-                        combo.updateCachedCounts(oldsdl.sample, oldsdl.genotype, newsdl->genotype, useBinomialProbs);
+                        combo.updateCachedCounts(oldsdl.sample, oldsdl.genotype, newsdl->genotype, useObsExpectations);
                         // replace genotype with new genotype
                         oldsdl_ptr = newsdl;
                         // find data likelihood difference from ComboKing
@@ -577,7 +595,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
-    bool useBinomialProbs,
+    bool useObsExpectations,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
@@ -585,7 +603,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
     // obtain the combos
 
-    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useObsExpectations, bandwidth, banddepth, logStepMax);
 
     // determine which homozygous combos we already have
 
@@ -644,7 +662,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
         for (GenotypeCombo::iterator sdl = gc.begin(); sdl != gc.end(); ++sdl) {
             gc.prob += (*sdl)->prob; // set up data likelihood for combo
         }
-        gc.init(useBinomialProbs);  // cache allele frequency information
+        gc.init(useObsExpectations);  // cache allele frequency information
         combos.push_back(gc);
     }
 
@@ -655,10 +673,10 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
-    bool useBinomialProbs,
+    bool useObsExpectations,
     int bandwidth, int banddepth, float logStepMax) {
 
-    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useBinomialProbs, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useObsExpectations, bandwidth, banddepth, logStepMax);
     // is there already a homozygous combo?
     bool hasHomozygousCombo = false;
     for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {

@@ -109,12 +109,14 @@ public:
 
     GenotypeCombo(void) : prob(0) { }
 
-    void init(bool useBinomialProbs);
+    void init(bool useObsExpectations);
 
     int numberOfAlleles(void);
+    vector<long double> alleleProbs(void);  // scales the above by the total number of alleles
+    int ploidy(void); // the number of copies of the locus in this combination
     void initAlleleFrequencies(void);
     int alleleFrequency(Allele& allele);
-    void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype, bool useBinomialProbs);
+    void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype, bool useObsExpectations);
     map<string, int> countAlleles(void);
     map<int, int> countFrequencies(void);
     vector<int> counts(void); // the counts of frequencies of the alleles in the genotype combo
@@ -135,7 +137,7 @@ public:
     long double priorProbGenotypeCombo;
     long double priorProbGenotypeComboG_Af;
     long double priorProbGenotypeComboAf;
-    long double priorProbBinomialObservations;
+    long double priorProbObservations;
 
     GenotypeComboResult(GenotypeCombo* gc,
             long double cp,
@@ -150,7 +152,7 @@ public:
         , priorProbGenotypeCombo(ppgc)
         , priorProbGenotypeComboG_Af(ppgcgaf)
         , priorProbGenotypeComboAf(ppgcaf)
-        , priorProbBinomialObservations(ppbo)
+        , priorProbObservations(ppbo)
     { }
 
 };
@@ -174,7 +176,7 @@ bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleGenotypes,
     Samples& samples,
-    bool useBinomialProbs,
+    bool useObsExpectations,
     int bandwidth, int banddepth,
     float logStepMax);
 
@@ -183,7 +185,7 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleGenotypes,
     Samples& samples,
-    bool useBinomialProbs,
+    bool useObsExpectations,
     int bandwidth, int banddepth,
     float logStepMax);
 
@@ -192,7 +194,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleGenotypes,
     Samples& samples,
-    bool useBinomialProbs,
+    bool useObsExpectations,
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,

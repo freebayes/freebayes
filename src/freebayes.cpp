@@ -287,7 +287,7 @@ int main (int argc, char *argv[]) {
                 bandedCombos,
                 sampleDataLikelihoods,
                 samples,
-                parameters.useBinomialObsPriors,
+                parameters.obsExpectationPriors,
                 genotypesByPloidy,
                 genotypeAlleles,
                 parameters.WB,
@@ -306,7 +306,7 @@ int main (int argc, char *argv[]) {
                 refAllele,
                 parameters.TH,
                 parameters.pooled,
-                parameters.useBinomialObsPriors,
+                parameters.obsExpectationPriors,
                 parameters.diffusionPriorScalar);
 
         // sort by the normalized datalikelihood + prior
@@ -411,7 +411,7 @@ int main (int argc, char *argv[]) {
                 long double priorln = gc->priorProbGenotypeCombo;
                 long double priorlnG_Af = gc->priorProbGenotypeComboG_Af;
                 long double priorlnAf = gc->priorProbGenotypeComboAf;
-                long double priorlnBin = gc->priorProbBinomialObservations;
+                long double priorlnBin = gc->priorProbObservations;
 
                 parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
 

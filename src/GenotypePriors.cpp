@@ -70,7 +70,7 @@ genotypeCombinationPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
-        bool useBinomialProbs,
+        bool useObsExpectations,
         long double diffusionPriorScalar) {
 
         // when we are operating on pooled samples, we will not be able to
@@ -81,20 +81,30 @@ genotypeCombinationPriorProbability(
             priorProbabilityOfGenotypeComboG_Af = probabilityGenotypeComboGivenAlleleFrequencyln(*combo, refAllele);
         }
 
-        long double priorBionimalProbability = 0;
-        if (useBinomialProbs) {
+        long double priorObservationExpectationProb = 0;
+        if (useObsExpectations) {
             // for each alternate and the reference allele
             // calculate the binomial probability that we see the given strand balance and read placement prob
             vector<string> alleles = combo->alleles();
+            vector<int> observationCounts;
+            vector<long double> comboAllelecounts;
             for (vector<string>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 const string& allele = *a;
-                priorBionimalProbability += binomialProbln(combo->alleleStrandCounts[allele].first,
-                        combo->alleleStrandCounts[allele].first + combo->alleleStrandCounts[allele].second,
+                const pair<int, int>& alleleStrandObs = combo->alleleStrandCounts[allele];
+                observationCounts.push_back(alleleStrandObs.first + alleleStrandObs.second);
+                priorObservationExpectationProb += binomialProbln(
+                        alleleStrandObs.first,
+                        alleleStrandObs.first + alleleStrandObs.second,
                         0.5);
-                priorBionimalProbability += binomialProbln(combo->alleleReadPlacementCounts[allele].first,
-                        combo->alleleReadPlacementCounts[allele].first + combo->alleleReadPlacementCounts[allele].second,
+                const pair<int, int>& allelePlacemenObs = combo->alleleReadPlacementCounts[allele];
+                priorObservationExpectationProb += binomialProbln(
+                        allelePlacemenObs.first,
+                        allelePlacemenObs.first + allelePlacemenObs.second,
                         0.5);
             }
+            // ok... now do the same move for the observation counts
+            // --- this should capture "Allele Balance"
+            priorObservationExpectationProb += multinomialSamplingProb(combo->alleleProbs(), observationCounts);
         }
 
         // with larger population samples, the effect of 
@@ -110,7 +120,7 @@ genotypeCombinationPriorProbability(
             alleleFrequencyProbabilityln(combo->countFrequencies(), theta);
         long double priorProbabilityOfGenotypeCombo = 
             priorProbabilityOfGenotypeComboG_Af + priorProbabilityOfGenotypeComboAf;
-        long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob + priorBionimalProbability;
+        long double priorComboProb = priorProbabilityOfGenotypeCombo + combo->prob + priorObservationExpectationProb;
 
         return GenotypeComboResult(combo,
                     priorComboProb,
@@ -118,7 +128,7 @@ genotypeCombinationPriorProbability(
                     priorProbabilityOfGenotypeCombo,
                     priorProbabilityOfGenotypeComboG_Af,
                     priorProbabilityOfGenotypeComboAf,
-                    priorBionimalProbability);
+                    priorObservationExpectationProb);
 
 }
 
@@ -129,14 +139,14 @@ genotypeCombinationsPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
-        bool useBinomialProbs,
+        bool useObsExpectations,
         long double diffusionPriorScalar) {
 
     for (vector<GenotypeCombo>::iterator c = bandedCombos.begin(); c != bandedCombos.end(); ++c) {
 
         GenotypeCombo* combo = &*c;
 
-        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled, useBinomialProbs, diffusionPriorScalar));
+        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled, useObsExpectations, diffusionPriorScalar));
 
     }
 }

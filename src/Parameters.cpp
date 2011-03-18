@@ -131,9 +131,10 @@ void Parameters::usage(char** argv) {
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
          << "                   calculations.  default: 0.9" << endl
-         << "   -V --binomial-obs-priors" << endl
-         << "                   Include binomial probabilities for read placement and" << endl
-         << "                   strand balance in priors calculations." << endl
+         << "   -V --obs-priors" << endl
+         << "                   Incorporate expectations about osbervations into the priors," << endl
+         << "                   Uses read placement probability, strand balance probability," << endl
+         << "                   and allele balance probability." << endl
          << "   -W --posterior-integration-bandwidth N" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which lie no more than N steps from the most likely" << endl
@@ -228,7 +229,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
     useMappingQuality = false;
-    useBinomialObsPriors = false; // TODO
+    obsExpectationPriors = false; // TODO
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -305,7 +306,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
         {"read-dependence-factor", required_argument, 0, 'D'},
-        {"binomial-obs-priors", no_argument, 0, 'V'},
+        {"obs-priors", no_argument, 0, 'V'},
         //{"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
@@ -610,9 +611,9 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // binomial priors
+            // observation priors
             case 'V':
-                useBinomialObsPriors = true;
+                obsExpectationPriors = true;
                 break;
 
             // -W --posterior-integration-bandwidth
