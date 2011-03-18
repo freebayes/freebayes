@@ -106,8 +106,8 @@ void Parameters::usage(char** argv) {
          << "                   Count mismatches toward --read-mismatch-limit if the base" << endl
          << "                   quality of the mismatch is >= Q.  default: 10" << endl
          << "   -U --read-mismatch-limit N" << endl
-         << "                   Exclude reads with N mismatches where each mismatch has" << endl
-         << "                   base quality >= mismatch-base-quality-threshold." << endl
+         << "                   Exclude reads with more than N mismatches where each mismatch" << endl
+         << "                   has base quality >= mismatch-base-quality-threshold." << endl
          << "                   default: ~unbounded" << endl
          << "   -z --read-max-mismatch-fraction N" << endl
          << "                   Exclude reads with more than N [0,1] fraction of mismatches where" << endl
