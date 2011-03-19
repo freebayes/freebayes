@@ -287,7 +287,7 @@ int main (int argc, char *argv[]) {
                 bandedCombos,
                 sampleDataLikelihoods,
                 samples,
-                parameters.obsExpectationPriors,
+                parameters.obsBinomialPriors,
                 genotypesByPloidy,
                 genotypeAlleles,
                 parameters.WB,
@@ -306,7 +306,8 @@ int main (int argc, char *argv[]) {
                 refAllele,
                 parameters.TH,
                 parameters.pooled,
-                parameters.obsExpectationPriors,
+                parameters.obsBinomialPriors,
+                parameters.alleleBalancePriors,
                 parameters.diffusionPriorScalar);
 
         // sort by the normalized datalikelihood + prior

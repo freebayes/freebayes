@@ -70,7 +70,8 @@ genotypeCombinationPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
-        bool useObsExpectations,
+        bool binomialObsPriors,
+        bool alleleBalancePriors,
         long double diffusionPriorScalar) {
 
         // when we are operating on pooled samples, we will not be able to
@@ -82,7 +83,7 @@ genotypeCombinationPriorProbability(
         }
 
         long double priorObservationExpectationProb = 0;
-        if (useObsExpectations) {
+        if (binomialObsPriors) {
             // for each alternate and the reference allele
             // calculate the binomial probability that we see the given strand balance and read placement prob
             vector<string> alleles = combo->alleles();
@@ -104,7 +105,9 @@ genotypeCombinationPriorProbability(
             }
             // ok... now do the same move for the observation counts
             // --- this should capture "Allele Balance"
-            priorObservationExpectationProb += multinomialSamplingProbLn(combo->alleleProbs(), observationCounts);
+            if (alleleBalancePriors) {
+                priorObservationExpectationProb += multinomialSamplingProbLn(combo->alleleProbs(), observationCounts);
+            }
         }
 
         // with larger population samples, the effect of 
@@ -139,14 +142,23 @@ genotypeCombinationsPriorProbability(
         Allele& refAllele,
         long double theta,
         bool pooled,
-        bool useObsExpectations,
+        bool binomialObsPriors,
+        bool alleleBalancePriors,
         long double diffusionPriorScalar) {
 
     for (vector<GenotypeCombo>::iterator c = bandedCombos.begin(); c != bandedCombos.end(); ++c) {
 
         GenotypeCombo* combo = &*c;
 
-        genotypeComboProbs.push_back(genotypeCombinationPriorProbability(combo, refAllele, theta, pooled, useObsExpectations, diffusionPriorScalar));
+        genotypeComboProbs.push_back(
+                genotypeCombinationPriorProbability(
+                    combo,
+                    refAllele,
+                    theta,
+                    pooled,
+                    binomialObsPriors,
+                    alleleBalancePriors,
+                    diffusionPriorScalar));
 
     }
 }

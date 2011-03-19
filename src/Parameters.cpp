@@ -131,6 +131,10 @@ void Parameters::usage(char** argv) {
          << "                   Incorporate expectations about osbervations into the priors," << endl
          << "                   Uses read placement probability, strand balance probability," << endl
          << "                   and allele balance probability." << endl
+         << "   -a --allele-balance-priors" << endl
+         << "                   Use aggregate probability of observation balance between alleles" << endl
+         << "                   as a component of the priors.  Best for observations with minimal" << endl
+         << "                   inherent reference bias." << endl
          << "   -D --read-dependence-factor N" << endl
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
@@ -231,7 +235,8 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
     useMappingQuality = false;
-    obsExpectationPriors = false; // TODO
+    obsBinomialPriors = false; // TODO
+    alleleBalancePriors = false;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -319,6 +324,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
+        {"allele-balance-priors", no_argument, 0, 'a'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -328,7 +334,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOENZjH0diI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:^:W:F:C:K:Y:L:l:z:",
+        c = getopt_long(argc, argv, "hcOENZjH0diaI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:S:Q:U:$:e:T:P:D:^:W:F:C:K:Y:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -615,7 +621,12 @@ Parameters::Parameters(int argc, char** argv) {
 
             // observation priors
             case 'V':
-                obsExpectationPriors = true;
+                obsBinomialPriors = true;
+                break;
+
+            // allele balance
+            case 'a':
+                alleleBalancePriors = true;
                 break;
 
             // -W --posterior-integration-bandwidth

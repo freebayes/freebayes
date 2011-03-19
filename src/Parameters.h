@@ -53,7 +53,8 @@ public:
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled
     bool useMappingQuality;      //
-    bool obsExpectationPriors;
+    bool obsBinomialPriors;
+    bool alleleBalancePriors;
     int MQR;                     // -M --reference-mapping-quality
     int BQR;                     // -B --reference-base-quality
     int ploidy;                  // -p --ploidy
