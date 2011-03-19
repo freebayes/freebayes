@@ -127,7 +127,7 @@ void Parameters::usage(char** argv) {
          << "                   putative insertion or deletion allele.  default: 0" << endl
          // algorithmic switches, mixed with optimizations
          // TODO cleanup
-         << "   -V --obs-priors" << endl
+         << "   -V --obs-binomial-priors" << endl
          << "                   Incorporate expectations about osbervations into the priors," << endl
          << "                   Uses read placement probability, strand balance probability," << endl
          << "                   and allele balance probability." << endl
@@ -313,7 +313,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
         {"read-dependence-factor", required_argument, 0, 'D'},
-        {"obs-priors", no_argument, 0, 'V'},
+        {"obs-binomial-priors", no_argument, 0, 'V'},
         //{"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
