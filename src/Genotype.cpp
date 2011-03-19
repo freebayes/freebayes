@@ -216,8 +216,9 @@ vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAllele
 
 int GenotypeCombo::numberOfAlleles(void) {
     int count = 0;
-    for (map<string, int>::iterator f = alleleFrequencies.begin(); f != alleleFrequencies.end(); ++f) {
-        count += f->second;
+    for (map<string, AlleleCounter>::iterator f = alleleCounters.begin(); f != alleleCounters.end(); ++f) {
+        const AlleleCounter& allele = f->second;
+        count += allele.frequency;
     }
     return count;
 }
@@ -231,29 +232,36 @@ void GenotypeCombo::init(bool useObsExpectations) {
             const string& alleleBase = a->allele.currentBase;
 
             // allele frequencies in selected genotypes in combo
-            map<string, int>::iterator c = alleleFrequencies.find(alleleBase);
-            if (c != alleleFrequencies.end()) {
-                c->second += a->count;
-            } else {
-                alleleFrequencies.insert(make_pair(alleleBase, a->count));
-            }
+            AlleleCounter& alleleCounter = alleleCounters[alleleBase];
+            ++alleleCounter.frequency;
 
             if (useObsExpectations) {
                 // observational frequencies for binomial priors
                 Sample::const_iterator as = sample.find(alleleBase);
                 if (as != sample.end()) {
                     vector<Allele*> alleles = as->second;
+                    alleleCounter.observations += alleles.size();
                     for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
                         const Allele& allele = **o;
                         if (allele.basesLeft() >= allele.basesRight()) {
-                            alleleReadPlacementCounts[alleleBase].first += 1;
+                            ++alleleCounter.placedLeft;
+                            if (allele.strand == STRAND_FORWARD) {
+                                ++alleleCounter.placedStart;
+                            } else {
+                                ++alleleCounter.placedEnd;
+                            }
                         } else {
-                            alleleReadPlacementCounts[alleleBase].second += 1;
+                            ++alleleCounter.placedRight;
+                            if (allele.strand == STRAND_FORWARD) {
+                                ++alleleCounter.placedEnd;
+                            } else {
+                                ++alleleCounter.placedStart;
+                            }
                         }
                         if (allele.strand == STRAND_FORWARD) {
-                            alleleStrandCounts[alleleBase].first += 1;
+                            ++alleleCounter.forwardStrand;
                         } else {
-                            alleleStrandCounts[alleleBase].second += 1;
+                            ++alleleCounter.reverseStrand;
                         }
                     }
                 }
@@ -262,16 +270,12 @@ void GenotypeCombo::init(bool useObsExpectations) {
     }
 }
 
-void GenotypeCombo::initAlleleFrequencies(void) {
-    alleleFrequencies = countAlleles();
-}
-
 int GenotypeCombo::alleleFrequency(Allele& allele) {
-    map<string, int>::iterator f = alleleFrequencies.find(allele.currentBase);
-    if (f == alleleFrequencies.end()) {
+    map<string, AlleleCounter>::iterator f = alleleCounters.find(allele.currentBase);
+    if (f == alleleCounters.end()) {
         return 0;
     } else {
-        return f->second;
+        return f->second.frequency;
     }
 }
 
@@ -287,15 +291,19 @@ void GenotypeCombo::updateCachedCounts(
     for (Genotype::iterator g = oldGenotype->begin(); g != oldGenotype->end(); ++g) {
         GenotypeElement& ge = *g;
         const string& base = ge.allele.currentBase;
-        alleleFrequencies[base] -= ge.count;
+        AlleleCounter& alleleCounter = alleleCounters[base];
+        alleleCounter.frequency -= ge.count;
         if (useObsExpectations) {
             Sample::iterator s = sample->find(base);
             if (s != sample->end()) {
                 const vector<Allele*>& alleles = s->second;
+                alleleCounter.observations -= alleles.size();
                 int forward_strand = 0;
                 int reverse_strand = 0;
                 int placed_left = 0;
                 int placed_right = 0;
+                int placed_start = 0;
+                int placed_end = 0;
                 for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
                     const Allele& allele = **a;
                     if (allele.strand == STRAND_FORWARD) {
@@ -305,14 +313,26 @@ void GenotypeCombo::updateCachedCounts(
                     }
                     if (allele.basesLeft() >= allele.basesRight()) {
                         ++placed_left;
+                        if (allele.strand == STRAND_FORWARD) {
+                            ++placed_start;
+                        } else {
+                            ++placed_end;
+                        }
                     } else {
                         ++placed_right;
+                        if (allele.strand == STRAND_FORWARD) {
+                            ++placed_end;
+                        } else {
+                            ++placed_start;
+                        }
                     }
                 }
-                alleleStrandCounts[base].first -= forward_strand;
-                alleleStrandCounts[base].second -= forward_strand;
-                alleleReadPlacementCounts[base].first -= placed_left;
-                alleleReadPlacementCounts[base].second -= placed_right;
+                alleleCounter.forwardStrand -= forward_strand;
+                alleleCounter.reverseStrand -= reverse_strand;
+                alleleCounter.placedLeft -= placed_left;
+                alleleCounter.placedRight -= placed_right;
+                alleleCounter.placedStart -= placed_start;
+                alleleCounter.placedEnd -= placed_end;
             }
         }
     }
@@ -321,15 +341,19 @@ void GenotypeCombo::updateCachedCounts(
     for (Genotype::iterator g = newGenotype->begin(); g != newGenotype->end(); ++g) {
         GenotypeElement& ge = *g;
         const string& base = ge.allele.currentBase;
-        alleleFrequencies[base] += ge.count;
+        AlleleCounter& alleleCounter = alleleCounters[base];
+        alleleCounter.frequency += ge.count;
         if (useObsExpectations) {
             Sample::iterator s = sample->find(base);
             if (s != sample->end()) {
                 const vector<Allele*>& alleles = s->second;
+                alleleCounter.observations += alleles.size();
                 int forward_strand = 0;
                 int reverse_strand = 0;
                 int placed_left = 0;
                 int placed_right = 0;
+                int placed_start = 0;
+                int placed_end = 0;
                 for (vector<Allele*>::const_iterator a = alleles.begin(); a != alleles.end(); ++a) {
                     const Allele& allele = **a;
                     if (allele.strand == STRAND_FORWARD) {
@@ -339,92 +363,85 @@ void GenotypeCombo::updateCachedCounts(
                     }
                     if (allele.basesLeft() >= allele.basesRight()) {
                         ++placed_left;
+                        if (allele.strand == STRAND_FORWARD) {
+                            ++placed_start;
+                        } else {
+                            ++placed_end;
+                        }
                     } else {
                         ++placed_right;
+                        if (allele.strand == STRAND_FORWARD) {
+                            ++placed_end;
+                        } else {
+                            ++placed_start;
+                        }
                     }
                 }
-                alleleStrandCounts[base].first += forward_strand;
-                alleleStrandCounts[base].second += forward_strand;
-                alleleReadPlacementCounts[base].first += placed_left;
-                alleleReadPlacementCounts[base].second += placed_right;
+                alleleCounter.forwardStrand += forward_strand;
+                alleleCounter.reverseStrand += reverse_strand;
+                alleleCounter.placedLeft += placed_left;
+                alleleCounter.placedRight += placed_right;
+                alleleCounter.placedStart += placed_start;
+                alleleCounter.placedEnd += placed_end;
             }
         }
     }
 
     // remove allele frequencies which are now 0 or below
-    for (map<string, int>::iterator af = alleleFrequencies.begin();
-            af != alleleFrequencies.end(); ++af) {
-        if (af->second <= 0) {
-            alleleFrequencies.erase(af);
+    for (map<string, AlleleCounter>::iterator af = alleleCounters.begin();
+            af != alleleCounters.end(); ++af) {
+        if (af->second.frequency <= 0) {
+            alleleCounters.erase(af);
         }
-    }
-
-    if (useObsExpectations) {
-
-        for (map<string, pair<int, int> >::iterator as = alleleStrandCounts.begin();
-                as != alleleStrandCounts.end(); ++as) {
-            if (as->second.first <= 0) {
-                as->second.first = 0;
-            }
-            if (as->second.second <= 0) {
-                as->second.second = 0;
-            }
-            if (as->second.first == 0 && as->second.second == 0) {
-                alleleStrandCounts.erase(as);
-            }
-        }
-
-        for (map<string, pair<int, int> >::iterator ap = alleleReadPlacementCounts.begin();
-                ap != alleleReadPlacementCounts.end(); ++ap) {
-            if (ap->second.first <= 0) {
-                ap->second.first = 0;
-            }
-            if (ap->second.second <= 0) {
-                ap->second.second = 0;
-            }
-            if (ap->second.first == 0 && ap->second.second == 0) {
-                alleleReadPlacementCounts.erase(ap);
-            }
-        }
-
     }
 
 }
 
 map<string, int> GenotypeCombo::countAlleles(void) {
-    map<string, int> alleleCounts;
+    map<string, int> alleleCounters;
     for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
         SampleDataLikelihood& sdl = **g;
         for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
-            map<string, int>::iterator c = alleleCounts.find(a->allele.currentBase);
-            if (c != alleleCounts.end()) {
+            map<string, int>::iterator c = alleleCounters.find(a->allele.currentBase);
+            if (c != alleleCounters.end()) {
                 c->second += a->count;
             } else {
-                alleleCounts.insert(make_pair(a->allele.currentBase, a->count));
+                alleleCounters.insert(make_pair(a->allele.currentBase, a->count));
             }
         }
     }
-    return alleleCounts;
+    return alleleCounters;
 }
 
 map<int, int> GenotypeCombo::countFrequencies(void) {
     map<int, int> frequencyCounts;
-    for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
-        map<int, int>::iterator c = frequencyCounts.find(a->second);
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        const AlleleCounter& allele = a->second;
+        map<int, int>::iterator c = frequencyCounts.find(allele.frequency);
         if (c != frequencyCounts.end()) {
             c->second += 1;
         } else {
-            frequencyCounts[a->second] = 1;
+            frequencyCounts[allele.frequency] = 1;
         }
     }
     return frequencyCounts;
 }
 
 vector<int> GenotypeCombo::counts(void) {
-    //map<string, int> alleleCounts = countAlleles();
+    //map<string, int> alleleCounters = countAlleles();
     vector<int> counts;
-    for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
-        counts.push_back(a->second);
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        const AlleleCounter& allele = a->second;
+        counts.push_back(allele.frequency);
+    }
+    return counts;
+}
+
+vector<int> GenotypeCombo::observationCounts(void) {
+    vector<int> counts;
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        const AlleleCounter& allele = a->second;
+        counts.push_back(allele.observations);
     }
     return counts;
 }
@@ -432,8 +449,9 @@ vector<int> GenotypeCombo::counts(void) {
 // how many copies of the locus are in the whole genotype combination?
 int GenotypeCombo::ploidy(void) {
     int copies = 0;
-    for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
-        copies += a->second;
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        const AlleleCounter& allele = a->second;
+        copies += allele.frequency;
     }
     return copies;
 }
@@ -441,15 +459,16 @@ int GenotypeCombo::ploidy(void) {
 vector<long double> GenotypeCombo::alleleProbs(void) {
     vector<long double> probs;
     long double copies = ploidy();
-    for (map<string,int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
-        probs.push_back(a->second / copies);
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        const AlleleCounter& allele = a->second;
+        probs.push_back(allele.frequency / copies);
     }
     return probs;
 }
 
 vector<string> GenotypeCombo::alleles(void) {
     vector<string> bases;
-    for (map<string, int>::iterator a = alleleFrequencies.begin(); a != alleleFrequencies.end(); ++a) {
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
         bases.push_back(a->first);
     }
     return bases;

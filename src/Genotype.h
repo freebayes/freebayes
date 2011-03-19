@@ -92,6 +92,28 @@ public:
     { }
 };
 
+class AlleleCounter {
+public:
+    int frequency;
+    int observations;
+    int forwardStrand; // supporting reads on the forward strand
+    int reverseStrand; // supporting reads on the reverse strand
+    int placedLeft;    // supporting reads placed to the left of the allele
+    int placedRight;   // supporting reads placed to the right of the allele
+    int placedStart;   // supporting reads for which the allele occurs in the first half of the read (5'-3')
+    int placedEnd;     // supporting reads for which the allele occurs in the second half of the read (5'-3')
+    AlleleCounter(void)
+        : frequency(0)
+        , observations(0)
+        , forwardStrand(0)
+        , reverseStrand(0)
+        , placedLeft(0)
+        , placedRight(0)
+        , placedStart(0)
+        , placedEnd(0)
+    { }
+};
+
 // a combination of genotypes for the population of samples in the analysis
 class GenotypeCombo : public vector<SampleDataLikelihood*> {
 public:
@@ -105,7 +127,8 @@ public:
     map<string, int> alleleFrequencies; // frequencies of each allele in the combo
     map<string, pair<int, int> > alleleStrandCounts; // map from allele spec to (forword, reverse) counts
     map<string, pair<int, int> > alleleReadPlacementCounts; // map from allele spec to (left, right) counts
-    map<string, pair<int, int> > alleleHetRefAltCounts; // map from allele spec to (ref, alt) counts
+    map<string, pair<int, int> > alleleReadPositionCounts; // map from allele spec to (left, right) counts
+    map<string, AlleleCounter> alleleCounters;
 
     GenotypeCombo(void) : prob(0) { }
 
@@ -114,12 +137,12 @@ public:
     int numberOfAlleles(void);
     vector<long double> alleleProbs(void);  // scales the above by the total number of alleles
     int ploidy(void); // the number of copies of the locus in this combination
-    void initAlleleFrequencies(void);
     int alleleFrequency(Allele& allele);
     void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype, bool useObsExpectations);
     map<string, int> countAlleles(void);
     map<int, int> countFrequencies(void);
     vector<int> counts(void); // the counts of frequencies of the alleles in the genotype combo
+    vector<int> observationCounts(void); // the counts of observations of the alleles (in sorted order)
     vector<string> alleles(void);  // the string representations of alleles in the genotype combo
     bool isHomozygous(void); // returns true if the combination is 100% homozygous across all individuals
                              // e.g. if there is no variation

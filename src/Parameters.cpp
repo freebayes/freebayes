@@ -127,10 +127,10 @@ void Parameters::usage(char** argv) {
          << "                   putative insertion or deletion allele.  default: 0" << endl
          // algorithmic switches, mixed with optimizations
          // TODO cleanup
-         << "   -V --obs-binomial-priors" << endl
+         << "   -V --binomial-obs-priors" << endl
          << "                   Incorporate expectations about osbervations into the priors," << endl
          << "                   Uses read placement probability, strand balance probability," << endl
-         << "                   and allele balance probability." << endl
+         << "                   and read position (5'-3') probability." << endl
          << "   -a --allele-balance-priors" << endl
          << "                   Use aggregate probability of observation balance between alleles" << endl
          << "                   as a component of the priors.  Best for observations with minimal" << endl
@@ -313,7 +313,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
         {"read-dependence-factor", required_argument, 0, 'D'},
-        {"obs-binomial-priors", no_argument, 0, 'V'},
+        {"binomial-obs-priors", no_argument, 0, 'V'},
+        {"allele-balance-priors", no_argument, 0, 'a'},
         //{"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-bandwidth", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
@@ -324,7 +325,6 @@ Parameters::Parameters(int argc, char** argv) {
         {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
-        {"allele-balance-priors", no_argument, 0, 'a'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}

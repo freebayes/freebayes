@@ -83,31 +83,25 @@ genotypeCombinationPriorProbability(
         }
 
         long double priorObservationExpectationProb = 0;
+
         if (binomialObsPriors) {
             // for each alternate and the reference allele
             // calculate the binomial probability that we see the given strand balance and read placement prob
             vector<string> alleles = combo->alleles();
-            vector<int> observationCounts;
-            vector<long double> comboAllelecounts;
             for (vector<string>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 const string& allele = *a;
-                const pair<int, int>& alleleStrandObs = combo->alleleStrandCounts[allele];
-                observationCounts.push_back(alleleStrandObs.first + alleleStrandObs.second);
-                priorObservationExpectationProb += binomialProbln(
-                        alleleStrandObs.first,
-                        alleleStrandObs.first + alleleStrandObs.second,
-                        0.5);
-                const pair<int, int>& allelePlacemenObs = combo->alleleReadPlacementCounts[allele];
-                priorObservationExpectationProb += binomialProbln(
-                        allelePlacemenObs.first,
-                        allelePlacemenObs.first + allelePlacemenObs.second,
-                        0.5);
+                const AlleleCounter& alleleCounter = combo->alleleCounters[allele];
+                int obs = alleleCounter.observations;
+                priorObservationExpectationProb += binomialProbln(alleleCounter.forwardStrand, obs, 0.5);
+                priorObservationExpectationProb += binomialProbln(alleleCounter.placedLeft, obs, 0.5);
+                priorObservationExpectationProb += binomialProbln(alleleCounter.placedStart, obs, 0.5);
             }
             // ok... now do the same move for the observation counts
             // --- this should capture "Allele Balance"
-            if (alleleBalancePriors) {
-                priorObservationExpectationProb += multinomialSamplingProbLn(combo->alleleProbs(), observationCounts);
-            }
+        }
+
+        if (alleleBalancePriors) {
+            priorObservationExpectationProb += multinomialSamplingProbLn(combo->alleleProbs(), combo->observationCounts());
         }
 
         // with larger population samples, the effect of 
