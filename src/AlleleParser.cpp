@@ -754,8 +754,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         if (allATGC(readSequence)) {
                             ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                                     currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
-                                    rp, // bases left (for first base in ref allele)
                                     alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
+                                    rp, // bases left (for first base in ref allele)
                                     matchingSequence, readSequence, sampleName, alignment.Name,
                                     !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                                     alignment.MapQuality));
@@ -828,8 +828,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 if (allATGC(readSequence)) {
                     ra.alleles.push_back(Allele(ALLELE_REFERENCE,
                             currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
-                            rp, // bases left (for first base in ref allele)
                             alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
+                            rp, // bases left (for first base in ref allele)
                             matchingSequence, readSequence, sampleName, alignment.Name,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                             alignment.MapQuality));

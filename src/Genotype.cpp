@@ -228,12 +228,15 @@ void GenotypeCombo::init(bool useObsExpectations) {
     for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
         const SampleDataLikelihood& sdl = **s;
         const Sample& sample = *sdl.sample;
+        //cerr << *sdl.genotype << endl;
         for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
             const string& alleleBase = a->allele.currentBase;
 
             // allele frequencies in selected genotypes in combo
             AlleleCounter& alleleCounter = alleleCounters[alleleBase];
-            ++alleleCounter.frequency;
+            //cerr <<"init "<< alleleCounter.frequency;
+            alleleCounter.frequency += a->count;
+            //cerr <<" after "<< alleleCounter.frequency << endl;
 
             if (useObsExpectations) {
                 // observational frequencies for binomial priors
@@ -390,27 +393,13 @@ void GenotypeCombo::updateCachedCounts(
     // remove allele frequencies which are now 0 or below
     for (map<string, AlleleCounter>::iterator af = alleleCounters.begin();
             af != alleleCounters.end(); ++af) {
-        if (af->second.frequency <= 0) {
+        assert(af->second.frequency >= 0);
+        if (af->second.frequency == 0) {
+            assert(af->second.observations == 0);
             alleleCounters.erase(af);
         }
     }
 
-}
-
-map<string, int> GenotypeCombo::countAlleles(void) {
-    map<string, int> alleleCounters;
-    for (GenotypeCombo::iterator g = this->begin(); g != this->end(); ++g) {
-        SampleDataLikelihood& sdl = **g;
-        for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
-            map<string, int>::iterator c = alleleCounters.find(a->allele.currentBase);
-            if (c != alleleCounters.end()) {
-                c->second += a->count;
-            } else {
-                alleleCounters.insert(make_pair(a->allele.currentBase, a->count));
-            }
-        }
-    }
-    return alleleCounters;
 }
 
 map<int, int> GenotypeCombo::countFrequencies(void) {

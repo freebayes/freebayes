@@ -88,13 +88,29 @@ genotypeCombinationPriorProbability(
             // for each alternate and the reference allele
             // calculate the binomial probability that we see the given strand balance and read placement prob
             vector<string> alleles = combo->alleles();
+            // cerr << *combo << endl;
             for (vector<string>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 const string& allele = *a;
-                const AlleleCounter& alleleCounter = combo->alleleCounters[allele];
-                int obs = alleleCounter.observations;
-                priorObservationExpectationProb += binomialProbln(alleleCounter.forwardStrand, obs, 0.5);
-                priorObservationExpectationProb += binomialProbln(alleleCounter.placedLeft, obs, 0.5);
-                priorObservationExpectationProb += binomialProbln(alleleCounter.placedStart, obs, 0.5);
+                map<string, AlleleCounter>::iterator ac = combo->alleleCounters.find(allele);
+                if (ac != combo->alleleCounters.end()) {
+                    const AlleleCounter& alleleCounter = ac->second;
+                    int obs = alleleCounter.observations;
+                    /*
+                    cerr << allele <<  " counts: " << alleleCounter.frequency
+                        << " observations " << alleleCounter.observations
+                        << " " << alleleCounter.forwardStrand
+                        << "," << alleleCounter.reverseStrand
+                        << " " << alleleCounter.placedLeft
+                        << "," << alleleCounter.placedRight
+                        << " " << alleleCounter.placedStart
+                        << "," << alleleCounter.placedEnd
+                        << endl;
+                        */
+
+                    priorObservationExpectationProb += binomialProbln(alleleCounter.forwardStrand, obs, 0.5);
+                    priorObservationExpectationProb += binomialProbln(alleleCounter.placedLeft, obs, 0.5);
+                    priorObservationExpectationProb += binomialProbln(alleleCounter.placedStart, obs, 0.5);
+                }
             }
             // ok... now do the same move for the observation counts
             // --- this should capture "Allele Balance"

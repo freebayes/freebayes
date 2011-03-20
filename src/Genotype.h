@@ -10,6 +10,7 @@
 #include <iterator>
 #include <cmath>
 #include <numeric>
+#include <assert.h>
 #include "Allele.h"
 #include "Sample.h"
 
