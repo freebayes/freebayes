@@ -145,7 +145,6 @@ string vcf(
     // het counts
     int hetReferenceObsCount = 0;
     int hetAlternateObsCount = 0;
-    int hetAllObsCount = 0;
     int altAlleleObservations = 0;
     int refAlleleObservations = 0;
     int hetAltRefSamples = 0;
@@ -208,7 +207,7 @@ string vcf(
     }
 
     int allObsCount = alternateObsCount + referenceObsCount;
-    hetAllObsCount = hetReferenceObsCount + hetAlternateObsCount;
+    int hetAllObsCount = hetReferenceObsCount + hetAlternateObsCount;
 
     unsigned int basesLeft = 0;
     unsigned int basesRight = 0;
