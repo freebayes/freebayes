@@ -55,12 +55,16 @@ void vcfHeader(ostream& out,
         << "##commandline=\"" << parameters.commandline << "\"" << endl
         << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">" << endl
         << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << endl
+
+        // allele frequency metrics
         << "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">" << endl
         << "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">" << endl
         << "##INFO=<ID=AF,Number=1,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
         << "##INFO=<ID=HETAR,Number=1,Type=Integer,Description=\"Number of individuals heterozygous alternate / reference\">" << endl
         << "##INFO=<ID=HOMA,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the alternate\">" << endl
         << "##INFO=<ID=HOMR,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the reference\">" << endl
+
+        // binomial balance metrics
         << "##INFO=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##INFO=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
         << "##INFO=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
@@ -76,6 +80,18 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele balance at heterozygous sites: a number between 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
         << "##INFO=<ID=ABP,Number=1,Type=Float,Description=\"Allele balance probability at heterozygous sites: Phred-scaled upper-bounds estimate of the probability of observing the deviation between ABR and ABA given E(ABR/ABA) ~ 0.5, derived using Hoeffding's inequality\">" << endl
         << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
+        << "##INFO=<ID=RL,Number=1,Type=Integer,Description=\"Reads Placed Left: number of reads supporting the alternate balanced to the left (5') of the alternate allele\">" << endl
+        << "##INFO=<ID=RR,Number=1,Type=Integer,Description=\"Reads Placed Right: number of reads supporting the alternate balanced to the right (3') of the alternate allele\">" << endl
+        << "##INFO=<ID=RPP,Number=1,Type=Float,Description=\"Read Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=EL,Number=1,Type=Integer,Description=\"Allele End Left: number of observations of the alternate where the alternate occurs in the left end of the read\">" << endl
+        << "##INFO=<ID=ER,Number=1,Type=Integer,Description=\"Allele End Right: number of observations of the alternate where the alternate occurs in the right end of the read\">" << endl
+        << "##INFO=<ID=EPP,Number=1,Type=Integer,Description=\"End Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=BL,Number=1,Type=Integer,Description=\"Base Pairs Left: number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
+        << "##INFO=<ID=BR,Number=1,Type=Integer,Description=\"Base Pairs Right: number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
+        << "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"((max(BR, BL) / (BR + BL)) - 0.5) * 2 : The proportion of base pairs in reads on one side of the alternate allele relative to total bases, scaled from [0.5,1] to [0,1]\">" << endl
+        << "##INFO=<ID=LRBP,Number=1,Type=Float,Description=\"Left-Right Balance Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between BL and BR given E(BR/BL) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+
+        // supplementary information about the site
         << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
         << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\">" << endl
         << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
@@ -86,13 +102,8 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
         << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl
         << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
-        << "##INFO=<ID=BPL,Number=1,Type=Integer,Description=\"Base Pairs Left: number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
-        << "##INFO=<ID=BPR,Number=1,Type=Integer,Description=\"Base Pairs Right: number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
-        << "##INFO=<ID=RPL,Number=1,Type=Integer,Description=\"Reads Placed Left: number of reads supporting the alternate balanced to the left (5') of the alternate allele\">" << endl
-        << "##INFO=<ID=RPR,Number=1,Type=Integer,Description=\"Reads Placed Right: number of reads supporting the alternate balanced to the right (3') of the alternate allele\">" << endl
-        << "##INFO=<ID=RPP,Number=1,Type=Float,Description=\"Read Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
-        << "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"((max(BPR, BPL) / (BPR + BPL)) - 0.5) * 2 : The proportion of base pairs in reads on one side of the alternate allele relative to total bases, scaled from [0.5,1] to [0,1]\">" << endl
-        << "##INFO=<ID=LRBP,Number=1,Type=Float,Description=\"Left-Right Balance Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between BPL and BPR given E(BPR/BPL) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+
+        // format fields for genotypes
         << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the called genotype\">" << endl
@@ -213,6 +224,8 @@ string vcf(
     unsigned int basesRight = 0;
     unsigned int readsLeft = 0;
     unsigned int readsRight = 0;
+    unsigned int endLeft = 0;
+    unsigned int endRight = 0;
 
     unsigned int mqsum = 0;
     vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
@@ -222,8 +235,18 @@ string vcf(
         basesRight += allele.basesRight();
         if (allele.basesLeft() >= allele.basesRight()) {
             readsLeft += 1;
+            if (allele.strand == STRAND_FORWARD) {
+                endLeft += 1;
+            } else {
+                endRight += 1;
+            }
         } else {
             readsRight += 1;
+            if (allele.strand == STRAND_FORWARD) {
+                endRight += 1;
+            } else {
+                endLeft += 1;
+            }
         }
         mqsum += allele.mapQuality;
     }
@@ -298,11 +321,14 @@ string vcf(
         << "ABP=" << ((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetReferenceObsCount, hetAllObsCount, 0.5))) << ";"
         << "RUN=" << parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase) << ";"
         << "MQM=" << ((alternateAlleles.size() == 0) ? 0 : (double) mqsum / (double) alternateAlleles.size()) << ";"
-        << "BPL=" << basesLeft << ";"
-        << "BPR=" << basesRight << ";"
-        << "RPL=" << readsLeft << ";"
-        << "RPR=" << readsRight << ";"
+        << "RL=" << readsLeft << ";"
+        << "RR=" << readsRight << ";"
         << "RPP=" << ln2phred(hoeffdingln(readsLeft, readsRight + readsLeft, 0.5)) << ";"  // estimates upper bound for the lower tail of the binomial distribution
+        << "EL=" << endLeft << ";"
+        << "ER=" << endRight << ";"
+        << "EPP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(endLeft, endLeft + endRight, 0.5))) << ";"
+        << "BL=" << basesLeft << ";"
+        << "BR=" << basesRight << ";"
         << "LRB=" << ((double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) - 0.5) * 2 << ";"
         << "LRBP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(basesLeft, basesLeft + basesRight, 0.5))) << ";";
 
