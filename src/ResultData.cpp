@@ -14,7 +14,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
             << "\"genotypes\":[";
         for (map<Genotype*, long double>::iterator g = sample.marginals.begin(); 
                 g != sample.marginals.end(); ++g) {
-            if (g != sample.marginals.begin()) cout << ",";
+            if (g != sample.marginals.begin()) out << ",";
             out << "[\"" << *(g->first) << "\"," << safe_exp(g->second) << "]";
         }
         out << "]";
@@ -109,6 +109,9 @@ void vcfHeader(ostream& out,
     out << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the called genotype\">" << endl
+        << "##FORMAT=<ID=GLAA,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the homozygous reference genotype\">" << endl
+        << "##FORMAT=<ID=GLAB,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the heterozygous reference/alternate genotype\">" << endl
+        << "##FORMAT=<ID=GLBB,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the homozygous alternate genotype\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl

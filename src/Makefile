@@ -23,7 +23,7 @@ CFLAGS=-O3 -Wno-deprecated
 LIBS = -lz -lm
 
 
-all: ../bin/freebayes ../bin/bamleftalign ../bin/bamfiltertech
+all: ../bin/freebayes ../bin/bamleftalign
 
 static:
 	$(MAKE) CFLAGS="$(CFLAGS) -static" all

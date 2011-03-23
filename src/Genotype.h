@@ -70,6 +70,8 @@ public:
     bool isHomozygous(void);
     int containedAlleleTypes(void);
     vector<int> alleleObservationCounts(Sample& sample);
+    bool sampleHasSupportingObservations(Sample& sample);
+    bool sampleHasSupportingObservationsForAllAlleles(Sample& sample);
 
 };
 

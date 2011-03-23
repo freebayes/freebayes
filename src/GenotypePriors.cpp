@@ -107,9 +107,10 @@ genotypeCombinationPriorProbability(
                         << endl;
                         */
 
-                    priorObservationExpectationProb += binomialProbln(alleleCounter.forwardStrand, obs, 0.5);
-                    priorObservationExpectationProb += binomialProbln(alleleCounter.placedLeft, obs, 0.5);
-                    priorObservationExpectationProb += binomialProbln(alleleCounter.placedStart, obs, 0.5);
+                    priorObservationExpectationProb
+                        += binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
+                        +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
+                        +  binomialProbln(alleleCounter.placedStart, obs, 0.5);
                 }
             }
             // ok... now do the same move for the observation counts

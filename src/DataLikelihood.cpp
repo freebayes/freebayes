@@ -50,12 +50,12 @@ probObservedAllelesGivenGenotype(
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
-        vector<Genotype>& genotypes,
+        vector<Genotype*>& genotypes,
         long double dependenceFactor,
         bool useMapQ) {
     vector<pair<Genotype*, long double> > results;
-    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        results.push_back(make_pair(&*g, probObservedAllelesGivenGenotype(sample, *g, dependenceFactor, useMapQ)));
+    for (vector<Genotype*>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+        results.push_back(make_pair(*g, probObservedAllelesGivenGenotype(sample, **g, dependenceFactor, useMapQ)));
     }
     return results;
 }

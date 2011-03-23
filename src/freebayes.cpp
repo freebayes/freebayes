@@ -217,8 +217,27 @@ int main (int argc, char *argv[]) {
             string sampleName = s->first;
             Sample& sample = s->second;
             vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
+            vector<Genotype*> genotypesWithObs;
+            for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+                if (parameters.excludePartiallyObservedGenotypes) {
+                    if (g->sampleHasSupportingObservationsForAllAlleles(sample)) {
+                        genotypesWithObs.push_back(&*g);
+                    }
+                } else if (parameters.excludeUnobservedGenotypes) {
+                    if (g->sampleHasSupportingObservations(sample)) {
+                        genotypesWithObs.push_back(&*g);
+                    }
+                } else {
+                    genotypesWithObs.push_back(&*g);
+                }
+            }
 
-            vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypes, parameters.RDF, parameters.useMappingQuality);
+            // skip this sample if we have no observations supporting any of the genotypes we are going to evaluate
+            if (genotypesWithObs.empty()) {
+                continue;
+            }
+
+            vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypesWithObs, parameters.RDF, parameters.useMappingQuality);
 
             map<Genotype*, long double> marginals;
             map<Genotype*, vector<long double> > rawMarginals;

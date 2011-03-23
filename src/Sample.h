@@ -13,6 +13,8 @@ using namespace std;
 // sample tracking and allele sorting
 class Sample : public map<string, vector<Allele*> > {
 
+    friend ostream& operator<<(ostream& out, Sample& sample);
+
 public:
 
     // the number of observations for this allele

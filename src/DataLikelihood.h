@@ -27,7 +27,7 @@ probObservedAllelesGivenGenotype(
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
-        vector<Genotype>& genotypes,
+        vector<Genotype*>& genotypes,
         long double dependenceFactor,
         bool useMapQ);
 

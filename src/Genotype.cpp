@@ -513,7 +513,7 @@ bandedGenotypeCombinations(
     // likelihood and the prior probability of the distribution of alleles it
     // represents.
     // 
-    // example (bandwidth = 2, banddepth = 1)
+    // example (bandwidth = 2, banddepth = 2)
     //  indexes:      0 0 0 0 1, 0 0 0 1 1
     //
     //  permutations: 0 0 0 0 1 
@@ -541,7 +541,7 @@ bandedGenotypeCombinations(
     // data likelihood maximizer (aka 'king').
     //
     for (int i = 0; i <= bandwidth; ++i) {
-        for (int j = 1; j <= banddepth; ++j) {
+        for (int j = 1; j < banddepth; ++j) {
             vector<int> indexes;
             for (int h = 0; h < j; ++h)
                 indexes.push_back(i);
@@ -779,9 +779,28 @@ int Genotype::containedAlleleTypes(void) {
 vector<int> Genotype::alleleObservationCounts(Sample& sample) {
     vector<int> counts;
     for (Genotype::iterator i = begin(); i != end(); ++i) {
-        int count = 0;
         Allele& b = i->allele;
         counts.push_back(sample.observationCount(b));
     }
     return counts;
+}
+
+bool Genotype::sampleHasSupportingObservations(Sample& sample) {
+    for (Genotype::iterator i = begin(); i != end(); ++i) {
+        Allele& b = i->allele;
+        if (sample.observationCount(b) != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Genotype::sampleHasSupportingObservationsForAllAlleles(Sample& sample) {
+    vector<int> counts = alleleObservationCounts(sample);
+    for (vector<int>::iterator c = counts.begin(); c != counts.end(); ++c) {
+        if (*c == 0) {
+            return false;
+        }
+    }
+    return true;
 }
