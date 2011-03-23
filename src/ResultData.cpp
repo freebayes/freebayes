@@ -85,7 +85,7 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=RPP,Number=1,Type=Float,Description=\"Read Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
         << "##INFO=<ID=EL,Number=1,Type=Integer,Description=\"Allele End Left: number of observations of the alternate where the alternate occurs in the left end of the read\">" << endl
         << "##INFO=<ID=ER,Number=1,Type=Integer,Description=\"Allele End Right: number of observations of the alternate where the alternate occurs in the right end of the read\">" << endl
-        << "##INFO=<ID=EPP,Number=1,Type=Integer,Description=\"End Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=EPP,Number=1,Type=Float,Description=\"End Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality\">" << endl
         << "##INFO=<ID=BL,Number=1,Type=Integer,Description=\"Base Pairs Left: number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
         << "##INFO=<ID=BR,Number=1,Type=Integer,Description=\"Base Pairs Right: number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
         << "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"((max(BR, BL) / (BR + BL)) - 0.5) * 2 : The proportion of base pairs in reads on one side of the alternate allele relative to total bases, scaled from [0.5,1] to [0,1]\">" << endl
@@ -100,11 +100,13 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Length of MNP allele, if present\">" << endl
         << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
         << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
-        << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl
-        << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
+        << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl;
+    if (parameters.showReferenceRepeats) {
+        out << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl;
+    }
 
         // format fields for genotypes
-        << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
+    out << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the called genotype\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
@@ -336,7 +338,7 @@ string vcf(
         out << "BVAR;";
     }
 
-    if (!repeats.empty()) {
+    if (parameters.showReferenceRepeats && !repeats.empty()) {
         stringstream repeatsstr;
         for (map<string, int>::iterator c = repeats.begin(); c != repeats.end(); ++c) {
             repeatsstr << c->first << ":" << c->second << "|";
