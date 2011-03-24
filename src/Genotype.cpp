@@ -106,6 +106,15 @@ vector<long double> Genotype::alleleProbabilities(void) {
     return probs;
 }
 
+string Genotype::slashstr(void) {
+    string s;
+    for (Genotype::const_iterator ge = this->begin(); ge != this->end(); ++ge) {
+        for (int i = 0; i < ge->count; ++i)
+            s += ((ge == this->begin() && i == 0) ? "" : "/") + ge->allele.alternateSequence;
+    }
+    return s;
+}
+
 string Genotype::str(void) {
     string s;
     for (Genotype::const_iterator ge = this->begin(); ge != this->end(); ++ge) {

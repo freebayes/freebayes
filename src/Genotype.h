@@ -65,6 +65,7 @@ public:
     vector<int> counts(void);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
+    string slashstr(void);
     string str(void);
     string relativeGenotype(string& refbase, string& altbase);
     bool isHomozygous(void);

@@ -485,6 +485,7 @@ int main (int argc, char *argv[]) {
                                 bestGenotypeCombo,
                                 bestOverallComboIsHet,
                                 alleleGroups,
+                                genotypesByPloidy,
                                 results,
                                 parser)
                             << endl;
@@ -503,6 +504,7 @@ int main (int argc, char *argv[]) {
                             bestGenotypeCombo,
                             bestOverallComboIsHet,
                             alleleGroups,
+                            genotypesByPloidy,
                             results,
                             parser)
                         << endl;

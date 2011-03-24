@@ -87,6 +87,7 @@ public:
             GenotypeCombo& genotypeCombo,
             bool bestOverallComboIsHet,
             map<string, vector<Allele*> >& alleleGroups,
+            map<int, vector<Genotype> >& genotypesByPloidy, // pass by copy, will modify
             Results& results,
             AlleleParser* parser);
     pair<Genotype*, long double> bestMarginalGenotype(void);

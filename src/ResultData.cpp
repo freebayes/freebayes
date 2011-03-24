@@ -108,10 +108,7 @@ void vcfHeader(ostream& out,
         // format fields for genotypes
     out << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
-        << "##FORMAT=<ID=GL,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the called genotype\">" << endl
-        << "##FORMAT=<ID=GLAA,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the homozygous reference genotype\">" << endl
-        << "##FORMAT=<ID=GLAB,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the heterozygous reference/alternate genotype\">" << endl
-        << "##FORMAT=<ID=GLBB,Number=1,Type=Float,Description=\"Genotype Likelihood, log-scaled likeilhood of the data given the homozygous alternate genotype\">" << endl
+        << "##FORMAT=<ID=GL,Number=1,Type=String,Description=\"Genotype Likelihood, log-scaled likeilhoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
         << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
@@ -138,6 +135,7 @@ string vcf(
         GenotypeCombo& genotypeCombo,
         bool bestOverallComboIsHet,
         map<string, vector<Allele*> >& alleleGroups,
+        map<int, vector<Genotype> >& genotypesByPloidy,
         Results& results,
         AlleleParser* parser) {
 
@@ -149,6 +147,18 @@ string vcf(
 
     GenotypeComboMap comboMap;
     genotypeCombo2Map(genotypeCombo, comboMap);
+
+    map<int, vector<Genotype*> > presentGenotypesByPloidy;
+    for (map<int, vector<Genotype> >::iterator gs = genotypesByPloidy.begin(); gs != genotypesByPloidy.end(); ++gs) {
+        int ploidy = gs->first;
+        vector<Genotype>& genotypes = gs->second;
+        for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+            Genotype* genotype = &*g;
+            if (genotype->alleleFrequency(refbase) + genotype->alleleFrequency(altbase) == genotype->ploidy) {
+                presentGenotypesByPloidy[ploidy].push_back(genotype);
+            }
+        }
+    }
 
     int samplesWithData = 0;
     // count alternate alleles in the best genotyping
@@ -393,7 +403,16 @@ string vcf(
             if (parameters.calculateMarginals) {
                 out << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]));
             }
-            out << ":" << sample.genotypeLikelihood(genotype)
+
+            // get data likelihoods for present genotypes, none if we have excluded genotypes from data likelihood calculations
+            stringstream datalikelihoods;
+            if (!parameters.excludeUnobservedGenotypes && !parameters.excludePartiallyObservedGenotypes) {
+                vector<Genotype*>& presentGenotypes = presentGenotypesByPloidy[parser->currentSamplePloidy(*sampleName)];
+                for (vector<Genotype*>::iterator g = presentGenotypes.begin(); g != presentGenotypes.end(); ++g) {
+                    datalikelihoods << ((g == presentGenotypes.begin()) ? "" : ",") << (*g)->slashstr() << "=" << sample.genotypeLikelihood(*g);
+                }
+            }
+            out << ":" << datalikelihoods.str()
                 << ":" << sample.observations->observationCount()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first
