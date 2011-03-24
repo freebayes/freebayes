@@ -97,9 +97,10 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
         << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\">" << endl
         << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
-        << "##INFO=<ID=MNP,Number=0,Type=Integer,Description=\"Length of MNP allele, if present\">" << endl
-        << "##INFO=<ID=INS,Number=1,Type=Integer,Description=\"Length of insertion allele, if present\">" << endl
-        << "##INFO=<ID=DEL,Number=1,Type=Integer,Description=\"Length of deletion allele, if present\">" << endl
+        << "##INFO=<ID=MNP,Number=0,Type=Flag,Description=\"MNP allele\">" << endl
+        << "##INFO=<ID=INS,Number=0,Type=Flag,Description=\"insertion allele\">" << endl
+        << "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele\">" << endl
+        << "##INFO=<ID=LEN,Number=1,Type=Integer,Description=\"allele length\">" << endl
         << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl;
     if (parameters.showReferenceRepeats) {
         out << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl;
@@ -363,13 +364,13 @@ string vcf(
 
     // allele class
     if (altAllele.type == ALLELE_DELETION) {
-        out << "DEL=" << altAllele.length;
+        out << "DEL";
         // what is the class of deletion
         // microsatellite repeat?
         // "novel"?
         // how large is the repeat, if there is one?
     } else if (altAllele.type == ALLELE_INSERTION) {
-        out << "INS=" << altAllele.length;
+        out << "INS";
     } else if (altAllele.type == ALLELE_SNP) {
         out << "SNP";
         // ts/tv
@@ -384,8 +385,9 @@ string vcf(
             out << ";CpG";
         }
     } else if (altAllele.type == ALLELE_MNP) {
-        out << "MNP=" << altAllele.length;
+        out << "MNP";
     }
+    out << ";LEN=" << altAllele.length;
 
 
     out << "\t" << "GT:" << (parameters.calculateMarginals ? "GQ:" : "") << "GL:DP:RA:AA:SR:SA";
