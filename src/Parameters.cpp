@@ -171,7 +171,7 @@ void Parameters::usage(char** argv) {
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
-         << "                   data likelihood: default 2,2." << endl
+         << "                   data likelihood: default 1,3." << endl
          << "   -K --posterior-integration-depth N" << endl
          << "                   Keep this many genotype combinations for calculating genotype" << endl
          << "                   marginal probabilities for each sample and overall variant" << endl
@@ -267,8 +267,8 @@ Parameters::Parameters(int argc, char** argv) {
     PVL = 0.0;             // -P --pvar
     RDF = 0.9;             // -D --read-dependence-factor
     diffusionPriorScalar = 1.0;     // -V --diffusion-prior-scalar
-    WB = 2;                      // -W --posterior-integration-limits
-    TB = 2;
+    WB = 1;                      // -W --posterior-integration-limits
+    TB = 3;
     posteriorIntegrationDepth = 0;
     calculateMarginals = true;
     minAltFraction = 0.0;

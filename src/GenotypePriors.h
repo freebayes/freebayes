@@ -6,14 +6,30 @@
 #include "Genotype.h"
 #include "Multinomial.h"
 #include "CNV.h"
+#include "Utility.h"
 
 using namespace std;
 
 map<Allele, int> countAlleles(vector<Genotype*>& genotypeCombo);
 map<int, int> countFrequencies(vector<Genotype*>& genotypeCombo);
-long double alleleFrequencyProbability(map<int, int> alleleFrequencyCounts, long double theta);
-long double alleleFrequencyProbabilityln(map<int, int> alleleFrequencyCounts, long double theta);
+long double alleleFrequencyProbability(const map<int, int>& alleleFrequencyCounts, long double theta);
+long double alleleFrequencyProbabilityln(const map<int, int>& alleleFrequencyCounts, long double theta);
+long double __alleleFrequencyProbabilityln(const map<int, int>& alleleFrequencyCounts, long double theta);
 long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele);
+
+class AlleleFrequencyProbabilityCache : public map<map<int, int>, long double> {
+public:
+    long double alleleFrequencyProbabilityln(const map<int, int>& counts, long double theta) {
+        map<map<int, int>, long double>::iterator p = find(counts);
+        if (p == end()) {
+            long double pln = __alleleFrequencyProbabilityln(counts, theta);
+            insert(make_pair(counts, pln));
+            return pln;
+        } else {
+            return p->second;
+        }
+    }
+};
 
 GenotypeComboResult
 genotypeCombinationsPriorProbability(

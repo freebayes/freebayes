@@ -38,7 +38,7 @@ long double phred2float(int qual) {
 
 long double float2phred(long double prob) {
     if (prob == 1)
-        return PHRED_MAX;
+        return 0;  // guards against "-0"
     long double p = -10 * (long double) log10(prob);
     if (p < 0 || p > PHRED_MAX) // int overflow guard
         return PHRED_MAX;
@@ -227,7 +227,13 @@ long double factorial(
   }
 }
 
-long double factorialln(
+FactorialCache factorialCache;
+
+long double factorialln(int n) {
+    return factorialCache.factorialln(n);
+}
+
+long double __factorialln(
 			int n
 			) {
   if (n < 0) {

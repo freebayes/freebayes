@@ -549,59 +549,74 @@ bandedGenotypeCombinations(
     // search spaces by changing the depth and width of the deviations from the
     // data likelihood maximizer (aka 'king').
     //
-    for (int i = 0; i <= bandwidth; ++i) {
-        for (int j = 1; j < banddepth; ++j) {
-            vector<int> indexes;
-            for (int h = 0; h < j; ++h)
-                indexes.push_back(i);
-            for (int h = 0; h < (nsamples - j); ++h)
-                indexes.push_back(0);
-            vector<vector<int> > indexPermutations = multipermute(indexes);
-            bool reuseLastCombo = false;
-            for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
-                if (reuseLastCombo) {  // reuse the last combo if we've skipped it, saving a few % runtime copying combos
-                    reuseLastCombo = false;
-                } else {
-                    combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
-                }
-                GenotypeCombo& combo = combos.back();
-                GenotypeCombo::iterator currentSampleGenotypeItr = combo.begin();
-                vector<int>::const_iterator n = p->begin();
-                for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
-                        s != sampleDataLikelihoods.end(); ++s, ++n, ++currentSampleGenotypeItr) {
-                    SampleDataLikelihood& oldsdl = **currentSampleGenotypeItr;
-                    SampleDataLikelihood*& oldsdl_ptr = *currentSampleGenotypeItr;
-                    vector<SampleDataLikelihood>& sdls = *s;
-                    int offset = *n;
-                    if (offset > 0) {
-                        // ignore this combo if it's beyond the bounds of the individual's set of genotypes
-                        if (offset >= s->size()) {
-                            reuseLastCombo = true;
-                            break;
-                        }
-                        // ignore this combo if the swapped genotype has a data likelihood more than logStepMax
-                        // from the best data likelihood.  logStepMax == -1 indicates no filtering
-                        if (offset > 0 && logStepMax >= 0 && sdls.front().prob - sdls.at(offset).prob > logStepMax) {
-                            reuseLastCombo = true;
-                            break;
-                        }
-                        SampleDataLikelihood* newsdl = &sdls.at(offset);
-                        // get the old and new genotypes, which we compare to
-                        // change the cached counts and probability of the
-                        // combo
-                        combo.updateCachedCounts(oldsdl.sample, oldsdl.genotype, newsdl->genotype, useObsExpectations);
-                        // replace genotype with new genotype
-                        oldsdl_ptr = newsdl;
-                        // find data likelihood difference from ComboKing
-                        long double diff = oldsdl.prob - newsdl->prob;
-                        // adjust combination total data likelihood
-                        combo.prob -= diff;
+    vector<int> depths;
+    depths.reserve(banddepth);
+    for (int i = 0; i < banddepth; ++i) {
+        depths.push_back(i);
+    }
+    vector<vector<int> > deviations = multichoose(bandwidth, depths);
+
+    // TODO XXX hack, in lieu of a randomized sampling method,
+    // push back an extra copy of the king
+    combos.push_back(comboKing);
+
+    // skip the first vector, which will always be the same as the combo king,
+    // and has been pushed into our combinations already
+    for (vector<vector<int> >::iterator d = deviations.begin(); d != deviations.end(); ++d) {
+        vector<int>& indexes = *d;
+        indexes.reserve(nsamples);
+        for (int h = 0; h < (nsamples - bandwidth); ++h) {
+            indexes.push_back(0);
+        }
+        vector<vector<int> > indexPermutations = multipermute(indexes);
+        bool reuseLastCombo = false;
+        for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
+            //for (vector<int>::const_iterator q = p->begin(); q != p->end(); ++q) {
+            //    cout << " " << *q;
+            //}
+            //cout << endl;
+            if (reuseLastCombo) {  // reuse the last combo if we've skipped it, saving a few % runtime copying combos
+                reuseLastCombo = false;
+            } else {
+                combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
+            }
+            GenotypeCombo& combo = combos.back();
+            GenotypeCombo::iterator currentSampleGenotypeItr = combo.begin();
+            vector<int>::const_iterator n = p->begin();
+            for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+                    s != sampleDataLikelihoods.end(); ++s, ++n, ++currentSampleGenotypeItr) {
+                SampleDataLikelihood& oldsdl = **currentSampleGenotypeItr;
+                SampleDataLikelihood*& oldsdl_ptr = *currentSampleGenotypeItr;
+                vector<SampleDataLikelihood>& sdls = *s;
+                int offset = *n;
+                if (offset > 0) {
+                    // ignore this combo if it's beyond the bounds of the individual's set of genotypes
+                    if (offset >= s->size()) {
+                        reuseLastCombo = true;
+                        break;
                     }
+                    // ignore this combo if the swapped genotype has a data likelihood more than logStepMax
+                    // from the best data likelihood.  logStepMax == -1 indicates no filtering
+                    if (offset > 0 && logStepMax >= 0 && sdls.front().prob - sdls.at(offset).prob > logStepMax) {
+                        reuseLastCombo = true;
+                        break;
+                    }
+                    SampleDataLikelihood* newsdl = &sdls.at(offset);
+                    // get the old and new genotypes, which we compare to
+                    // change the cached counts and probability of the
+                    // combo
+                    combo.updateCachedCounts(oldsdl.sample, oldsdl.genotype, newsdl->genotype, useObsExpectations);
+                    // replace genotype with new genotype
+                    oldsdl_ptr = newsdl;
+                    // find data likelihood difference from ComboKing
+                    long double diff = oldsdl.prob - newsdl->prob;
+                    // adjust combination total data likelihood
+                    combo.prob -= diff;
                 }
             }
-            if (reuseLastCombo) {
-                combos.erase(combos.end() - 1);
-            }
+        }
+        if (reuseLastCombo) {
+            combos.erase(combos.end() - 1);
         }
     }
 }

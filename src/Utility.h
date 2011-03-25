@@ -10,6 +10,7 @@
 #include <string>
 #include <float.h>
 #include <iostream>
+#include <map>
 
 using namespace std;
 
@@ -49,6 +50,22 @@ long double poissonPvalLn(int a, int b);
 long double gammaln( long double x);
 long double factorial( int n);
 long double factorialln( int n);
+long double __factorialln( int n);
+
+class FactorialCache : public map<int, long double> {
+public:
+    long double factorialln(int n) {
+        map<int, long double>::iterator f = find(n);
+        if (f == end()) {
+            long double fln = __factorialln(n);
+            insert(make_pair(n, fln));
+            return fln;
+        } else {
+            return f->second;
+        }
+    }
+};
+
 long double cofactor( int n, int i);
 long double cofactorln( int n, int i);
 
