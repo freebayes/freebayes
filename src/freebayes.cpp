@@ -459,11 +459,16 @@ int main (int argc, char *argv[]) {
         }
 
         DEBUG2("got bestAlleleSamplingProb");
-        DEBUG("pVar = " << pVar << " " << parameters.PVL);
+        DEBUG("pVar = " << pVar << " " << parameters.PVL
+              << " pHom = " << pHom
+              << " 1 - pHom = " << 1 - pHom);
+        //if (parameters.debug && (pHom == 1 || pVar == 0 && pVar != 1 - pHom)) {
+        //    cerr << "pVar vs. pHom UNDERFLOW" << endl;
+        //}
 
         if (!parameters.suppressOutput) {
 
-            if (pVar >= parameters.PVL) {
+            if ((1 - pHom) >= parameters.PVL) {
                 string referenceBase(1, parser->currentReferenceBase);
                 map<string, int> repeats;
                 if (parameters.showReferenceRepeats) {
