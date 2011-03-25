@@ -46,7 +46,7 @@ void Parameters::usage(char** argv) {
          << "reporting:" << endl
          << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
-         << "                   at the site is greater than N.  default: 0.0" << endl
+         << "                   at the site is greater than N.  default: 0.0001" << endl
          << "   -@ --report-all-alternates" << endl
          << "                   Report (in non-standard VCF format) each alternate allele" << endl
          << "                   at a site on its own line of VCF." << endl
@@ -264,7 +264,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeComboStepMax = -1.0;                // -^ --genotype-combo-step-max
     IDW = -1;                     // -x --indel-exclusion-window
     TH = 10e-3;              // -T --theta
-    PVL = 0.0;             // -P --pvar
+    PVL = 0.0001;             // -P --pvar
     RDF = 0.9;             // -D --read-dependence-factor
     diffusionPriorScalar = 1.0;     // -V --diffusion-prior-scalar
     WB = 1;                      // -W --posterior-integration-limits
