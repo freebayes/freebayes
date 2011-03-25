@@ -556,10 +556,6 @@ bandedGenotypeCombinations(
     }
     vector<vector<int> > deviations = multichoose(bandwidth, depths);
 
-    // TODO XXX hack, in lieu of a randomized sampling method,
-    // push back an extra copy of the king
-    combos.push_back(comboKing);
-
     // skip the first vector, which will always be the same as the combo king,
     // and has been pushed into our combinations already
     for (vector<vector<int> >::iterator d = deviations.begin(); d != deviations.end(); ++d) {
@@ -571,10 +567,6 @@ bandedGenotypeCombinations(
         vector<vector<int> > indexPermutations = multipermute(indexes);
         bool reuseLastCombo = false;
         for (vector<vector<int> >::const_iterator p = indexPermutations.begin(); p != indexPermutations.end(); ++p) {
-            //for (vector<int>::const_iterator q = p->begin(); q != p->end(); ++q) {
-            //    cout << " " << *q;
-            //}
-            //cout << endl;
             if (reuseLastCombo) {  // reuse the last combo if we've skipped it, saving a few % runtime copying combos
                 reuseLastCombo = false;
             } else {
