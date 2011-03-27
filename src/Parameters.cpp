@@ -182,9 +182,13 @@ void Parameters::usage(char** argv) {
          << "                   likelihood genotype for that individual.  default: ~unbounded" << endl
          << "   -N --exclude-unobserved-genotypes" << endl
          << "                   Skip sample genotypings for which the sample has no supporting reads." << endl
-         << "   -S --exclude-partially-observed-genotypes" << endl
-         << "                   Skip sample genotypings where the sample does not have observations" << endl
-         << "                   supporting all alleles in the genotype." << endl
+         << "   -S --genotype-variant-threshold N" << endl
+         << "                   Limit posterior integration to samples where the second-best" << endl
+         << "                   genotype likelihood is no more than log(N) from the highest" << endl
+         << "                   genotype likelihood for the sample.  default: ~unbounded" << endl
+         //<< "   -S --exclude-partially-observed-genotypes" << endl
+         //<< "                   Skip sample genotypings where the sample does not have observations" << endl
+         //<< "                   supporting all alleles in the genotype." << endl
          << "   -= --no-marginals" << endl
          << "                   Do not calculate the marginal probability of genotypes.  Saves" << endl
          << "                   time.  Useful when setting --posterior-integration-depth." << endl
@@ -249,6 +253,7 @@ Parameters::Parameters(int argc, char** argv) {
     alleleBalancePriors = false;
     excludeUnobservedGenotypes = false;
     excludePartiallyObservedGenotypes = false;
+    genotypeVariantThreshold = 0;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -336,7 +341,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
-        {"exclude-partially-observed-genotypes", no_argument, 0, 'S'},
+        //{"exclude-partially-observed-genotypes", no_argument, 0, 'S'},
+        {"genotype-variant-threshold", required_argument, 0, 'S'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -346,7 +352,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZjH0diNSaI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:Q:U:$:e:T:P:D:^:W:F:C:K:L:l:z:",
+        c = getopt_long(argc, argv, "hcOEZjH0diNaI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:K:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -532,9 +538,12 @@ Parameters::Parameters(int argc, char** argv) {
                 excludeUnobservedGenotypes = true;
                 break;
 
-            // -S --exclude-partially-observed-genotypes
+            // -S --genotype-variant-threshold
             case 'S':
-                excludePartiallyObservedGenotypes = true;
+                if (!convert(optarg, genotypeVariantThreshold)) {
+                    cerr << "could not parse genotype-variant-threshold" << endl;
+                    exit(1);
+                }
                 break;
 
             // -Q --mismatch-base-quality-threshold

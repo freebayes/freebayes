@@ -198,10 +198,11 @@ typedef map<string, SampleDataLikelihood*> GenotypeComboMap;
 
 void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 
-void
+bool
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    SampleDataLikelihoods& sampleGenotypes,
+    SampleDataLikelihoods& variantDataLikelihoods,
+    SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
     bool useObsExpectations,
     int bandwidth, int banddepth,
@@ -210,7 +211,9 @@ bandedGenotypeCombinations(
 void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
-    SampleDataLikelihoods& sampleGenotypes,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantDataLikelihoods,
+    SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
     bool useObsExpectations,
     int bandwidth, int banddepth,
@@ -219,7 +222,9 @@ bandedGenotypeCombinationsIncludingBestHomozygousCombo(
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
-    SampleDataLikelihoods& sampleGenotypes,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantDataLikelihoods,
+    SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
     bool useObsExpectations,
     map<int, vector<Genotype> >& genotypesByPloidy,

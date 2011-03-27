@@ -488,26 +488,46 @@ bool GenotypeCombo::isHomozygous(void) {
     }
 }
 
-void
+bool
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
-    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
     bool useObsExpectations,
     int bandwidth, int banddepth,
     float logStepMax) {
 
-    int nsamples = sampleDataLikelihoods.size();
+    // get the number of samples that vary
+    int nsamples = variantSampleDataLikelihoods.size();
+
+    // cap bandwidth at the number of variant samples
+    bandwidth = (bandwidth > nsamples) ? nsamples : bandwidth;
 
     // generate the best genotype combination according to data likelihoods
     GenotypeCombo comboKing;
-    for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
-            s != sampleDataLikelihoods.end(); ++s) {
+    for (SampleDataLikelihoods::iterator s = variantSampleDataLikelihoods.begin();
+            s != variantSampleDataLikelihoods.end(); ++s) {
         SampleDataLikelihood* sdl = &s->front();
         comboKing.push_back(sdl);
         comboKing.prob += sdl->prob;
     }
+
+    // these samples have well-differentiated data likelihoods, and aren't changed
+    // during posterior integration
+    for (SampleDataLikelihoods::iterator s = invariantSampleDataLikelihoods.begin();
+            s != invariantSampleDataLikelihoods.end(); ++s) {
+        SampleDataLikelihood* sdl = &s->front();
+        comboKing.push_back(sdl);
+        comboKing.prob += sdl->prob;
+    }
+
     comboKing.init(useObsExpectations);
+
+    if (nsamples == 0) {
+        combos.push_back(comboKing);
+        return true;
+    }
 
     // overview:
     //
@@ -575,8 +595,8 @@ bandedGenotypeCombinations(
             GenotypeCombo& combo = combos.back();
             GenotypeCombo::iterator currentSampleGenotypeItr = combo.begin();
             vector<int>::const_iterator n = p->begin();
-            for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
-                    s != sampleDataLikelihoods.end(); ++s, ++n, ++currentSampleGenotypeItr) {
+            for (SampleDataLikelihoods::iterator s = variantSampleDataLikelihoods.begin();
+                    s != variantSampleDataLikelihoods.end(); ++s, ++n, ++currentSampleGenotypeItr) {
                 SampleDataLikelihood& oldsdl = **currentSampleGenotypeItr;
                 SampleDataLikelihood*& oldsdl_ptr = *currentSampleGenotypeItr;
                 vector<SampleDataLikelihood>& sdls = *s;
@@ -611,6 +631,8 @@ bandedGenotypeCombinations(
             combos.erase(combos.end() - 1);
         }
     }
+
+    return true;
 }
 
 
@@ -618,6 +640,8 @@ void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
     bool useObsExpectations,
     map<int, vector<Genotype> >& genotypesByPloidy,
@@ -627,7 +651,15 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
     // obtain the combos
 
-    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useObsExpectations, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(
+            combos,
+            variantSampleDataLikelihoods,
+            invariantSampleDataLikelihoods,
+            samples,
+            useObsExpectations,
+            bandwidth,
+            banddepth,
+            logStepMax);
 
     // determine which homozygous combos we already have
 
@@ -696,11 +728,22 @@ void
 bandedGenotypeCombinationsIncludingBestHomozygousCombo(
     vector<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
     bool useObsExpectations,
     int bandwidth, int banddepth, float logStepMax) {
 
-    bandedGenotypeCombinations(combos, sampleDataLikelihoods, samples, useObsExpectations, bandwidth, banddepth, logStepMax);
+    bandedGenotypeCombinations(
+            combos,
+            variantSampleDataLikelihoods,
+            invariantSampleDataLikelihoods,
+            samples,
+            useObsExpectations,
+            bandwidth,
+            banddepth,
+            logStepMax);
+
     // is there already a homozygous combo?
     bool hasHomozygousCombo = false;
     for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {

@@ -279,6 +279,8 @@ int main (int argc, char *argv[]) {
         // which are then referred to by pointer when generating genotype
         // combinations
         vector<vector<SampleDataLikelihood> > sampleDataLikelihoods;
+        vector<vector<SampleDataLikelihood> > variantSampleDataLikelihoods;
+        vector<vector<SampleDataLikelihood> > invariantSampleDataLikelihoods;
         for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
             const string& name = *s;
             Results::iterator r = results.find(name);
@@ -288,6 +290,19 @@ int main (int argc, char *argv[]) {
                 vector<SampleDataLikelihood> thisSampleDataLikelihoods;
                 for (vector<pair<Genotype*, long double> >::iterator p = dataLikelihoods.begin(); p != dataLikelihoods.end(); ++p) {
                     thisSampleDataLikelihoods.push_back(SampleDataLikelihood(name, &samples[name], p->first, p->second));
+                }
+                //cout << exp(thisSampleDataLikelihoods.front().prob) << " - " << exp(thisSampleDataLikelihoods.at(1).prob) << endl;
+                if (parameters.genotypeVariantThreshold != 0) {
+                    if (thisSampleDataLikelihoods.size() > 1
+                            && float2phred(1 - (exp(thisSampleDataLikelihoods.front().prob) - exp(thisSampleDataLikelihoods.at(1).prob)))
+                                < parameters.genotypeVariantThreshold) {
+                        //cout << "varying sample " << name << endl;
+                        variantSampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
+                    } else {
+                        invariantSampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
+                    }
+                } else {
+                    variantSampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
                 }
                 sampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
             }
@@ -305,6 +320,8 @@ int main (int argc, char *argv[]) {
         bandedGenotypeCombinationsIncludingAllHomozygousCombos(
                 bandedCombos,
                 sampleDataLikelihoods,
+                variantSampleDataLikelihoods,
+                invariantSampleDataLikelihoods,
                 samples,
                 parameters.obsBinomialPriors,
                 genotypesByPloidy,
@@ -312,6 +329,8 @@ int main (int argc, char *argv[]) {
                 parameters.WB,
                 parameters.TB,
                 parameters.genotypeComboStepMax);
+
+        // add back the invariants to the combos
 
         vector<GenotypeComboResult> genotypeComboProbs;
 

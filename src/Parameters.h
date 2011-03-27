@@ -57,6 +57,7 @@ public:
     bool alleleBalancePriors;
     bool excludePartiallyObservedGenotypes;
     bool excludeUnobservedGenotypes;
+    float genotypeVariantThreshold;
     int MQR;                     // -M --reference-mapping-quality
     int BQR;                     // -B --reference-base-quality
     int ploidy;                  // -p --ploidy
