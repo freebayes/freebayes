@@ -31,7 +31,6 @@
 #include "multipermute.h"
 
 #include "Genotype.h"
-#include "GenotypePriors.h"
 #include "DataLikelihood.h"
 #include "Marginals.h"
 #include "ResultData.h"
@@ -316,9 +315,9 @@ int main (int argc, char *argv[]) {
 
         //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleDataLikelihoods.size() << " sample genotypes");
         DEBUG2("generating banded genotype combinations");
-        vector<GenotypeCombo> bandedCombos;
+        vector<GenotypeCombo> genotypeCombos;
         bandedGenotypeCombinationsIncludingAllHomozygousCombos(
-                bandedCombos,
+                genotypeCombos,
                 sampleDataLikelihoods,
                 variantSampleDataLikelihoods,
                 invariantSampleDataLikelihoods,
@@ -328,54 +327,27 @@ int main (int argc, char *argv[]) {
                 genotypeAlleles,
                 parameters.WB,
                 parameters.TB,
-                parameters.genotypeComboStepMax);
-
-        // add back the invariants to the combos
-
-        vector<GenotypeComboResult> genotypeComboProbs;
-
-        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1);
-
-        DEBUG2("calculating genotype combination likelihoods");
-
-        genotypeCombinationsPriorProbability(
-                genotypeComboProbs,
-                bandedCombos,
-                refAllele,
+                parameters.genotypeComboStepMax,
                 parameters.TH,
                 parameters.pooled,
                 parameters.obsBinomialPriors,
                 parameters.alleleBalancePriors,
                 parameters.diffusionPriorScalar);
 
+
+        // add back the invariants to the combos
+
+        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1);
+
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
         GenotypeComboResultSorter gcrSorter;
-        sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), gcrSorter);
-
-        // resize to include only K chains, keeping us in O(NK) space instead
-        // of O(N^2) for the ensuing calculations
-        if (parameters.posteriorIntegrationDepth > 0) {
-            deque<GenotypeComboResult> homozygousCombos;
-            while (genotypeComboProbs.size() + homozygousCombos.size() > parameters.posteriorIntegrationDepth) {
-                if (genotypeComboProbs.back().combo->isHomozygous()) {
-                    homozygousCombos.push_back(genotypeComboProbs.back());
-                }
-                genotypeComboProbs.erase(genotypeComboProbs.end() - 1);
-            }
-            while (homozygousCombos.size() > 0) {
-                genotypeComboProbs.push_back(homozygousCombos.front());
-                homozygousCombos.pop_front();
-            }
-            // sort the homozygous chains into the right place
-            sort(genotypeComboProbs.begin(), genotypeComboProbs.end(), gcrSorter);
-        }
+        sort(genotypeCombos.begin(), genotypeCombos.end(), gcrSorter);
         
         // get posterior normalizer
         vector<long double> comboProbs;
-        //comboProbs.resize(genotypeComboProbs.size());
-        for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
-            comboProbs.push_back(gc->priorComboProb);
+        for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+            comboProbs.push_back(gc->posteriorProb);
         }
         long double posteriorNormalizer = logsumexp_probs(comboProbs);
 
@@ -391,7 +363,7 @@ int main (int argc, char *argv[]) {
 
         if (parameters.calculateMarginals) {
             DEBUG2("calculating marginal likelihoods");
-            marginalGenotypeLikelihoods(posteriorNormalizer, genotypeComboProbs, results);
+            marginalGenotypeLikelihoods(posteriorNormalizer, genotypeCombos, results);
         } else {
             DEBUG2("not calculating marginal likelihoods");
         }
@@ -412,50 +384,45 @@ int main (int argc, char *argv[]) {
         bool hasHetCombo = false;
         bool bestOverallComboIsHet = false;
         GenotypeCombo* bestCombo = NULL;
-        long double bestComboProb;
 
-        for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
-            if (gc->combo->isHomozygous()) {
-                pVar -= safe_exp(gc->priorComboProb - posteriorNormalizer);
-                pHom += safe_exp(gc->priorComboProb - posteriorNormalizer);
+        for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+            if (gc->isHomozygous()) {
+                pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
+                pHom += safe_exp(gc->posteriorProb - posteriorNormalizer);
             } else if (!hasHetCombo) { // get the first het combo
-                bestCombo = gc->combo;
-                bestComboProb = genotypeComboProbs.front().priorComboProb;
+                bestCombo = &*gc;
                 hasHetCombo = true;
-                if (gc == genotypeComboProbs.begin()) {
+                if (gc == genotypeCombos.begin()) {
                     bestOverallComboIsHet = true;
                 }
             }
         }
 
         if (!hasHetCombo) {
-            bestCombo = genotypeComboProbs.front().combo;
-            bestComboProb = genotypeComboProbs.front().priorComboProb;
+            bestCombo = &genotypeCombos.front();
         }
 
         DEBUG2("calculated pVar");
 
         // get the best heteroz
-        GenotypeCombo& bestGenotypeCombo = *bestCombo; //*besthc;
-        long double bestGenotypeComboProb = bestComboProb;
-        long double bestGenotypeComboAlleleSamplingProb = safe_exp(alleleFrequencyProbabilityln(bestGenotypeCombo.countFrequencies(), parameters.TH));
+        GenotypeCombo& bestGenotypeCombo = *bestCombo; // reference pointer swap
 
         if (parameters.trace) {
-            for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
+            for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
                 vector<Genotype*> comboGenotypes;
-                for (GenotypeCombo::iterator g = gc->combo->begin(); g != gc->combo->end(); ++g)
+                for (GenotypeCombo::iterator g = gc->begin(); g != gc->end(); ++g)
                     comboGenotypes.push_back((*g)->genotype);
-                long double priorComboProb = gc->priorComboProb;
+                long double posteriorProb = gc->posteriorProb;
                 long double dataLikelihoodln = gc->probObsGivenGenotypes;
-                long double priorln = gc->priorProbGenotypeCombo;
-                long double priorlnG_Af = gc->priorProbGenotypeComboG_Af;
-                long double priorlnAf = gc->priorProbGenotypeComboAf;
+                long double priorln = gc->posteriorProb;
+                long double priorlnG_Af = gc->priorProbG_Af;
+                long double priorlnAf = gc->priorProbAf;
                 long double priorlnBin = gc->priorProbObservations;
 
                 parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
 
                 int j = 0;
-                GenotypeCombo::iterator i = gc->combo->begin();
+                GenotypeCombo::iterator i = gc->begin();
                 for (vector<bool>::iterator d = samplesWithData.begin(); d != samplesWithData.end(); ++d) {
                     if (*d) {
                         parser->traceFile << IUPAC(*(*i)->genotype);
@@ -464,15 +431,15 @@ int main (int argc, char *argv[]) {
                         parser->traceFile << "?";
                     }
                 }
-                    //<< "," << gc->first
+                // TODO cleanup this and above
                 parser->traceFile 
                     << "," << dataLikelihoodln
                     << "," << priorln
                     << "," << priorlnG_Af
                     << "," << priorlnAf
                     << "," << priorlnBin
-                    << "," << dataLikelihoodln + priorln + priorlnBin
-                    << "," << safe_exp(dataLikelihoodln + priorln + priorlnBin - posteriorNormalizer)
+                    << "," << posteriorProb
+                    << "," << safe_exp(posteriorProb - posteriorNormalizer)
                     << endl;
             }
         }

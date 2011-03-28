@@ -1,14 +1,14 @@
 #include "Marginals.h"
 
 
-void marginalGenotypeLikelihoods(long double posteriorNormalizer, vector<GenotypeComboResult>& genotypeComboProbs, Results& results) {
+void marginalGenotypeLikelihoods(long double posteriorNormalizer, vector<GenotypeCombo>& genotypeCombos, Results& results) {
 
     // push the marginal likelihoods into the rawMarginals vectors in the results
-    for (vector<GenotypeComboResult>::iterator gc = genotypeComboProbs.begin(); gc != genotypeComboProbs.end(); ++gc) {
-        for (GenotypeCombo::const_iterator i = gc->combo->begin(); i != gc->combo->end(); ++i) {
+    for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+        for (GenotypeCombo::const_iterator i = gc->begin(); i != gc->end(); ++i) {
             const SampleDataLikelihood& sdl = **i;
             map<Genotype*, vector<long double> >& marginals = results[sdl.name].rawMarginals;
-            marginals[sdl.genotype].push_back(gc->priorComboProb);
+            marginals[sdl.genotype].push_back(gc->posteriorProb);
         }
     }
 

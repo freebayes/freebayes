@@ -1,18 +1,24 @@
 #ifndef __GENOTYPE_H
 #define __GENOTYPE_H
 
+
 #include <iostream>
 #include <vector>
 #include <utility> // pair
 #include <algorithm>
 #include <numeric>
 #include <vector>
+#include <map>
 #include <iterator>
 #include <cmath>
 #include <numeric>
 #include <assert.h>
 #include "Allele.h"
 #include "Sample.h"
+#include "Utility.h"
+#include "Multinomial.h"
+#include "CNV.h"
+#include "Ewens.h"
 
 using namespace std;
 
@@ -124,7 +130,7 @@ public:
     // GenotypeCombo::prob is equal to the sum of probs in the combo.  We
     // factor it out so that we can construct the probabilities efficiently as
     // we generate the genotype combinations
-    long double prob;
+    long double probObsGivenGenotypes;  // aka data likelihood
 
     // these *must* be generated at construction time
     // for efficiency they can be updated as each genotype combo is generated
@@ -134,7 +140,14 @@ public:
     map<string, pair<int, int> > alleleReadPositionCounts; // map from allele spec to (left, right) counts
     map<string, AlleleCounter> alleleCounters;
 
-    GenotypeCombo(void) : prob(0) { }
+    GenotypeCombo(void)
+        : probObsGivenGenotypes(0)
+        , posteriorProb(0)
+        , priorProb(0)
+        , priorProbG_Af(0)
+        , priorProbAf(0)
+        , priorProbObservations(0)
+    { }
 
     void init(bool useObsExpectations);
 
@@ -151,43 +164,33 @@ public:
     bool isHomozygous(void); // returns true if the combination is 100% homozygous across all individuals
                              // e.g. if there is no variation
 
-};
+    // posterior
 
+    long double posteriorProb; // p(genotype combo) * p(observations | genotype combo)
 
-// combines a genotype combination with probabilities
-class GenotypeComboResult {
-public:
+    // priors
 
-    GenotypeCombo* combo;
-    long double priorComboProb; // derived from the below values
-    long double probObsGivenGenotypes;
-    long double priorProbGenotypeCombo;
-    long double priorProbGenotypeComboG_Af;
-    long double priorProbGenotypeComboAf;
-    long double priorProbObservations;
+    long double priorProb; // p(genotype combo) = p(genotype combo | allele frequency) * p(allele frequency) * p(observations)
+    long double priorProbG_Af; // p(genotype combo | allele frequency)
+    long double priorProbAf; // p(allele frequency)
+    long double priorProbObservations; // p(observations)
 
-    GenotypeComboResult(GenotypeCombo* gc,
-            long double cp,
-            long double pogg,
-            long double ppgc,
-            long double ppgcgaf,
-            long double ppgcaf,
-            long double ppbo)
-        : combo(gc)
-        , priorComboProb(cp)
-        , probObsGivenGenotypes(pogg)
-        , priorProbGenotypeCombo(ppgc)
-        , priorProbGenotypeComboG_Af(ppgcgaf)
-        , priorProbGenotypeComboAf(ppgcaf)
-        , priorProbObservations(ppbo)
-    { }
+    //GenotypeCombo* combo,
+    void calculatePosteriorProbability(
+        long double theta,
+        bool pooled,
+        bool obsBinomialPriors,
+        bool alleleBalancePriors,
+        long double diffusionPriorScalarln);
+
+    long double probabilityGivenAlleleFrequencyln();
 
 };
 
 class GenotypeComboResultSorter {
 public:
-    bool operator()(const GenotypeComboResult& gc1, const GenotypeComboResult& gc2) {
-        return gc1.priorComboProb > gc2.priorComboProb;
+    bool operator()(const GenotypeCombo& gc1, const GenotypeCombo& gc2) {
+        return gc1.posteriorProb > gc2.posteriorProb;
     }
 };
 
@@ -206,18 +209,12 @@ bandedGenotypeCombinations(
     Samples& samples,
     bool useObsExpectations,
     int bandwidth, int banddepth,
-    float logStepMax);
-
-void
-bandedGenotypeCombinationsIncludingBestHomozygousCombo(
-    vector<GenotypeCombo>& combos,
-    SampleDataLikelihoods& sampleDataLikelihoods,
-    SampleDataLikelihoods& variantDataLikelihoods,
-    SampleDataLikelihoods& invariantDataLikelihoods,
-    Samples& samples,
-    bool useObsExpectations,
-    int bandwidth, int banddepth,
-    float logStepMax);
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
@@ -230,7 +227,12 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
-    float logStepMax);
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
 
 vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);
 
@@ -238,6 +240,7 @@ pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string&
 
 ostream& operator<<(ostream& out, vector<GenotypeCombo>& combo);
 ostream& operator<<(ostream& out, GenotypeCombo& g);
+
 
 
 #endif

@@ -57,7 +57,7 @@ OBJECTS=BamAlignment.o \
 		Genotype.o \
 		DataLikelihood.o \
 		Multinomial.o \
-		GenotypePriors.o \
+		Ewens.o \
 		ResultData.o \
 		Dirichlet.o \
 		Marginals.o \
@@ -132,8 +132,8 @@ Sample.o: Sample.cpp Sample.h
 Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 	$(CC) $(CFLAGS) -c Genotype.cpp
 
-GenotypePriors.o: GenotypePriors.cpp GenotypePriors.h Allele.h
-	$(CC) $(CFLAGS) -c GenotypePriors.cpp
+Ewens.o: Ewens.cpp Ewens.h
+	$(CC) $(CFLAGS) -c Ewens.cpp
 
 AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h
 	$(CC) $(CFLAGS) -c AlleleParser.cpp

@@ -496,7 +496,12 @@ bandedGenotypeCombinations(
     Samples& samples,
     bool useObsExpectations,
     int bandwidth, int banddepth,
-    float logStepMax) {
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
 
     // get the number of samples that vary
     int nsamples = variantSampleDataLikelihoods.size();
@@ -510,7 +515,7 @@ bandedGenotypeCombinations(
             s != variantSampleDataLikelihoods.end(); ++s) {
         SampleDataLikelihood* sdl = &s->front();
         comboKing.push_back(sdl);
-        comboKing.prob += sdl->prob;
+        comboKing.probObsGivenGenotypes += sdl->prob;
     }
 
     // these samples have well-differentiated data likelihoods, and aren't changed
@@ -519,10 +524,15 @@ bandedGenotypeCombinations(
             s != invariantSampleDataLikelihoods.end(); ++s) {
         SampleDataLikelihood* sdl = &s->front();
         comboKing.push_back(sdl);
-        comboKing.prob += sdl->prob;
+        comboKing.probObsGivenGenotypes += sdl->prob;
     }
 
     comboKing.init(useObsExpectations);
+    comboKing.calculatePosteriorProbability(theta,
+                                        pooled,
+                                        binomialObsPriors,
+                                        alleleBalancePriors,
+                                        diffusionPriorScalar);
 
     if (nsamples == 0) {
         combos.push_back(comboKing);
@@ -623,8 +633,15 @@ bandedGenotypeCombinations(
                     // find data likelihood difference from ComboKing
                     long double diff = oldsdl.prob - newsdl->prob;
                     // adjust combination total data likelihood
-                    combo.prob -= diff;
+                    combo.probObsGivenGenotypes -= diff;
                 }
+            }
+            if (!reuseLastCombo) {
+                combo.calculatePosteriorProbability(theta,
+                                                pooled,
+                                                binomialObsPriors,
+                                                alleleBalancePriors,
+                                                diffusionPriorScalar);
             }
         }
         if (reuseLastCombo) {
@@ -647,7 +664,12 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
-    float logStepMax) {
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
 
     // obtain the combos
 
@@ -659,7 +681,12 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             useObsExpectations,
             bandwidth,
             banddepth,
-            logStepMax);
+            logStepMax,
+            theta,
+            pooled,
+            binomialObsPriors,
+            alleleBalancePriors,
+            diffusionPriorScalar);
 
     // determine which homozygous combos we already have
 
@@ -714,67 +741,112 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     // accumulate homozygous combos and set their combo data probabilities
     for (map<Allele, GenotypeCombo>::iterator c = homozygousCombos.begin(); c != homozygousCombos.end(); ++c) {
         GenotypeCombo& gc = c->second;
-        gc.prob = 0;
+        gc.probObsGivenGenotypes = 0;
         for (GenotypeCombo::iterator sdl = gc.begin(); sdl != gc.end(); ++sdl) {
-            gc.prob += (*sdl)->prob; // set up data likelihood for combo
+            gc.probObsGivenGenotypes += (*sdl)->prob; // set up data likelihood for combo
         }
         gc.init(useObsExpectations);  // cache allele frequency information
+        gc.calculatePosteriorProbability(theta,
+                                     pooled,
+                                     binomialObsPriors,
+                                     alleleBalancePriors,
+                                     diffusionPriorScalar);
         combos.push_back(gc);
     }
 
 }
 
-void
-bandedGenotypeCombinationsIncludingBestHomozygousCombo(
-    vector<GenotypeCombo>& combos,
-    SampleDataLikelihoods& sampleDataLikelihoods,
-    SampleDataLikelihoods& variantSampleDataLikelihoods,
-    SampleDataLikelihoods& invariantSampleDataLikelihoods,
-    Samples& samples,
-    bool useObsExpectations,
-    int bandwidth, int banddepth, float logStepMax) {
+// conditional probability of the genotype combination given the represented allele frequencies
+long double GenotypeCombo::probabilityGivenAlleleFrequencyln(void) {
 
-    bandedGenotypeCombinations(
-            combos,
-            variantSampleDataLikelihoods,
-            invariantSampleDataLikelihoods,
-            samples,
-            useObsExpectations,
-            bandwidth,
-            banddepth,
-            logStepMax);
+    int n = numberOfAlleles();
+    long double lnhetscalar = 0;
 
-    // is there already a homozygous combo?
-    bool hasHomozygousCombo = false;
-    for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
-        bool allhomozygous = true;
-        for (GenotypeCombo::iterator gc = c->begin(); gc != c->end(); ++gc) {
-            if (!(*gc)->genotype->homozygous) {
-                allhomozygous = false;
-                break;
-            }
-        }
-        if (allhomozygous) {
-            hasHomozygousCombo = true;
-            break;
+    for (GenotypeCombo::iterator gc = begin(); gc != end(); ++gc) {
+        SampleDataLikelihood& sgp = **gc;
+        if (!sgp.genotype->homozygous) {
+            lnhetscalar += multinomialCoefficientLn(sgp.genotype->ploidy, sgp.genotype->counts());
         }
     }
-    if (!hasHomozygousCombo) {
-        GenotypeCombo homozygousCombo;
-        // push back the best homozygous combo
-        for(SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
-                s != sampleDataLikelihoods.end(); ++s) {
-            for (vector<SampleDataLikelihood>::iterator g = s->begin(); g != s->end(); ++g) {
-                if (g->genotype->homozygous) {
-                    homozygousCombo.push_back(&*g);
-                    break;
-                }
-            }
-        }
-        combos.push_back(homozygousCombo);
-    }
+
+    return lnhetscalar - multinomialCoefficientLn(n, counts());
 
 }
+
+
+// core calculation of genotype combination likelihoods
+//
+void
+GenotypeCombo::calculatePosteriorProbability(
+        long double theta,
+        bool pooled,
+        bool binomialObsPriors,
+        bool alleleBalancePriors,
+        long double diffusionPriorScalar) {
+
+    posteriorProb = 0;
+    priorProb = 0;
+    priorProbG_Af = 0;
+    priorProbAf = 0;
+    priorProbObservations = 0;
+
+    // when we are operating on pooled samples, we will not be able to
+    // ascertain the number of heterozygotes in the pool,
+    // rendering P(Genotype combo | Allele frequency) meaningless
+    if (!pooled) {
+        priorProbG_Af = probabilityGivenAlleleFrequencyln();
+    }
+
+    if (binomialObsPriors) {
+        // for each alternate and the reference allele
+        // calculate the binomial probability that we see the given strand balance and read placement prob
+        // cerr << *combo << endl;
+        for (map<string, AlleleCounter>::iterator ac = alleleCounters.begin(); ac != alleleCounters.end(); ++ac) {
+            //const string& allele = ac->first;
+            const AlleleCounter& alleleCounter = ac->second;
+            int obs = alleleCounter.observations;
+            /*
+            cerr << allele <<  " counts: " << alleleCounter.frequency
+                << " observations " << alleleCounter.observations
+                << " " << alleleCounter.forwardStrand
+                << "," << alleleCounter.reverseStrand
+                << " " << alleleCounter.placedLeft
+                << "," << alleleCounter.placedRight
+                << " " << alleleCounter.placedStart
+                << "," << alleleCounter.placedEnd
+                << endl;
+                */
+
+            priorProbObservations
+                += binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
+                +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
+                +  binomialProbln(alleleCounter.placedStart, obs, 0.5);
+        }
+        // ok... now do the same move for the observation counts
+        // --- this should capture "Allele Balance"
+    }
+
+    if (alleleBalancePriors) {
+        priorProbObservations += multinomialSamplingProbLn(alleleProbs(), observationCounts());
+    }
+
+    // with larger population samples, the effect of
+    // P(Genotype combo | Allele frequency) may bias us against reporting
+    // true variants which are under selection despite overwhelming evidence
+    // for variation.  this allows us to scale the effect of this prior
+    if (diffusionPriorScalar != 1) {
+        priorProbG_Af /= diffusionPriorScalar;
+    }
+
+    // Ewens' Sampling Formula
+    priorProbAf = alleleFrequencyProbabilityln(countFrequencies(), theta);
+
+    // posterior probability
+    priorProb = priorProbG_Af + priorProbAf + priorProbObservations;
+    posteriorProb = priorProb + probObsGivenGenotypes;
+
+}
+
 
 pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string& refbase, string altbase) {
     int altcount = 0;

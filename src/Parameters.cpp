@@ -172,10 +172,10 @@ void Parameters::usage(char** argv) {
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
          << "                   data likelihood: default 1,3." << endl
-         << "   -K --posterior-integration-depth N" << endl
-         << "                   Keep this many genotype combinations for calculating genotype" << endl
-         << "                   marginal probabilities for each sample and overall variant" << endl
-         << "                   quality." << endl
+         //<< "   -K --posterior-integration-depth N" << endl
+         //<< "                   Keep this many genotype combinations for calculating genotype" << endl
+         //<< "                   marginal probabilities for each sample and overall variant" << endl
+         //<< "                   quality." << endl
          << "   -^ --genotype-combo-step-max N" << endl
          << "                   When generating genotype combinations, do not include genotypes" << endl
          << "                   where the genotype data likelihood is log(N) from the highest" << endl
@@ -191,7 +191,7 @@ void Parameters::usage(char** argv) {
          //<< "                   supporting all alleles in the genotype." << endl
          << "   -= --no-marginals" << endl
          << "                   Do not calculate the marginal probability of genotypes.  Saves" << endl
-         << "                   time.  Useful when setting --posterior-integration-depth." << endl
+         << "                   time and improves scaling performance in large populations." << endl
          << endl
          << "debugging:" << endl
          << endl
@@ -336,7 +336,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-alternate-count", required_argument, 0, 'C'},
         {"min-alternate-total", required_argument, 0, 'G'},
         {"min-coverage", required_argument, 0, '!'},
-        {"posterior-integration-depth", required_argument, 0, 'K'},
+        //{"posterior-integration-depth", required_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
@@ -352,7 +352,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZjH0diNaI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:K:L:l:z:",
+        c = getopt_long(argc, argv, "hcOEZjH0diNaI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options

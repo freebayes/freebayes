@@ -5,6 +5,6 @@
 #include "Genotype.h"
 #include "ResultData.h"
 
-void marginalGenotypeLikelihoods(long double posteriorNormalizer, vector<GenotypeComboResult>& genotypeComboProbs, Results& results);
+void marginalGenotypeLikelihoods(long double posteriorNormalizer, vector<GenotypeCombo>& genotypeCombos, Results& results);
 
 #endif
