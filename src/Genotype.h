@@ -140,6 +140,10 @@ public:
     map<string, pair<int, int> > alleleReadPositionCounts; // map from allele spec to (left, right) counts
     map<string, AlleleCounter> alleleCounters;
 
+    // relative position of this genotype combination to the maximum likelihood
+    // estimate derived from data lilkelihoods
+    vector<int> maxLikelihoodRelativePosition;
+
     GenotypeCombo(void)
         : probObsGivenGenotypes(0)
         , posteriorProb(0)
@@ -204,6 +208,7 @@ void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 bool
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
+    vector<int>& initialPosition,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
@@ -225,6 +230,42 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     Samples& samples,
     bool useObsExpectations,
     map<int, vector<Genotype> >& genotypesByPloidy,
+    vector<Allele>& genotypeAlleles,
+    int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
+
+void
+expectationMaximizationSearchIncludingAllHomozygousCombos(
+    vector<GenotypeCombo>& combos,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantDataLikelihoods,
+    SampleDataLikelihoods& invariantDataLikelihoods,
+    Samples& samples,
+    bool useObsExpectations,
+    map<int, vector<Genotype> >& genotypesByPloidy,
+    vector<Allele>& genotypeAlleles,
+    int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar,
+    int maxiterations);
+
+void
+addAllHomozygousCombos(
+    vector<GenotypeCombo>& combos,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    Samples& samples,
+    bool useObsExpectations,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
     float logStepMax,

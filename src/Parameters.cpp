@@ -73,12 +73,9 @@ void Parameters::usage(char** argv) {
          << "   -H --haploid-reference" << endl
          << "                   If using the reference sequence as a sample, consider it" << endl
          << "                   to be haploid.  default: false" << endl
-         << "   -M --reference-mapping-quality Q" << endl
-         << "                   Assign mapping quality of Q to the reference allele at each" << endl
-         << "                   site.  default: 100" << endl
-         << "   -B --reference-base-quality Q" << endl
-         << "                   Assign a base quality of Q to the reference allele at each" << endl
-         << "                   site.  default: 60" << endl
+         << "   -B --reference-quality MQ,BQ" << endl
+         << "                   Assign mapping quality of MQ to the reference allele at each" << endl
+         << "                   site and base quality of BQ.  default: 100,60" << endl
          << "   -j --use-mapping-quality" << endl
          << "                   Use mapping quality of alleles when calculating data likelihoods." << endl
          << "   -D --read-dependence-factor N" << endl
@@ -166,12 +163,18 @@ void Parameters::usage(char** argv) {
          << "                   as a component of the priors.  Best for observations with minimal" << endl
          << "                   inherent reference bias." << endl
          << endl
-         << "algorithmic performance:" << endl
+         << "algorithmic features:" << endl
          << endl
+         << "   -M --expectation-maximization" << endl
+         << "                   Use expectation maximization algorithm to integrate over posterior" << endl
+         << "                   and assign genotypes to samples." << endl
+         << "   -u --expectation-maximization-max-iterations N" << endl
+         << "                   Iterate no more than this many times during expectation" << endl
+         << "                   maximization step.  default: 20" << endl
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
-         << "                   data likelihood: default 1,3." << endl
+         << "                   data likelihood. default: 1,3." << endl
          //<< "   -K --posterior-integration-depth N" << endl
          //<< "                   Keep this many genotype combinations for calculating genotype" << endl
          //<< "                   marginal probabilities for each sample and overall variant" << endl
@@ -254,6 +257,8 @@ Parameters::Parameters(int argc, char** argv) {
     excludeUnobservedGenotypes = false;
     excludePartiallyObservedGenotypes = false;
     genotypeVariantThreshold = 0;
+    expectationMaximization = false;
+    expectationMaximizationMaxIterations = 20;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -306,8 +311,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"ignore-reference-allele", no_argument, 0, 'Z'},
         {"haploid-reference", no_argument, 0, 'H'},
         {"no-filters", no_argument, 0, '0'},
-        {"reference-mapping-quality", required_argument, 0, 'M'},
-        {"reference-base-quality", required_argument, 0, 'B'},
+        {"reference-quality", required_argument, 0, 'B'},
         {"ploidy", required_argument, 0, 'p'},
         {"pooled", no_argument, 0, 'J'},
         {"use-mapping-quality", no_argument, 0, 'j'},
@@ -343,6 +347,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
         //{"exclude-partially-observed-genotypes", no_argument, 0, 'S'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
+        {"expectation-maximization", no_argument, 0, 'M'},
+        {"expectation-maximization-max-iterations", no_argument, 0, 'u'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -352,7 +358,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZjH0diNaI@_=VXJb:G:x:A:f:t:r:s:v:n:M:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:",
+        c = getopt_long(argc, argv, "hcOEZjH0diNaI@_M=VXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -472,18 +478,27 @@ Parameters::Parameters(int argc, char** argv) {
                 BQL1 = 0;
                 break;
 
-            // -M --reference-mapping-quality
+            // -M --expectation-maximization
             case 'M':
-                if (!convert(optarg, MQR)) {
-                    cerr << "could not parse reference-mapping-quality" << endl;
+                expectationMaximization = true;
+                break;
+
+            // -u --expectation-maximization-max-iterations
+            case 'u':
+                if (!convert(optarg, expectationMaximizationMaxIterations)) {
+                    cerr << "could not parse expectation-maximization-max-iterations" << endl;
                     exit(1);
                 }
                 break;
 
-            // -B --reference-base-quality
+            // -B --reference-quality
             case 'B':
-                if (!convert(optarg, BQR)) {
-                    cerr << "could not parse reference-base-quality" << endl;
+                if (!convert(split(optarg, ",").front(), MQR)) {
+                    cerr << "could not parse reference mapping quality" << endl;
+                    exit(1);
+                }
+                if (!convert(split(optarg, ",").back(), BQR)) {
+                    cerr << "could not parse reference base quality" << endl;
                     exit(1);
                 }
                 break;

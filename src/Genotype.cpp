@@ -491,6 +491,7 @@ bool GenotypeCombo::isHomozygous(void) {
 bool
 bandedGenotypeCombinations(
     vector<GenotypeCombo>& combos,
+    vector<int>& initialPosition,  // starting combo in terms of offsets from data likelihood maximum
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
@@ -509,23 +510,29 @@ bandedGenotypeCombinations(
     // cap bandwidth at the number of variant samples
     bandwidth = (bandwidth > nsamples) ? nsamples : bandwidth;
 
-    // generate the best genotype combination according to data likelihoods
+    // generate the best genotype combination according to data
+    // likelihoods
     GenotypeCombo comboKing;
+    vector<int>::iterator offset = initialPosition.begin();
     for (SampleDataLikelihoods::iterator s = variantSampleDataLikelihoods.begin();
             s != variantSampleDataLikelihoods.end(); ++s) {
-        SampleDataLikelihood* sdl = &s->front();
+        // use the offsets to generate the starting combination
+        SampleDataLikelihood* sdl = &s->at(*offset++);
         comboKing.push_back(sdl);
         comboKing.probObsGivenGenotypes += sdl->prob;
     }
 
-    // these samples have well-differentiated data likelihoods, and aren't changed
-    // during posterior integration
+    // these samples have well-differentiated data likelihoods, and
+    // aren't changed during posterior integration
     for (SampleDataLikelihoods::iterator s = invariantSampleDataLikelihoods.begin();
             s != invariantSampleDataLikelihoods.end(); ++s) {
-        SampleDataLikelihood* sdl = &s->front();
+        SampleDataLikelihood* sdl = &s->at(*offset++);
         comboKing.push_back(sdl);
         comboKing.probObsGivenGenotypes += sdl->prob;
     }
+
+    // record the position of this combo relative to the data likelihood maximum
+    comboKing.maxLikelihoodRelativePosition = initialPosition;
 
     comboKing.init(useObsExpectations);
     comboKing.calculatePosteriorProbability(theta,
@@ -534,6 +541,7 @@ bandedGenotypeCombinations(
                                         alleleBalancePriors,
                                         diffusionPriorScalar);
 
+    // no variant samples
     if (nsamples == 0) {
         combos.push_back(comboKing);
         return true;
@@ -541,16 +549,17 @@ bandedGenotypeCombinations(
 
     // overview:
     //
-    // For each order of indexes in the bandwidth and banddepth, Obtain all
-    // multiset permutations of a set of indexes.  Then use these indexes to
-    // get the nth-best genotype from each individual's set of genotypes for
-    // which we have data likelihoods (sampleDataLikelihoods), and turn this set into
-    // a genotype combination.  Update the combination probability inline here
-    // so we don't incur O(N^2) penalty calculating the probability within our
-    // genotypeCombinationPriors calculation loop, where we estimate the
-    // posterior probability of each genotype combination given its data
-    // likelihood and the prior probability of the distribution of alleles it
-    // represents.
+    // For each order of indexes in the bandwidth and banddepth, Obtain
+    // all multiset permutations of a set of indexes.  Then use these
+    // indexes to get the nth-best genotype from each individual's set
+    // of genotypes for which we have data likelihoods
+    // (sampleDataLikelihoods), and turn this set into a genotype
+    // combination.  Update the combination probability inline here so
+    // we don't incur O(N^2) penalty calculating the probability within
+    // our genotypeCombinationPriors calculation loop, where we
+    // estimate the posterior probability of each genotype combination
+    // given its data likelihood and the prior probability of the
+    // distribution of alleles it represents.
     // 
     // example (bandwidth = 2, banddepth = 2)
     //  indexes:      0 0 0 0 1, 0 0 0 1 1
@@ -571,13 +580,13 @@ bandedGenotypeCombinations(
     //                0 0 0 1 1 
     //                1 0 0 0 1 
     //
-    // We then convert these permutation to genotype combinations by using the
-    // index to pick the nth-best genotype according to sorted individual
-    // genotype data likelihoods.
+    // We then convert these permutation to genotype combinations by
+    // using the index to pick the nth-best genotype according to
+    // sorted individual genotype data likelihoods.
     //
-    // In addition to this simple case, We can flexibly extend this to larger
-    // search spaces by changing the depth and width of the deviations from the
-    // data likelihood maximizer (aka 'king').
+    // In addition to this simple case, We can flexibly extend this to
+    // larger search spaces by changing the depth and width of the
+    // deviations from the data likelihood maximizer (aka 'king').
     //
     vector<int> depths;
     depths.reserve(banddepth);
@@ -586,8 +595,8 @@ bandedGenotypeCombinations(
     }
     vector<vector<int> > deviations = multichoose(bandwidth, depths);
 
-    // skip the first vector, which will always be the same as the combo king,
-    // and has been pushed into our combinations already
+    // skip the first vector, which will always be the same as the
+    // combo king, and has been pushed into our combinations already
     for (vector<vector<int> >::iterator d = deviations.begin(); d != deviations.end(); ++d) {
         vector<int>& indexes = *d;
         indexes.reserve(nsamples);
@@ -603,16 +612,18 @@ bandedGenotypeCombinations(
                 combos.push_back(comboKing); // copy the king, and then we'll modify it according to the indicies
             }
             GenotypeCombo& combo = combos.back();
-            GenotypeCombo::iterator currentSampleGenotypeItr = combo.begin();
+            GenotypeCombo::iterator sampleGenotypeItr = combo.begin();
+            vector<int>::iterator sampleOffsetItr = combo.maxLikelihoodRelativePosition.begin();
             vector<int>::const_iterator n = p->begin();
             for (SampleDataLikelihoods::iterator s = variantSampleDataLikelihoods.begin();
-                    s != variantSampleDataLikelihoods.end(); ++s, ++n, ++currentSampleGenotypeItr) {
-                SampleDataLikelihood& oldsdl = **currentSampleGenotypeItr;
-                SampleDataLikelihood*& oldsdl_ptr = *currentSampleGenotypeItr;
+                    s != variantSampleDataLikelihoods.end(); ++s, ++n, ++sampleGenotypeItr, ++sampleOffsetItr) {
+                SampleDataLikelihood& oldsdl = **sampleGenotypeItr;
+                SampleDataLikelihood*& oldsdl_ptr = *sampleGenotypeItr;
                 vector<SampleDataLikelihood>& sdls = *s;
-                int offset = *n;
+                int offset = *n + *sampleOffsetItr;
                 if (offset > 0) {
                     // ignore this combo if it's beyond the bounds of the individual's set of genotypes
+                    // TODO should we shift-back, which might be important in the case of EM?
                     if (offset >= s->size()) {
                         reuseLastCombo = true;
                         break;
@@ -624,16 +635,20 @@ bandedGenotypeCombinations(
                         break;
                     }
                     SampleDataLikelihood* newsdl = &sdls.at(offset);
-                    // get the old and new genotypes, which we compare to
-                    // change the cached counts and probability of the
-                    // combo
-                    combo.updateCachedCounts(oldsdl.sample, oldsdl.genotype, newsdl->genotype, useObsExpectations);
+                    // get the old and new genotypes, which we compare
+                    // to change the cached counts and probability of
+                    // the combo
+                    combo.updateCachedCounts(oldsdl.sample,
+                            oldsdl.genotype, newsdl->genotype,
+                            useObsExpectations);
                     // replace genotype with new genotype
                     oldsdl_ptr = newsdl;
                     // find data likelihood difference from ComboKing
                     long double diff = oldsdl.prob - newsdl->prob;
                     // adjust combination total data likelihood
                     combo.probObsGivenGenotypes -= diff;
+                    // replace the offset for this sample with the new offset
+                    *sampleOffsetItr = offset;
                 }
             }
             if (!reuseLastCombo) {
@@ -650,6 +665,86 @@ bandedGenotypeCombinations(
     }
 
     return true;
+}
+
+void
+expectationMaximizationSearchIncludingAllHomozygousCombos(
+    vector<GenotypeCombo>& combos,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    Samples& samples,
+    bool useObsExpectations,
+    map<int, vector<Genotype> >& genotypesByPloidy,
+    vector<Allele>& genotypeAlleles,
+    int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar,
+    int maxiterations) {
+
+    // seed EM with the data likelihood maximum
+    vector<int> initialPosition;
+    initialPosition.assign(sampleDataLikelihoods.size(), 0);
+
+    // set best position, which is updated during the EM step
+    vector<int>* bestPosition = &initialPosition;
+
+    GenotypeComboResultSorter gcrSorter;
+
+    int i = 0;
+    for (; i < maxiterations; ++i) {
+
+        bandedGenotypeCombinations(
+                combos,
+                *bestPosition,
+                variantSampleDataLikelihoods,
+                invariantSampleDataLikelihoods,
+                samples,
+                useObsExpectations,
+                bandwidth,
+                banddepth,
+                logStepMax,
+                theta,
+                pooled,
+                binomialObsPriors,
+                alleleBalancePriors,
+                diffusionPriorScalar);
+
+        // TODO should we change vector<GenotypeCombo> combos to a map<long double, vector<GenotypeCombo> > ?
+        sort(combos.begin(), combos.end(), gcrSorter);
+
+        // check for convergence
+        if (bestPosition == &combos.front().maxLikelihoodRelativePosition) {
+            // we've converged
+            break;
+        } else {
+            bestPosition = &combos.front().maxLikelihoodRelativePosition;
+        }
+
+    }
+
+    // add back the homozygous cases
+
+    addAllHomozygousCombos(combos,
+            sampleDataLikelihoods,
+            variantSampleDataLikelihoods,
+            invariantSampleDataLikelihoods,
+            samples,
+            useObsExpectations,
+            genotypeAlleles,
+            bandwidth,
+            banddepth,
+            logStepMax,
+            theta,
+            pooled,
+            binomialObsPriors,
+            alleleBalancePriors,
+            diffusionPriorScalar);
+
 }
 
 
@@ -671,10 +766,16 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     bool alleleBalancePriors,
     long double diffusionPriorScalar) {
 
+    // generate the initial maximum likelihood relative position for
+    // integration. in this case we use the data likelihood maximum.
+    vector<int> initialPosition;
+    initialPosition.assign(sampleDataLikelihoods.size(), 0);
+
     // obtain the combos
 
     bandedGenotypeCombinations(
             combos,
+            initialPosition,
             variantSampleDataLikelihoods,
             invariantSampleDataLikelihoods,
             samples,
@@ -687,6 +788,42 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             binomialObsPriors,
             alleleBalancePriors,
             diffusionPriorScalar);
+
+    // add back the homozygous cases
+
+    addAllHomozygousCombos(combos,
+            sampleDataLikelihoods,
+            variantSampleDataLikelihoods,
+            invariantSampleDataLikelihoods,
+            samples,
+            useObsExpectations,
+            genotypeAlleles,
+            bandwidth,
+            banddepth,
+            logStepMax,
+            theta,
+            pooled,
+            binomialObsPriors,
+            alleleBalancePriors,
+            diffusionPriorScalar);
+
+}
+
+void addAllHomozygousCombos(
+    vector<GenotypeCombo>& combos,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    Samples& samples,
+    bool useObsExpectations,
+    vector<Allele>& genotypeAlleles,
+    int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
 
     // determine which homozygous combos we already have
 
@@ -822,10 +959,10 @@ GenotypeCombo::calculatePosteriorProbability(
                 +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
                 +  binomialProbln(alleleCounter.placedStart, obs, 0.5);
         }
-        // ok... now do the same move for the observation counts
-        // --- this should capture "Allele Balance"
     }
 
+    // ok... now do the same move for the observation counts
+    // --- this should capture "Allele Balance"
     if (alleleBalancePriors) {
         priorProbObservations += multinomialSamplingProbLn(alleleProbs(), observationCounts());
     }

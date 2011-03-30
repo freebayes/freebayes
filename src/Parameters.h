@@ -58,6 +58,8 @@ public:
     bool excludePartiallyObservedGenotypes;
     bool excludeUnobservedGenotypes;
     float genotypeVariantThreshold;
+    bool expectationMaximization;
+    int expectationMaximizationMaxIterations;
     int MQR;                     // -M --reference-mapping-quality
     int BQR;                     // -B --reference-base-quality
     int ploidy;                  // -p --ploidy

@@ -314,25 +314,47 @@ int main (int argc, char *argv[]) {
         // and determine best genotype combination
 
         //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleDataLikelihoods.size() << " sample genotypes");
-        DEBUG2("generating banded genotype combinations");
         vector<GenotypeCombo> genotypeCombos;
-        bandedGenotypeCombinationsIncludingAllHomozygousCombos(
-                genotypeCombos,
-                sampleDataLikelihoods,
-                variantSampleDataLikelihoods,
-                invariantSampleDataLikelihoods,
-                samples,
-                parameters.obsBinomialPriors,
-                genotypesByPloidy,
-                genotypeAlleles,
-                parameters.WB,
-                parameters.TB,
-                parameters.genotypeComboStepMax,
-                parameters.TH,
-                parameters.pooled,
-                parameters.obsBinomialPriors,
-                parameters.alleleBalancePriors,
-                parameters.diffusionPriorScalar);
+
+        if (parameters.expectationMaximization) {
+            expectationMaximizationSearchIncludingAllHomozygousCombos(
+                    genotypeCombos,
+                    sampleDataLikelihoods,
+                    variantSampleDataLikelihoods,
+                    invariantSampleDataLikelihoods,
+                    samples,
+                    parameters.obsBinomialPriors,
+                    genotypesByPloidy,
+                    genotypeAlleles,
+                    parameters.WB,
+                    parameters.TB,
+                    parameters.genotypeComboStepMax,
+                    parameters.TH,
+                    parameters.pooled,
+                    parameters.obsBinomialPriors,
+                    parameters.alleleBalancePriors,
+                    parameters.diffusionPriorScalar,
+                    parameters.expectationMaximizationMaxIterations);
+        } else {
+            DEBUG2("generating banded genotype combinations");
+            bandedGenotypeCombinationsIncludingAllHomozygousCombos(
+                    genotypeCombos,
+                    sampleDataLikelihoods,
+                    variantSampleDataLikelihoods,
+                    invariantSampleDataLikelihoods,
+                    samples,
+                    parameters.obsBinomialPriors,
+                    genotypesByPloidy,
+                    genotypeAlleles,
+                    parameters.WB,
+                    parameters.TB,
+                    parameters.genotypeComboStepMax,
+                    parameters.TH,
+                    parameters.pooled,
+                    parameters.obsBinomialPriors,
+                    parameters.alleleBalancePriors,
+                    parameters.diffusionPriorScalar);
+        }
 
 
         // add back the invariants to the combos
