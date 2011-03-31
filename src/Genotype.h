@@ -48,6 +48,7 @@ public:
     vector<Allele> alleles;
     map<string, int> alleleCounts;
     bool homozygous;
+    long double permutationsln;  // aka, multinomialCoefficientLn(ploidy, counts())
 
     Genotype(vector<Allele>& ungroupedAlleles) {
         alleles = ungroupedAlleles;
@@ -59,6 +60,7 @@ public:
         }
         ploidy = getPloidy();
         homozygous = isHomozygous();
+        permutationsln = multinomialCoefficientLn(ploidy, counts());
     }
 
     vector<Allele> uniqueAlleles(void);
@@ -207,7 +209,7 @@ void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 
 bool
 bandedGenotypeCombinations(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     vector<int>& initialPosition,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
@@ -223,7 +225,7 @@ bandedGenotypeCombinations(
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
@@ -241,7 +243,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
 void
 expectationMaximizationSearchIncludingAllHomozygousCombos(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
@@ -260,7 +262,7 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
 
 void
 addAllHomozygousCombos(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -279,7 +281,7 @@ vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referen
 
 pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string& refbase, string altbase);
 
-ostream& operator<<(ostream& out, vector<GenotypeCombo>& combo);
+ostream& operator<<(ostream& out, list<GenotypeCombo>& combo);
 ostream& operator<<(ostream& out, GenotypeCombo& g);
 
 

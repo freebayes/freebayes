@@ -247,9 +247,9 @@ string vcf(
     vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
     for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
         Allele& allele = **app;
-        basesLeft += allele.basesLeft();
-        basesRight += allele.basesRight();
-        if (allele.basesLeft() >= allele.basesRight()) {
+        basesLeft += allele.basesLeft;
+        basesRight += allele.basesRight;
+        if (allele.basesLeft >= allele.basesRight) {
             readsLeft += 1;
             if (allele.strand == STRAND_FORWARD) {
                 endLeft += 1;

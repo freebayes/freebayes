@@ -176,8 +176,8 @@ ostream& operator<<(ostream& out, const Genotype& g) {
     return out;
 }
 
-ostream& operator<<(ostream& out, vector<GenotypeCombo>& g) {
-    for (vector<GenotypeCombo>::iterator i = g.begin(); i != g.end(); ++i) {
+ostream& operator<<(ostream& out, list<GenotypeCombo>& g) {
+    for (list<GenotypeCombo>::iterator i = g.begin(); i != g.end(); ++i) {
         out << *i << endl;
     }
     return out;
@@ -255,7 +255,7 @@ void GenotypeCombo::init(bool useObsExpectations) {
                     alleleCounter.observations += alleles.size();
                     for (vector<Allele*>::iterator o = alleles.begin(); o != alleles.end(); ++o) {
                         const Allele& allele = **o;
-                        if (allele.basesLeft() >= allele.basesRight()) {
+                        if (allele.basesLeft >= allele.basesRight) {
                             ++alleleCounter.placedLeft;
                             if (allele.strand == STRAND_FORWARD) {
                                 ++alleleCounter.placedStart;
@@ -323,7 +323,7 @@ void GenotypeCombo::updateCachedCounts(
                     } else {
                         ++reverse_strand;
                     }
-                    if (allele.basesLeft() >= allele.basesRight()) {
+                    if (allele.basesLeft >= allele.basesRight) {
                         ++placed_left;
                         if (allele.strand == STRAND_FORWARD) {
                             ++placed_start;
@@ -373,7 +373,7 @@ void GenotypeCombo::updateCachedCounts(
                     } else {
                         ++reverse_strand;
                     }
-                    if (allele.basesLeft() >= allele.basesRight()) {
+                    if (allele.basesLeft >= allele.basesRight) {
                         ++placed_left;
                         if (allele.strand == STRAND_FORWARD) {
                             ++placed_start;
@@ -474,23 +474,12 @@ vector<string> GenotypeCombo::alleles(void) {
 
 // returns true if the combination is 100% homozygous
 bool GenotypeCombo::isHomozygous(void) {
-    GenotypeCombo::iterator g = begin();
-    Genotype* genotype = (*g)->genotype;
-    if (!genotype->homozygous) {
-        return false;
-    } else {
-        Allele& allele = (*g)->genotype->front().allele;
-        for (; g != end(); ++g) {
-            if (!(*g)->genotype->homozygous || (*g)->genotype->front().allele != allele)
-                return false;
-        }
-        return true;
-    }
+    return alleleCounters.size() == 1;
 }
 
 bool
 bandedGenotypeCombinations(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     vector<int>& initialPosition,  // starting combo in terms of offsets from data likelihood maximum
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -660,7 +649,7 @@ bandedGenotypeCombinations(
             }
         }
         if (reuseLastCombo) {
-            combos.erase(combos.end() - 1);
+            combos.pop_back();
         }
     }
 
@@ -669,7 +658,7 @@ bandedGenotypeCombinations(
 
 void
 expectationMaximizationSearchIncludingAllHomozygousCombos(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -686,14 +675,15 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
     long double diffusionPriorScalar,
     int maxiterations) {
 
+    // sorting function object
+    GenotypeComboResultSorter gcrSorter;
+
     // seed EM with the data likelihood maximum
     vector<int> initialPosition;
     initialPosition.assign(sampleDataLikelihoods.size(), 0);
 
     // set best position, which is updated during the EM step
     vector<int>* bestPosition = &initialPosition;
-
-    GenotypeComboResultSorter gcrSorter;
 
     int i = 0;
     for (; i < maxiterations; ++i) {
@@ -714,12 +704,19 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
                 alleleBalancePriors,
                 diffusionPriorScalar);
 
-        // TODO should we change vector<GenotypeCombo> combos to a map<long double, vector<GenotypeCombo> > ?
-        sort(combos.begin(), combos.end(), gcrSorter);
+        // sort the results
+        combos.sort(gcrSorter);
+
+        // we've converged on the best homozygous combo, which suggests weak support for variation
+        if (combos.front().isHomozygous()) {
+            //cout << "homozygous convergence" << endl;
+            break;
+        }
 
         // check for convergence
         if (bestPosition == &combos.front().maxLikelihoodRelativePosition) {
             // we've converged
+            //cout << "standard convergence" << endl;
             break;
         } else {
             bestPosition = &combos.front().maxLikelihoodRelativePosition;
@@ -727,7 +724,9 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
 
     }
 
-    // add back the homozygous cases
+    //cout << i << " iterations!" << "\t" << variantSampleDataLikelihoods.size() << " varying samples" << endl;
+
+    // add the homozygous cases
 
     addAllHomozygousCombos(combos,
             sampleDataLikelihoods,
@@ -745,12 +744,20 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
             alleleBalancePriors,
             diffusionPriorScalar);
 
+    // sort the homozygous combos
+    combos.sort(gcrSorter);
+
+    // get best homozygous combo
+    //GenotypeCombo* bestHomozygousCombo = &combos.front();
+
+    combos.unique(); // remove duplicate combos!
+
 }
 
 
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -810,7 +817,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 }
 
 void addAllHomozygousCombos(
-    vector<GenotypeCombo>& combos,
+    list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -829,7 +836,7 @@ void addAllHomozygousCombos(
 
     map<Allele, bool> allelesWithHomozygousCombos;
 
-    for (vector<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
+    for (list<GenotypeCombo>::iterator c = combos.begin(); c != combos.end(); ++c) {
         bool allSameAndHomozygous = true;
         GenotypeCombo::iterator gc = c->begin();
         Genotype* genotype;
@@ -860,8 +867,9 @@ void addAllHomozygousCombos(
             // we need to make a new combo
             // iterate through the sample genotype vector
             GenotypeCombo& combo = homozygousCombos[allele];
-            for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
-                    s != sampleDataLikelihoods.end(); ++s) {
+            // match the way we make combos in bandedCombos*()
+            SampleDataLikelihoods::iterator s = variantSampleDataLikelihoods.begin();
+            while (s != invariantSampleDataLikelihoods.end()) {
                 // for each sample genotype, if the genotype is the same as our currently needed genotype, push it back onto a new combo
                 for (vector<SampleDataLikelihood>::iterator d = s->begin(); d != s->end(); ++d) {
                     SampleDataLikelihood& sdl = *d;
@@ -870,6 +878,10 @@ void addAllHomozygousCombos(
                         combo.push_back(&sdl);
                         break;
                     }
+                }
+                ++s;
+                if (s == variantSampleDataLikelihoods.end()) {
+                    s = invariantSampleDataLikelihoods.begin();
                 }
             }
         }
@@ -902,7 +914,7 @@ long double GenotypeCombo::probabilityGivenAlleleFrequencyln(void) {
     for (GenotypeCombo::iterator gc = begin(); gc != end(); ++gc) {
         SampleDataLikelihood& sgp = **gc;
         if (!sgp.genotype->homozygous) {
-            lnhetscalar += multinomialCoefficientLn(sgp.genotype->ploidy, sgp.genotype->counts());
+            lnhetscalar += sgp.genotype->permutationsln;
         }
     }
 

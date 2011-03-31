@@ -106,6 +106,8 @@ public:
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     int bpLeft; // how many bases are in the read to the left of the allele
     int bpRight; // how many bases are in the read to the left of the allele
+    int basesLeft;  // these are the "updated" versions of the above
+    int basesRight;
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
     string readID;          // id of the read which the allele is drawn from
@@ -144,7 +146,9 @@ public:
         , currentReferenceBase(crefbase)
         , length(len)
         , bpLeft(bleft)
+        , basesLeft(bleft)
         , bpRight(bright)
+        , basesRight(bright)
         , currentBase(alt)
         , alternateSequence(alt)
         , sampleID(sampleid)
@@ -205,8 +209,8 @@ public:
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;
-    const int basesLeft(void) const; // returns the bases left within the read of the current position within the allele
-    const int basesRight(void) const; // returns the bases right within the read of the current position within the allele
+    //const int basesLeft(void) const; // returns the bases left within the read of the current position within the allele
+    //const int basesRight(void) const; // returns the bases right within the read of the current position within the allele
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
     void update(void); // for reference alleles, updates currentBase and quality
     // TODO update this to reflect different insertions (e.g. IATGC instead of I4)

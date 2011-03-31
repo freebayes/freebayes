@@ -314,7 +314,7 @@ int main (int argc, char *argv[]) {
         // and determine best genotype combination
 
         //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleDataLikelihoods.size() << " sample genotypes");
-        vector<GenotypeCombo> genotypeCombos;
+        list<GenotypeCombo> genotypeCombos;
 
         if (parameters.expectationMaximization) {
             expectationMaximizationSearchIncludingAllHomozygousCombos(
@@ -364,11 +364,11 @@ int main (int argc, char *argv[]) {
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
         GenotypeComboResultSorter gcrSorter;
-        sort(genotypeCombos.begin(), genotypeCombos.end(), gcrSorter);
+        genotypeCombos.sort(gcrSorter);
         
         // get posterior normalizer
         vector<long double> comboProbs;
-        for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+        for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
             comboProbs.push_back(gc->posteriorProb);
         }
         long double posteriorNormalizer = logsumexp_probs(comboProbs);
@@ -407,7 +407,7 @@ int main (int argc, char *argv[]) {
         bool bestOverallComboIsHet = false;
         GenotypeCombo* bestCombo = NULL;
 
-        for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+        for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
             if (gc->isHomozygous()) {
                 pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
                 pHom += safe_exp(gc->posteriorProb - posteriorNormalizer);
@@ -430,7 +430,7 @@ int main (int argc, char *argv[]) {
         GenotypeCombo& bestGenotypeCombo = *bestCombo; // reference pointer swap
 
         if (parameters.trace) {
-            for (vector<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+            for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
                 vector<Genotype*> comboGenotypes;
                 for (GenotypeCombo::iterator g = gc->begin(); g != gc->end(); ++g)
                     comboGenotypes.push_back((*g)->genotype);

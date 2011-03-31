@@ -15,6 +15,10 @@ void Allele::update(void) {
     currentBase = base();
     quality = currentQuality();
     lnquality = phred2ln(quality);
+    if (type == ALLELE_REFERENCE) {
+        basesLeft = bpLeft + referenceOffset();
+        basesRight = bpRight - referenceOffset();
+    }
 }
 
 void updateAllelesCachedData(vector<Allele*>& alleles) {
@@ -23,6 +27,7 @@ void updateAllelesCachedData(vector<Allele*>& alleles) {
     }
 }
 
+/*
 const int Allele::basesLeft(void) const {
     if (type == ALLELE_REFERENCE) {
         return bpLeft + referenceOffset();
@@ -38,6 +43,7 @@ const int Allele::basesRight(void) const {
         return bpRight;
     }
 }
+*/
 
 // quality at a given reference position
 const short Allele::currentQuality(void) const {

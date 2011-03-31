@@ -4,8 +4,8 @@
 #include "Utility.h"
 #include <vector>
 
-long double multinomialSamplingProb(vector<long double> probs, vector<int> obs);
-long double multinomialSamplingProbLn(vector<long double> probs, vector<int> obs);
-long double multinomialCoefficientLn(int n, vector<int> counts);
+long double multinomialSamplingProb(const vector<long double>& probs, const vector<int>& obs);
+long double multinomialSamplingProbLn(const vector<long double>& probs, const vector<int>& obs);
+long double multinomialCoefficientLn(int n, const vector<int>& counts);
 
 #endif

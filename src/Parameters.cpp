@@ -167,10 +167,10 @@ void Parameters::usage(char** argv) {
          << endl
          << "   -M --expectation-maximization" << endl
          << "                   Use expectation maximization algorithm to integrate over posterior" << endl
-         << "                   and assign genotypes to samples." << endl
+         << "                   and obtain maximum likelihood genotype combination across all samples." << endl
          << "   -u --expectation-maximization-max-iterations N" << endl
          << "                   Iterate no more than this many times during expectation" << endl
-         << "                   maximization step.  default: 20" << endl
+         << "                   maximization step.  default: 5" << endl
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
@@ -258,7 +258,7 @@ Parameters::Parameters(int argc, char** argv) {
     excludePartiallyObservedGenotypes = false;
     genotypeVariantThreshold = 0;
     expectationMaximization = false;
-    expectationMaximizationMaxIterations = 20;
+    expectationMaximizationMaxIterations = 5;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -348,7 +348,7 @@ Parameters::Parameters(int argc, char** argv) {
         //{"exclude-partially-observed-genotypes", no_argument, 0, 'S'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
         {"expectation-maximization", no_argument, 0, 'M'},
-        {"expectation-maximization-max-iterations", no_argument, 0, 'u'},
+        {"expectation-maximization-max-iterations", required_argument, 0, 'u'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
