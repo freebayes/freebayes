@@ -48,7 +48,7 @@ public:
     vector<Allele> alleles;
     map<string, int> alleleCounts;
     bool homozygous;
-    long double permutationsln;  // aka, multinomialCoefficientLn(ploidy, counts())
+    //long double permutationsln;  // aka, multinomialCoefficientLn(ploidy, counts())
 
     Genotype(vector<Allele>& ungroupedAlleles) {
         alleles = ungroupedAlleles;
@@ -60,7 +60,14 @@ public:
         }
         ploidy = getPloidy();
         homozygous = isHomozygous();
-        permutationsln = multinomialCoefficientLn(ploidy, counts());
+        //permutationsln = 0;
+        /*
+        if (homozygous) {
+            permutationsln = log(ploidy);
+        } else {
+            permutationsln = multinomialCoefficientLn(ploidy, counts());
+        }
+        */
     }
 
     vector<Allele> uniqueAlleles(void);
@@ -96,11 +103,13 @@ public:
     Genotype* genotype;
     long double prob;
     Sample* sample;
-    SampleDataLikelihood(string n, Sample* s, Genotype* g, long double p)
+    int rank; // the rank of this data likelihood relative to others for the sample, 0 is best
+    SampleDataLikelihood(string n, Sample* s, Genotype* g, long double p, int r)
         : name(n)
         , sample(s)
         , genotype(g)
         , prob(p)
+        , rank(r)
     { }
 };
 
@@ -141,10 +150,6 @@ public:
     map<string, pair<int, int> > alleleReadPlacementCounts; // map from allele spec to (left, right) counts
     map<string, pair<int, int> > alleleReadPositionCounts; // map from allele spec to (left, right) counts
     map<string, AlleleCounter> alleleCounters;
-
-    // relative position of this genotype combination to the maximum likelihood
-    // estimate derived from data lilkelihoods
-    vector<int> maxLikelihoodRelativePosition;
 
     GenotypeCombo(void)
         : probObsGivenGenotypes(0)
@@ -196,7 +201,11 @@ public:
 class GenotypeComboResultSorter {
 public:
     bool operator()(const GenotypeCombo& gc1, const GenotypeCombo& gc2) {
-        return gc1.posteriorProb > gc2.posteriorProb;
+        if (gc1.posteriorProb == gc2.posteriorProb) {
+            return gc1 > gc2;
+        } else {
+            return gc1.posteriorProb > gc2.posteriorProb;
+        }
     }
 };
 
@@ -207,14 +216,25 @@ typedef map<string, SampleDataLikelihood*> GenotypeComboMap;
 
 void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
 
+void
+makeComboByDatalLikelihoodRank(
+    GenotypeCombo& combo,
+    vector<int>& initialPosition,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    long double theta,
+    bool pooled,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
+
 bool
 bandedGenotypeCombinations(
     list<GenotypeCombo>& combos,
-    vector<int>& initialPosition,
+    GenotypeCombo& comboKing,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
-    bool useObsExpectations,
     int bandwidth, int banddepth,
     float logStepMax,
     long double theta,
@@ -230,8 +250,6 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
-    bool useObsExpectations,
-    map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
     float logStepMax,
@@ -248,8 +266,6 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
-    bool useObsExpectations,
-    map<int, vector<Genotype> >& genotypesByPloidy,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
     float logStepMax,
@@ -267,7 +283,6 @@ addAllHomozygousCombos(
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
-    bool useObsExpectations,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
     float logStepMax,

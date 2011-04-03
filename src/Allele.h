@@ -100,6 +100,7 @@ public:
     string referenceName;   // reference name, for sanity checking
     string referenceSequence; // reference sequence or "" (in case of insertions)
     string alternateSequence; // alternate sequence or "" (in case of deletions and reference alleles)
+    string sequencingTechnology; // the technology used to generate this allele
     long double position;      // position 0-based against reference
     long double* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     char* currentReferenceBase;  // pointer to current reference base
@@ -124,7 +125,7 @@ public:
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
-                string refname, 
+                string& refname,
                 long double pos, 
                 long double* crefpos,
                 char* crefbase,
@@ -133,8 +134,9 @@ public:
                 int bright,
                 string refallele, 
                 string alt, 
-                string sampleid,
-                string readid,
+                string& sampleid,
+                string& readid,
+                string& sqtech,
                 bool strnd, 
                 long double qual,
                 string qstr, 
@@ -153,6 +155,7 @@ public:
         , alternateSequence(alt)
         , sampleID(sampleid)
         , readID(readid)
+        , sequencingTechnology(sqtech)
         , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
         , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation
         , lnquality(phred2ln((qual == -1) ? averageQuality(qstr) : qual))
@@ -160,7 +163,7 @@ public:
         , lnmapQuality(phred2ln(mapqual))
         , genotypeAllele(false)
         , processed(false)
-    { 
+    {
         baseQualities.resize(qstr.size()); // cache qualities
         transform(qstr.begin(), qstr.end(), baseQualities.begin(), qualityChar2ShortInt);
     }

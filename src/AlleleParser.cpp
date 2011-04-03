@@ -67,6 +67,12 @@ void AlleleParser::openBams(void) {
             }
         }
     }
+
+
+    // retrieve header information
+    bamHeader = bamMultiReader.GetHeaderText();
+    bamHeaderLines = split(bamHeader, '\n');
+
     DEBUG(" done");
 
 }
@@ -107,6 +113,53 @@ void AlleleParser::openOutputFile(void) {
     }
 }
 
+void AlleleParser::getSequencingTechnologies(void) {
+
+    map<string, bool> technologies;
+
+    for (vector<string>::const_iterator it = bamHeaderLines.begin(); it != bamHeaderLines.end(); ++it) {
+
+        // get next line from header, skip if empty
+        string headerLine = *it;
+        if ( headerLine.empty() ) { continue; }
+
+        // lines of the header look like:
+        // "@RG     ID:-    SM:NA11832      CN:BCM  PL:454"
+        //                     ^^^^^^^\ is our sample name
+        if ( headerLine.find("@RG") == 0 ) {
+            vector<string> readGroupParts = split(headerLine, "\t ");
+            string tech;
+            string readGroupID;
+            for (vector<string>::const_iterator r = readGroupParts.begin(); r != readGroupParts.end(); ++r) {
+                vector<string> nameParts = split(*r, ":");
+                if (nameParts.at(0) == "PL") {
+                   tech = nameParts.at(1);
+                } else if (nameParts.at(0) == "ID") {
+                   readGroupID = nameParts.at(1);
+                }
+            }
+            if (tech.empty()) {
+                cerr << " could not find PL: in @RG tag " << endl << headerLine << endl;
+                continue;
+            }
+            if (readGroupID.empty()) {
+                cerr << " could not find ID: in @RG tag " << endl << headerLine << endl;
+                continue;
+            }
+            //string name = nameParts.back();
+            //mergedHeader.append(1, '\n');
+            //cerr << "found read group id " << readGroupID << " containing sample " << name << endl;
+            readGroupToTechnology[readGroupID] = tech;
+            technologies[tech] = true;
+        }
+    }
+
+    for (map<string, bool>::iterator st = technologies.begin(); st != technologies.end(); ++st) {
+        sequencingTechnologies.push_back(st->first);
+    }
+
+}
+
 // read sample list file or get sample names from bam file header
 void AlleleParser::getSampleNames(void) {
 
@@ -127,13 +180,7 @@ void AlleleParser::getSampleNames(void) {
         }
     }
 
-    // retrieve header information
-
-    string bamHeader = bamMultiReader.GetHeaderText();
-
-    vector<string> headerLines = split(bamHeader, '\n');
-
-    for (vector<string>::const_iterator it = headerLines.begin(); it != headerLines.end(); ++it) {
+    for (vector<string>::const_iterator it = bamHeaderLines.begin(); it != bamHeaderLines.end(); ++it) {
 
         // get next line from header, skip if empty
         string headerLine = *it;
@@ -576,6 +623,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // check how many targets we have specified
     loadTargets();
     getSampleNames();
+    getSequencingTechnologies();
 
     // sample CNV
     loadSampleCNVMap();
@@ -626,7 +674,7 @@ bool AlleleParser::isCpG(string& altbase) {
     }
 }
 
-RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string sampleName) {
+RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech) {
 
     string rDna = alignment.QueryBases;
     string rQual = alignment.Qualities;
@@ -756,7 +804,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
                                     alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                                     rp, // bases left (for first base in ref allele)
-                                    matchingSequence, readSequence, sampleName, alignment.Name,
+                                    matchingSequence, readSequence, sampleName, alignment.Name, sequencingTech,
                                     !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                                     alignment.MapQuality));
                             DEBUG2(ra.alleles.back());
@@ -791,7 +839,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     rp - length, // bases left
                                     alignment.QueryBases.size() - rp, // bases right
                                     matchingSequence, readSequence,
-                                    sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                                    sampleName, alignment.Name, sequencingTech,
+                                    !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                         DEBUG2(ra.alleles.back());
                     }
                 }
@@ -816,7 +865,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 rp - length, // bases left
                                 alignment.QueryBases.size() - rp, // bases right
                                 matchingSequence, readSequence,
-                                sampleName, alignment.Name, !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                                sampleName, alignment.Name, sequencingTech,
+                                !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
                     DEBUG2(ra.alleles.back());
                 }
             // or, if we are not in a mismatch, construct the last reference allele of the match
@@ -830,7 +880,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                             currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
                             alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                             rp, // bases left (for first base in ref allele)
-                            matchingSequence, readSequence, sampleName, alignment.Name,
+                            matchingSequence, readSequence, sampleName, alignment.Name, sequencingTech,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                             alignment.MapQuality));
                     DEBUG2(ra.alleles.back());
@@ -889,7 +939,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         currentSequenceName, sp, &currentPosition, &currentReferenceBase, l,
                         rp, // bases left
                         alignment.QueryBases.size() - rp, // bases right
-                        refseq, "", sampleName, alignment.Name,
+                        refseq, "", sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual, qualstr,
                         alignment.MapQuality));
                 DEBUG2(ra.alleles.back());
@@ -947,7 +997,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         rp - l, // bases left
                         alignment.QueryBases.size() - rp, // bases right
                         "", readseq,
-                        sampleName, alignment.Name, !alignment.IsReverseStrand(), qual,
+                        sampleName, alignment.Name, sequencingTech,
+                        !alignment.IsReverseStrand(), qual,
                         qualstr, alignment.MapQuality));
                 DEBUG2(ra.alleles.back());
             }
@@ -1085,13 +1136,14 @@ void AlleleParser::updateAlignmentQueue(void) {
                 }
                 // get sample name
                 string sampleName = readGroupToSampleNames[readGroup];
+                string sequencingTech = readGroupToTechnology[readGroup];
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
                 deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition(true)];
                 // and insert the registered alignment into that deque
                 rq.push_front(RegisteredAlignment(currentAlignment));
                 RegisteredAlignment& ra = rq.front();
-                registerAlignment(currentAlignment, ra, sampleName);
+                registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
                 // backtracking if we have too many mismatches
                 if (((float) ra.mismatches / (float) currentAlignment.QueryBases.size()) > parameters.readMaxMismatchFraction
                         || ra.mismatches > parameters.RMU
@@ -1523,6 +1575,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string base = string(1, currentReferenceBase);
     //string name = reference.filename;
     string name = currentSequenceName; // this behavior matches old bambayes
+    string sequencingTech = "reference";
     string baseQstr = "";
     //baseQstr += qualityInt2Char(baseQ);
     Allele* allele = new Allele(ALLELE_REFERENCE, 
@@ -1530,7 +1583,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             currentPosition,
             &currentPosition, 
             &currentReferenceBase,
-            1, 0, 0, base, base, name, name,
+            1, 0, 0, base, base, name, name, sequencingTech,
             true, baseQ,
             baseQstr,
             mapQ);

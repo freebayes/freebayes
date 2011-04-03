@@ -45,7 +45,8 @@ string dateStr(void) {
 void vcfHeader(ostream& out,
         string referenceName,
         vector<string>& samples,
-        Parameters& parameters) {
+        Parameters& parameters,
+        vector<string>& sequencingTechnologies) {
 
     out << "##fileformat=VCFv4.0" << endl
         << "##fileDate=" << dateStr() << endl
@@ -102,6 +103,13 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele\">" << endl
         << "##INFO=<ID=LEN,Number=1,Type=Integer,Description=\"allele length\">" << endl
         << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl;
+
+    // sequencing technology tags, which vary according to input data
+    for (vector<string>::iterator st = sequencingTechnologies.begin(); st != sequencingTechnologies.end(); ++st) {
+        string& tech = *st;
+        out << "##INFO=<ID=" << tech << ",Number=1,Type=Float,Description=\"Fraction of observations supporting the alternate observed in reads from " << tech << "\">" << endl;
+    }
+
     if (parameters.showReferenceRepeats) {
         out << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl;
     }
@@ -137,6 +145,7 @@ string vcf(
         bool bestOverallComboIsHet,
         map<string, vector<Allele*> >& alleleGroups,
         map<int, vector<Genotype> >& genotypesByPloidy,
+        vector<string>& sequencingTechnologies,
         Results& results,
         AlleleParser* parser) {
 
@@ -244,9 +253,15 @@ string vcf(
     unsigned int endRight = 0;
 
     unsigned int mqsum = 0;
+
+    map<string, int> obsBySequencingTechnology;
+
     vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
     for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
         Allele& allele = **app;
+        if (!allele.sequencingTechnology.empty()) {
+            ++obsBySequencingTechnology[allele.sequencingTechnology];
+        }
         basesLeft += allele.basesLeft;
         basesRight += allele.basesRight;
         if (allele.basesLeft >= allele.basesRight) {
@@ -347,6 +362,12 @@ string vcf(
         << "BR=" << basesRight << ";"
         << "LRB=" << ((double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) - 0.5) * 2 << ";"
         << "LRBP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(basesLeft, basesLeft + basesRight, 0.5))) << ";";
+
+    for (vector<string>::iterator st = sequencingTechnologies.begin();
+            st != sequencingTechnologies.end(); ++st) { string& tech = *st; out <<
+        tech << "=" << ((alternateAlleles.size() == 0) ? 0
+                    : (double) obsBySequencingTechnology[tech] / (double) alternateAlleles.size() ) << ";";
+    }
 
     if (bestOverallComboIsHet) {
         out << "BVAR;";

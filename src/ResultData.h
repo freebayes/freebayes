@@ -32,19 +32,16 @@ class ResultData
 public:
     string name;
     vector<pair<Genotype*, long double> > dataLikelihoods;
-    map<Genotype*, vector<long double> > rawMarginals;
     map<Genotype*, long double> marginals;
     Sample* observations;
 
     ResultData(string s,
         vector<pair<Genotype*, long double> > d,
         map<Genotype*, long double>  m,
-        map<Genotype*, vector<long double> > rm,
         Sample* o)
             : name(s)
             , dataLikelihoods(d)
             , marginals(m)
-            , rawMarginals(rm)
             , observations(o)
     { }
 
@@ -54,7 +51,6 @@ public:
         name = r.name;
         dataLikelihoods = r.dataLikelihoods;
         marginals = r.marginals;
-        rawMarginals = r.rawMarginals;
         observations = r.observations;
     }
 
@@ -88,6 +84,7 @@ public:
             bool bestOverallComboIsHet,
             map<string, vector<Allele*> >& alleleGroups,
             map<int, vector<Genotype> >& genotypesByPloidy, // pass by copy, will modify
+            vector<string>& sequencingTechnologies,
             Results& results,
             AlleleParser* parser);
     pair<Genotype*, long double> bestMarginalGenotype(void);
@@ -95,7 +92,7 @@ public:
 };
 
 string dateStr(void);
-void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples, Parameters& parameters);
+void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples, Parameters& parameters, vector<string>& sequencingTechnologies);
 
 
 #endif

@@ -33,6 +33,12 @@ def multinomial(probs, obs):
 def multinomialln(probs, obs):
     return factorialln(sum(obs)) - sum(map(factorialln, obs)) + sum([math.log(math.pow(p, x)) for p,x in zip(probs, obs)])
 
+def multinomial_coefficientln(n, counts):
+    return factorialln(n) - sum(map(factorialln, counts))
+
+def multinomial_coefficient(n, counts):
+    return math.exp(multinomial_coefficientln(n, counts))
+
 def multinomial_dirichlet(probs, obs): return multinomial(probs, obs) * dirichlet(probs, obs)
 
 # NOTE:

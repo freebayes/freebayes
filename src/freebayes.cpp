@@ -88,7 +88,7 @@ int main (int argc, char *argv[]) {
 
     // output VCF header
     if (parameters.output == "vcf") {
-        vcfHeader(out, parser->reference.filename, parser->sampleList, parameters);
+        vcfHeader(out, parser->reference.filename, parser->sampleList, parameters, parser->sequencingTechnologies);
     }
 
     unsigned long total_sites = 0;
@@ -239,7 +239,6 @@ int main (int argc, char *argv[]) {
             vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypesWithObs, parameters.RDF, parameters.useMappingQuality);
 
             map<Genotype*, long double> marginals;
-            map<Genotype*, vector<long double> > rawMarginals;
 
             if (parameters.trace) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
@@ -248,7 +247,7 @@ int main (int argc, char *argv[]) {
                 }
             }
 
-            results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, rawMarginals, &sample)));
+            results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, &sample)));
 
         }
         
@@ -287,8 +286,9 @@ int main (int argc, char *argv[]) {
                 r->second.sortDataLikelihoods();
                 vector<pair<Genotype*, long double> >& dataLikelihoods = r->second.dataLikelihoods;
                 vector<SampleDataLikelihood> thisSampleDataLikelihoods;
+                int rank = 0;
                 for (vector<pair<Genotype*, long double> >::iterator p = dataLikelihoods.begin(); p != dataLikelihoods.end(); ++p) {
-                    thisSampleDataLikelihoods.push_back(SampleDataLikelihood(name, &samples[name], p->first, p->second));
+                    thisSampleDataLikelihoods.push_back(SampleDataLikelihood(name, &samples[name], p->first, p->second, rank++));
                 }
                 //cout << exp(thisSampleDataLikelihoods.front().prob) << " - " << exp(thisSampleDataLikelihoods.at(1).prob) << endl;
                 if (parameters.genotypeVariantThreshold != 0) {
@@ -323,8 +323,6 @@ int main (int argc, char *argv[]) {
                     variantSampleDataLikelihoods,
                     invariantSampleDataLikelihoods,
                     samples,
-                    parameters.obsBinomialPriors,
-                    genotypesByPloidy,
                     genotypeAlleles,
                     parameters.WB,
                     parameters.TB,
@@ -343,8 +341,6 @@ int main (int argc, char *argv[]) {
                     variantSampleDataLikelihoods,
                     invariantSampleDataLikelihoods,
                     samples,
-                    parameters.obsBinomialPriors,
-                    genotypesByPloidy,
                     genotypeAlleles,
                     parameters.WB,
                     parameters.TB,
@@ -365,7 +361,8 @@ int main (int argc, char *argv[]) {
         DEBUG2("sorting genotype combination likelihoods");
         GenotypeComboResultSorter gcrSorter;
         genotypeCombos.sort(gcrSorter);
-        
+        genotypeCombos.unique();
+
         // get posterior normalizer
         vector<long double> comboProbs;
         for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
@@ -377,17 +374,6 @@ int main (int argc, char *argv[]) {
         if (parameters.trace) {
             parser->traceFile << parser->currentSequenceName << "," 
                 << (long unsigned int) parser->currentPosition + 1 << ",posterior_normalizer," << posteriorNormalizer << endl;
-        }
-
-        // normalize marginals
-        // note that this operation is O(N^2) in the number of combinations which we still
-        // have after trimming the number of combos to parameters.posteriorIntegrationDepth
-
-        if (parameters.calculateMarginals) {
-            DEBUG2("calculating marginal likelihoods");
-            marginalGenotypeLikelihoods(posteriorNormalizer, genotypeCombos, results);
-        } else {
-            DEBUG2("not calculating marginal likelihoods");
         }
 
         // we provide p(var|data), or the probability that the location has
@@ -407,6 +393,7 @@ int main (int argc, char *argv[]) {
         bool bestOverallComboIsHet = false;
         GenotypeCombo* bestCombo = NULL;
 
+        // calculates pvar and gets the best het combo
         for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
             if (gc->isHomozygous()) {
                 pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
@@ -420,6 +407,7 @@ int main (int argc, char *argv[]) {
             }
         }
 
+        // if for some reason there are no het combos, use the first combo
         if (!hasHetCombo) {
             bestCombo = &genotypeCombos.front();
         }
@@ -470,73 +458,92 @@ int main (int argc, char *argv[]) {
         DEBUG("pVar = " << pVar << " " << parameters.PVL
               << " pHom = " << pHom
               << " 1 - pHom = " << 1 - pHom);
-        //if (parameters.debug && (pHom == 1 || pVar == 0 && pVar != 1 - pHom)) {
-        //    cerr << "pVar vs. pHom UNDERFLOW" << endl;
-        //}
 
-        if (!parameters.suppressOutput) {
+        if ((1 - pHom) >= parameters.PVL) {
 
-            if ((1 - pHom) >= parameters.PVL) {
-                string referenceBase(1, parser->currentReferenceBase);
-                map<string, int> repeats;
-                if (parameters.showReferenceRepeats) {
-                    repeats = parser->repeatCounts(12);
-                }
-                // get the unique alternate alleles in this combo, sorted by frequency in the combo
-                vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
-                if (parameters.reportAllAlternates) {
-                    for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
-                        Allele& alt = a->first;
-                        out << vcf(pHom,
-                                samples,
-                                referenceBase,
-                                alt.base(),
-                                alt,
-                                repeats,
-                                parser->sampleList,
-                                coverage,
-                                bestGenotypeCombo,
-                                bestOverallComboIsHet,
-                                alleleGroups,
-                                genotypesByPloidy,
-                                results,
-                                parser)
-                            << endl;
-                    }
-                } else {
-                    Allele& bestAlt = alternates.front().first;
-                    // TODO update the vcf output function to handle the reporting of multiple alternate alleles
+            // marginals
+            // note that this operation is O(N^2) in the number of combinations which we still
+            // have after trimming the number of combos to parameters.posteriorIntegrationDepth
+            GenotypeCombo bestGenotypeComboByMarginals; // filled out if we calculate marginals
+
+            if (parameters.calculateMarginals) {
+
+                DEBUG2("calculating marginal likelihoods");
+                marginalGenotypeLikelihoods(posteriorNormalizer, genotypeCombos, results);
+                // get best genotyping according to marginal genotype probabilities
+                bestMarginalGenotypeCombo(bestGenotypeComboByMarginals,
+                        results,
+                        sampleDataLikelihoods,
+                        parameters.TH,
+                        parameters.pooled,
+                        parameters.obsBinomialPriors,
+                        parameters.alleleBalancePriors,
+                        parameters.diffusionPriorScalar);
+
+
+            }
+
+            string referenceBase(1, parser->currentReferenceBase);
+            map<string, int> repeats;
+            if (parameters.showReferenceRepeats) {
+                repeats = parser->repeatCounts(12);
+            }
+            // get the unique alternate alleles in this combo, sorted by frequency in the combo
+            vector<pair<Allele, int> > alternates = alternateAlleles(bestGenotypeCombo, referenceBase);
+            if (parameters.reportAllAlternates) {
+                for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
+                    Allele& alt = a->first;
                     out << vcf(pHom,
                             samples,
                             referenceBase,
-                            bestAlt.base(),
-                            bestAlt,
+                            alt.base(),
+                            alt,
                             repeats,
                             parser->sampleList,
                             coverage,
-                            bestGenotypeCombo,
+                            (parameters.calculateMarginals ? bestGenotypeComboByMarginals : bestGenotypeCombo),
                             bestOverallComboIsHet,
                             alleleGroups,
                             genotypesByPloidy,
+                            parser->sequencingTechnologies,
                             results,
                             parser)
                         << endl;
                 }
-            } else if (!parameters.failedFile.empty()) {
-                // XXX don't repeat yourself
-                // get the unique alternate alleles in this combo, sorted by frequency in the combo
-                long unsigned int position = parser->currentPosition;
-                for (vector<Allele>::iterator ga =  genotypeAlleles.begin(); ga != genotypeAlleles.end(); ++ga) {
-                    if (ga->type == ALLELE_REFERENCE)
-                        continue;
-                    parser->failedFile
-                        << parser->currentSequenceName << "\t"
-                        << position << "\t"
-                        << position + ga->length << "\t"
-                        << *ga << endl;
-                }
-                // BED format
+            } else {
+                Allele& bestAlt = alternates.front().first;
+                // TODO update the vcf output function to handle the reporting of multiple alternate alleles
+                out << vcf(pHom,
+                        samples,
+                        referenceBase,
+                        bestAlt.base(),
+                        bestAlt,
+                        repeats,
+                        parser->sampleList,
+                        coverage,
+                        (parameters.calculateMarginals ? bestGenotypeComboByMarginals : bestGenotypeCombo),
+                        bestOverallComboIsHet,
+                        alleleGroups,
+                        genotypesByPloidy,
+                        parser->sequencingTechnologies,
+                        results,
+                        parser)
+                    << endl;
             }
+        } else if (!parameters.failedFile.empty()) {
+            // XXX don't repeat yourself
+            // get the unique alternate alleles in this combo, sorted by frequency in the combo
+            long unsigned int position = parser->currentPosition;
+            for (vector<Allele>::iterator ga =  genotypeAlleles.begin(); ga != genotypeAlleles.end(); ++ga) {
+                if (ga->type == ALLELE_REFERENCE)
+                    continue;
+                parser->failedFile
+                    << parser->currentSequenceName << "\t"
+                    << position << "\t"
+                    << position + ga->length << "\t"
+                    << *ga << endl;
+            }
+            // BED format
         }
         DEBUG2("finished position");
 

@@ -106,6 +106,8 @@ public:
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
     map<string, string> readGroupToSampleNames; // maps read groups to samples
+    map<string, string> readGroupToTechnology; // maps read groups to technologies
+    vector<string> sequencingTechnologies;  // a list of the present technologies
 
     CNVMap sampleCNV;
 
@@ -134,12 +136,16 @@ public:
     //RefName;          //!< Name of reference sequence
     //RefLength;        //!< Length of reference sequence
     //RefHasAlignments; //!< True if BAM file contains alignments mapped to reference sequence
+
+    string bamHeader;
+    vector<string> bamHeaderLines;
  
     void openBams(void);
     void openTraceFile(void);
     void openFailedFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
+    void getSequencingTechnologies(void);
     void loadSampleCNVMap(void);
     int currentSamplePloidy(string const& sample);
     void loadBamReferenceSequenceNames(void);
@@ -155,7 +161,7 @@ public:
     bool getFirstAlignment(void);
     void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
-    RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string sampleName);
+    RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(void);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles);

@@ -76,12 +76,6 @@ void Parameters::usage(char** argv) {
          << "   -B --reference-quality MQ,BQ" << endl
          << "                   Assign mapping quality of MQ to the reference allele at each" << endl
          << "                   site and base quality of BQ.  default: 100,60" << endl
-         << "   -j --use-mapping-quality" << endl
-         << "                   Use mapping quality of alleles when calculating data likelihoods." << endl
-         << "   -D --read-dependence-factor N" << endl
-         << "                   Incorporate non-independence of reads by scaling successive" << endl
-         << "                   observations by this factor during data likelihood" << endl
-         << "                   calculations.  default: 0.9" << endl
          << endl
          << "allele scope:" << endl
          << endl
@@ -192,6 +186,12 @@ void Parameters::usage(char** argv) {
          //<< "   -S --exclude-partially-observed-genotypes" << endl
          //<< "                   Skip sample genotypings where the sample does not have observations" << endl
          //<< "                   supporting all alleles in the genotype." << endl
+         << "   -j --use-mapping-quality" << endl
+         << "                   Use mapping quality of alleles when calculating data likelihoods." << endl
+         << "   -D --read-dependence-factor N" << endl
+         << "                   Incorporate non-independence of reads by scaling successive" << endl
+         << "                   observations by this factor during data likelihood" << endl
+         << "                   calculations.  default: 0.9" << endl
          << "   -= --no-marginals" << endl
          << "                   Do not calculate the marginal probability of genotypes.  Saves" << endl
          << "                   time and improves scaling performance in large populations." << endl
@@ -695,12 +695,12 @@ Parameters::Parameters(int argc, char** argv) {
                 break;
 
             // -K --posterior-marginal-depth
-            case 'K':
-                if (!convert(optarg, posteriorIntegrationDepth)) {
-                    cerr << "could not parse posterior-integration-depth" << endl;
-                    exit(1);
-                }
-                break;
+            //case 'K':
+            //    if (!convert(optarg, posteriorIntegrationDepth)) {
+            //        cerr << "could not parse posterior-integration-depth" << endl;
+            //        exit(1);
+            //    }
+            //    break;
 
             case '=':
                 calculateMarginals = false;
