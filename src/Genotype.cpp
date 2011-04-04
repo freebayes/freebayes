@@ -237,6 +237,9 @@ void GenotypeCombo::init(bool useObsExpectations) {
     for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
         const SampleDataLikelihood& sdl = **s;
         const Sample& sample = *sdl.sample;
+
+        ++genotypeCounts[sdl.genotype];
+
         //cerr << *sdl.genotype << endl;
         for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
             const string& alleleBase = a->allele.currentBase;
@@ -282,7 +285,8 @@ void GenotypeCombo::init(bool useObsExpectations) {
     }
 }
 
-int GenotypeCombo::alleleFrequency(Allele& allele) {
+// frequency... should this just be "allele count"?
+int GenotypeCombo::alleleCount(Allele& allele) {
     map<string, AlleleCounter>::iterator f = alleleCounters.find(allele.currentBase);
     if (f == alleleCounters.end()) {
         return 0;
@@ -291,11 +295,50 @@ int GenotypeCombo::alleleFrequency(Allele& allele) {
     }
 }
 
+int GenotypeCombo::alleleCount(const string& allele) {
+    map<string, AlleleCounter>::iterator f = alleleCounters.find(allele);
+    if (f == alleleCounters.end()) {
+        return 0;
+    } else {
+        return f->second.frequency;
+    }
+}
+
+long double GenotypeCombo::alleleFrequency(Allele& allele) {
+    return alleleCount(allele) / (long double) numberOfAlleles();
+}
+
+long double GenotypeCombo::alleleFrequency(const string& allele) {
+    return alleleCount(allele) / (long double) numberOfAlleles();
+}
+
+long double GenotypeCombo::genotypeFrequency(Genotype* genotype) {
+    map<Genotype*, int>::iterator g = genotypeCounts.find(genotype);
+    if (g == genotypeCounts.end()) {
+        return 0;
+    } else {
+        return g->second / size();
+    }
+}
+
 void GenotypeCombo::updateCachedCounts(
         Sample* sample,
         Genotype* oldGenotype,
         Genotype* newGenotype,
         bool useObsExpectations) {
+
+    // update genotype counts
+    --genotypeCounts[oldGenotype];
+    ++genotypeCounts[newGenotype];
+
+    // remove allele frequencies which are now 0 or below
+    for (map<Genotype*, int>::iterator gc = genotypeCounts.begin();
+            gc != genotypeCounts.end(); ++gc) {
+        assert(gc->second >= 0);
+        if (gc->second == 0) {
+            genotypeCounts.erase(gc);
+        }
+    }
 
     // TODO can we improve efficiency by only adjusting for bases which are actually changed
 
@@ -485,6 +528,8 @@ makeComboByDatalLikelihoodRank(
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar) {
@@ -512,6 +557,8 @@ makeComboByDatalLikelihoodRank(
     combo.init(binomialObsPriors);
     combo.calculatePosteriorProbability(theta,
                                         pooled,
+                                        permute,
+                                        hwePriors,
                                         binomialObsPriors,
                                         alleleBalancePriors,
                                         diffusionPriorScalar);
@@ -529,6 +576,8 @@ bandedGenotypeCombinations(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar) {
@@ -645,6 +694,8 @@ bandedGenotypeCombinations(
             if (!reuseLastCombo) {
                 combo.calculatePosteriorProbability(theta,
                                                 pooled,
+                                                permute,
+                                                hwePriors,
                                                 binomialObsPriors,
                                                 alleleBalancePriors,
                                                 diffusionPriorScalar);
@@ -670,6 +721,8 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar,
@@ -688,6 +741,8 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
             invariantSampleDataLikelihoods,
             theta,
             pooled,
+            permute,
+            hwePriors,
             binomialObsPriors,
             alleleBalancePriors,
             diffusionPriorScalar);
@@ -709,6 +764,8 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
                 logStepMax,
                 theta,
                 pooled,
+                permute,
+                hwePriors,
                 binomialObsPriors,
                 alleleBalancePriors,
                 diffusionPriorScalar);
@@ -752,6 +809,8 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
             logStepMax,
             theta,
             pooled,
+            permute,
+            hwePriors,
             binomialObsPriors,
             alleleBalancePriors,
             diffusionPriorScalar);
@@ -779,6 +838,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar) {
@@ -794,6 +855,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             invariantSampleDataLikelihoods,
             theta,
             pooled,
+            permute,
+            hwePriors,
             binomialObsPriors,
             alleleBalancePriors,
             diffusionPriorScalar);
@@ -811,6 +874,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             logStepMax,
             theta,
             pooled,
+            permute,
+            hwePriors,
             binomialObsPriors,
             alleleBalancePriors,
             diffusionPriorScalar);
@@ -828,6 +893,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             logStepMax,
             theta,
             pooled,
+            permute,
+            hwePriors,
             binomialObsPriors,
             alleleBalancePriors,
             diffusionPriorScalar);
@@ -845,6 +912,8 @@ void addAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar) {
@@ -914,6 +983,8 @@ void addAllHomozygousCombos(
         gc.init(binomialObsPriors);  // cache allele frequency information
         gc.calculatePosteriorProbability(theta,
                                      pooled,
+                                     permute,
+                                     hwePriors,
                                      binomialObsPriors,
                                      alleleBalancePriors,
                                      diffusionPriorScalar);
@@ -923,23 +994,49 @@ void addAllHomozygousCombos(
 }
 
 // conditional probability of the genotype combination given the represented allele frequencies
-long double GenotypeCombo::probabilityGivenAlleleFrequencyln(void) {
+long double GenotypeCombo::probabilityGivenAlleleFrequencyln(bool permute) {
 
-    return -multinomialCoefficientLn(numberOfAlleles(), counts());
+    //return -multinomialCoefficientLn(numberOfAlleles(), counts());
 
-    /*
     int n = numberOfAlleles();
     long double lnhetscalar = 0;
 
-    for (GenotypeCombo::iterator gc = begin(); gc != end(); ++gc) {
-        SampleDataLikelihood& sgp = **gc;
-        if (!sgp.genotype->homozygous) {
-            lnhetscalar += sgp.genotype->permutationsln;
+    // TODO factor out
+    if (permute) {
+        // scale by the product of permutations of heterozygotes
+        for (GenotypeCombo::iterator gc = begin(); gc != end(); ++gc) {
+            SampleDataLikelihood& sgp = **gc;
+            if (!sgp.genotype->homozygous) {
+                lnhetscalar += sgp.genotype->permutationsln;
+            }
         }
     }
 
     return lnhetscalar - multinomialCoefficientLn(n, counts());
-    */
+
+}
+
+// probability of the combo under HWE
+long double GenotypeCombo::hweExpectedFrequencyln(Genotype* genotype) {
+
+    int ploidy = genotype->ploidy;
+
+    vector<int> genotypeAlleleCounts;
+    vector<long double> alleleFrequencies;
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        genotypeAlleleCounts.push_back(genotype->alleleFrequency(a->first));
+        alleleFrequencies.push_back((long double) a->second.frequency / (long double) numberOfAlleles());
+    }
+
+    long double HWECoefficientln = multinomialCoefficientLn(ploidy, genotypeAlleleCounts);
+
+    vector<int>::iterator c = genotypeAlleleCounts.begin();
+    vector<long double>::iterator f = alleleFrequencies.begin();
+    for (; c != genotypeAlleleCounts.end(); ++c, ++f) {
+         HWECoefficientln += powln(log(*f), *c);
+    }
+
+    return HWECoefficientln;
 
 }
 
@@ -950,6 +1047,8 @@ void
 GenotypeCombo::calculatePosteriorProbability(
         long double theta,
         bool pooled,
+        bool permute,
+        bool hwePriors,
         bool binomialObsPriors,
         bool alleleBalancePriors,
         long double diffusionPriorScalar) {
@@ -959,12 +1058,33 @@ GenotypeCombo::calculatePosteriorProbability(
     priorProbG_Af = 0;
     priorProbAf = 0;
     priorProbObservations = 0;
+    priorProbGenotypesGivenHWE = 0;
 
     // when we are operating on pooled samples, we will not be able to
     // ascertain the number of heterozygotes in the pool,
     // rendering P(Genotype combo | Allele frequency) meaningless
     if (!pooled) {
-        priorProbG_Af = probabilityGivenAlleleFrequencyln();
+        priorProbG_Af = probabilityGivenAlleleFrequencyln(permute);
+    }
+
+    // XXX XXX hwe
+    if (hwePriors) {
+        for (map<Genotype*, int>::iterator gc = genotypeCounts.begin(); gc != genotypeCounts.end(); ++gc) {
+            Genotype* genotype = gc->first;
+            int genotypeCount = gc->second;
+            long double expectedfreq = hweExpectedFrequencyln(genotype);
+            long double observedfreq;
+            if (genotype->ploidy == 1) {
+                observedfreq = log(alleleFrequency(genotype->front().allele));
+            } else {
+                observedfreq = log((long double) genotypeCount / (long double) size());
+            }
+            if (expectedfreq > observedfreq) {
+                priorProbGenotypesGivenHWE += powln(observedfreq - expectedfreq, genotypeCount);
+            } else {
+                priorProbGenotypesGivenHWE += powln(expectedfreq - observedfreq, genotypeCount);
+            }
+        }
     }
 
     if (binomialObsPriors) {
@@ -1012,7 +1132,7 @@ GenotypeCombo::calculatePosteriorProbability(
     priorProbAf = alleleFrequencyProbabilityln(countFrequencies(), theta);
 
     // posterior probability
-    priorProb = priorProbG_Af + priorProbAf + priorProbObservations;
+    priorProb = priorProbG_Af + priorProbAf + priorProbObservations + priorProbGenotypesGivenHWE;
     posteriorProb = priorProb + probObsGivenGenotypes;
 
 }

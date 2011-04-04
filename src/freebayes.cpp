@@ -100,16 +100,13 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("at start of main loop");
 
-        // don't process non-ATGC's
+        // don't process non-ATGC's in the reference
         string cb = parser->currentReferenceBaseString();
         if (cb != "A" && cb != "T" && cb != "C" && cb != "G") {
             DEBUG2("current reference base is N");
             continue;
         }
 
-        //filterAlleles(alleles, allowedAlleles);
-        //removeIndelMaskedAlleles(alleles, parser->currentPosition);
-        
         if (parameters.trace) {
             for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
                 const string& name = s->first;
@@ -329,6 +326,8 @@ int main (int argc, char *argv[]) {
                     parameters.genotypeComboStepMax,
                     parameters.TH,
                     parameters.pooled,
+                    parameters.permute,
+                    parameters.hwePriors,
                     parameters.obsBinomialPriors,
                     parameters.alleleBalancePriors,
                     parameters.diffusionPriorScalar,
@@ -347,6 +346,8 @@ int main (int argc, char *argv[]) {
                     parameters.genotypeComboStepMax,
                     parameters.TH,
                     parameters.pooled,
+                    parameters.permute,
+                    parameters.hwePriors,
                     parameters.obsBinomialPriors,
                     parameters.alleleBalancePriors,
                     parameters.diffusionPriorScalar);
@@ -476,6 +477,8 @@ int main (int argc, char *argv[]) {
                         sampleDataLikelihoods,
                         parameters.TH,
                         parameters.pooled,
+                        parameters.permute,
+                        parameters.hwePriors,
                         parameters.obsBinomialPriors,
                         parameters.alleleBalancePriors,
                         parameters.diffusionPriorScalar);

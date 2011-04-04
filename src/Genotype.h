@@ -48,7 +48,7 @@ public:
     vector<Allele> alleles;
     map<string, int> alleleCounts;
     bool homozygous;
-    //long double permutationsln;  // aka, multinomialCoefficientLn(ploidy, counts())
+    long double permutationsln;  // aka, multinomialCoefficientLn(ploidy, counts())
 
     Genotype(vector<Allele>& ungroupedAlleles) {
         alleles = ungroupedAlleles;
@@ -60,14 +60,12 @@ public:
         }
         ploidy = getPloidy();
         homozygous = isHomozygous();
-        //permutationsln = 0;
-        /*
-        if (homozygous) {
-            permutationsln = log(ploidy);
-        } else {
+        permutationsln = 0;
+
+        if (!homozygous) {
             permutationsln = multinomialCoefficientLn(ploidy, counts());
         }
-        */
+
     }
 
     vector<Allele> uniqueAlleles(void);
@@ -145,11 +143,12 @@ public:
 
     // these *must* be generated at construction time
     // for efficiency they can be updated as each genotype combo is generated
-    map<string, int> alleleFrequencies; // frequencies of each allele in the combo
-    map<string, pair<int, int> > alleleStrandCounts; // map from allele spec to (forword, reverse) counts
-    map<string, pair<int, int> > alleleReadPlacementCounts; // map from allele spec to (left, right) counts
-    map<string, pair<int, int> > alleleReadPositionCounts; // map from allele spec to (left, right) counts
+    //map<string, int> alleleCounts; // frequencies of each allele in the combo
+    //map<string, pair<int, int> > alleleStrandCounts; // map from allele spec to (forword, reverse) counts
+    //map<string, pair<int, int> > alleleReadPlacementCounts; // map from allele spec to (left, right) counts
+    //map<string, pair<int, int> > alleleReadPositionCounts; // map from allele spec to (left, right) counts
     map<string, AlleleCounter> alleleCounters;
+    map<Genotype*, int> genotypeCounts;
 
     GenotypeCombo(void)
         : probObsGivenGenotypes(0)
@@ -165,7 +164,11 @@ public:
     int numberOfAlleles(void);
     vector<long double> alleleProbs(void);  // scales the above by the total number of alleles
     int ploidy(void); // the number of copies of the locus in this combination
-    int alleleFrequency(Allele& allele);
+    int alleleCount(Allele& allele);
+    int alleleCount(const string& allele);
+    long double alleleFrequency(Allele& allele);
+    long double alleleFrequency(const string& allele);
+    long double genotypeFrequency(Genotype* genotype);
     void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype, bool useObsExpectations);
     map<string, int> countAlleles(void);
     map<int, int> countFrequencies(void);
@@ -185,16 +188,21 @@ public:
     long double priorProbG_Af; // p(genotype combo | allele frequency)
     long double priorProbAf; // p(allele frequency)
     long double priorProbObservations; // p(observations)
+    long double priorProbGenotypesGivenHWE;
 
     //GenotypeCombo* combo,
     void calculatePosteriorProbability(
         long double theta,
         bool pooled,
+        bool permute,
+        bool hwePriors,
         bool obsBinomialPriors,
         bool alleleBalancePriors,
         long double diffusionPriorScalarln);
 
-    long double probabilityGivenAlleleFrequencyln();
+    long double probabilityGivenAlleleFrequencyln(bool permute);
+
+    long double hweExpectedFrequencyln(Genotype* genotype);
 
 };
 
@@ -224,6 +232,8 @@ makeComboByDatalLikelihoodRank(
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar);
@@ -239,6 +249,8 @@ bandedGenotypeCombinations(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar);
@@ -255,6 +267,8 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar);
@@ -271,6 +285,8 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar,
@@ -288,6 +304,8 @@ addAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool permute,
+    bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar);

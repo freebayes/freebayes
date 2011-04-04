@@ -52,9 +52,11 @@ public:
     bool allowMNPs;              // -X --allow-mnps
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled
+    bool permute;                //    --permute
     bool useMappingQuality;      //
     bool obsBinomialPriors;
     bool alleleBalancePriors;
+    bool hwePriors;
     bool excludePartiallyObservedGenotypes;
     bool excludeUnobservedGenotypes;
     float genotypeVariantThreshold;

@@ -11,6 +11,8 @@ void bestMarginalGenotypeCombo(GenotypeCombo& combo,
         SampleDataLikelihoods& samples,
         long double theta,
         bool pooled,
+        bool permute,
+        bool hwePriors,
         bool binomialObsPriors,
         bool alleleBalancePriors,
         long double diffusionPriorScalar);

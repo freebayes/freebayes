@@ -35,6 +35,8 @@ void bestMarginalGenotypeCombo(GenotypeCombo& combo,
         SampleDataLikelihoods& samples,
         long double theta,
         bool pooled,
+        bool permute,
+        bool hwePriors,
         bool binomialObsPriors,
         bool alleleBalancePriors,
         long double diffusionPriorScalar) {
@@ -62,7 +64,7 @@ void bestMarginalGenotypeCombo(GenotypeCombo& combo,
     }
 
     combo.init(binomialObsPriors);
-    combo.calculatePosteriorProbability(theta, pooled, binomialObsPriors,
+    combo.calculatePosteriorProbability(theta, pooled, permute, hwePriors, binomialObsPriors,
             alleleBalancePriors, diffusionPriorScalar);
 
 }

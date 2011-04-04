@@ -156,6 +156,8 @@ void Parameters::usage(char** argv) {
          << "                   Use aggregate probability of observation balance between alleles" << endl
          << "                   as a component of the priors.  Best for observations with minimal" << endl
          << "                   inherent reference bias." << endl
+         << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
+         << "                   the allele frequency as estimated by observation frequency." << endl
          << endl
          << "algorithmic features:" << endl
          << endl
@@ -169,10 +171,9 @@ void Parameters::usage(char** argv) {
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
          << "                   data likelihood. default: 1,3." << endl
-         //<< "   -K --posterior-integration-depth N" << endl
-         //<< "                   Keep this many genotype combinations for calculating genotype" << endl
-         //<< "                   marginal probabilities for each sample and overall variant" << endl
-         //<< "                   quality." << endl
+         << "   -K --permute" << endl
+         << "                   Scale prior probability of genotype combination given allele frequency" << endl
+         << "                   by the number of permutations of the genotypes in the combination." << endl
          << "   -^ --genotype-combo-step-max N" << endl
          << "                   When generating genotype combinations, do not include genotypes" << endl
          << "                   where the genotype data likelihood is log(N) from the highest" << endl
@@ -183,9 +184,6 @@ void Parameters::usage(char** argv) {
          << "                   Limit posterior integration to samples where the second-best" << endl
          << "                   genotype likelihood is no more than log(N) from the highest" << endl
          << "                   genotype likelihood for the sample.  default: ~unbounded" << endl
-         //<< "   -S --exclude-partially-observed-genotypes" << endl
-         //<< "                   Skip sample genotypings where the sample does not have observations" << endl
-         //<< "                   supporting all alleles in the genotype." << endl
          << "   -j --use-mapping-quality" << endl
          << "                   Use mapping quality of alleles when calculating data likelihoods." << endl
          << "   -D --read-dependence-factor N" << endl
@@ -251,8 +249,10 @@ Parameters::Parameters(int argc, char** argv) {
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
+    permute = false;                // -K --permute
     useMappingQuality = false;
     obsBinomialPriors = false; // TODO
+    hwePriors = false;
     alleleBalancePriors = false;
     excludeUnobservedGenotypes = false;
     excludePartiallyObservedGenotypes = false;
@@ -334,13 +334,14 @@ Parameters::Parameters(int argc, char** argv) {
         {"read-dependence-factor", required_argument, 0, 'D'},
         {"binomial-obs-priors", no_argument, 0, 'V'},
         {"allele-balance-priors", no_argument, 0, 'a'},
+        {"hwe-priors", no_argument, 0, 'w'},
         //{"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-limits", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
         {"min-alternate-total", required_argument, 0, 'G'},
         {"min-coverage", required_argument, 0, '!'},
-        //{"posterior-integration-depth", required_argument, 0, 'K'},
+        {"permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
@@ -358,7 +359,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZjH0diNaI@_M=VXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_M=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -666,6 +667,10 @@ Parameters::Parameters(int argc, char** argv) {
                 alleleBalancePriors = true;
                 break;
 
+            case 'w':
+                hwePriors = true;
+                break;
+
             // -W --posterior-integration-limits
             case 'W':
                 if (!convert(split(optarg, ",").front(), WB)) {
@@ -694,13 +699,10 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -K --posterior-marginal-depth
-            //case 'K':
-            //    if (!convert(optarg, posteriorIntegrationDepth)) {
-            //        cerr << "could not parse posterior-integration-depth" << endl;
-            //        exit(1);
-            //    }
-            //    break;
+            // -K --permute
+            case 'K':
+                permute = true;
+                break;
 
             case '=':
                 calculateMarginals = false;
