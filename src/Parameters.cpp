@@ -171,9 +171,9 @@ void Parameters::usage(char** argv) {
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
          << "                   data likelihood. default: 1,3." << endl
-         << "   -K --permute" << endl
-         << "                   Scale prior probability of genotype combination given allele frequency" << endl
-         << "                   by the number of permutations of the genotypes in the combination." << endl
+         << "   -K --no-permute" << endl
+         << "                   Do not scale prior probability of genotype combination given allele" << endl
+         << "                   frequency by the number of permutations of included genotypes." << endl
          << "   -^ --genotype-combo-step-max N" << endl
          << "                   When generating genotype combinations, do not include genotypes" << endl
          << "                   where the genotype data likelihood is log(N) from the highest" << endl
@@ -249,7 +249,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
-    permute = false;                // -K --permute
+    permute = true;                // -K --permute
     useMappingQuality = false;
     obsBinomialPriors = false; // TODO
     hwePriors = false;
@@ -341,7 +341,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-alternate-count", required_argument, 0, 'C'},
         {"min-alternate-total", required_argument, 0, 'G'},
         {"min-coverage", required_argument, 0, '!'},
-        {"permute", no_argument, 0, 'K'},
+        {"no-permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
@@ -699,9 +699,9 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -K --permute
+            // -K --no-permute
             case 'K':
-                permute = true;
+                permute = false;
                 break;
 
             case '=':
