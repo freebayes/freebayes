@@ -73,7 +73,7 @@ void Parameters::usage(char** argv) {
          << "   -H --haploid-reference" << endl
          << "                   If using the reference sequence as a sample, consider it" << endl
          << "                   to be haploid.  default: false" << endl
-         << "   -B --reference-quality MQ,BQ" << endl
+         << "   --reference-quality MQ,BQ" << endl
          << "                   Assign mapping quality of MQ to the reference allele at each" << endl
          << "                   site and base quality of BQ.  default: 100,60" << endl
          << endl
@@ -167,6 +167,8 @@ void Parameters::usage(char** argv) {
          << "   -u --expectation-maximization-max-iterations N" << endl
          << "                   Iterate no more than this many times during expectation" << endl
          << "                   maximization step.  default: 5" << endl
+         << "   -B --genotyping-max-iterations N" << endl
+         << "                   Iterate no more than N times during genotyping step. default: 5." << endl
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
@@ -259,6 +261,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeVariantThreshold = 0;
     expectationMaximization = false;
     expectationMaximizationMaxIterations = 5;
+    genotypingMaxIterations = 5;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -311,7 +314,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"ignore-reference-allele", no_argument, 0, 'Z'},
         {"haploid-reference", no_argument, 0, 'H'},
         {"no-filters", no_argument, 0, '0'},
-        {"reference-quality", required_argument, 0, 'B'},
+        {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
         {"pooled", no_argument, 0, 'J'},
         {"use-mapping-quality", no_argument, 0, 'j'},
@@ -350,6 +353,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"genotype-variant-threshold", required_argument, 0, 'S'},
         {"expectation-maximization", no_argument, 0, 'M'},
         {"expectation-maximization-max-iterations", required_argument, 0, 'u'},
+        {"genotyping-max-iterations", required_argument, 0, 'B'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -359,7 +363,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_M=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_M=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:1:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -492,8 +496,16 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -B --reference-quality
+            // -B --genotyping-max-iterations
             case 'B':
+                if (!convert(optarg, genotypingMaxIterations)) {
+                    cerr << "could not parse genotyping-max-iterations" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -1 --reference-quality
+            case '1':
                 if (!convert(split(optarg, ",").front(), MQR)) {
                     cerr << "could not parse reference mapping quality" << endl;
                     exit(1);

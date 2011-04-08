@@ -36,7 +36,7 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
     return alleles;
 }
 
-int Genotype::alleleFrequency(const string& base) {
+int Genotype::alleleCount(const string& base) {
     map<string, int>::iterator ge = alleleCounts.find(base);
     if (ge == alleleCounts.end()) {
         return 0;
@@ -45,7 +45,7 @@ int Genotype::alleleFrequency(const string& base) {
     }
 }
 
-int Genotype::alleleFrequency(Allele& allele) {
+int Genotype::alleleCount(Allele& allele) {
     map<string, int>::iterator ge = alleleCounts.find(allele.currentBase);
     if (ge == alleleCounts.end()) {
         return 0;
@@ -520,6 +520,69 @@ bool GenotypeCombo::isHomozygous(void) {
     return alleleCounters.size() == 1;
 }
 
+void sortSampleDataLikelihoods(vector<SampleDataLikelihood>& likelihoods) {
+    SampleDataLikelihoodCompare datalikelihoodCompare;
+    sort(likelihoods.begin(), likelihoods.end(), datalikelihoodCompare);
+    int i = 0;
+    for (vector<SampleDataLikelihood>::iterator sdl = likelihoods.begin(); sdl != likelihoods.end(); ++sdl) {
+        sdl->rank = i++;
+    }
+}
+
+bool sortSampleDataLikelihoodsByMarginals(vector<SampleDataLikelihood>& likelihoods) {
+    SampleMarginalCompare marginalLikelihoodCompare;
+    sort(likelihoods.begin(), likelihoods.end(), marginalLikelihoodCompare);
+    bool reordered = false;
+    int i = 0;
+    for (vector<SampleDataLikelihood>::iterator sdl = likelihoods.begin(); sdl != likelihoods.end(); ++sdl) {
+        int newrank = i++;
+        if (sdl->rank != newrank) {
+            reordered = true;
+            sdl->rank = newrank;
+        }
+    }
+    return reordered;
+}
+
+bool sortSampleDataLikelihoodsByMarginals(SampleDataLikelihoods& samplesLikelihoods) {
+    bool reordered = false;
+    for (SampleDataLikelihoods::iterator s = samplesLikelihoods.begin(); s != samplesLikelihoods.end(); ++s) {
+        reordered |= sortSampleDataLikelihoodsByMarginals(*s);
+    }
+    return reordered;
+}
+
+// assumes that the data likelihoods are sorted
+void
+dataLikelihoodMaxGenotypeCombo(
+    GenotypeCombo& combo,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
+
+    for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+            s != sampleDataLikelihoods.end(); ++s) {
+        SampleDataLikelihood* sdl = &s->at(0);
+        combo.push_back(sdl);
+        combo.probObsGivenGenotypes += sdl->prob;
+    }
+
+    combo.init(binomialObsPriors);
+    combo.calculatePosteriorProbability(theta,
+                                        pooled,
+                                        permute,
+                                        hwePriors,
+                                        binomialObsPriors,
+                                        alleleBalancePriors,
+                                        diffusionPriorScalar);
+
+}
+
 void
 makeComboByDatalLikelihoodRank(
     GenotypeCombo& combo,
@@ -562,6 +625,82 @@ makeComboByDatalLikelihoodRank(
                                         binomialObsPriors,
                                         alleleBalancePriors,
                                         diffusionPriorScalar);
+
+}
+
+// 'local' genotype combinations which step only in one sample away from the
+// data likelihood maxiumum.  deal with all genotypes.
+void
+allLocalGenotypeCombinations(
+    list<GenotypeCombo>& combos,
+    GenotypeCombo& comboKing,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    Samples& samples,
+    vector<Allele>& genotypeAlleles,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
+
+    // make the data likelihood maximum if needed
+    if (comboKing.empty()) {
+        vector<int> initialPosition;
+        initialPosition.assign(sampleDataLikelihoods.size(), 0);
+        SampleDataLikelihoods nullDataLikelihoods; // dummy variable
+        makeComboByDatalLikelihoodRank(comboKing,
+                initialPosition,
+                sampleDataLikelihoods,
+                nullDataLikelihoods,
+                theta,
+                pooled,
+                permute,
+                hwePriors,
+                binomialObsPriors,
+                alleleBalancePriors,
+                diffusionPriorScalar);
+    }
+
+    // for each sampledatalikelihood
+    // add a combo for each genotype where the combo is one step from the comboKing
+    size_t sampleOffset = 0;
+    //GenotypeCombo::iterator sampleGenotypeItr = comboKing.begin();
+    for (SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+            s != sampleDataLikelihoods.end(); ++s, ++sampleOffset) {
+        SampleDataLikelihood& oldsdl = *comboKing.at(sampleOffset);
+        vector<SampleDataLikelihood>& sdls = *s;
+        for (vector<SampleDataLikelihood>::iterator dl = sdls.begin(); dl != sdls.end(); ++dl) {
+
+            SampleDataLikelihood& newsdl = *dl;
+            if (newsdl.genotype == oldsdl.genotype) {  // don't duplicate the comboKing
+                continue;
+            }
+            combos.push_back(comboKing);
+            GenotypeCombo& combo = combos.back();
+            // get the old and new genotypes, which we compare
+            // to change the cached counts and probability of
+            // the combo
+            combo.updateCachedCounts(oldsdl.sample,
+                    oldsdl.genotype, newsdl.genotype,
+                    binomialObsPriors);
+            // replace genotype with new genotype
+            combo.at(sampleOffset) = &*dl;
+            // find data likelihood difference from ComboKing
+            long double diff = oldsdl.prob - newsdl.prob;
+            // adjust combination total data likelihood
+            combo.probObsGivenGenotypes -= diff;
+            combo.calculatePosteriorProbability(theta,
+                                            pooled,
+                                            permute,
+                                            hwePriors,
+                                            binomialObsPriors,
+                                            alleleBalancePriors,
+                                            diffusionPriorScalar);
+        }
+    }
 
 }
 
@@ -676,6 +815,7 @@ bandedGenotypeCombinations(
                         reuseLastCombo = true;
                         break;
                     }
+                    // TODO factor out this update code
                     SampleDataLikelihood* newsdl = &sdls.at(offset);
                     // get the old and new genotypes, which we compare
                     // to change the cached counts and probability of
@@ -901,6 +1041,64 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
 
 }
 
+
+void
+bandedGenotypeCombinationsNoHomozygousCombos(
+    list<GenotypeCombo>& combos,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantSampleDataLikelihoods,
+    SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    Samples& samples,
+    vector<Allele>& genotypeAlleles,
+    int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
+
+    // generate the initial maximum likelihood relative position for
+    // integration. in this case we use the data likelihood maximum.
+    vector<int> initialPosition;
+    initialPosition.assign(sampleDataLikelihoods.size(), 0);
+    GenotypeCombo comboKing;
+    makeComboByDatalLikelihoodRank(comboKing,
+            initialPosition,
+            variantSampleDataLikelihoods,
+            invariantSampleDataLikelihoods,
+            theta,
+            pooled,
+            permute,
+            hwePriors,
+            binomialObsPriors,
+            alleleBalancePriors,
+            diffusionPriorScalar);
+
+    // obtain the combos
+
+    bandedGenotypeCombinations(
+            combos,
+            comboKing,
+            variantSampleDataLikelihoods,
+            invariantSampleDataLikelihoods,
+            samples,
+            bandwidth,
+            banddepth,
+            logStepMax,
+            theta,
+            pooled,
+            permute,
+            hwePriors,
+            binomialObsPriors,
+            alleleBalancePriors,
+            diffusionPriorScalar);
+
+}
+
+
 void addAllHomozygousCombos(
     list<GenotypeCombo>& combos,
     SampleDataLikelihoods& sampleDataLikelihoods,
@@ -1024,7 +1222,7 @@ long double GenotypeCombo::hweExpectedFrequencyln(Genotype* genotype) {
     vector<int> genotypeAlleleCounts;
     vector<long double> alleleFrequencies;
     for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
-        genotypeAlleleCounts.push_back(genotype->alleleFrequency(a->first));
+        genotypeAlleleCounts.push_back(genotype->alleleCount(a->first));
         alleleFrequencies.push_back((long double) a->second.frequency / (long double) numberOfAlleles());
     }
 
@@ -1037,6 +1235,61 @@ long double GenotypeCombo::hweExpectedFrequencyln(Genotype* genotype) {
     }
 
     return HWECoefficientln;
+
+}
+
+// probability that the genotype count in the combo is what it is given the
+// counts of the other alleles
+long double GenotypeCombo::hweProbGenotypeFrequencyln(Genotype* genotype) {
+
+    //cout << endl << *genotype << endl;
+
+    int popTotalAlleles = numberOfAlleles();
+    //cout << "popTotalAlleles = " << popTotalAlleles << endl;
+    vector<int> popAlleleCounts;
+    vector<int> thisGenotypeAlleleCounts;
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        //cout << a->first << "\t" << a->second.frequency << "\t" << genotype->alleleCount(a->first) << endl;
+        popAlleleCounts.push_back(a->second.frequency);
+        thisGenotypeAlleleCounts.push_back(genotype->alleleCount(a->first));
+    }
+
+    int popTotalGenotypes = 0;
+    vector<int> popGenotypeCounts;
+    // for haploid, estimate as if we have all ploidy 1
+    if (genotype->ploidy == 1) {
+        for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+            popGenotypeCounts.push_back(a->second.frequency);
+            popTotalGenotypes += a->second.frequency;
+        }
+    } else {
+        for (map<Genotype*, int>::iterator g = genotypeCounts.begin(); g != genotypeCounts.end(); ++g) {
+            if (g->first->ploidy == genotype->ploidy) {
+                //cout << *g->first << "\t" << g->second << endl;
+                popGenotypeCounts.push_back(g->second);
+                popTotalGenotypes += g->second;
+            }
+        }
+    }
+
+    long double arrangementsOfAllelesInSample = multinomialCoefficientLn(popTotalAlleles, popAlleleCounts);
+    //cout << "arrangementsOfAllelesInSample = " << exp(arrangementsOfAllelesInSample) << endl;
+
+    long double arrangementsWithExactlyCountGenotypesGivenAF =
+        multinomialCoefficientLn(genotype->ploidy, thisGenotypeAlleleCounts)
+        + multinomialCoefficientLn(popTotalGenotypes, popGenotypeCounts);
+    /*
+    cout << "multinomialCoefficientLn(genotype->ploidy, thisGenotypeAlleleCounts) = "
+         << exp(multinomialCoefficientLn(genotype->ploidy, thisGenotypeAlleleCounts)) << endl;
+    cout << "multinomialCoefficientLn(popTotalGenotypes, popGenotypeCounts) = "
+         << exp(multinomialCoefficientLn(popTotalGenotypes, popGenotypeCounts)) << endl;
+    cout << "arrangementsWithExactlyCountGenotypesGivenAF = " << exp(arrangementsWithExactlyCountGenotypesGivenAF) << endl;
+
+    cout << "hwe prob = " << exp(arrangementsWithExactlyCountGenotypesGivenAF - arrangementsOfAllelesInSample) << endl;
+    */
+
+    return arrangementsWithExactlyCountGenotypesGivenAF - arrangementsOfAllelesInSample;
+
 
 }
 
@@ -1071,19 +1324,7 @@ GenotypeCombo::calculatePosteriorProbability(
     if (hwePriors) {
         for (map<Genotype*, int>::iterator gc = genotypeCounts.begin(); gc != genotypeCounts.end(); ++gc) {
             Genotype* genotype = gc->first;
-            int genotypeCount = gc->second;
-            long double expectedfreq = hweExpectedFrequencyln(genotype);
-            long double observedfreq;
-            if (genotype->ploidy == 1) {
-                observedfreq = log(alleleFrequency(genotype->front().allele));
-            } else {
-                observedfreq = log((long double) genotypeCount / (long double) size());
-            }
-            if (expectedfreq > observedfreq) {
-                priorProbGenotypesGivenHWE += powln(observedfreq - expectedfreq, genotypeCount);
-            } else {
-                priorProbGenotypesGivenHWE += powln(expectedfreq - observedfreq, genotypeCount);
-            }
+            priorProbGenotypesGivenHWE += hweProbGenotypeFrequencyln(genotype);
         }
     }
 
@@ -1155,6 +1396,33 @@ void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm) {
     for (GenotypeCombo::iterator g = gc.begin(); g != gc.end(); ++g) {
         gcm[(*g)->name] = *g;;
     }
+}
+
+
+void orderedGenotypeCombo(
+    GenotypeCombo& combo,
+    GenotypeCombo& orderedCombo,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar) {
+
+    GenotypeComboMap bestComboMap;
+
+    genotypeCombo2Map(combo, bestComboMap);
+    for (SampleDataLikelihoods::iterator sdl = sampleDataLikelihoods.begin(); sdl != sampleDataLikelihoods.end(); ++sdl) {
+        orderedCombo.push_back(bestComboMap[sdl->front().name]);
+    }
+
+    orderedCombo.init(binomialObsPriors);
+    orderedCombo.calculatePosteriorProbability(theta, pooled, permute,
+            hwePriors, binomialObsPriors, alleleBalancePriors,
+            diffusionPriorScalar);
+
 }
 
 

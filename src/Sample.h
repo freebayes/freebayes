@@ -26,6 +26,10 @@ public:
     // the total number of observations
     int observationCount(void);
 
+    // sum of quality for the given allele
+    int qualSum(Allele& allele);
+    int qualSum(const string& base);
+
     // puts alleles into the right bins if they have changed their base (as
     // occurs in the case of reference alleles)
     void sortReferenceAlleles(void);

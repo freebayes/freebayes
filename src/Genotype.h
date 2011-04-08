@@ -70,8 +70,8 @@ public:
 
     vector<Allele> uniqueAlleles(void);
     int getPloidy(void);
-    int alleleFrequency(const string& base);
-    int alleleFrequency(Allele& allele);
+    int alleleCount(const string& base);
+    int alleleCount(Allele& allele);
     bool containsAllele(Allele& allele);
     bool containsAllele(const string& base);
     vector<Allele> alternateAlleles(string& refbase);
@@ -100,6 +100,7 @@ public:
     string name;
     Genotype* genotype;
     long double prob;
+    long double marginal;
     Sample* sample;
     int rank; // the rank of this data likelihood relative to others for the sample, 0 is best
     SampleDataLikelihood(string n, Sample* s, Genotype* g, long double p, int r)
@@ -108,6 +109,7 @@ public:
         , genotype(g)
         , prob(p)
         , rank(r)
+        , marginal(0)
     { }
 };
 
@@ -203,11 +205,11 @@ public:
     long double probabilityGivenAlleleFrequencyln(bool permute);
 
     long double hweExpectedFrequencyln(Genotype* genotype);
+    long double hweProbGenotypeFrequencyln(Genotype* genotype);
 
 };
 
-class GenotypeComboResultSorter {
-public:
+struct GenotypeComboResultSorter {
     bool operator()(const GenotypeCombo& gc1, const GenotypeCombo& gc2) {
         if (gc1.posteriorProb == gc2.posteriorProb) {
             return gc1 > gc2;
@@ -217,12 +219,44 @@ public:
     }
 };
 
+// for sorting data likelihoods
+struct SampleDataLikelihoodCompare {
+    bool operator()(const SampleDataLikelihood& a,
+            const SampleDataLikelihood& b) {
+        return a.prob > b.prob;
+    }
+};
+
+struct SampleMarginalCompare {
+    bool operator()(const SampleDataLikelihood& a,
+            const SampleDataLikelihood& b) {
+        return a.marginal > b.marginal;
+    }
+};
+
 // a set of probabilities for a set of genotypes for a set of samples
 typedef vector<vector<SampleDataLikelihood> > SampleDataLikelihoods;
+
+void sortSampleDataLikelihoods(vector<SampleDataLikelihood>& likelihoods);
+bool sortSampleDataLikelihoodsByMarginals(vector<SampleDataLikelihood>& likelihoods);
+bool sortSampleDataLikelihoodsByMarginals(SampleDataLikelihoods& samplesLikelihoods);
 
 typedef map<string, SampleDataLikelihood*> GenotypeComboMap;
 
 void genotypeCombo2Map(GenotypeCombo& gc, GenotypeComboMap& gcm);
+
+void
+orderedGenotypeCombo(
+    GenotypeCombo& combo,
+    GenotypeCombo& orderedCombo,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
 
 void
 makeComboByDatalLikelihoodRank(
@@ -230,6 +264,18 @@ makeComboByDatalLikelihoodRank(
     vector<int>& initialPosition,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
+
+void
+dataLikelihoodMaxGenotypeCombo(
+    GenotypeCombo& combo,
+    SampleDataLikelihoods& sampleDataLikelihoods,
     long double theta,
     bool pooled,
     bool permute,
@@ -264,6 +310,40 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     Samples& samples,
     vector<Allele>& genotypeAlleles,
     int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
+
+void
+bandedGenotypeCombinationsNoHomozygousCombos(
+    list<GenotypeCombo>& combos,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    SampleDataLikelihoods& variantDataLikelihoods,
+    SampleDataLikelihoods& invariantDataLikelihoods,
+    Samples& samples,
+    vector<Allele>& genotypeAlleles,
+    int bandwidth, int banddepth,
+    float logStepMax,
+    long double theta,
+    bool pooled,
+    bool permute,
+    bool hwePriors,
+    bool binomialObsPriors,
+    bool alleleBalancePriors,
+    long double diffusionPriorScalar);
+
+void
+allLocalGenotypeCombinations(
+    list<GenotypeCombo>& combos,
+    GenotypeCombo& comboKing,
+    SampleDataLikelihoods& sampleDataLikelihoods,
+    Samples& samples,
+    vector<Allele>& genotypeAlleles,
     float logStepMax,
     long double theta,
     bool pooled,
@@ -309,6 +389,7 @@ addAllHomozygousCombos(
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar);
+
 
 vector<pair<Allele, int> > alternateAlleles(GenotypeCombo& combo, string referenceBase);
 

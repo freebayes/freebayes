@@ -25,6 +25,22 @@ int Sample::observationCount(void) {
     return count;
 }
 
+int Sample::qualSum(Allele& allele) {
+    return qualSum(allele.currentBase);
+}
+
+int Sample::qualSum(const string& base) {
+    Sample::iterator g = find(base);
+    int qsum = 0;
+    if (g != end()) {
+        vector<Allele*>& alleles = g->second;
+        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            qsum += (*a)->quality;
+        }
+    }
+    return qsum;
+}
+
 // puts alleles into the right bins if they have changed their base (as
 // occurs in the case of reference alleles)
 void Sample::sortReferenceAlleles(void) {

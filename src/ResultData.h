@@ -13,7 +13,7 @@
 
 using namespace std;
 
-class ResultData;
+class Result;
 
 // for sorting data likelihoods
 class DataLikelihoodCompare {
@@ -24,52 +24,20 @@ public:
     }
 };
 
-// maps sample names to results
-typedef map<string, ResultData> Results;
+class Results;
 
-class ResultData
-{
+class Result : public vector<SampleDataLikelihood> {
+
 public:
+
     string name;
-    vector<pair<Genotype*, long double> > dataLikelihoods;
-    map<Genotype*, long double> marginals;
     Sample* observations;
 
-    ResultData(string s,
-        vector<pair<Genotype*, long double> > d,
-        map<Genotype*, long double>  m,
-        Sample* o)
-            : name(s)
-            , dataLikelihoods(d)
-            , marginals(m)
-            , observations(o)
-    { }
-
-    ResultData(void) { }
-
-    ResultData(const ResultData& r) {
-        name = r.name;
-        dataLikelihoods = r.dataLikelihoods;
-        marginals = r.marginals;
-        observations = r.observations;
-    }
-
     void sortDataLikelihoods(void) {
-        DataLikelihoodCompare datalikelihoodCompare;
-        sort(dataLikelihoods.begin(), 
-                dataLikelihoods.end(), 
-                datalikelihoodCompare);
+        SampleDataLikelihoodCompare datalikelihoodCompare;
+        sort(begin(), end(), datalikelihoodCompare);
     }
 
-    long double genotypeLikelihood(Genotype* g) {
-        for (vector<pair<Genotype*, long double> >::iterator gl = dataLikelihoods.begin();
-                gl != dataLikelihoods.end(); ++gl) {
-            if (gl->first == g)
-                return gl->second;
-        }
-    }
-
-    friend void json(ostream& out, Results& results, AlleleParser* parser);
     friend string vcf(
             long double comboProb,
             //long double alleleSamplingProb,
@@ -90,6 +58,25 @@ public:
     pair<Genotype*, long double> bestMarginalGenotype(void);
 
 };
+
+// maps sample names to results
+class Results : public map<string, Result> {
+
+public:
+    void update(SampleDataLikelihoods& likelihoods) {
+        for (SampleDataLikelihoods::iterator s = likelihoods.begin(); s != likelihoods.end(); ++s) {
+            vector<SampleDataLikelihood>& sdls = *s;
+            string& name = sdls.front().name;
+            Result& result = (*this)[name];
+            result.clear();
+            for (vector<SampleDataLikelihood>::iterator s = sdls.begin(); s != sdls.end(); ++s) {
+                result.push_back(*s);
+            }
+        }
+    }
+
+};
+
 
 string dateStr(void);
 void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples, Parameters& parameters, vector<string>& sequencingTechnologies);

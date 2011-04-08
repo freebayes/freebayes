@@ -5,7 +5,10 @@
 #include "Genotype.h"
 #include "ResultData.h"
 
-void marginalGenotypeLikelihoods(long double posteriorNormalizer, list<GenotypeCombo>& genotypeCombos, Results& results);
+using namespace std;
+
+//void marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Results& results);
+long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, SampleDataLikelihoods& likelihoods);
 void bestMarginalGenotypeCombo(GenotypeCombo& combo,
         Results& results,
         SampleDataLikelihoods& samples,
@@ -16,5 +19,7 @@ void bestMarginalGenotypeCombo(GenotypeCombo& combo,
         bool binomialObsPriors,
         bool alleleBalancePriors,
         long double diffusionPriorScalar);
+
+void balancedMarginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Results& results);
 
 #endif

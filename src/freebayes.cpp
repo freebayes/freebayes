@@ -205,6 +205,9 @@ int main (int argc, char *argv[]) {
         }
 
         Results results;
+        vector<vector<SampleDataLikelihood> > sampleDataLikelihoods;
+        vector<vector<SampleDataLikelihood> > variantSampleDataLikelihoods;
+        vector<vector<SampleDataLikelihood> > invariantSampleDataLikelihoods;
 
         DEBUG2("calculating data likelihoods");
         // calculate data likelihoods
@@ -235,8 +238,6 @@ int main (int argc, char *argv[]) {
 
             vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypesWithObs, parameters.RDF, parameters.useMappingQuality);
 
-            map<Genotype*, long double> marginals;
-
             if (parameters.trace) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
                     parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
@@ -244,7 +245,28 @@ int main (int argc, char *argv[]) {
                 }
             }
 
-            results.insert(make_pair(sampleName, ResultData(sampleName, probs, marginals, &sample)));
+            Result& sampleData = results[sampleName];
+            sampleData.name = sampleName;
+            sampleData.observations = &sample;
+            for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
+                sampleData.push_back(SampleDataLikelihood(sampleName, &sample, p->first, p->second, 0));
+            }
+            sortSampleDataLikelihoods(sampleData);
+
+            //cout << exp(thisSampleDataLikelihoods.front().prob) << " - " << exp(thisSampleDataLikelihoods.at(1).prob) << endl;
+            if (parameters.genotypeVariantThreshold != 0) {
+                if (sampleData.size() > 1
+                        && float2phred(1 - (exp(sampleData.front().prob) - exp(sampleData.at(1).prob)))
+                            < parameters.genotypeVariantThreshold) {
+                    //cout << "varying sample " << name << endl;
+                    variantSampleDataLikelihoods.push_back(sampleData);
+                } else {
+                    invariantSampleDataLikelihoods.push_back(sampleData);
+                }
+            } else {
+                variantSampleDataLikelihoods.push_back(sampleData);
+            }
+            sampleDataLikelihoods.push_back(sampleData);
 
         }
         
@@ -267,44 +289,6 @@ int main (int argc, char *argv[]) {
             parser->traceFile << endl;
         }
 
-
-        // sort individual genotype data likelihoods
-        
-        // this is a vector of unpacked sample-name-genotype-prob structures,
-        // which are then referred to by pointer when generating genotype
-        // combinations
-        vector<vector<SampleDataLikelihood> > sampleDataLikelihoods;
-        vector<vector<SampleDataLikelihood> > variantSampleDataLikelihoods;
-        vector<vector<SampleDataLikelihood> > invariantSampleDataLikelihoods;
-        for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
-            const string& name = *s;
-            Results::iterator r = results.find(name);
-            if (r != results.end()) {
-                r->second.sortDataLikelihoods();
-                vector<pair<Genotype*, long double> >& dataLikelihoods = r->second.dataLikelihoods;
-                vector<SampleDataLikelihood> thisSampleDataLikelihoods;
-                int rank = 0;
-                for (vector<pair<Genotype*, long double> >::iterator p = dataLikelihoods.begin(); p != dataLikelihoods.end(); ++p) {
-                    thisSampleDataLikelihoods.push_back(SampleDataLikelihood(name, &samples[name], p->first, p->second, rank++));
-                }
-                //cout << exp(thisSampleDataLikelihoods.front().prob) << " - " << exp(thisSampleDataLikelihoods.at(1).prob) << endl;
-                if (parameters.genotypeVariantThreshold != 0) {
-                    if (thisSampleDataLikelihoods.size() > 1
-                            && float2phred(1 - (exp(thisSampleDataLikelihoods.front().prob) - exp(thisSampleDataLikelihoods.at(1).prob)))
-                                < parameters.genotypeVariantThreshold) {
-                        //cout << "varying sample " << name << endl;
-                        variantSampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
-                    } else {
-                        invariantSampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
-                    }
-                } else {
-                    variantSampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
-                }
-                sampleDataLikelihoods.push_back(thisSampleDataLikelihoods);
-            }
-        }
-
-        DEBUG2("finished sorting data likelihoods");
 
         // calculate genotype combo likelihoods, integral over nearby genotypes
         // calculate marginals
@@ -462,18 +446,86 @@ int main (int argc, char *argv[]) {
 
         if ((1 - pHom) >= parameters.PVL) {
 
-            // marginals
-            // note that this operation is O(N^2) in the number of combinations which we still
-            // have after trimming the number of combos to parameters.posteriorIntegrationDepth
-            GenotypeCombo bestGenotypeComboByMarginals; // filled out if we calculate marginals
+            GenotypeCombo bestGenotypeComboByMarginals;
 
             if (parameters.calculateMarginals) {
 
                 DEBUG2("calculating marginal likelihoods");
-                marginalGenotypeLikelihoods(posteriorNormalizer, genotypeCombos, results);
-                // get best genotyping according to marginal genotype probabilities
-                bestMarginalGenotypeCombo(bestGenotypeComboByMarginals,
-                        results,
+
+                // resample the posterior, this time without bounds on the
+                // samples we vary, ensuring that we can generate marginals for
+                // all sample/genotype combinations
+
+                //SampleDataLikelihoods marginalLikelihoods = sampleDataLikelihoods;  // heavyweight copy...
+                GenotypeCombo nullCombo;
+                GenotypeCombo bestComboOrdered; // ordered by the samples in sampleDataLikelihoods
+                GenotypeComboMap bestComboMap;
+                orderedGenotypeCombo(
+                        genotypeCombos.front(),
+                        bestComboOrdered,
+                        sampleDataLikelihoods,
+                        parameters.TH,
+                        true, // act as if pooled
+                        parameters.permute,
+                        true, // hwe priors
+                        parameters.obsBinomialPriors,
+                        parameters.alleleBalancePriors,
+                        parameters.diffusionPriorScalar);
+
+                for (int i = 0; i < parameters.genotypingMaxIterations; ++i) {
+
+                    //cout << "iteration " << i << endl;
+                    list<GenotypeCombo> localGenotypeCombos;
+                    allLocalGenotypeCombinations(
+                            localGenotypeCombos,
+                            (i == 0 ? bestComboOrdered : nullCombo), // seed with the best combo on the first pass
+                            sampleDataLikelihoods,
+                            samples,
+                            genotypeAlleles,
+                            parameters.genotypeComboStepMax,
+                            parameters.TH,
+                            true, // act as if pooled
+                            parameters.permute,
+                            true, // hwe priors
+                            parameters.obsBinomialPriors,
+                            parameters.alleleBalancePriors,
+                            parameters.diffusionPriorScalar);
+
+                    // sort and remove any duplicates
+                    localGenotypeCombos.sort(gcrSorter);
+                    localGenotypeCombos.unique();
+
+                    //SampleDataLikelihoods previousDataLikelihoods = sampleDataLikelihoods;  // heavyweight copy...
+
+                    // estimate marginal genotype likelihoods, GQ in the VCF output
+                    long double delta = marginalGenotypeLikelihoods(localGenotypeCombos, sampleDataLikelihoods);
+
+                    //cout << "iteration " << i << " delta " << delta << endl;
+
+                    // sort data likelihoods by marginal likelihoods
+                    // and checks for convergence
+                    if (!sortSampleDataLikelihoodsByMarginals(sampleDataLikelihoods)) {
+                        break;
+                    }
+
+                    // debugging... print changes in sorting
+                    /*
+                    SampleDataLikelihoods::iterator s = sampleDataLikelihoods.begin();
+                    for (SampleDataLikelihoods::iterator p = previousDataLikelihoods.begin(); p != previousDataLikelihoods.end(); ++p, ++s) {
+                        if (s->front().genotype != p->front().genotype) {
+                            cout << "swapped " << *p->front().genotype << " for " << *s->front().genotype << endl;
+                        }
+                    }
+                    */
+
+                    localGenotypeCombos.clear();
+                    nullCombo.clear();
+
+                }
+
+                // generate the best marginal combo according to marginals, which we've sorted by
+                dataLikelihoodMaxGenotypeCombo(
+                        bestGenotypeComboByMarginals,
                         sampleDataLikelihoods,
                         parameters.TH,
                         parameters.pooled,
@@ -483,6 +535,9 @@ int main (int argc, char *argv[]) {
                         parameters.alleleBalancePriors,
                         parameters.diffusionPriorScalar);
 
+                // store the marginal data likelihoods in the results, for easy parsing
+                // like a vector -> map conversion...
+                results.update(sampleDataLikelihoods);
 
             }
 

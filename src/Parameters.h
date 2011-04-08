@@ -57,6 +57,7 @@ public:
     bool obsBinomialPriors;
     bool alleleBalancePriors;
     bool hwePriors;
+    int genotypingMaxIterations;
     bool excludePartiallyObservedGenotypes;
     bool excludeUnobservedGenotypes;
     float genotypeVariantThreshold;

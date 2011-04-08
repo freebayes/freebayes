@@ -4,15 +4,6 @@
 # Boston College
 ################################################################################
 
-# optimized + static
-# make CFLAGS="-O9 -static"
-
-# to profile
-# make CFLAGS="-O9 -static -pg"
-
-# to enable verbose debugging
-# make CFLAGS="-O9 -static -pg -D VERBOSE_DEBUG"
-
 # Compiler
 CC=g++
 C=gcc

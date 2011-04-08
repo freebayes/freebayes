@@ -27,20 +27,22 @@ def add_tuple(a, b):
 # TODO handle NULL case, genotype has frequency 0
 def hwe_sampling_probln(genotype, genotypes, ploidy):
     population_total_alleles = sum([sum(g[0]) * g[1] for g in genotypes])
+    print "population_total_alleles", population_total_alleles
     allele_counts = reduce(add_tuple, [[a * g[1] for a in g[0]] for g in genotypes])
-    genotype_count = None
-    for gc in genotypes:
-        if gc[0] == genotype:
-            genotype_count = gc[1]
-            break
+    print "allele_counts", allele_counts
     genotype_counts = [g[1] for g in genotypes]
+    print "genotype_counts", genotype_counts
     population_total_genotypes = sum([gtc[1] for gtc in genotypes])
+    print "total genotypes:", population_total_genotypes
+    print "ploidy", ploidy
     # number of arrangements of the alleles in the sample
     arrangements_of_alleles_in_sample = multinomial_coefficientln(population_total_alleles, allele_counts)
+    print "arrangements_of_alleles_in_sample", math.exp(arrangements_of_alleles_in_sample)
     # number of arrangements which contain exactly count genotypes
     #arrangements_with_exactly_count_genotype = multinomial_coefficientln(population_total_genotypes, genotype_counts)
-    #print math.exp(multinomial_coefficientln(ploidy, genotype))
+    print math.exp(multinomial_coefficientln(ploidy, genotype))
     arrangements_with_exactly_count_genotype = \
             multinomial_coefficientln(ploidy, genotype) \
             + multinomial_coefficientln(population_total_genotypes, genotype_counts)
+    print "arrangements_with_exactly_count_genotype", math.exp(arrangements_with_exactly_count_genotype)
     return arrangements_with_exactly_count_genotype - arrangements_of_alleles_in_sample;

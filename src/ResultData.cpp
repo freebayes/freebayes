@@ -4,10 +4,11 @@
 using namespace std;
 
 
+/*
 void json(ostream& out, Results& results, AlleleParser* parser) {
     out << "{";
     for (Results::iterator r = results.begin(); r != results.end(); ++r) {
-        ResultData& sample = r->second;
+        Result& sample = r->second;
         if (r != results.begin()) out << ",";
         out << "\"" << sample.name << "\":{"
             << "\"coverage\":" << sample.observations->observationCount() << ","
@@ -25,6 +26,7 @@ void json(ostream& out, Results& results, AlleleParser* parser) {
     }
     out << "}";
 }
+*/
 
 // current date string in YYYYMMDD format
 string dateStr(void) {
@@ -117,12 +119,22 @@ void vcfHeader(ostream& out,
         // format fields for genotypes
     out << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
-        << "##FORMAT=<ID=GL,Number=1,Type=String,Description=\"Genotype Likelihood, log-scaled likeilhoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
+        // this can be regenerated with RA, AA, QR, QA
+        //<< "##FORMAT=<ID=GL,Number=1,Type=String,Description=\"Genotype Likelihood, log-scaled likeilhoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
-        << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
-        << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observations\">" << endl
-        << "##FORMAT=<ID=SR,Number=1,Type=Integer,Description=\"Number of reference observations by strand, delimited by |: [forward]|[reverse]\">" << endl
-        << "##FORMAT=<ID=SA,Number=1,Type=Integer,Description=\"Number of alternate observations by strand, delimited by |: [forward]|[reverse]\">" << endl
+        << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
+        << "##FORMAT=<ID=AA,Number=1,Type=Integer,Description=\"Alternate allele observation count\">" << endl
+        << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
+        << "##FORMAT=<ID=QA,Number=1,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
+        // TODO (?)
+        //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
+        //<< "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
+        //<< "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
+        //<< "##FORMAT=<ID=SAR,Number=1,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl
+        //<< "##FORMAT=<ID=LR,Number=1,Type=Integer,Description=\"Number of reference observations placed left of the loci\">" << endl
+        //<< "##FORMAT=<ID=LA,Number=1,Type=Integer,Description=\"Number of alternate observations placed left of the loci\">" << endl
+        //<< "##FORMAT=<ID=ER,Number=1,Type=Integer,Description=\"Number of reference observations overlapping the loci in their '3 end\">" << endl
+        //<< "##FORMAT=<ID=EA,Number=1,Type=Integer,Description=\"Number of alternate observations overlapping the loci in their '3 end\">" << endl
         << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
     for (vector<string>::iterator s = samples.begin(); s != samples.end(); ++s) {
         out << "\t" << *s;
@@ -164,7 +176,7 @@ string vcf(
         vector<Genotype>& genotypes = gs->second;
         for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
             Genotype* genotype = &*g;
-            if (genotype->alleleFrequency(refbase) + genotype->alleleFrequency(altbase) == genotype->ploidy) {
+            if (genotype->alleleCount(refbase) + genotype->alleleCount(altbase) == genotype->ploidy) {
                 presentGenotypesByPloidy[ploidy].push_back(genotype);
             }
         }
@@ -176,6 +188,7 @@ string vcf(
     int alleleCount = 0;
     // reference / alternate base counts by strand
     map<string, pair<int, int> > altAndRefCountsBySample;
+    map<string, pair<int, int> > altAndRefQualBySample;
     int alternateObsCount = 0;
     int referenceObsCount = 0;
     // het counts
@@ -207,7 +220,7 @@ string vcf(
                 ++samplesWithData;
             }
 
-            alternateCount += genotype->alleleFrequency(altbase);
+            alternateCount += genotype->alleleCount(altbase);
             alleleCount += genotype->ploidy;
 
             if (!genotype->homozygous) {
@@ -217,7 +230,7 @@ string vcf(
                     ++hetAltRefSamples;
                 }
             } else {
-                if (genotype->alleleFrequency(refbase) > 0) {
+                if (genotype->alleleCount(refbase) > 0) {
                     ++homRefSamples;
                 } else {
                     ++homAltSamples;
@@ -228,6 +241,8 @@ string vcf(
             altAndRefCountsBySample[*sampleName] = altAndRefCounts;
             alternateObsCount += altAndRefCounts.first;
             referenceObsCount += altAndRefCounts.second;
+
+            altAndRefQualBySample[*sampleName] = make_pair(sample.qualSum(altbase), sample.qualSum(refbase));
 
             // TODO cleanup
             pair<pair<int,int>, pair<int,int> > baseCounts = sample.baseCount(refbase, altbase);
@@ -411,36 +426,43 @@ string vcf(
     out << ";LEN=" << altAllele.length;
 
 
-    out << "\t" << "GT:" << (parameters.calculateMarginals ? "GQ:" : "") << "GL:DP:RA:AA:SR:SA";
+    out << "\t" << "GT:" << (parameters.calculateMarginals ? "GQ:" : "") << "DP:RA:AA:QR:QA";
 
     // samples
     for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
         Results::iterator s = results.find(*sampleName);
         if (gc != comboMap.end() && s != results.end()) {
-            ResultData& sample = s->second;
+            Result& sample = s->second;
             Genotype* genotype = gc->second->genotype;
-            pair<int, int> altAndRefCounts = altAndRefCountsBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);
+            pair<int, int>& altAndRefCounts = altAndRefCountsBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);
+            pair<int, int>& altAndRefQualSum = altAndRefQualBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);
             out << "\t"
                 << genotype->relativeGenotype(refbase, altbase);
             if (parameters.calculateMarginals) {
-                out << ":" << float2phred(1 - safe_exp(sample.marginals[genotype]));
+                out << ":" << float2phred(1 - safe_exp(sample.front().marginal));
             }
 
+            // XXX TODO get the Qsums for the observations, which is enough to
+            // reproduce the DLs for any genotype at a poly-allelic site
+            //
             // get data likelihoods for present genotypes, none if we have excluded genotypes from data likelihood calculations
+            /*
             stringstream datalikelihoods;
             if (!parameters.excludeUnobservedGenotypes && !parameters.excludePartiallyObservedGenotypes) {
-                vector<Genotype*>& presentGenotypes = presentGenotypesByPloidy[parser->currentSamplePloidy(*sampleName)];
-                for (vector<Genotype*>::iterator g = presentGenotypes.begin(); g != presentGenotypes.end(); ++g) {
-                    datalikelihoods << ((g == presentGenotypes.begin()) ? "" : ",") << (*g)->slashstr() << "=" << sample.genotypeLikelihood(*g);
+                for (Result::iterator g = sample.begin(); g != sample.end(); ++g) {
+                    datalikelihoods << ((g == sample.begin()) ? "" : ",") << *g->genotype << "=" << g->prob;
                 }
             }
-            out << ":" << datalikelihoods.str()
+            */
+            out //<< ":" << datalikelihoods.str()
                 << ":" << sample.observations->observationCount()
                 << ":" << altAndRefCounts.second
                 << ":" << altAndRefCounts.first
-                << ":" << sample.observations->baseCount(refbase, STRAND_FORWARD) << "|" << sample.observations->baseCount(refbase, STRAND_REVERSE) 
-                << ":" << sample.observations->baseCount(altbase, STRAND_FORWARD) << "|" << sample.observations->baseCount(altbase, STRAND_REVERSE) // TODO
+                << ":" << altAndRefQualSum.second
+                << ":" << altAndRefQualSum.first
+                //<< ":" << sample.observations->baseCount(refbase, STRAND_FORWARD) << "|" << sample.observations->baseCount(refbase, STRAND_REVERSE) 
+                //<< ":" << sample.observations->baseCount(altbase, STRAND_FORWARD) << "|" << sample.observations->baseCount(altbase, STRAND_REVERSE) // TODO
                 ;
                 //<< ":" << "GL"  // TODO
         } else {
@@ -450,18 +472,3 @@ string vcf(
 
     return out.str();
 }
-
-pair<Genotype*, long double> ResultData::bestMarginalGenotype(void) {
-    map<Genotype*, long double>::iterator g = marginals.begin();
-    pair<Genotype*, long double> best = make_pair(g->first, g->second); ++g;
-    for ( ; g != marginals.end() ; ++g) {
-        if (g->second > best.second) {
-            best = make_pair(g->first, g->second);
-        }
-    }
-    return best;
-}
-
-// TODO vcf output
-
-
