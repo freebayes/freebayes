@@ -84,6 +84,7 @@ public:
     bool isHomozygous(void);
     int containedAlleleTypes(void);
     vector<int> alleleObservationCounts(Sample& sample);
+    int alleleObservationCount(Sample& sample);
     bool sampleHasSupportingObservations(Sample& sample);
     bool sampleHasSupportingObservationsForAllAlleles(Sample& sample);
 
@@ -111,6 +112,15 @@ public:
         , rank(r)
         , marginal(0)
     { }
+
+    bool hasSupportingObservations(void) const {
+        return genotype->sampleHasSupportingObservations(*sample);
+    }
+
+    int supportingObservationCount(void) const {
+        return genotype->alleleObservationCount(*sample);
+    }
+
 };
 
 class AlleleCounter {
@@ -174,6 +184,7 @@ public:
     void updateCachedCounts(Sample* sample, Genotype* oldGenotype, Genotype* newGenotype, bool useObsExpectations);
     map<string, int> countAlleles(void);
     map<int, int> countFrequencies(void);
+    int hetCount(void);
     vector<int> counts(void); // the counts of frequencies of the alleles in the genotype combo
     vector<int> observationCounts(void); // the counts of observations of the alleles (in sorted order)
     vector<string> alleles(void);  // the string representations of alleles in the genotype combo
@@ -234,12 +245,38 @@ struct SampleMarginalCompare {
     }
 };
 
+struct SampleLikelihoodCompare {
+    bool operator()(const SampleDataLikelihood& a,
+            const SampleDataLikelihood& b) {
+        return (a.marginal + a.prob) > (b.marginal + b.prob);
+    }
+};
+
+struct SampleMarginalAndObsCompare {
+    bool operator()(const SampleDataLikelihood& a,
+            const SampleDataLikelihood& b) {
+        int aObsCount = a.supportingObservationCount();
+        int bObsCount = b.supportingObservationCount();
+        if (aObsCount != bObsCount) {
+            if (aObsCount == 0) {
+                return false;
+            } else if (bObsCount == 0) {
+                return true;
+            }
+        }
+        return (a.marginal + a.prob) > (b.marginal + b.prob);
+    }
+};
+
 // a set of probabilities for a set of genotypes for a set of samples
 typedef vector<vector<SampleDataLikelihood> > SampleDataLikelihoods;
 
 void sortSampleDataLikelihoods(vector<SampleDataLikelihood>& likelihoods);
 bool sortSampleDataLikelihoodsByMarginals(vector<SampleDataLikelihood>& likelihoods);
 bool sortSampleDataLikelihoodsByMarginals(SampleDataLikelihoods& samplesLikelihoods);
+bool sortSampleDataLikelihoodsByMarginalsAndObs(SampleDataLikelihoods& samplesLikelihoods);
+bool sortSampleDataLikelihoodsScaledByMarginals(vector<SampleDataLikelihood>& likelihoods);
+bool sortSampleDataLikelihoodsScaledByMarginals(SampleDataLikelihoods& samplesLikelihoods);
 
 typedef map<string, SampleDataLikelihood*> GenotypeComboMap;
 
@@ -304,6 +341,7 @@ bandedGenotypeCombinations(
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     list<GenotypeCombo>& combos,
+    GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
@@ -343,7 +381,6 @@ allLocalGenotypeCombinations(
     GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
-    vector<Allele>& genotypeAlleles,
     float logStepMax,
     long double theta,
     bool pooled,
@@ -354,8 +391,9 @@ allLocalGenotypeCombinations(
     long double diffusionPriorScalar);
 
 void
-expectationMaximizationSearchIncludingAllHomozygousCombos(
+convergentGenotypeComboSearch(
     list<GenotypeCombo>& combos,
+    GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
@@ -370,7 +408,8 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar,
-    int maxiterations);
+    int maxiterations,
+    bool addHomozygousCombos);
 
 void
 addAllHomozygousCombos(

@@ -20,6 +20,6 @@ void bestMarginalGenotypeCombo(GenotypeCombo& combo,
         bool alleleBalancePriors,
         long double diffusionPriorScalar);
 
-void balancedMarginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Results& results);
+long double balancedMarginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, SampleDataLikelihoods& likelihoods);
 
 #endif

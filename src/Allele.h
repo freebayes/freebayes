@@ -118,6 +118,9 @@ public:
     string currentBase;       // current base, meant to be updated every position
     short mapQuality;       // map quality for the originating read
     long double lnmapQuality;       // map quality for the originating read
+    bool isProperPair;    // if the allele is supported by a properly paired read
+    bool isPaired;  // if the allele is supported by a read that is part of a pair
+    bool isMateMapped;  // if the mate in the pair is mapped
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
     vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
     const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
@@ -140,7 +143,10 @@ public:
                 bool strnd, 
                 long double qual,
                 string qstr, 
-                short mapqual)
+                short mapqual,
+                bool ispair,
+                bool ismm,
+                bool isproppair)
         : type(t)
         , referenceName(refname)
         , position(pos)
@@ -161,6 +167,9 @@ public:
         , lnquality(phred2ln((qual == -1) ? averageQuality(qstr) : qual))
         , mapQuality(mapqual) 
         , lnmapQuality(phred2ln(mapqual))
+        , isProperPair(isproppair)
+        , isPaired(ispair)
+        , isMateMapped(ismm)
         , genotypeAllele(false)
         , processed(false)
     {

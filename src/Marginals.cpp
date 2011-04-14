@@ -42,17 +42,22 @@ long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Sam
 
     long double delta = 0;
 
-    vector< map<Genotype*, vector<long double> > > rawMarginals;
+    vector< map<Genotype*, long double> > rawMarginals;
     rawMarginals.resize(likelihoods.size());
-    vector< map<Genotype*, vector<long double> > >::iterator rawMarginalsItr;
+    vector< map<Genotype*, long double> >::iterator rawMarginalsItr;
 
     // push the marginal likelihoods into the rawMarginals maps
     for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
         rawMarginalsItr = rawMarginals.begin();
         for (GenotypeCombo::const_iterator i = gc->begin(); i != gc->end(); ++i) {
             const SampleDataLikelihood& sdl = **i;
-            map<Genotype*, vector<long double> >& rmgs = *rawMarginalsItr++;
-            rmgs[sdl.genotype].push_back(gc->posteriorProb);
+            map<Genotype*, long double>& rmgs = *rawMarginalsItr++;
+            map<Genotype*, long double>::iterator rmgsItr = rmgs.find(sdl.genotype);
+            if (rmgsItr == rmgs.end()) {
+                rmgs[sdl.genotype] = gc->posteriorProb;
+            } else {
+                rmgs[sdl.genotype] = log(safe_exp(rmgsItr->second) + safe_exp(gc->posteriorProb));
+            }
         }
     }
 
@@ -61,11 +66,11 @@ long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Sam
     rawMarginalsItr = rawMarginals.begin();
     for (SampleDataLikelihoods::iterator s = likelihoods.begin(); s != likelihoods.end(); ++s) {
         vector<SampleDataLikelihood>& sdls = *s;
-        const map<Genotype*, vector<long double> >& rawmgs = *rawMarginalsItr++;
+        const map<Genotype*, long double>& rawmgs = *rawMarginalsItr++;
         map<Genotype*, long double> marginals;
         vector<long double> rawprobs;
-        for (map<Genotype*, vector<long double> >::const_iterator m = rawmgs.begin(); m != rawmgs.end(); ++m) {
-            long double p = logsumexp_probs(m->second);
+        for (map<Genotype*, long double>::const_iterator m = rawmgs.begin(); m != rawmgs.end(); ++m) {
+            long double p = m->second;
             marginals[m->first] = p;
             rawprobs.push_back(p);
         }
@@ -120,45 +125,69 @@ void bestMarginalGenotypeCombo(GenotypeCombo& combo,
             alleleBalancePriors, diffusionPriorScalar);
 
 }
+*/
 
-// XXX probably not "balanced" :)
-void balancedMarginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Results& results) {
+long double balancedMarginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, SampleDataLikelihoods& likelihoods) {
 
-    map<string, map<Genotype*, vector<long double> > > rawMarginals;
+    long double delta = 0;
 
+    //map<string, map<Genotype*, vector<long double> > > rawMarginals;
+    vector< map<Genotype*, vector<long double> > > rawMarginals;
+    rawMarginals.resize(likelihoods.size());
+    vector< map<Genotype*, vector<long double> > >::iterator rawMarginalsItr;
+
+    // push the marginal likelihoods into the rawMarginals maps
     for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
-        bool isComboKing = true;
-        // if it's not the combo king, we're going to record the probability for just the altered genotype(s)
-        for (GenotypeCombo::const_iterator i = gc->begin(); i != gc->end(); ++i) {
-            const SampleDataLikelihood& sdl = **i;
-            if (sdl.rank != 0) {
-                rawMarginals[sdl.name][sdl.genotype].push_back(gc->posteriorProb);
-                isComboKing = false;
-            }
-        }
-        // if it's the combo king, then record the marginal probability for each genotype
-        if (gc->isHomozygous() || isComboKing) {
+        if (gc->isHomozygous()) {
+            rawMarginalsItr = rawMarginals.begin();
             for (GenotypeCombo::const_iterator i = gc->begin(); i != gc->end(); ++i) {
                 const SampleDataLikelihood& sdl = **i;
-                rawMarginals[sdl.name][sdl.genotype].push_back(gc->posteriorProb);
+                map<Genotype*, vector<long double> >& rmgs = *rawMarginalsItr++;
+                rmgs[sdl.genotype].push_back(gc->posteriorProb);
+            }
+        } else {
+            bool isComboKing = true;
+            rawMarginalsItr = rawMarginals.begin();
+            for (GenotypeCombo::const_iterator i = gc->begin(); i != gc->end(); ++i) {
+                const SampleDataLikelihood& sdl = **i;
+                if (sdl.rank != 0) {
+                    isComboKing = false;
+                    map<Genotype*, vector<long double> >& rmgs = *rawMarginalsItr;
+                    rmgs[sdl.genotype].push_back(gc->posteriorProb);
+                }
+                ++rawMarginalsItr;
+            }
+            if (isComboKing) {
+                rawMarginalsItr = rawMarginals.begin();
+                for (GenotypeCombo::const_iterator i = gc->begin(); i != gc->end(); ++i) {
+                    const SampleDataLikelihood& sdl = **i;
+                    map<Genotype*, vector<long double> >& rmgs = *rawMarginalsItr++;
+                    rmgs[sdl.genotype].push_back(gc->posteriorProb);
+                }
             }
         }
     }
 
     // safely add the raw marginal vectors using logsumexp
-    for (Results::iterator r = results.begin(); r != results.end(); ++r) {
-        ResultData& sample = r->second;
-        map<Genotype*, vector<long double> >& rawmgs = rawMarginals[r->first];
-        vector<long double> probs;
-        for (map<Genotype*, vector<long double> >::iterator m = rawmgs.begin(); m != rawmgs.end(); ++m) {
-            probs.push_back(logsumexp_probs(m->second));
+    rawMarginalsItr = rawMarginals.begin();
+    for (SampleDataLikelihoods::iterator s = likelihoods.begin(); s != likelihoods.end(); ++s) {
+        vector<SampleDataLikelihood>& sdls = *s;
+        const map<Genotype*, vector<long double> >& rawmgs = *rawMarginalsItr++;
+        map<Genotype*, long double> marginals;
+        vector<long double> rawprobs;
+        for (map<Genotype*, vector<long double> >::const_iterator m = rawmgs.begin(); m != rawmgs.end(); ++m) {
+            long double p = logsumexp_probs(m->second);
+            marginals[m->first] = p;
+            rawprobs.push_back(p);
         }
-        long double normalizer = logsumexp_probs(probs);
-        vector<long double>::iterator p = probs.begin();
-        for (map<Genotype*, vector<long double> >::iterator m = rawmgs.begin(); m != rawmgs.end(); ++m, ++p) {
-            sample.marginals[m->first] = *p - normalizer;
+        long double normalizer = logsumexp_probs(rawprobs);
+        for (vector<SampleDataLikelihood>::iterator sdl = sdls.begin(); sdl != sdls.end(); ++sdl) {
+            long double newmarginal = marginals[sdl->genotype] - normalizer;
+            delta += newmarginal - sdl->marginal;
+            sdl->marginal = newmarginal;
         }
     }
 
+    return delta;
+
 }
-*/

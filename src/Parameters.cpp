@@ -139,6 +139,16 @@ void Parameters::usage(char** argv) {
          << "                   Require at least this count of observations supporting" << endl
          << "                   an alternate allele within a single individual in order" << endl
          << "                   to evaluate the position.  default: 1" << endl
+         << "   -3 --min-alternate-qsum N" << endl
+         << "                   Require at least this sum of quality of observations supporting" << endl
+         << "                   an alternate allele within a single individual in order" << endl
+         << "                   to evaluate the position.  default: 0" << endl
+         //<< "   -Y --min-paired-alternate-count N" << endl
+         //<< "                   Evaluate alternates which are supported by this many properly" << endl
+         //<< "                   paired read fragments, irrespective of --min-alternate-count." << endl
+         //<< "                   default: ignore pair information" << endl
+         //<< "   -k --min-alternate-mean-mapq N" << endl
+         //<< "                   The minimum mean mapping quality of an alternate.  default: 0" << endl
          << "   -G --min-alternate-total N" << endl
          << "                   Require at least this count of observations supporting" << endl
          << "                   an alternate allele within the total population in order" << endl
@@ -168,7 +178,7 @@ void Parameters::usage(char** argv) {
          << "                   Iterate no more than this many times during expectation" << endl
          << "                   maximization step.  default: 5" << endl
          << "   -B --genotyping-max-iterations N" << endl
-         << "                   Iterate no more than N times during genotyping step. default: 5." << endl
+         << "                   Iterate no more than N times during genotyping step. default: 200." << endl
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
@@ -261,7 +271,9 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeVariantThreshold = 0;
     expectationMaximization = false;
     expectationMaximizationMaxIterations = 5;
-    genotypingMaxIterations = 5;
+    genotypingMaxIterations = 200;
+    minPairedAltCount = 0;
+    minAltMeanMapQ = 0;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -287,6 +299,7 @@ Parameters::Parameters(int argc, char** argv) {
     minAltFraction = 0.0;
     minAltCount = 1;
     minAltTotal = 1;
+    minAltQSum = 0;
     minCoverage = 0;
     debuglevel = 0;
     debug = false;
@@ -338,18 +351,19 @@ Parameters::Parameters(int argc, char** argv) {
         {"binomial-obs-priors", no_argument, 0, 'V'},
         {"allele-balance-priors", no_argument, 0, 'a'},
         {"hwe-priors", no_argument, 0, 'w'},
-        //{"diffusion-prior-scalar", required_argument, 0, 'V'},
         {"posterior-integration-limits", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
+        {"min-paired-alternate-count", required_argument, 0, 'Y'},
         {"min-alternate-total", required_argument, 0, 'G'},
+        {"min-alternate-mean-mapq", required_argument, 0, 'k'},
+        {"min-alternate-qsum", required_argument, 0, '3'},
         {"min-coverage", required_argument, 0, '!'},
         {"no-permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
         {"report-all-alternates", no_argument, 0, '@'},
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
-        //{"exclude-partially-observed-genotypes", no_argument, 0, 'S'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
         {"expectation-maximization", no_argument, 0, 'M'},
         {"expectation-maximization-max-iterations", required_argument, 0, 'u'},
@@ -363,7 +377,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_M=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:1:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_M=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:1:Y:k:3:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -438,6 +452,14 @@ Parameters::Parameters(int argc, char** argv) {
             // -E --use-duplicate-reads
             case 'E':
                 useDuplicateReads = true;
+                break;
+
+            // -3 --min-alternate-qsum
+            case '3':
+                if (!convert(optarg, minAltQSum)) {
+                    cerr << "could not parse min-alternate-qsum" << endl;
+                    exit(1);
+                }
                 break;
 
             // -G --min-alternate-total
@@ -707,6 +729,22 @@ Parameters::Parameters(int argc, char** argv) {
             case 'C':
                 if (!convert(optarg, minAltCount)) {
                     cerr << "could not parse min-alternate-count" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -Y --min-paired-alternate-count
+            case 'Y':
+                if (!convert(optarg, minPairedAltCount)) {
+                    cerr << "could not parse min-paired-alternate-count" << endl;
+                    exit(1);
+                }
+                break;
+
+            // -k --min-alternate-mean-mapq
+            case 'k':
+                if (!convert(optarg, minAltMeanMapQ)) {
+                    cerr << "could not parse min-alternate-mean-mapq" << endl;
                     exit(1);
                 }
                 break;

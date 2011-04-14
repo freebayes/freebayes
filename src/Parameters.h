@@ -63,6 +63,9 @@ public:
     float genotypeVariantThreshold;
     bool expectationMaximization;
     int expectationMaximizationMaxIterations;
+    int minPairedAltCount;
+    double minAltMeanMapQ;
+    int minAltQSum;
     int MQR;                     // -M --reference-mapping-quality
     int BQR;                     // -B --reference-base-quality
     int ploidy;                  // -p --ploidy

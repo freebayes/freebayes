@@ -478,6 +478,16 @@ vector<int> GenotypeCombo::counts(void) {
     return counts;
 }
 
+int GenotypeCombo::hetCount(void) {
+    int hc = 0;
+    for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
+        if (!(*s)->genotype->homozygous) {
+            ++hc;
+        }
+    }
+    return hc;
+}
+
 vector<int> GenotypeCombo::observationCounts(void) {
     vector<int> counts;
     for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
@@ -548,6 +558,52 @@ bool sortSampleDataLikelihoodsByMarginals(SampleDataLikelihoods& samplesLikeliho
     bool reordered = false;
     for (SampleDataLikelihoods::iterator s = samplesLikelihoods.begin(); s != samplesLikelihoods.end(); ++s) {
         reordered |= sortSampleDataLikelihoodsByMarginals(*s);
+    }
+    return reordered;
+}
+
+bool sortSampleDataLikelihoodsByMarginalsAndObs(vector<SampleDataLikelihood>& likelihoods) {
+    SampleMarginalAndObsCompare marginalLikelihoodAndObsCompare;
+    sort(likelihoods.begin(), likelihoods.end(), marginalLikelihoodAndObsCompare);
+    bool reordered = false;
+    int i = 0;
+    for (vector<SampleDataLikelihood>::iterator sdl = likelihoods.begin(); sdl != likelihoods.end(); ++sdl) {
+        int newrank = i++;
+        if (sdl->rank != newrank) {
+            reordered = true;
+            sdl->rank = newrank;
+        }
+    }
+    return reordered;
+}
+
+bool sortSampleDataLikelihoodsByMarginalsAndObs(SampleDataLikelihoods& samplesLikelihoods) {
+    bool reordered = false;
+    for (SampleDataLikelihoods::iterator s = samplesLikelihoods.begin(); s != samplesLikelihoods.end(); ++s) {
+        reordered |= sortSampleDataLikelihoodsByMarginalsAndObs(*s);
+    }
+    return reordered;
+}
+
+bool sortSampleDataLikelihoodsScaledByMarginals(vector<SampleDataLikelihood>& likelihoods) {
+    SampleLikelihoodCompare likelihoodCompare;
+    sort(likelihoods.begin(), likelihoods.end(), likelihoodCompare);
+    bool reordered = false;
+    int i = 0;
+    for (vector<SampleDataLikelihood>::iterator sdl = likelihoods.begin(); sdl != likelihoods.end(); ++sdl) {
+        int newrank = i++;
+        if (sdl->rank != newrank) {
+            reordered = true;
+            sdl->rank = newrank;
+        }
+    }
+    return reordered;
+}
+
+bool sortSampleDataLikelihoodsScaledByMarginals(SampleDataLikelihoods& samplesLikelihoods) {
+    bool reordered = false;
+    for (SampleDataLikelihoods::iterator s = samplesLikelihoods.begin(); s != samplesLikelihoods.end(); ++s) {
+        reordered |= sortSampleDataLikelihoodsScaledByMarginals(*s);
     }
     return reordered;
 }
@@ -636,7 +692,6 @@ allLocalGenotypeCombinations(
     GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
-    vector<Allele>& genotypeAlleles,
     float logStepMax,
     long double theta,
     bool pooled,
@@ -850,8 +905,9 @@ bandedGenotypeCombinations(
 }
 
 void
-expectationMaximizationSearchIncludingAllHomozygousCombos(
+convergentGenotypeComboSearch(
     list<GenotypeCombo>& combos,
+    GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -866,42 +922,20 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
     bool binomialObsPriors,
     bool alleleBalancePriors,
     long double diffusionPriorScalar,
-    int maxiterations) {
+    int maxiterations,
+    bool addHomozygousCombos) {
 
     // sorting function object
     GenotypeComboResultSorter gcrSorter;
 
-    // seed EM with the data likelihood maximum
-    vector<int> initialPosition;
-    initialPosition.assign(sampleDataLikelihoods.size(), 0);
-    GenotypeCombo comboKing;
-    makeComboByDatalLikelihoodRank(comboKing,
-            initialPosition,
-            variantSampleDataLikelihoods,
-            invariantSampleDataLikelihoods,
-            theta,
-            pooled,
-            permute,
-            hwePriors,
-            binomialObsPriors,
-            alleleBalancePriors,
-            diffusionPriorScalar);
-
-    // set best position, which is updated during the EM step
-    GenotypeCombo* bestCombo = &comboKing;
-
-    int i = 0;
-    for (; i < maxiterations; ++i) {
-
-        bandedGenotypeCombinations(
-                combos,
-                *bestCombo,
+    if (comboKing.empty()) {
+        // seed EM with the data likelihood maximum
+        vector<int> initialPosition;
+        initialPosition.assign(sampleDataLikelihoods.size(), 0);
+        makeComboByDatalLikelihoodRank(comboKing,
+                initialPosition,
                 variantSampleDataLikelihoods,
                 invariantSampleDataLikelihoods,
-                samples,
-                bandwidth,
-                banddepth,
-                logStepMax,
                 theta,
                 pooled,
                 permute,
@@ -909,6 +943,48 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
                 binomialObsPriors,
                 alleleBalancePriors,
                 diffusionPriorScalar);
+    }
+
+    // set best position, which is updated during the EM step
+    GenotypeCombo bestCombo = comboKing;
+
+    int i = 0;
+    for (; i < maxiterations; ++i) {
+
+        combos.clear();
+
+        if (bandwidth == 0 && banddepth == 0) {
+            allLocalGenotypeCombinations(
+                    combos,
+                    bestCombo,
+                    sampleDataLikelihoods,
+                    samples,
+                    logStepMax,
+                    theta,
+                    pooled,
+                    permute,
+                    hwePriors,
+                    binomialObsPriors,
+                    alleleBalancePriors,
+                    diffusionPriorScalar);
+        } else {
+            bandedGenotypeCombinations(
+                    combos,
+                    bestCombo,
+                    variantSampleDataLikelihoods,
+                    invariantSampleDataLikelihoods,
+                    samples,
+                    bandwidth,
+                    banddepth,
+                    logStepMax,
+                    theta,
+                    pooled,
+                    permute,
+                    hwePriors,
+                    binomialObsPriors,
+                    alleleBalancePriors,
+                    diffusionPriorScalar);
+        }
 
         // sort the results
         combos.sort(gcrSorter);
@@ -924,36 +1000,38 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
         }
 
         // check for convergence
-        if (*bestCombo == combos.front()) {
+        if (bestCombo == combos.front()) {
             // we've converged
             //cout << "standard convergence in " << i << " iterations" << endl;
             break;
         } else {
-            bestCombo = &combos.front();
+            bestCombo = combos.front();
         }
 
     }
 
-    //cout << i << " iterations!" << "\t" << variantSampleDataLikelihoods.size() << " varying samples" << endl;
+    //cout << i << " iterations" << "\t" << variantSampleDataLikelihoods.size() << " varying samples" << endl;
 
     // add the homozygous cases
 
-    addAllHomozygousCombos(combos,
-            sampleDataLikelihoods,
-            variantSampleDataLikelihoods,
-            invariantSampleDataLikelihoods,
-            samples,
-            genotypeAlleles,
-            bandwidth,
-            banddepth,
-            logStepMax,
-            theta,
-            pooled,
-            permute,
-            hwePriors,
-            binomialObsPriors,
-            alleleBalancePriors,
-            diffusionPriorScalar);
+    if (addHomozygousCombos) {
+        addAllHomozygousCombos(combos,
+                sampleDataLikelihoods,
+                variantSampleDataLikelihoods,
+                invariantSampleDataLikelihoods,
+                samples,
+                genotypeAlleles,
+                bandwidth,
+                banddepth,
+                logStepMax,
+                theta,
+                pooled,
+                permute,
+                hwePriors,
+                binomialObsPriors,
+                alleleBalancePriors,
+                diffusionPriorScalar);
+    }
 
     // sort the homozygous combos
     combos.sort(gcrSorter);
@@ -969,6 +1047,7 @@ expectationMaximizationSearchIncludingAllHomozygousCombos(
 void
 bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     list<GenotypeCombo>& combos,
+    GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
@@ -984,22 +1063,23 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     bool alleleBalancePriors,
     long double diffusionPriorScalar) {
 
-    // generate the initial maximum likelihood relative position for
-    // integration. in this case we use the data likelihood maximum.
-    vector<int> initialPosition;
-    initialPosition.assign(sampleDataLikelihoods.size(), 0);
-    GenotypeCombo comboKing;
-    makeComboByDatalLikelihoodRank(comboKing,
-            initialPosition,
-            variantSampleDataLikelihoods,
-            invariantSampleDataLikelihoods,
-            theta,
-            pooled,
-            permute,
-            hwePriors,
-            binomialObsPriors,
-            alleleBalancePriors,
-            diffusionPriorScalar);
+    if (comboKing.empty()) {
+        // generate the initial maximum likelihood relative position for
+        // integration. in this case we use the data likelihood maximum.
+        vector<int> initialPosition;
+        initialPosition.assign(sampleDataLikelihoods.size(), 0);
+        makeComboByDatalLikelihoodRank(comboKing,
+                initialPosition,
+                variantSampleDataLikelihoods,
+                invariantSampleDataLikelihoods,
+                theta,
+                pooled,
+                permute,
+                hwePriors,
+                binomialObsPriors,
+                alleleBalancePriors,
+                diffusionPriorScalar);
+    }
 
     // obtain the combos
 
@@ -1472,6 +1552,15 @@ vector<int> Genotype::alleleObservationCounts(Sample& sample) {
         counts.push_back(sample.observationCount(b));
     }
     return counts;
+}
+
+int Genotype::alleleObservationCount(Sample& sample) {
+    int count = 0;
+    for (Genotype::iterator i = begin(); i != end(); ++i) {
+        Allele& b = i->allele;
+        count += sample.observationCount(b);
+    }
+    return count;
 }
 
 bool Genotype::sampleHasSupportingObservations(Sample& sample) {

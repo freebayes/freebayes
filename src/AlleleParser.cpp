@@ -687,6 +687,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
                 "alignment readName " << alignment.Name << endl <<
                 "alignment isPaired " << alignment.IsPaired() << endl <<
+                "alignment isMateMapped " << alignment.IsMateMapped() << endl <<
+                "alignment isProperPair " << alignment.IsProperPair() << endl <<
+                "alignment mapQual " << alignment.MapQuality << endl <<
                 "alignment sampleID " << sampleName << endl << 
                 "alignment position " << alignment.Position << endl <<
                 "alignment length " << alignment.Length << endl <<
@@ -806,7 +809,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     rp, // bases left (for first base in ref allele)
                                     matchingSequence, readSequence, sampleName, alignment.Name, sequencingTech,
                                     !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                                    alignment.MapQuality));
+                                    alignment.MapQuality, alignment.IsPaired(), alignment.IsMateMapped(), alignment.IsProperPair()));
                             DEBUG2(ra.alleles.back());
                         }
                     }
@@ -840,7 +843,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     alignment.QueryBases.size() - rp, // bases right
                                     matchingSequence, readSequence,
                                     sampleName, alignment.Name, sequencingTech,
-                                    !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                                    !alignment.IsReverseStrand(), lqual,
+                                    qualstr, alignment.MapQuality,
+                                    alignment.IsPaired(),
+                                    alignment.IsMateMapped(),
+                                    alignment.IsProperPair()));
                         DEBUG2(ra.alleles.back());
                     }
                 }
@@ -866,7 +873,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 alignment.QueryBases.size() - rp, // bases right
                                 matchingSequence, readSequence,
                                 sampleName, alignment.Name, sequencingTech,
-                                !alignment.IsReverseStrand(), lqual, qualstr, alignment.MapQuality));
+                                !alignment.IsReverseStrand(), lqual, qualstr,
+                                alignment.MapQuality, alignment.IsPaired(),
+                                alignment.IsMateMapped(),
+                                alignment.IsProperPair()));
                     DEBUG2(ra.alleles.back());
                 }
             // or, if we are not in a mismatch, construct the last reference allele of the match
@@ -882,7 +892,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                             rp, // bases left (for first base in ref allele)
                             matchingSequence, readSequence, sampleName, alignment.Name, sequencingTech,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                            alignment.MapQuality));
+                            alignment.MapQuality, alignment.IsPaired(),
+                            alignment.IsMateMapped(),
+                            alignment.IsProperPair()));
                     DEBUG2(ra.alleles.back());
                 }
             }
@@ -941,7 +953,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         alignment.QueryBases.size() - rp, // bases right
                         refseq, "", sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual, qualstr,
-                        alignment.MapQuality));
+                        alignment.MapQuality, alignment.IsPaired(),
+                        alignment.IsMateMapped(), alignment.IsProperPair()));
                 DEBUG2(ra.alleles.back());
             }
             ++ra.indelCount;
@@ -999,7 +1012,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         "", readseq,
                         sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual,
-                        qualstr, alignment.MapQuality));
+                        qualstr, alignment.MapQuality, alignment.IsPaired(),
+                        alignment.IsMateMapped(), alignment.IsProperPair()));
                 DEBUG2(ra.alleles.back());
             }
             ++ra.indelCount;
@@ -1586,7 +1600,8 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             1, 0, 0, base, base, name, name, sequencingTech,
             true, baseQ,
             baseQstr,
-            mapQ);
+            mapQ,
+            false, false, false); // pair information
     allele->genotypeAllele = true;
     allele->baseQualities.push_back(baseQ);
     allele->update();
@@ -1644,11 +1659,19 @@ vector<Allele> AlleleParser::genotypeAlleles(
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
             Sample& sample = s->second; 
             int alleleCount = 0;
+            int qsum = 0;
             Sample::iterator c = sample.find(genotypeAllele.currentBase);
-            if (c != sample.end())
-                alleleCount = c->second.size();
+            if (c != sample.end()) {
+                vector<Allele*>& obs = c->second;
+                alleleCount = obs.size();
+                for (vector<Allele*>::iterator a = obs.begin(); a != obs.end(); ++a) {
+                    Allele& allele = **a;
+                    qsum += allele.quality;
+                }
+            }
             int observationCount = sample.observationCount();
-            if (alleleCount >= parameters.minAltCount 
+            if (qsum >= parameters.minAltQSum
+                    && alleleCount >= parameters.minAltCount 
                     && ((float) alleleCount / (float) observationCount) >= parameters.minAltFraction) {
                 DEBUG(genotypeAllele << " has support of " << alleleCount 
                     << " in individual " << s->first << " and fraction " 

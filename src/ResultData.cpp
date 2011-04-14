@@ -104,7 +104,8 @@ void vcfHeader(ostream& out,
         << "##INFO=<ID=INS,Number=0,Type=Flag,Description=\"insertion allele\">" << endl
         << "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele\">" << endl
         << "##INFO=<ID=LEN,Number=1,Type=Integer,Description=\"allele length\">" << endl
-        << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl;
+        << "##INFO=<ID=MQM,Number=1,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
+        << "##INFO=<ID=PAIRED,Number=1,Type=Float,Description=\"Proportion of observed alternate alleles which are supported by properly paired read fragments\">" << endl;
 
     // sequencing technology tags, which vary according to input data
     for (vector<string>::iterator st = sequencingTechnologies.begin(); st != sequencingTechnologies.end(); ++st) {
@@ -269,11 +270,16 @@ string vcf(
 
     unsigned int mqsum = 0;
 
+    unsigned int properPairs = 0;
+
     map<string, int> obsBySequencingTechnology;
 
     vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
     for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
         Allele& allele = **app;
+        if (allele.isProperPair) {
+            ++properPairs;
+        }
         if (!allele.sequencingTechnology.empty()) {
             ++obsBySequencingTechnology[allele.sequencingTechnology];
         }
@@ -376,7 +382,8 @@ string vcf(
         << "BL=" << basesLeft << ";"
         << "BR=" << basesRight << ";"
         << "LRB=" << ((double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) - 0.5) * 2 << ";"
-        << "LRBP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(basesLeft, basesLeft + basesRight, 0.5))) << ";";
+        << "LRBP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(basesLeft, basesLeft + basesRight, 0.5))) << ";"
+        << "PAIRED=" << ((alternateAlleles.size() == 0) ? 0 : (double) properPairs / (double) alternateAlleles.size()) << ";";
 
     for (vector<string>::iterator st = sequencingTechnologies.begin();
             st != sequencingTechnologies.end(); ++st) { string& tech = *st; out <<
