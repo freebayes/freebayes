@@ -110,7 +110,7 @@ void vcfHeader(ostream& out,
     // sequencing technology tags, which vary according to input data
     for (vector<string>::iterator st = sequencingTechnologies.begin(); st != sequencingTechnologies.end(); ++st) {
         string& tech = *st;
-        out << "##INFO=<ID=" << tech << ",Number=1,Type=Float,Description=\"Fraction of observations supporting the alternate observed in reads from " << tech << "\">" << endl;
+        out << "##INFO=<ID=technology." << tech << ",Number=1,Type=Float,Description=\"Fraction of observations supporting the alternate observed in reads from " << tech << "\">" << endl;
     }
 
     if (parameters.showReferenceRepeats) {
@@ -356,6 +356,8 @@ string vcf(
         << "AF=" << ((alleleCount == 0) ? 0 : (double) alternateCount / (double) alleleCount) << ";"
         << "RA=" << refAlleleObservations << ";"
         << "AA=" << altAlleleObservations << ";"
+        //<< "ADR=" << ((alleleCount == 0 || alternateCount == 0) ?
+        //        0 : ( (double) altAlleleObservations / (double) alternateCount ) / ( (double) coverage / (double) samplesWithData )<< ";"
         << "HETAR=" << hetAltRefSamples << ";"
         << "HOMA=" << homAltSamples << ";"
         << "HOMR=" << homRefSamples << ";"
@@ -387,7 +389,7 @@ string vcf(
 
     for (vector<string>::iterator st = sequencingTechnologies.begin();
             st != sequencingTechnologies.end(); ++st) { string& tech = *st; out <<
-        tech << "=" << ((alternateAlleles.size() == 0) ? 0
+        "technology." << tech << "=" << ((alternateAlleles.size() == 0) ? 0
                     : (double) obsBySequencingTechnology[tech] / (double) alternateAlleles.size() ) << ";";
     }
 
