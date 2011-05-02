@@ -400,12 +400,14 @@ void GenotypeCombo::updateCachedCounts(
     }
 
     // remove allele frequencies which are now 0 or below
-    for (map<string, AlleleCounter>::iterator af = alleleCounters.begin();
-            af != alleleCounters.end(); ++af) {
+    map<string, AlleleCounter>::iterator af = alleleCounters.begin();
+    while (af != alleleCounters.end()) {
         assert(af->second.frequency >= 0);
         if (af->second.frequency == 0) {
             assert(af->second.observations == 0);
-            alleleCounters.erase(af);
+            alleleCounters.erase(af++);
+        } else {
+            ++af;
         }
     }
 
