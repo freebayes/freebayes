@@ -619,6 +619,7 @@ dataLikelihoodMaxGenotypeCombo(
     SampleDataLikelihoods& sampleDataLikelihoods,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -635,6 +636,7 @@ dataLikelihoodMaxGenotypeCombo(
     combo.init(binomialObsPriors);
     combo.calculatePosteriorProbability(theta,
                                         pooled,
+                                        ewensPriors,
                                         permute,
                                         hwePriors,
                                         binomialObsPriors,
@@ -651,6 +653,7 @@ makeComboByDatalLikelihoodRank(
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -680,6 +683,7 @@ makeComboByDatalLikelihoodRank(
     combo.init(binomialObsPriors);
     combo.calculatePosteriorProbability(theta,
                                         pooled,
+                                        ewensPriors,
                                         permute,
                                         hwePriors,
                                         binomialObsPriors,
@@ -699,6 +703,7 @@ allLocalGenotypeCombinations(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -716,6 +721,7 @@ allLocalGenotypeCombinations(
                 nullDataLikelihoods,
                 theta,
                 pooled,
+                ewensPriors,
                 permute,
                 hwePriors,
                 binomialObsPriors,
@@ -753,6 +759,7 @@ allLocalGenotypeCombinations(
             combo.probObsGivenGenotypes -= diff;
             combo.calculatePosteriorProbability(theta,
                                             pooled,
+                                            ewensPriors,
                                             permute,
                                             hwePriors,
                                             binomialObsPriors,
@@ -774,6 +781,7 @@ bandedGenotypeCombinations(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -893,6 +901,7 @@ bandedGenotypeCombinations(
             if (!reuseLastCombo) {
                 combo.calculatePosteriorProbability(theta,
                                                 pooled,
+                                                ewensPriors,
                                                 permute,
                                                 hwePriors,
                                                 binomialObsPriors,
@@ -921,6 +930,7 @@ convergentGenotypeComboSearch(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -942,6 +952,7 @@ convergentGenotypeComboSearch(
                 invariantSampleDataLikelihoods,
                 theta,
                 pooled,
+                ewensPriors,
                 permute,
                 hwePriors,
                 binomialObsPriors,
@@ -966,6 +977,7 @@ convergentGenotypeComboSearch(
                     logStepMax,
                     theta,
                     pooled,
+                    ewensPriors,
                     permute,
                     hwePriors,
                     binomialObsPriors,
@@ -983,6 +995,7 @@ convergentGenotypeComboSearch(
                     logStepMax,
                     theta,
                     pooled,
+                    ewensPriors,
                     permute,
                     hwePriors,
                     binomialObsPriors,
@@ -1030,6 +1043,7 @@ convergentGenotypeComboSearch(
                 logStepMax,
                 theta,
                 pooled,
+                ewensPriors,
                 permute,
                 hwePriors,
                 binomialObsPriors,
@@ -1061,6 +1075,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -1078,6 +1093,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
                 invariantSampleDataLikelihoods,
                 theta,
                 pooled,
+                ewensPriors,
                 permute,
                 hwePriors,
                 binomialObsPriors,
@@ -1098,6 +1114,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             logStepMax,
             theta,
             pooled,
+            ewensPriors,
             permute,
             hwePriors,
             binomialObsPriors,
@@ -1117,6 +1134,7 @@ bandedGenotypeCombinationsIncludingAllHomozygousCombos(
             logStepMax,
             theta,
             pooled,
+            ewensPriors,
             permute,
             hwePriors,
             binomialObsPriors,
@@ -1138,6 +1156,7 @@ bandedGenotypeCombinationsNoHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -1155,6 +1174,7 @@ bandedGenotypeCombinationsNoHomozygousCombos(
             invariantSampleDataLikelihoods,
             theta,
             pooled,
+            ewensPriors,
             permute,
             hwePriors,
             binomialObsPriors,
@@ -1174,6 +1194,7 @@ bandedGenotypeCombinationsNoHomozygousCombos(
             logStepMax,
             theta,
             pooled,
+            ewensPriors,
             permute,
             hwePriors,
             binomialObsPriors,
@@ -1194,6 +1215,7 @@ void addAllHomozygousCombos(
     float logStepMax,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -1265,6 +1287,7 @@ void addAllHomozygousCombos(
         gc.init(binomialObsPriors);  // cache allele frequency information
         gc.calculatePosteriorProbability(theta,
                                      pooled,
+                                     ewensPriors,
                                      permute,
                                      hwePriors,
                                      binomialObsPriors,
@@ -1384,6 +1407,7 @@ void
 GenotypeCombo::calculatePosteriorProbability(
         long double theta,
         bool pooled,
+        bool ewensPriors,
         bool permute,
         bool hwePriors,
         bool binomialObsPriors,
@@ -1454,7 +1478,9 @@ GenotypeCombo::calculatePosteriorProbability(
     }
 
     // Ewens' Sampling Formula
-    priorProbAf = alleleFrequencyProbabilityln(countFrequencies(), theta);
+    if (ewensPriors) {
+        priorProbAf = alleleFrequencyProbabilityln(countFrequencies(), theta);
+    }
 
     // posterior probability
     priorProb = priorProbG_Af + priorProbAf + priorProbObservations + priorProbGenotypesGivenHWE;
@@ -1489,6 +1515,7 @@ void orderedGenotypeCombo(
     SampleDataLikelihoods& sampleDataLikelihoods,
     long double theta,
     bool pooled,
+    bool ewensPriors,
     bool permute,
     bool hwePriors,
     bool binomialObsPriors,
@@ -1503,7 +1530,7 @@ void orderedGenotypeCombo(
     }
 
     orderedCombo.init(binomialObsPriors);
-    orderedCombo.calculatePosteriorProbability(theta, pooled, permute,
+    orderedCombo.calculatePosteriorProbability(theta, pooled, ewensPriors, permute,
             hwePriors, binomialObsPriors, alleleBalancePriors,
             diffusionPriorScalar);
 

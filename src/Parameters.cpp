@@ -143,12 +143,6 @@ void Parameters::usage(char** argv) {
          << "                   Require at least this sum of quality of observations supporting" << endl
          << "                   an alternate allele within a single individual in order" << endl
          << "                   to evaluate the position.  default: 0" << endl
-         //<< "   -Y --min-paired-alternate-count N" << endl
-         //<< "                   Evaluate alternates which are supported by this many properly" << endl
-         //<< "                   paired read fragments, irrespective of --min-alternate-count." << endl
-         //<< "                   default: ignore pair information" << endl
-         //<< "   -k --min-alternate-mean-mapq N" << endl
-         //<< "                   The minimum mean mapping quality of an alternate.  default: 0" << endl
          << "   -G --min-alternate-total N" << endl
          << "                   Require at least this count of observations supporting" << endl
          << "                   an alternate allele within the total population in order" << endl
@@ -168,6 +162,10 @@ void Parameters::usage(char** argv) {
          << "                   inherent reference bias." << endl
          << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
          << "                   the allele frequency as estimated by observation frequency." << endl
+         << "   -Y --no-ewens-priors" << endl
+         << "                   Turns off the Ewens' Sampling Formula component of the priors." << endl
+         << "   -k --no-population-priors" << endl
+         << "                   Equivalent to --pooled --no-ewens-priors" << endl
          << endl
          << "algorithmic features:" << endl
          << endl
@@ -261,6 +259,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
     pooled = false;                 // -J --pooled
+    ewensPriors = true;
     permute = true;                // -K --permute
     useMappingQuality = false;
     obsBinomialPriors = false; // TODO
@@ -330,6 +329,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
         {"pooled", no_argument, 0, 'J'},
+        {"no-ewens-priors", no_argument, 0, 'Y'}, // TODO
+        {"no-population-priors", no_argument, 0, 'k'},
         {"use-mapping-quality", no_argument, 0, 'j'},
         {"min-mapping-quality", required_argument, 0, 'm'},
         {"min-base-quality", required_argument, 0, 'q'},
@@ -354,9 +355,9 @@ Parameters::Parameters(int argc, char** argv) {
         {"posterior-integration-limits", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
-        {"min-paired-alternate-count", required_argument, 0, 'Y'},
+        //{"min-paired-alternate-count", required_argument, 0, 'Y'},
         {"min-alternate-total", required_argument, 0, 'G'},
-        {"min-alternate-mean-mapq", required_argument, 0, 'k'},
+        //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
         {"min-alternate-qsum", required_argument, 0, '3'},
         {"min-coverage", required_argument, 0, '!'},
         {"no-permute", no_argument, 0, 'K'},
@@ -377,7 +378,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_M=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:1:Y:k:3:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_YkM=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:1:3:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -733,20 +734,15 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -Y --min-paired-alternate-count
+            // -Y --no-ewens-priors
             case 'Y':
-                if (!convert(optarg, minPairedAltCount)) {
-                    cerr << "could not parse min-paired-alternate-count" << endl;
-                    exit(1);
-                }
+                ewensPriors = false;
                 break;
 
-            // -k --min-alternate-mean-mapq
+            // -k --no-population-priors
             case 'k':
-                if (!convert(optarg, minAltMeanMapQ)) {
-                    cerr << "could not parse min-alternate-mean-mapq" << endl;
-                    exit(1);
-                }
+                pooled = true;
+                ewensPriors = false;
                 break;
 
             // -K --no-permute

@@ -52,6 +52,7 @@ public:
     bool allowMNPs;              // -X --allow-mnps
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled
+    bool ewensPriors;
     bool permute;                //    --permute
     bool useMappingQuality;      //
     bool obsBinomialPriors;
