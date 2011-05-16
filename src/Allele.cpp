@@ -21,6 +21,94 @@ void Allele::update(void) {
     }
 }
 
+// quality of subsequence of allele
+const int Allele::subquality(int startpos, int len) const {
+    int start = startpos - position;
+    int sum = 0;
+    for (int i = start; i < len; ++i) {
+        sum += baseQualities.at(i);
+    }
+    return sum;
+}
+
+// quality of subsequence of allele
+const long double Allele::lnsubquality(int startpos, int len) const {
+    return phred2ln(subquality(startpos, len));
+}
+
+const int Allele::subquality(const Allele &a) const {
+    int sum = 0;
+    int rp = a.position - position;
+    int l = a.length;
+    int L = l;
+    int spanstart = 0;
+    int spanend = 1;
+    //int l = min((int) a.length, (int) baseQualities.size() - start);
+    if (a.type == ALLELE_INSERTION) {
+        L = l + 2;
+        if (L > baseQualities.size()) {
+            L = baseQualities.size();
+            spanstart = 0;
+        } else {
+            // set lower bound to 0
+            if (rp < (L / 2)) {
+                spanstart = 0;
+            } else {
+                spanstart = rp - (L / 2);
+            }
+            // set upper bound to the string length
+            if (spanstart + L > baseQualities.size()) {
+                spanstart = baseQualities.size() - L;
+            }
+        }
+        //string qualstr = baseQualities.substr(spanstart, L);
+        spanend = spanstart + L;
+    } else if (a.type == ALLELE_DELETION) {
+        L = l + 2;
+        if (L > baseQualities.size()) {
+            L = baseQualities.size();
+            spanstart = 0;
+        } else {
+            // set lower bound to 0
+            if (rp < 1) {
+                spanstart = 0;
+            } else {
+                spanstart = rp - 1;
+            }
+            // set upper bound to the string length
+            if (spanstart + L > baseQualities.size()) {
+                spanstart = baseQualities.size() - L;
+            }
+        }
+        spanend = spanstart + L;
+    } else if (a.type == ALLELE_MNP) {
+        L = l;
+        if (L > baseQualities.size()) {
+            L = baseQualities.size();
+            spanstart = 0;
+        } else {
+            if (rp < 1) {
+                spanstart = 0;
+            } else {
+                spanstart = rp;
+            }
+            // impossible
+            if (spanstart + L > baseQualities.size()) {
+                spanstart = baseQualities.size() - L;
+            }
+        }
+        spanend = spanstart + L;
+    }
+    for (int i = spanstart; i < spanend; ++i) {
+        sum += baseQualities.at(i);
+    }
+    return sum * (l / L);
+}
+
+const long double Allele::lnsubquality(const Allele& a) const {
+    return phred2ln(subquality(a));
+}
+
 void updateAllelesCachedData(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         (*a)->update();
@@ -684,8 +772,8 @@ Allele genotypeAllele(Allele &a) {
     return Allele(a.type, a.alternateSequence, a.length, a.position);
 }
 
-Allele genotypeAllele(AlleleType type, string alt, unsigned int len) {
-    return Allele(type, alt, len);
+Allele genotypeAllele(AlleleType type, string alt, unsigned int len, long double pos) {
+    return Allele(type, alt, len, pos);
 }
 
 /*

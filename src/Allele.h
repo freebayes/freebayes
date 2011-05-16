@@ -221,6 +221,10 @@ public:
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;
+    const int subquality(int startpos, int len) const;
+    const long double lnsubquality(int startpos, int len) const;
+    const int subquality(const Allele &a) const;
+    const long double lnsubquality(const Allele &a) const;
     //const int basesLeft(void) const; // returns the bases left within the read of the current position within the allele
     //const int basesRight(void) const; // returns the bases right within the read of the current position within the allele
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
@@ -314,7 +318,7 @@ vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups)
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
-Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0);
+Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, long double position = 0);
 
 
 //AlleleFreeList Allele::_freeList;

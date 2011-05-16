@@ -426,6 +426,7 @@ void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
     leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
     if (leftdiff > 0) {
         currentSequenceStart -= leftdiff;
+        if (currentSequenceStart < 0) currentSequenceStart = 0;
         currentSequence.insert(0, uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
     }
 
@@ -934,7 +935,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // string length and the length of the event
             long double qual = sumQuality(qualstr);
 
-            // scale the quality by the inverse harmonic sum of the length of the quality string X a scaling constant
+            // quality adjustment:
+            // scale the quality by the inverse harmonic sum of the length of
+            // the quality string X a scaling constant derived from the ratio
+            // between the length of the quality string and the length of the
+            // allele
+            //qual += ln2phred(log((long double) l / (long double) L));
             qual += ln2phred(log((long double) L / (long double) l));
             qual /= harmonicSum(l);
 
@@ -994,7 +1000,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // string length and the length of the event
             long double qual = sumQuality(qualstr);
 
-            // scale the quality by the inverse harmonic sum of the length of the quality string X a scaling constant
+            // quality adjustment:
+            // scale the quality by the inverse harmonic sum of the length of
+            // the quality string X a scaling constant derived from the ratio
+            // between the length of the quality string and the length of the
+            // allele
+            //qual += ln2phred(log((long double) l / (long double) L));
             qual += ln2phred(log((long double) L / (long double) l));
             qual /= harmonicSum(l);
 
@@ -1641,7 +1652,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         if (passesFilters) {
             Allele& allele = *(alleles.front());
             int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length), qSum));
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length, currentPosition), qSum));
         }
     }
     DEBUG2("found genotype alleles");
@@ -1703,7 +1714,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         // and add the reference allele if we need it
         if (parameters.forceRefAllele && !hasRefAllele) {
             DEBUG2("including reference allele");
-            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1));
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1, currentPosition));
         }
     } else {
         // this means, use the N best
@@ -1738,7 +1749,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         // haven't included the reference allele, include it
         if (parameters.forceRefAllele && !hasRefAllele) {
             DEBUG2("including reference allele in analysis");
-            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1));
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1, currentPosition));
         }
 
         // if we now have too many alleles (most likely one too many), get rid of some

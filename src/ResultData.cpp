@@ -144,7 +144,7 @@ void vcfHeader(ostream& out,
 
 }
 
-string vcf(
+string Results::vcf(
         long double pHom,
         //long double alleleSamplingProb,
         Samples& samples,
@@ -159,7 +159,6 @@ string vcf(
         map<string, vector<Allele*> >& alleleGroups,
         map<int, vector<Genotype> >& genotypesByPloidy,
         vector<string>& sequencingTechnologies,
-        Results& results,
         AlleleParser* parser) {
 
     stringstream out;
@@ -440,8 +439,8 @@ string vcf(
     // samples
     for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
-        Results::iterator s = results.find(*sampleName);
-        if (gc != comboMap.end() && s != results.end()) {
+        Results::iterator s = find(*sampleName);
+        if (gc != comboMap.end() && s != end()) {
             Result& sample = s->second;
             Genotype* genotype = gc->second->genotype;
             pair<int, int>& altAndRefCounts = altAndRefCountsBySample[*sampleName]; // alternateAndReferenceCount(sample.observations, refbase, altbase);

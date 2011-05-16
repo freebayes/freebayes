@@ -8,6 +8,7 @@
 #include <numeric>
 #include <vector>
 #include <iterator>
+#include <cmath>
 #include "Allele.h"
 #include "Sample.h"
 #include "Genotype.h"

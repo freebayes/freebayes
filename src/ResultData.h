@@ -38,23 +38,6 @@ public:
         sort(begin(), end(), datalikelihoodCompare);
     }
 
-    friend string vcf(
-            long double comboProb,
-            //long double alleleSamplingProb,
-            Samples& sample,
-            string referenceBase,
-            string alternateBase,
-            Allele& altAllele,
-            map<string, int> repeats,
-            vector<string>& samples,
-            int coverage,
-            GenotypeCombo& genotypeCombo,
-            bool bestOverallComboIsHet,
-            map<string, vector<Allele*> >& alleleGroups,
-            map<int, vector<Genotype> >& genotypesByPloidy, // pass by copy, will modify
-            vector<string>& sequencingTechnologies,
-            Results& results,
-            AlleleParser* parser);
     pair<Genotype*, long double> bestMarginalGenotype(void);
 
 };
@@ -74,6 +57,23 @@ public:
             }
         }
     }
+
+    string vcf(
+            long double comboProb,
+            //long double alleleSamplingProb,
+            Samples& sample,
+            string referenceBase,
+            string alternateBase,
+            Allele& altAllele,
+            map<string, int> repeats,
+            vector<string>& samples,
+            int coverage,
+            GenotypeCombo& genotypeCombo,
+            bool bestOverallComboIsHet,
+            map<string, vector<Allele*> >& alleleGroups,
+            map<int, vector<Genotype> >& genotypesByPloidy, // pass by copy, will modify
+            vector<string>& sequencingTechnologies,
+            AlleleParser* parser);
 
 };
 
