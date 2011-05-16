@@ -322,7 +322,7 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
     DEBUG2("reference.getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
-    currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.AlignedBases.length()));
+    currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.Length));
 }
 
 // intended to load all the sequence covered by reads which overlap our current target
@@ -612,6 +612,11 @@ string AlleleParser::referenceSubstr(long double pos, unsigned int len) {
 }
 
 bool AlleleParser::isCpG(string& altbase) {
+    // bounds check
+    if (floor(currentPosition) - currentSequenceStart - 1 < 0
+            || floor(currentPosition) - currentSequenceStart + 1 > currentSequence.size()) {
+        return false;
+    }
     string prevb = currentSequence.substr(floor(currentPosition) - currentSequenceStart - 1, 1);
     string currb = currentSequence.substr(floor(currentPosition) - currentSequenceStart, 1);
     string nextb = currentSequence.substr(floor(currentPosition) - currentSequenceStart + 1, 1);
