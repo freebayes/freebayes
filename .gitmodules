@@ -1,0 +1,3 @@
+[submodule "vcflib"]
+	path = vcflib
+	url = git://github.com/ekg/vcflib.git
