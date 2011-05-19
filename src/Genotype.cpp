@@ -240,6 +240,8 @@ void GenotypeCombo::init(bool useObsExpectations) {
 
         ++genotypeCounts[sdl.genotype];
 
+        permutationsln += sdl.genotype->permutationsln;
+
         //cerr << *sdl.genotype << endl;
         for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
             const string& alleleBase = a->allele.currentBase;
@@ -330,6 +332,10 @@ void GenotypeCombo::updateCachedCounts(
     // update genotype counts
     --genotypeCounts[oldGenotype];
     ++genotypeCounts[newGenotype];
+
+    // update permutations
+    permutationsln -= oldGenotype->permutationsln;
+    permutationsln += newGenotype->permutationsln;
 
     // remove allele frequencies which are now 0 or below
     map<Genotype*, int>::iterator gc = genotypeCounts.begin();
@@ -1306,15 +1312,9 @@ long double GenotypeCombo::probabilityGivenAlleleFrequencyln(bool permute) {
     int n = numberOfAlleles();
     long double lnhetscalar = 0;
 
-    // TODO factor out
     if (permute) {
         // scale by the product of permutations of heterozygotes
-        for (GenotypeCombo::iterator gc = begin(); gc != end(); ++gc) {
-            SampleDataLikelihood& sgp = **gc;
-            if (!sgp.genotype->homozygous) {
-                lnhetscalar += sgp.genotype->permutationsln;
-            }
-        }
+        lnhetscalar = permutationsln; // cached permutations of this combo
     }
 
     return lnhetscalar - multinomialCoefficientLn(n, counts());

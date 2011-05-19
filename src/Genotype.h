@@ -153,6 +153,8 @@ public:
     // we generate the genotype combinations
     long double probObsGivenGenotypes;  // aka data likelihood
 
+    long double permutationsln;  // the number of perutations of unphased genotypes in the combo
+
     // these *must* be generated at construction time
     // for efficiency they can be updated as each genotype combo is generated
     //map<string, int> alleleCounts; // frequencies of each allele in the combo
@@ -169,6 +171,7 @@ public:
         , priorProbG_Af(0)
         , priorProbAf(0)
         , priorProbObservations(0)
+        , permutationsln(0)
     { }
 
     void init(bool useObsExpectations);
