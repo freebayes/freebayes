@@ -317,11 +317,12 @@ string Results::vcf(
             alternateSequence = altAllele.alternateSequence;
             break;
         case ALLELE_DELETION:
-            referenceSequence = parser->referenceSubstr(variantPosition - 1, altAllele.length + 1);
+            // note hack to correctly position the deletion allele, as its base is reported as + 0.5
+            referenceSequence = parser->referenceSubstr((variantPosition + 0.5), altAllele.length + 1);
             // this decrement fixes deletion position reporting to match VCF
             // spec, in which we are reporting the position of the base prior
             // to the deletion
-            --variantPosition;
+            //--variantPosition;
             alternateSequence = referenceSequence.at(0);
             break;
         case ALLELE_INSERTION:

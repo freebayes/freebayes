@@ -457,7 +457,7 @@ int main (int argc, char *argv[]) {
 
             if (parameters.calculateMarginals) {
 
-                DEBUG2("calculating marginal likelihoods");
+                DEBUG("calculating marginal likelihoods");
 
                 // resample the posterior, this time without bounds on the
                 // samples we vary, ensuring that we can generate marginals for
@@ -486,6 +486,9 @@ int main (int argc, char *argv[]) {
                         genotypeAlleles,
                         // XXX HACK
                         0, 0, // passing 0 for bandwidth and banddepth means "exhaustive local search"
+                        // this produces properly normalized GQ's at polyallelic sites
+                        //parameters.WB,
+                        //parameters.TB,
                         parameters.genotypeComboStepMax,
                         parameters.TH,
                         parameters.pooled,
