@@ -959,7 +959,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             string refseq = currentSequence.substr(csp, l);
             if (allATGC(refseq)) {
                 ra.alleles.push_back(Allele(ALLELE_DELETION,
-                        currentSequenceName, sp, &currentPosition, &currentReferenceBase, l,
+                        currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l,
                         rp, // bases left
                         alignment.QueryBases.size() - rp, // bases right
                         refseq, "", sampleName, alignment.Name, sequencingTech,
