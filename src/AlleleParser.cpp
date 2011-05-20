@@ -294,38 +294,107 @@ void AlleleParser::getSampleNames(void) {
 
 }
 
-void AlleleParser::writeVcfHeader(ostream& out) {
+string AlleleParser::vcfHeader() {
 
-    time_t rawtime;
-    struct tm * timeinfo;
-    char datestr [80];
+    stringstream headerss;
+    headerss << "##fileformat=VCFv4.1" << endl
+        << "##fileDate=" << dateStr() << endl
+        << "##source=freeBayes version " << FREEBAYES_VERSION << endl
+        << "##reference=" << reference.filename << endl
+        << "##phasing=none" << endl
+        << "##commandline=\"" << parameters.commandline << "\"" << endl
+        << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">" << endl
+        << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total read depth at the locus\">" << endl
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+        // allele frequency metrics
+        << "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Total number of alternate alleles in called genotypes\">" << endl
+        << "##INFO=<ID=AN,Number=A,Type=Integer,Description=\"Total number of alleles in called genotypes\">" << endl
+        << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
+        //<< "##INFO=<ID=HETAR,Number=1,Type=Integer,Description=\"Number of individuals heterozygous alternate / reference\">" << endl
+        //<< "##INFO=<ID=HOMA,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the alternate\">" << endl
+        //<< "##INFO=<ID=HOMR,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the reference\">" << endl
 
-    strftime(datestr, 80, "%Y%m%d %X", timeinfo);
+        // binomial balance metrics
+        << "##INFO=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
+        << "##INFO=<ID=AA,Number=A,Type=Integer,Description=\"Alternate allele observations\">" << endl
+        //<< "##INFO=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
+        //<< "##INFO=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
+        //<< "##INFO=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
+        //<< "##INFO=<ID=SAR,Number=1,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl
+        //<< "##INFO=<ID=SRB,Number=1,Type=Float,Description=\"Strand bias for the reference allele: SRF / ( SRF + SRR )\">" << endl
+        //<< "##INFO=<ID=SAB,Number=1,Type=Float,Description=\"Strand bias for the alternate allele: SAF / ( SAF + SAR )\">" << endl
+        << "##INFO=<ID=SRP,Number=1,Type=Float,Description=\"Strand balance probability for the reference allele: Phred-scaled upper-bounds estimate of the probability of observing the deviation between SRF and SRR given E(SRF/SRR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=SAP,Number=A,Type=Float,Description=\"Strand balance probability for the alternate allele: Phred-scaled upper-bounds estimate of the probability of observing the deviation between SAF and SAR given E(SAF/SAR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        //<< "##INFO=<ID=ABR,Number=1,Type=Integer,Description=\"Reference allele balance count: the number of sequence reads from apparent heterozygotes supporting the reference allele\">" << endl
+        //<< "##INFO=<ID=ABA,Number=1,Type=Integer,Description=\"Alternate allele balance count: the number of sequence reads from apparent heterozygotes supporting the alternate allele\">" << endl
+        << "##INFO=<ID=AB,Number=A,Type=Float,Description=\"Allele balance at heterozygous sites: a number between 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous\">" << endl
+        << "##INFO=<ID=ABP,Number=A,Type=Float,Description=\"Allele balance probability at heterozygous sites: Phred-scaled upper-bounds estimate of the probability of observing the deviation between ABR and ABA given E(ABR/ABA) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=RUN,Number=1,Type=Integer,Description=\"Homopolymer run length: the number of consecutive nucleotides in the reference genome matching the alternate allele prior to the current position\">" << endl
+        //<< "##INFO=<ID=RL,Number=1,Type=Integer,Description=\"Reads Placed Left: number of reads supporting the alternate balanced to the left (5') of the alternate allele\">" << endl
+        //<< "##INFO=<ID=RR,Number=1,Type=Integer,Description=\"Reads Placed Right: number of reads supporting the alternate balanced to the right (3') of the alternate allele\">" << endl
+        << "##INFO=<ID=RPP,Number=A,Type=Float,Description=\"Read Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        //<< "##INFO=<ID=EL,Number=1,Type=Integer,Description=\"Allele End Left: number of observations of the alternate where the alternate occurs in the left end of the read\">" << endl
+        //<< "##INFO=<ID=ER,Number=1,Type=Integer,Description=\"Allele End Right: number of observations of the alternate where the alternate occurs in the right end of the read\">" << endl
+        << "##INFO=<ID=EPP,Number=A,Type=Float,Description=\"End Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        //<< "##INFO=<ID=BL,Number=1,Type=Integer,Description=\"Base Pairs Left: number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
+        //<< "##INFO=<ID=BR,Number=1,Type=Integer,Description=\"Base Pairs Right: number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
+        //<< "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"((max(BR, BL) / (BR + BL)) - 0.5) * 2 : The proportion of base pairs in reads on one side of the alternate allele relative to total bases, scaled from [0.5,1] to [0,1]\">" << endl
+        //<< "##INFO=<ID=LRBP,Number=1,Type=Float,Description=\"Left-Right Balance Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between BL and BR given E(BR/BL) ~ 0.5, derived using Hoeffding's inequality\">" << endl
 
-    out << "##format=VCFv4.0" << endl
-            << "##fileDate=" << datestr << endl
-            << "##source=freebayes" << endl
-            << "##reference=" << parameters.fasta << endl
-            << "##phasing=none" << endl
-            << "##commandline=\"" << parameters.commandline << "\"" << endl
-            << "##INFO=NS,1,Integer,\"total number of samples\"" << endl
-            << "##INFO=ND,1,Integer,\"total number of non-duplicate samples\"" << endl
-            << "##INFO=DP,1,Integer,\"total read depth at this base\"" << endl
-            << "##INFO=AC,1,Integer,\"total number of alternate alleles in called genotypes\"" << endl
+        // supplementary information about the site
+        << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
+        << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\">" << endl
+        << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
+        << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\">" << endl
+        << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
+        << "##INFO=<ID=MNP,Number=0,Type=Flag,Description=\"MNP allele\">" << endl
+        << "##INFO=<ID=INS,Number=0,Type=Flag,Description=\"insertion allele\">" << endl
+        << "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele\">" << endl
+        << "##INFO=<ID=LEN,Number=A,Type=Integer,Description=\"allele length\">" << endl
+        << "##INFO=<ID=MQM,Number=A,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
+        << "##INFO=<ID=PAIRED,Number=1,Type=Float,Description=\"Proportion of observed alternate alleles which are supported by properly paired read fragments\">" << endl;
 
-            // these are req'd
-            << "##FORMAT=GT,1,String,\"Genotype\"" << endl // g
-            << "##FORMAT=GQ,1,Integer,\"Genotype Quality\"" << endl // phred prob of genotype
-            << "##FORMAT=DP,1,Integer,\"Read Depth\"" << endl // NiBAll[ind]
-            << "##FORMAT=HQ,2,Integer,\"Haplotype Quality\"" << endl
-            << "##FORMAT=QiB,1,Integer,\"Total base quality\"" << endl
-            << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
-            << join(sampleList, "\t")
-            << endl;
+    // sequencing technology tags, which vary according to input data
+    for (vector<string>::iterator st = sequencingTechnologies.begin(); st != sequencingTechnologies.end(); ++st) {
+        string& tech = *st;
+        headerss << "##INFO=<ID=technology." << tech << ",Number=1,Type=Float,Description=\"Fraction of observations supporting the alternate observed in reads from " << tech << "\">" << endl;
+    }
 
+    if (parameters.showReferenceRepeats) {
+        headerss << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl;
+    }
+
+        // format fields for genotypes
+    headerss << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
+        // this can be regenerated with RA, AA, QR, QA
+        << "##FORMAT=<ID=GL,Number=G,Type=String,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
+        << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0:-75.22,1:-223.42,0/0:-323.03,1/0:-99.29,1/1:-802.53\">" << endl
+        << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
+        << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
+        << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
+        << "##FORMAT=<ID=AA,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
+        << "##FORMAT=<ID=QA,Number=A,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
+        // TODO (?)
+        //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
+        //<< "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
+        //<< "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
+        //<< "##FORMAT=<ID=SAR,Number=1,Type=Integer,Description=\"Number of alternate observations on the reverse strand\">" << endl
+        //<< "##FORMAT=<ID=LR,Number=1,Type=Integer,Description=\"Number of reference observations placed left of the loci\">" << endl
+        //<< "##FORMAT=<ID=LA,Number=1,Type=Integer,Description=\"Number of alternate observations placed left of the loci\">" << endl
+        //<< "##FORMAT=<ID=ER,Number=1,Type=Integer,Description=\"Number of reference observations overlapping the loci in their '3 end\">" << endl
+        //<< "##FORMAT=<ID=EA,Number=1,Type=Integer,Description=\"Number of alternate observations overlapping the loci in their '3 end\">" << endl
+        << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
+        << join(sampleList, "\t") << endl;
+
+    return headerss.str();
+
+}
+
+
+void AlleleParser::setupVCFOutput(void) {
+    string vcfheader = vcfHeader();
+    variantCallFile.openForOutput(vcfheader);
 }
 
 void AlleleParser::loadBamReferenceSequenceNames(void) {
@@ -628,6 +697,9 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 
     // sample CNV
     loadSampleCNVMap();
+
+    // output
+    setupVCFOutput();
 
 }
 

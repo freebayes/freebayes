@@ -11,7 +11,7 @@ C=gcc
 # Compiler flags
 CFLAGS=-O3 -Wno-deprecated
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
-LIBS = -lz -lm
+LIBS = -lz -lm -L. -L../vcflib/tabixpp/ -ltabix
 
 
 all: ../bin/freebayes ../bin/bamleftalign
@@ -54,7 +54,10 @@ OBJECTS=BamAlignment.o \
 		Marginals.o \
 		split.o \
 		LeftAlign.o \
-		IndelAllele.o
+		IndelAllele.o \
+		../vcflib/tabixpp/tabix.o \
+		../vcflib/tabixpp/bgzf.o \
+		Variant.o
 
 HEADERS=multichoose.h
 
@@ -168,11 +171,23 @@ LeftAlign.o: LeftAlign.h LeftAlign.cpp
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
 	$(CC) $(CFLAGS) -c IndelAllele.cpp
 
+Variant.o: ../vcflib/Variant.h ../vcflib/Variant.cpp ../vcflib/tabixpp/tabix.o
+	$(CC) $(CFLAGS) -c ../vcflib/Variant.cpp
+
+VCF.o: VCF.h VCF.cpp ../vcflib/Variant.h ../vcflib/Variant.cpp
+	$(CC) $(CFLAGS) -c VCF.cpp
+
+../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
+	cd ../vcflib/tabixpp && make
+
+../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h
+	cd ../vcflib/tabixpp && make
+
 # versioning for git point releases
 version:
 	echo \#define FREEBAYES_VERSION \"`git log | head -1 | cut -f 2 -d\ `\" >Version.h
 	echo \#define FREEBAYES_COMPILE_DATE \"`date +%F`\" >>Version.h
 
 clean:
-	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles
+	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles ../vcflib/*.o ../vcflib/tabixpp/*.{o,a}
 

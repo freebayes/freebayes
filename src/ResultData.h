@@ -4,11 +4,11 @@
 #include <vector>
 #include <ostream>
 #include <iomanip>
-#include <time.h>
 #include "Genotype.h"
 #include "Allele.h"
 #include "Utility.h"
 #include "AlleleParser.h"
+#include "../vcflib/Variant.h"
 #include "Version.h"
 
 using namespace std;
@@ -58,22 +58,22 @@ public:
         }
     }
 
-    string vcf(
-            long double comboProb,
-            //long double alleleSamplingProb,
-            Samples& sample,
-            string referenceBase,
-            string alternateBase,
-            Allele& altAllele,
-            map<string, int> repeats,
-            vector<string>& samples,
-            int coverage,
-            GenotypeCombo& genotypeCombo,
-            bool bestOverallComboIsHet,
-            map<string, vector<Allele*> >& alleleGroups,
-            map<int, vector<Genotype> >& genotypesByPloidy, // pass by copy, will modify
-            vector<string>& sequencingTechnologies,
-            AlleleParser* parser);
+    vcf::Variant& vcf(
+        vcf::Variant& var, // variant to update
+        long double pHom,
+        //long double alleleSamplingProb,
+        Samples& samples,
+        string refbase,
+        vector<Allele>& altAlleles,
+        map<string, int> repeats,
+        vector<string>& sampleNames,
+        int coverage,
+        GenotypeCombo& genotypeCombo,
+        bool bestOverallComboIsHet,
+        map<string, vector<Allele*> >& alleleGroups,
+        map<int, vector<Genotype> >& genotypesByPloidy,
+        vector<string>& sequencingTechnologies,
+        AlleleParser* parser);
 
 };
 

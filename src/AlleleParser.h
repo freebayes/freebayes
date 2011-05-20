@@ -27,7 +27,10 @@
 #include "Genotype.h"
 #include "CNV.h"
 #include "LeftAlign.h"
+#include "../vcflib/Variant.h"
+#include "Version.h"
 
+// the size of the window of the reference which is always cached in memory
 #define CACHED_REFERENCE_WINDOW 100
 
 using namespace std;
@@ -101,8 +104,6 @@ public:
     AlleleParser(int argc, char** argv);
     ~AlleleParser(void); 
 
-    void writeVcfHeader(ostream& out);
-
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
     map<string, string> readGroupToSampleNames; // maps read groups to samples
@@ -124,6 +125,9 @@ public:
 
     // bamreader
     BamMultiReader bamMultiReader;
+
+    // VCF
+    vcf::VariantCallFile variantCallFile;
 
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
     vector<Allele*> registeredAlleles;
@@ -183,6 +187,8 @@ public:
     int homopolymerRunLeft(string altbase);
     int homopolymerRunRight(string altbase);
     map<string, int> repeatCounts(int maxsize);
+    void setupVCFOutput(void);
+    string vcfHeader(void);
 
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters

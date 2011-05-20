@@ -1,3 +1,6 @@
+#ifndef __JOIN_H
+#define __JOIN_H
+
 // functions to split a string by a specific delimiter
 #include <string>
 #include <vector>
@@ -17,3 +20,5 @@ std::string join(std::vector<T>& elems, S& delim) {
     }
     return ss.str();
 }
+
+#endif

@@ -19,6 +19,8 @@
 #include "Multinomial.h"
 #include "CNV.h"
 #include "Ewens.h"
+#include "join.h"
+#include "convert.h"
 
 using namespace std;
 
@@ -80,6 +82,8 @@ public:
     vector<long double> alleleProbabilities(void);
     string slashstr(void);
     string str(void);
+    string relativeGenotype(string& refbase, vector<Allele>& altbases);
+    void relativeGenotype(vector<int>& spec, string& refbase, vector<Allele>& altbases);
     string relativeGenotype(string& refbase, string& altbase);
     bool isHomozygous(void);
     int containedAlleleTypes(void);

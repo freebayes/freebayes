@@ -47,9 +47,10 @@ void Parameters::usage(char** argv) {
          << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
          << "                   at the site is greater than N.  default: 0.0001" << endl
-         << "   -@ --report-all-alternates" << endl
-         << "                   Report (in non-standard VCF format) each alternate allele" << endl
-         << "                   at a site on its own line of VCF." << endl
+         // TODO reuse
+         //<< "   -@ --report-all-alternates" << endl
+         //<< "                   Report (in non-standard VCF format) each alternate allele" << endl
+         //<< "                   at a site on its own line of VCF." << endl
          << "   -_ --show-reference-repeats" << endl
          << "                   Calculate and show information about reference repeats in" << endl
          << "                   the VCF output." << endl

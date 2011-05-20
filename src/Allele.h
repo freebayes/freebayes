@@ -185,7 +185,7 @@ public:
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
-        , currentBase(alt)
+        , currentBase(alt) // XXX TODO, the semantics here mean that the 'genotype' alleles don't have normal alternateSequence
         , length(len)
         , quality(0)
         , lnquality(1)

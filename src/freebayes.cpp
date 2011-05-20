@@ -88,7 +88,7 @@ int main (int argc, char *argv[]) {
 
     // output VCF header
     if (parameters.output == "vcf") {
-        vcfHeader(out, parser->reference.filename, parser->sampleList, parameters, parser->sequencingTechnologies);
+        out << parser->variantCallFile.header;
     }
 
     unsigned long total_sites = 0;
@@ -564,45 +564,32 @@ int main (int argc, char *argv[]) {
             }
             // get the unique alternate alleles in this combo, sorted by frequency in the combo
             vector<pair<Allele, int> > alternates = alternateAlleles(bestCombo, referenceBase);
-            if (parameters.reportAllAlternates) {
-                // TODO, sort by allele type, deletions first!
-                for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
-                    Allele& alt = a->first;
-                    out << results.vcf(pHom,
-                            samples,
-                            referenceBase,
-                            alt.base(),
-                            alt,
-                            repeats,
-                            parser->sampleList,
-                            coverage,
-                            bestCombo,
-                            bestOverallComboIsHet,
-                            alleleGroups,
-                            genotypesByPloidy,
-                            parser->sequencingTechnologies,
-                            parser)
-                        << endl;
-                }
-            } else {
-                Allele& bestAlt = alternates.front().first;
-                // TODO update the vcf output function to handle the reporting of multiple alternate alleles
-                out << results.vcf(pHom,
-                        samples,
-                        referenceBase,
-                        bestAlt.base(),
-                        bestAlt,
-                        repeats,
-                        parser->sampleList,
-                        coverage,
-                        bestCombo,
-                        bestOverallComboIsHet,
-                        alleleGroups,
-                        genotypesByPloidy,
-                        parser->sequencingTechnologies,
-                        parser)
-                    << endl;
+            // TODO, sort by allele type, deletions first!
+            vector<Allele> alts;
+            for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
+                Allele& alt = a->first;
+                alts.push_back(alt);
             }
+
+            vcf::Variant var(parser->variantCallFile);
+
+            out << results.vcf(
+                    var,
+                    pHom,
+                    samples,
+                    referenceBase,
+                    alts,
+                    repeats,
+                    parser->sampleList,
+                    coverage,
+                    bestCombo,
+                    bestOverallComboIsHet,
+                    alleleGroups,
+                    genotypesByPloidy,
+                    parser->sequencingTechnologies,
+                    parser)
+                << endl;
+
         } else if (!parameters.failedFile.empty()) {
             // get the unique alternate alleles in this combo, sorted by frequency in the combo
             long unsigned int position = parser->currentPosition;

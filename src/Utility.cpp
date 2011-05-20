@@ -24,6 +24,10 @@ char qualityInt2Char(short i) {
     return static_cast<char>(i + 33);
 }
 
+long double ln2log10(long double prob) {
+    return M_LOG10E * prob;
+}
+
 long double phred2ln(int qual) {
     return M_LN10 * qual * -.1;
 }
@@ -458,4 +462,20 @@ int levenshteinDistance(const std::string source, const std::string target) {
   // Step 7
 
   return matrix[n][m];
+}
+
+// current date string in YYYYMMDD format
+string dateStr(void) {
+
+    time_t rawtime;
+    struct tm* timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, 80, "%Y%m%d", timeinfo);
+
+    return string(buffer);
+
 }

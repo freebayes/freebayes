@@ -11,6 +11,7 @@
 #include <float.h>
 #include <iostream>
 #include <map>
+#include <time.h>
 
 using namespace std;
 
@@ -22,6 +23,7 @@ char qualityInt2Char(short i);
 //long double phred2float(int qual);
 long double phred2ln(int qual);
 long double ln2phred(long double prob);
+long double ln2log10(long double prob);
 long double phred2float(int qual);
 long double float2phred(long double prob);
 long double powln(long double m, int n);
@@ -83,5 +85,7 @@ long double hoeffdingln(double successes, double trials, double prob);
 
 int levenshteinDistance(const std::string source, const std::string target);
 bool isTransition(string& ref, string& alt);
+
+string dateStr(void);
 
 #endif
