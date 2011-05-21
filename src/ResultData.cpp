@@ -69,7 +69,12 @@ vcf::Variant& Results::vcf(
         switch (altAllele.type) {
             case ALLELE_SNP:
                 altSequence = var.ref;
-                altSequence.replace(1, 1, altAllele.base());
+                if (altSequence.size() == 1) {
+                    altSequence.replace(0, 1, altAllele.base());
+                } else {
+                    // co-present with INDELs
+                    altSequence.replace(1, 1, altAllele.base());
+                }
                 break;
             case ALLELE_MNP:
                 altSequence = var.ref;
