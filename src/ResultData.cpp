@@ -361,6 +361,8 @@ vcf::Variant& Results::vcf(
 
             Sample& sample = *gc->second->sample;
             refAlleleObservations += sample.observationCount(refbase);
+
+            ++samplesWithData;
         }
     }
 
