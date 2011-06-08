@@ -42,6 +42,13 @@ void Parameters::usage(char** argv) {
          << "   --failed-alleles FILE" << endl
          << "                   Write a BED file of the analyzed positions which do not" << endl
          << "                   pass --pvar to FILE." << endl
+         << "   -@ --variant-input VCF" << endl
+         << "                   Use variants reported in VCF file as input to the algorithm." << endl
+         << "                   A report will be generated for every record in the VCF file." << endl
+         << "   -l --variant-input-coverage N" << endl
+         << "                   Assume this number of reads support each sample in the input VCF," << endl
+         << "                   Use this if the input VCF does not have per-sample alternate" << endl
+         << "                   observation counts (AA). default: 10" << endl
          << endl
          << "reporting:" << endl
          << endl
@@ -163,13 +170,6 @@ void Parameters::usage(char** argv) {
          << "                   Turns off the Ewens' Sampling Formula component of the priors." << endl
          << "   -k --no-population-priors" << endl
          << "                   Equivalent to --pooled --no-ewens-priors" << endl
-         << "   -@ --variant-priors VCF" << endl
-         << "                   Use variants reported in VCF file as input to the algorithm." << endl
-         << "                   A report will be generated for every record in the VCF file." << endl
-         << "   -l --variant-priors-coverage N" << endl
-         << "                   Assume this number of reads support each sample in the input VCF," << endl
-         << "                   Use this if the input VCF does not have per-sample alternate" << endl
-         << "                   observation counts (AA). default: 10" << endl
          << endl
          << "algorithmic features:" << endl
          << endl
@@ -367,8 +367,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-coverage", required_argument, 0, '!'},
         {"no-permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
-        {"variant-priors", required_argument, 0, '@'},
-        {"variant-priors-coverage", required_argument, 0, 'l'},
+        {"variant-input", required_argument, 0, '@'},
+        {"variant-input-coverage", required_argument, 0, 'l'},
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
