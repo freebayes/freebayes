@@ -397,6 +397,25 @@ void AlleleParser::setupVCFOutput(void) {
     variantCallFile.openForOutput(vcfheader);
 }
 
+void AlleleParser::setupVCFInput(void) {
+    if (!parameters.variantPriorsFile.empty()) {
+        variantCallInputFile.open(parameters.variantPriorsFile);
+        currentVariant = new vcf::Variant(variantCallInputFile);
+
+        // get sample names from VCF input file
+        //
+        // NB, adding this stanza will change the way that the VCF output
+        // describes alternates, present observations, etc. so that the samples
+        // in the VCF input are also included.  the result is confusing output,
+        // but it could be useful in some situations.
+        //
+        //for (vector<string>::iterator s = variantCallInputFile.sampleNames.begin(); s != variantCallInputFile.sampleNames.end(); ++s) {
+        //    sampleList.push_back(*s);
+        //}
+
+    }
+}
+
 void AlleleParser::loadBamReferenceSequenceNames(void) {
 
     //--------------------------------------------------------------------------
@@ -701,11 +720,19 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // output
     setupVCFOutput();
 
+    // input
+    // (now that the VCF file is set up with the samples which are in the input alignments
+    // add the samples from the input VCF to the mix)
+    setupVCFInput();
+
+
 }
 
 AlleleParser::~AlleleParser(void) {
     // close trace file?  seems to get closed properly on object deletion...
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
+
+    if (variantCallInputFile.is_open()) delete currentVariant;
 
 }
 
@@ -874,7 +901,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     if (firstMatch < csp) {
                         // TODO ; verify that the read and reference sequences *do* match
                         int length = csp - firstMatch;
-                        string matchingSequence = currentSequence.substr(csp - length, length);
+                        //string matchingSequence = currentSequence.substr(csp - length, length);
                         //cerr << "matchingSequence " << matchingSequence << endl;
                         string readSequence = rDna.substr(rp - length, length);
                         //cerr << "readSequence " << readSequence << endl;
@@ -885,7 +912,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
                                     alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                                     rp, // bases left (for first base in ref allele)
-                                    matchingSequence, readSequence, sampleName, alignment.Name, sequencingTech,
+                                    readSequence, sampleName, alignment.Name, sequencingTech,
                                     !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                                     alignment.MapQuality, alignment.IsPaired(), alignment.IsMateMapped(), alignment.IsProperPair()));
                             DEBUG2(ra.alleles.back());
@@ -909,7 +936,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 } else if (inMismatch) {
                     inMismatch = false;
                     int length = csp - mismatchStart;
-                    string matchingSequence = currentSequence.substr(csp - length, length);
+                    //string matchingSequence = currentSequence.substr(csp - length, length);
                     string readSequence = rDna.substr(rp - length, length);
                     string qualstr = rQual.substr(rp - length, length);
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
@@ -919,7 +946,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     &currentReferenceBase, length,
                                     rp - length, // bases left
                                     alignment.QueryBases.size() - rp, // bases right
-                                    matchingSequence, readSequence,
+                                    readSequence,
                                     sampleName, alignment.Name, sequencingTech,
                                     !alignment.IsReverseStrand(), lqual,
                                     qualstr, alignment.MapQuality,
@@ -939,7 +966,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             if (inMismatch) {
                 inMismatch = false;
                 int length = csp - mismatchStart;
-                string matchingSequence = currentSequence.substr(csp - length, length);
+                //string matchingSequence = currentSequence.substr(csp - length, length);
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
@@ -949,7 +976,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 &currentReferenceBase, length,
                                 rp - length, // bases left
                                 alignment.QueryBases.size() - rp, // bases right
-                                matchingSequence, readSequence,
+                                readSequence,
                                 sampleName, alignment.Name, sequencingTech,
                                 !alignment.IsReverseStrand(), lqual, qualstr,
                                 alignment.MapQuality, alignment.IsPaired(),
@@ -960,7 +987,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // or, if we are not in a mismatch, construct the last reference allele of the match
             } else if (firstMatch < csp) {
                 int length = csp - firstMatch;
-                string matchingSequence = currentSequence.substr(csp - length, length);
+                //string matchingSequence = currentSequence.substr(csp - length, length);
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 if (allATGC(readSequence)) {
@@ -968,7 +995,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                             currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
                             alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                             rp, // bases left (for first base in ref allele)
-                            matchingSequence, readSequence, sampleName, alignment.Name, sequencingTech,
+                            readSequence, sampleName, alignment.Name, sequencingTech,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                             alignment.MapQuality, alignment.IsPaired(),
                             alignment.IsMateMapped(),
@@ -1034,7 +1061,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l,
                         rp, // bases left
                         alignment.QueryBases.size() - rp, // bases right
-                        refseq, "", sampleName, alignment.Name, sequencingTech,
+                        "", sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual, qualstr,
                         alignment.MapQuality, alignment.IsPaired(),
                         alignment.IsMateMapped(), alignment.IsProperPair()));
@@ -1097,7 +1124,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l,
                         rp - l, // bases left
                         alignment.QueryBases.size() - rp, // bases right
-                        "", readseq,
+                        readseq,
                         sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual,
                         qualstr, alignment.MapQuality, alignment.IsPaired(),
@@ -1297,6 +1324,154 @@ void AlleleParser::updateRegisteredAlleles(void) {
     }
 }
 
+void AlleleParser::updatePriorAlleles(void) {
+
+    vector<Allele*>& alleles = priorAlleles;
+
+    for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
+        long unsigned int position = (*allele)->position;
+        if (currentPosition > position + (*allele)->length) {
+            *allele = NULL;
+        }
+    }
+
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+
+}
+
+void AlleleParser::updateInputVariants(void) {
+
+    if (variantCallInputFile.is_open()) {
+
+        if (hasMoreVariants && currentVariant->position - 1 <= currentPosition && currentVariant->sequenceName == currentSequenceName) {
+            do {
+                long double pos = currentVariant->position - 1;
+                //vector<Allele>& variants = priorVariants[pos];
+                // TODO
+                // get alternate alleles
+                map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
+                vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
+                for (vector<string>::iterator a = currentVariant->alleles.begin(); a != currentVariant->alleles.end(); ++a) {
+                    orderedVariantAlleles.push_back(variantAlleles[*a]);
+                }
+
+                // parse them into freebayes alleles
+                // and associate them with samples in the variant file
+                for (map<string, map<string, vector<string> > >::iterator s = currentVariant->samples.begin();
+                        s != currentVariant->samples.end(); ++s) {
+
+                    string sampleName = s->first;
+                    map<string, vector<string> >& sample = s->second;
+                    string& gt = sample["GT"].front();
+                    map<int, int> genotype = vcf::decomposeGenotype(gt);
+
+                    // default case, give a fixed count for each observed allele
+                    int ploidy = 0;
+                    for (map<int, int>::iterator g = genotype.begin(); g != genotype.end(); ++g) {
+                        ploidy += g->second;
+                    }
+
+                    int coveragePerAllele = parameters.variantPriorsCoverage / ploidy;
+
+                    // in the case that we have alternate observation counts in the VCF
+                    vector<int> observationCounts;
+                    if (sample.find("AA") != sample.end() && sample.find("RA") != sample.end()) {
+                        int i;
+                        convert(sample["RA"].front(), i);
+                        observationCounts.push_back(i);
+                        vector<string>& altobs = sample["AA"];
+                        for (vector<string>::iterator a = altobs.begin(); a != altobs.end(); ++a) {
+                            convert(*a, i);
+                            observationCounts.push_back(i);
+                        }
+                    }
+                    // if we don't, observationCounts will be empty and we resort to the default
+
+                    for (map<int, int>::iterator g = genotype.begin(); g != genotype.end(); ++g) {
+                        int alleleIndex = g->first;
+                        int alleleCount = g->second;
+                        vector<vcf::VariantAllele>& altAllele = orderedVariantAlleles[alleleIndex];
+
+                        for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
+
+                            vcf::VariantAllele& variant = *v;
+                            long double allelePos = pos;
+                            AlleleType type;
+                            string alleleSequence = variant.alt;
+
+                            //int len = max(variant.ref.size(), variant.alt.size());
+                            int len = 0;
+
+                            if (variant.ref == variant.alt) {
+                                len = variant.ref.size();
+                                type = ALLELE_REFERENCE;
+                            } else if (variant.ref.size() == variant.alt.size()) {
+                                len = variant.ref.size();
+                                if (variant.ref.size() == 1) {
+                                    type = ALLELE_SNP;
+                                } else {
+                                    type = ALLELE_MNP;
+                                }
+                            } else if (variant.ref.size() > variant.alt.size()) {
+                                len = variant.ref.size() - variant.alt.size();
+                                type = ALLELE_DELETION;
+                                allelePos += 0.5;
+                            } else {
+                                len = variant.alt.size() - variant.ref.size();
+                                type = ALLELE_INSERTION;
+                                allelePos += 0.5;
+                            }
+
+                            string dummyAlignmentName = "vcf";
+                            string dummySequencingTech = "vcf";
+
+                            // TODO allow configuration of observation quals
+                            Allele allele = Allele(type,
+                                        currentVariant->sequenceName,
+                                        allelePos,
+                                        &currentPosition,
+                                        &currentReferenceBase,
+                                        (unsigned int) len,
+                                        0,
+                                        0,
+                                        alleleSequence,
+                                        sampleName,
+                                        dummyAlignmentName,
+                                        dummySequencingTech,
+                                        false,
+                                        (long double) 40,
+                                        string(len, 'I'), // base qualities = Q40
+                                        (short int) 100,  // mapping quality
+                                        false,
+                                        false,
+                                        false);
+
+                            deque<Allele>& vars = priorVariants[allelePos];
+
+                            int coverage = coveragePerAllele * alleleCount;
+                            if (!observationCounts.empty()) {
+                                coverage = observationCounts[alleleIndex];
+                            }
+
+                            //cerr << sampleName << " " << allele << " " << " coverage is " << coverage << endl;
+
+                            for (int i = 0; i < coverage; ++i) {
+                                vars.push_back(allele);
+                                //priorAlleles.push_back(&vars.back());
+                                registeredAlleles.push_back(&vars.back());
+                            }
+                        }
+                    }
+                }
+
+            } while ((hasMoreVariants = variantCallInputFile.getNextVariant(*currentVariant))
+                    && currentVariant->position - 1 <= currentPosition
+                    && currentVariant->sequenceName == currentSequenceName);
+        }
+    }
+
+}
+
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         if ((*allele)->type == ALLELE_REFERENCE) {
@@ -1384,6 +1559,10 @@ bool AlleleParser::toNextTarget(void) {
         return false;
     }
 
+    DEBUG("getting first variant");
+    getFirstVariant();
+    DEBUG("got first variant");
+
     justSwitchedTargets = true;
     return true;
 
@@ -1414,8 +1593,23 @@ bool AlleleParser::loadTarget(BedTarget* target) {
         return false;
     }
 
+    if (variantCallInputFile.is_open()) {
+        stringstream r;
+        // TODO check that coordinates must be 1-bsaed
+        r << currentTarget->seq << ":" << currentTarget->left - 1 << "-" << currentTarget->right - 1;
+        if (!variantCallInputFile.setRegion(r.str())) {
+            ERROR("Could not set the region of the variants input file to " <<
+                    currentTarget->seq << ":" << currentTarget->left << ".." <<
+                    currentTarget->right);
+            return false;
+        }
+    }
+
     // now that we've jumped, reset the hasMoreAlignments counter
     hasMoreAlignments = true;
+
+    // same for the variants record
+    hasMoreVariants = true;
 
     DEBUG2("set region");
 
@@ -1446,6 +1640,25 @@ bool AlleleParser::getFirstAlignment(void) {
             ERROR("Could not find any mapped reads in target region " << currentSequenceName);
         }
         return false;
+    }
+
+    return true;
+
+}
+
+bool AlleleParser::getFirstVariant(void) {
+
+    hasMoreVariants = true;
+    if (variantCallInputFile.is_open()) {
+        if (!variantCallInputFile.getNextVariant(*currentVariant)) {
+            hasMoreVariants = false;
+        }
+
+        if (hasMoreVariants) {
+            DEBUG2("got first variant in target region");
+        } else {
+            return false;
+        }
     }
 
     return true;
@@ -1530,15 +1743,29 @@ bool AlleleParser::toNextPosition(void) {
 
     DEBUG2("processing position " << (long unsigned int) currentPosition + 1 << " in sequence " << currentSequenceName);
     updateAlignmentQueue();
+    DEBUG2("updating variants");
+    updateInputVariants();
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles(); // this removes unused left-flanking sequence
+    //DEBUG2("updating prior variant alleles");
+    //updatePriorAlleles();
 
     // if we have alignments which ended at the previous base, erase them and their alleles
+    // TODO check that this doesn't leak...
+    DEBUG2("erasing old registered alignments");
     map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.find(currentPosition - 2);
     if (f != registeredAlignments.end()) {
         registeredAlignments.erase(f);
     }
+    // and do the same for the variants from the input VCF
+    DEBUG2("erasing old prior variants");
+    // XXX weird... - 3 ?
+    map<long unsigned int, deque<Allele> >::iterator v = priorVariants.find(currentPosition - 3);
+    if (v != priorVariants.end()) {
+        priorVariants.erase(v);
+    }
     // so we have to make sure it's still there (this matters in low-coverage)
+    DEBUG2("updating reference sequence cache");
     preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
 
     return true;
@@ -1685,7 +1912,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             currentPosition,
             &currentPosition, 
             &currentReferenceBase,
-            1, 0, 0, base, base, name, name, sequencingTech,
+            1, 0, 0, base, name, name, sequencingTech,
             true, baseQ,
             baseQstr,
             mapQ,
@@ -1818,6 +2045,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
                 DEBUG2("adding allele to SNP alleles " << allele.currentBase);
                 resultAlleles.push_back(allele);
             }
+            DEBUG2("allele quality sum " << a->second);
         }
         DEBUG2("found " << sortedAlleles.size() << " SNP/ref alleles of which we now have " << resultAlleles.size() << endl
                << "and " << resultIndelAndMNPAlleles.size() << " INDEL and MNP alleles");

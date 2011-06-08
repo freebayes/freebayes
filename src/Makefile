@@ -57,6 +57,7 @@ OBJECTS=BamAlignment.o \
 		IndelAllele.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \
+		../vcflib/smithwaterman/SmithWatermanGotoh.o \
 		Variant.o
 
 HEADERS=multichoose.h
@@ -174,14 +175,14 @@ IndelAllele.o: IndelAllele.cpp IndelAllele.h
 Variant.o: ../vcflib/Variant.h ../vcflib/Variant.cpp ../vcflib/tabixpp/tabix.o
 	$(CC) $(CFLAGS) -c ../vcflib/Variant.cpp
 
-VCF.o: VCF.h VCF.cpp ../vcflib/Variant.h ../vcflib/Variant.cpp
-	$(CC) $(CFLAGS) -c VCF.cpp
-
 ../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
 	cd ../vcflib/tabixpp && make
 
 ../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h
 	cd ../vcflib/tabixpp && make
+
+../vcflib/smithwaterman/SmithWatermanGotoh.o: ../vcflib/smithwaterman/SmithWatermanGotoh.h ../vcflib/smithwaterman/SmithWatermanGotoh.cpp
+	cd ../vcflib/smithwaterman && make
 
 # versioning for git point releases
 version:
@@ -190,4 +191,5 @@ version:
 
 clean:
 	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles ../vcflib/*.o ../vcflib/tabixpp/*.{o,a}
+	cd ../vcflib/smithwaterman && make clean
 

@@ -135,7 +135,6 @@ public:
                 unsigned int len, 
                 int bleft,
                 int bright,
-                string refallele, 
                 string alt, 
                 string& sampleid,
                 string& readid,

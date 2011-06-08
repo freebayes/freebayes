@@ -209,11 +209,14 @@ int main (int argc, char *argv[]) {
         vector<vector<SampleDataLikelihood> > variantSampleDataLikelihoods;
         vector<vector<SampleDataLikelihood> > invariantSampleDataLikelihoods;
 
+        // TODO... segregate samples from the VCF from samples from BAMs
+
         DEBUG2("calculating data likelihoods");
         // calculate data likelihoods
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
 
             string sampleName = s->first;
+            //DEBUG2("sample: " << sampleName);
             Sample& sample = s->second;
             vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
             vector<Genotype*> genotypesWithObs;
@@ -294,12 +297,15 @@ int main (int argc, char *argv[]) {
         // calculate marginals
         // and determine best genotype combination
 
-        //DEBUG2("generating banded genotype combinations from " << genotypes.size() << " genotypes and " << sampleDataLikelihoods.size() << " sample genotypes");
+        DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes");
         list<GenotypeCombo> genotypeCombos;
 
-        if (parameters.expectationMaximization) {
+        if (parameters.expectationMaximization && !variantSampleDataLikelihoods.empty()) {
             GenotypeCombo nullCombo;
             bool addHomozygousCombos = true;
+            //cerr << sampleDataLikelihoods.size() << endl;
+            //cerr << variantSampleDataLikelihoods.size() << endl;
+            //cerr << invariantSampleDataLikelihoods.size() << endl;
             convergentGenotypeComboSearch(
                     genotypeCombos,
                     nullCombo,  // passing an empty combo triggers use of the data likelihood max combo
@@ -322,6 +328,11 @@ int main (int argc, char *argv[]) {
                     parameters.expectationMaximizationMaxIterations,
                     addHomozygousCombos);
         } else {
+            // handles the case where all samples have highly differentiated GLs
+            if (variantSampleDataLikelihoods.empty()) {
+                variantSampleDataLikelihoods = invariantSampleDataLikelihoods;
+                invariantSampleDataLikelihoods.clear();
+            }
             DEBUG2("generating banded genotype combinations");
             GenotypeCombo nullCombo;
             bandedGenotypeCombinationsIncludingAllHomozygousCombos(

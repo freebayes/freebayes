@@ -39,7 +39,7 @@ void Parameters::usage(char** argv) {
          << "                   ... for each region in each sample which does not have the" << endl
          << "                   default copy number as set by --ploidy." << endl
          << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
-         << "   -l --failed-alleles FILE" << endl
+         << "   --failed-alleles FILE" << endl
          << "                   Write a BED file of the analyzed positions which do not" << endl
          << "                   pass --pvar to FILE." << endl
          << endl
@@ -47,10 +47,6 @@ void Parameters::usage(char** argv) {
          << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
          << "                   at the site is greater than N.  default: 0.0001" << endl
-         // TODO reuse
-         //<< "   -@ --report-all-alternates" << endl
-         //<< "                   Report (in non-standard VCF format) each alternate allele" << endl
-         //<< "                   at a site on its own line of VCF." << endl
          << "   -_ --show-reference-repeats" << endl
          << "                   Calculate and show information about reference repeats in" << endl
          << "                   the VCF output." << endl
@@ -167,6 +163,13 @@ void Parameters::usage(char** argv) {
          << "                   Turns off the Ewens' Sampling Formula component of the priors." << endl
          << "   -k --no-population-priors" << endl
          << "                   Equivalent to --pooled --no-ewens-priors" << endl
+         << "   -@ --variant-priors VCF" << endl
+         << "                   Use variants reported in VCF file as input to the algorithm." << endl
+         << "                   A report will be generated for every record in the VCF file." << endl
+         << "   -l --variant-priors-coverage N" << endl
+         << "                   Assume this number of reads support each sample in the input VCF," << endl
+         << "                   Use this if the input VCF does not have per-sample alternate" << endl
+         << "                   observation counts (AA). default: 10" << endl
          << endl
          << "algorithmic features:" << endl
          << endl
@@ -177,7 +180,7 @@ void Parameters::usage(char** argv) {
          << "                   Iterate no more than this many times during expectation" << endl
          << "                   maximization step.  default: 5" << endl
          << "   -B --genotyping-max-iterations N" << endl
-         << "                   Iterate no more than N times during genotyping step. default: 200." << endl
+         << "                   Iterate no more than N times during genotyping step. default: 25." << endl
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
@@ -211,7 +214,7 @@ void Parameters::usage(char** argv) {
          << "   -dd             Print more verbose debugging output (requires \"make DEBUG\")" << endl
          << endl
          << endl
-         << "author:  Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010" << endl
+         << "author:  Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010, 2011" << endl
          << "date:    " << FREEBAYES_COMPILE_DATE << endl
          << "version: " <<  FREEBAYES_VERSION << endl;
 }
@@ -271,9 +274,10 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeVariantThreshold = 0;
     expectationMaximization = false;
     expectationMaximizationMaxIterations = 5;
-    genotypingMaxIterations = 200;
+    genotypingMaxIterations = 25;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
+    variantPriorsCoverage = 10;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -321,7 +325,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"cnv-map", required_argument, 0, 'A'},
         {"vcf", required_argument, 0, 'v'},
         {"trace", required_argument, 0, 'L'},
-        {"failed-alleles", required_argument, 0, 'l'},
+        {"failed-alleles", required_argument, 0, '8'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"ignore-reference-allele", no_argument, 0, 'Z'},
@@ -363,7 +367,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-coverage", required_argument, 0, '!'},
         {"no-permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
-        {"report-all-alternates", no_argument, 0, '@'},
+        {"variant-priors", required_argument, 0, '@'},
+        {"variant-priors-coverage", required_argument, 0, 'l'},
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
@@ -379,7 +384,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI@_YkM=wVXJb:G:x:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:l:z:1:3:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_YkM=wVXJb:G:x:@:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:l:z:1:3:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -446,8 +451,8 @@ Parameters::Parameters(int argc, char** argv) {
                 trace = true;
                 break;
 
-            // -l --failed-alleles
-            case 'l':
+            // -8 --failed-alleles
+            case '8':
                 failedFile = optarg;
                 break;
 
@@ -756,7 +761,14 @@ Parameters::Parameters(int argc, char** argv) {
                 break;
 
             case '@':
-                reportAllAlternates = true;
+                variantPriorsFile = optarg;
+                break;
+
+            case 'l':
+                if (!convert(optarg, variantPriorsCoverage)) {
+                    cerr << "could not parse variant-priors-coverage" << endl;
+                    exit(1);
+                }
                 break;
 
             case '_':

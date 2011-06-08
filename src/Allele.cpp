@@ -370,7 +370,8 @@ ostream &operator<<(ostream &out, Allele &allele) {
     if (!allele.genotypeAllele) {
         // << &allele << ":" 
         out.precision(1);
-        out << allele.readID 
+        out << allele.sampleID
+            << ":" << allele.readID 
             << ":" << allele.typeStr() 
             << ":" << allele.length 
             << ":" << scientific << fixed << allele.position 

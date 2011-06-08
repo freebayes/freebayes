@@ -36,6 +36,9 @@ public:
     string outputFile;
     string traceFile;
     string failedFile;    // -l --failed-alleles
+    string variantPriorsFile;
+
+    int variantPriorsCoverage; // assigned 'depth' of genotypes from the variant priors file
 
     // operation parameters
     bool outputAlleles;          //  unused...

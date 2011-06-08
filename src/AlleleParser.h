@@ -106,6 +106,7 @@ public:
 
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
+    vector<string> sampleListFromVCF; // sample names drawn from input VCF
     map<string, string> readGroupToSampleNames; // maps read groups to samples
     map<string, string> readGroupToTechnology; // maps read groups to technologies
     vector<string> sequencingTechnologies;  // a list of the present technologies
@@ -128,8 +129,11 @@ public:
 
     // VCF
     vcf::VariantCallFile variantCallFile;
+    vcf::VariantCallFile variantCallInputFile;
 
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
+    map<long unsigned int, deque<Allele> > priorVariants;
+    vector<Allele*> priorAlleles;
     vector<Allele*> registeredAlleles;
     //list<Allele*> registeredAlleles;
     //map<string, list<Allele*> > allelesBySample;
@@ -163,14 +167,17 @@ public:
     string referenceSubstr(long double position, unsigned int length);
     void loadTargets(void);
     bool getFirstAlignment(void);
+    bool getFirstVariant(void);
     void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
     RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(void);
+    void updateInputVariants(void);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void updateRegisteredAlleles(void);
+    void updatePriorAlleles(void);
     vector<BedTarget>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
     bool loadTarget(BedTarget*);
@@ -188,6 +195,7 @@ public:
     int homopolymerRunRight(string altbase);
     map<string, int> repeatCounts(int maxsize);
     void setupVCFOutput(void);
+    void setupVCFInput(void);
     string vcfHeader(void);
 
     // gets the genotype alleles we should evaluate among the allele groups and
@@ -227,6 +235,7 @@ private:
     long int currentSequenceStart;
 
     bool hasMoreAlignments;
+    bool hasMoreVariants;;
 
     bool oneSampleAnalysis; // if we are analyzing just one sample, and there are no specified read groups
 
@@ -235,6 +244,7 @@ private:
 
     int currentRefID;
     BamAlignment currentAlignment;
+    vcf::Variant* currentVariant;
 
 };
 
