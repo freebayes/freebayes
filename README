@@ -14,6 +14,17 @@ likely polymorphic than monomorphic in a standard variant interchange format
 (VCF).
 
 
+Obtaining:
+
+To download FreeBayes, please use git to download the most recent development
+tree.  Currently, the tree is hosted on github, and can be obtained via:
+
+    % git clone --recursive git://github.com/ekg/freebayes.git
+
+Note the use of --recursive.  This is required, as the project contains some
+nested git submodules for external repositories.
+
+
 Compilation:
 
 FreeBayes requires g++ and the standard C and C++ development libraries.
@@ -67,11 +78,11 @@ API.  If merging the files in your analysis using bamtools merge would generate
 a file in which multiple samples map to the same RG, the files are not suitable
 for use in population calling, and they must be modified.
 
-A script, scripts/sam_add_rg.pl, is included to add RG tags to BAM
-files which were generated without this information.  If you have many files
-corresponding to many individuals, add a unique read group and sample name to
-each, and then open them all simultaneously with freebayes.  The VCF output
-will have one column per sample in the input.
+Users may add RG tags to BAM files which were generated without this
+information by using bamaddrg [5].  If you have many files corresponding to
+many individuals, add a unique read group and sample name to each, and then
+open them all simultaneously with freebayes.  The VCF output will have one
+column per sample in the input.
 
 
 Input filters:
@@ -150,7 +161,7 @@ When calling indels, it is important to homogenize the positional distribution
 of insertions and deletions in the input by using left realignment.  This can
 be done in a streaming fashion as in this indel detection example:
 
-    % bamtools filter -region 10:6000..7000 -in NA20504.bam -in NA20507.bam \
+    % bamtools merge -region 10:6000..7000 -in NA20504.bam -in NA20507.bam \
        | bamleftalign -f reference.fasta \
        | samtools fillmd -Aru - reference.fasta \
        | freebayes --stdin \
@@ -163,7 +174,7 @@ be done in a streaming fashion as in this indel detection example:
 (Note that BAQ is applied after realignment.  Also note the --indels flag,
 which is required for indel detection.  Also, when supplied a --region
 specifier but reading from stdin, freebayes will not report sites outside of
-the target region, which may occur as bamtools filter emits all reads which are
+the target region, which may occur as bamtools merge emits all reads which are
 partially overlapping the target region.)
 
 Left realignment will place all indels in homopolymer and microsatellite
@@ -194,8 +205,17 @@ prior component derived from the probability of a specific distribution of
 heterozygotes and homozygotes given the allele frequency), and set --ploidy to
 the number of total copies of the genome in each pooled sample.  For example,
 if you have 10 individuals in a pool, and each individual is diploid, you would
-set --ploidy 20.  Users should be aware that the current implementation has
-poor memory performance with ploidy set very high (e.g. 40).
+set --ploidy 20.  Users should be aware that the current implementation may
+have poor performance with ploidy set very high (e.g. 40).
+
+
+Bugs:
+
+Please report bugs using the built-in bug reporting feature in github.
+
+I'm also very interested to learn about algorithmic issues, such as poor
+performance or missed variants.  I will be more than happy to discuss them with
+you and investigate any such issues.
 
 
 Author: Erik Garrison <erik.garrison@bc.edu>
@@ -209,3 +229,4 @@ References:
 [2] http://sourceforge.net/projects/bamtools/
 [3] http://bioinformatics.bc.edu/marthlab/Main_Page
 [4] http://bioinformatics.bc.edu/marthlab/Mosaik
+[5] https://github.com/ekg/bamaddrg
