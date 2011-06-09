@@ -189,14 +189,34 @@ string Allele::typeStr(void) {
 
 }
 
-const string Allele::base(void) const { // the base of this allele
+bool Allele::isReference(void) {
+    return type == ALLELE_REFERENCE;
+}
 
-    if (genotypeAllele)
-        return alternateSequence;
+bool Allele::isSNP(void) {
+    return type == ALLELE_SNP;
+}
+
+bool Allele::isInsertion(void) {
+    return type == ALLELE_INSERTION;
+}
+
+bool Allele::isDeletion(void) {
+    return type == ALLELE_DELETION;
+}
+
+bool Allele::isMNP(void) {
+    return type == ALLELE_MNP;
+}
+
+const string Allele::base(void) const { // the base of this allele
 
     switch (this->type) {
         case ALLELE_REFERENCE:
-            return string(1, *currentReferenceBase);
+            if (genotypeAllele)
+                return alternateSequence;
+            else
+                return string(1, *currentReferenceBase);
             break;
         case ALLELE_GENOTYPE:
             return alternateSequence;
@@ -392,6 +412,7 @@ bool operator<(const Allele &a, const Allele &b) {
     return a.currentBase < b.currentBase;
 }
 
+// TODO fixme??
 // alleles are equal if they represent the same reference-relative variation or
 // sequence, which we encode as a string and compare here
 bool operator==(const Allele &a, const Allele &b) {
@@ -410,8 +431,8 @@ bool Allele::equivalent(Allele &b) {
     } else {
         switch (type) {
             case ALLELE_REFERENCE:
-                if (currentBase == b.currentBase)
-                    return true;
+                // reference alleles are, by definition, always equivalent
+                return true;
                 break;
             case ALLELE_SNP:
             case ALLELE_MNP:

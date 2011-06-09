@@ -38,6 +38,7 @@ vcf::Variant& Results::vcf(
 
         switch (altAllele.type) {
             case ALLELE_SNP:
+            case ALLELE_REFERENCE:
                 break;
             case ALLELE_MNP:
                 if (var.ref.size() < altAllele.length) {
@@ -67,6 +68,9 @@ vcf::Variant& Results::vcf(
         string altSequence;
 
         switch (altAllele.type) {
+            case ALLELE_REFERENCE:
+                altSequence = var.ref;
+                break;
             case ALLELE_SNP:
                 altSequence = var.ref;
                 // XXX hack, what happens when we are co-present with indels?
@@ -86,7 +90,7 @@ vcf::Variant& Results::vcf(
                 altSequence = var.ref;
                 // XXX hack... resolves the alt allele semantics issue
                 // we have to strip off the leading 'I' from the allele name
-                altSequence.insert(1, altAllele.alternateSequence.substr(1));
+                altSequence.insert(1, altAllele.base().substr(1));
                 break;
             default:
                 cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
@@ -124,7 +128,6 @@ vcf::Variant& Results::vcf(
     var.format.push_back("QA");
     var.format.push_back("GL");
     //var.format.push_back("GLE");
-
 
     // loop over all alternate alleles
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
@@ -216,33 +219,39 @@ vcf::Variant& Results::vcf(
 
         map<string, int> obsBySequencingTechnology;
 
-        vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
-        for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
-            Allele& allele = **app;
-            if (allele.isProperPair) {
-                ++properPairs;
-            }
-            if (!allele.sequencingTechnology.empty()) {
-                ++obsBySequencingTechnology[allele.sequencingTechnology];
-            }
-            basesLeft += allele.basesLeft;
-            basesRight += allele.basesRight;
-            if (allele.basesLeft >= allele.basesRight) {
-                readsLeft += 1;
-                if (allele.strand == STRAND_FORWARD) {
-                    endLeft += 1;
-                } else {
-                    endRight += 1;
+        unsigned int alleleObservationCount = 0;
+
+        map<string, vector<Allele*> >::iterator f = alleleGroups.find(altbase);
+        if (f != alleleGroups.end()) {
+            vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
+            alleleObservationCount = alternateAlleles.size();
+            for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
+                Allele& allele = **app;
+                if (allele.isProperPair) {
+                    ++properPairs;
                 }
-            } else {
-                readsRight += 1;
-                if (allele.strand == STRAND_FORWARD) {
-                    endRight += 1;
-                } else {
-                    endLeft += 1;
+                if (!allele.sequencingTechnology.empty()) {
+                    ++obsBySequencingTechnology[allele.sequencingTechnology];
                 }
+                basesLeft += allele.basesLeft;
+                basesRight += allele.basesRight;
+                if (allele.basesLeft >= allele.basesRight) {
+                    readsLeft += 1;
+                    if (allele.strand == STRAND_FORWARD) {
+                        endLeft += 1;
+                    } else {
+                        endRight += 1;
+                    }
+                } else {
+                    readsRight += 1;
+                    if (allele.strand == STRAND_FORWARD) {
+                        endRight += 1;
+                    } else {
+                        endLeft += 1;
+                    }
+                }
+                mqsum += allele.mapQuality;
             }
-            mqsum += allele.mapQuality;
         }
 
         //string refbase = parser->currentReferenceBase();
@@ -273,10 +282,10 @@ vcf::Variant& Results::vcf(
         var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ));
         var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetReferenceObsCount, hetAllObsCount, 0.5))));
         var.info["RUN"].push_back(convert(parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)));
-        var.info["MQM"].push_back(convert((alternateAlleles.size() == 0) ? 0 : (double) mqsum / (double) alternateAlleles.size()));
+        var.info["MQM"].push_back(convert((alleleObservationCount == 0) ? 0 : (double) mqsum / (double) alleleObservationCount));
             //<< "RL=" << readsLeft << ";"
             //<< "RR=" << readsRight << ";"
-        var.info["RPP"].push_back(convert(ln2phred(hoeffdingln(readsLeft, readsRight + readsLeft, 0.5))));
+        var.info["RPP"].push_back(convert((alleleObservationCount == 0) ? 0 : ln2phred(hoeffdingln(readsLeft, readsRight + readsLeft, 0.5))));
             //<< "EL=" << endLeft << ";"
             //<< "ER=" << endRight << ";"
         var.info["EPP"].push_back(convert((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(endLeft, endLeft + endRight, 0.5))));
@@ -284,12 +293,12 @@ vcf::Variant& Results::vcf(
             //<< "BR=" << basesRight << ";"
             //<< "LRB=" << ((double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) - 0.5) * 2 << ";"
             //<< "LRBP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(basesLeft, basesLeft + basesRight, 0.5))) << ";"
-        var.info["PAIRED"].push_back(convert((alternateAlleles.size() == 0) ? 0 : (double) properPairs / (double) alternateAlleles.size()));
+        var.info["PAIRED"].push_back(convert((alleleObservationCount == 0) ? 0 : (double) properPairs / (double) alleleObservationCount));
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
                 st != sequencingTechnologies.end(); ++st) { string& tech = *st;
-            var.info["technology." + tech].push_back(convert((alternateAlleles.size() == 0) ? 0
-                        : (double) obsBySequencingTechnology[tech] / (double) alternateAlleles.size() ));
+            var.info["technology." + tech].push_back(convert((alleleObservationCount == 0) ? 0
+                        : (double) obsBySequencingTechnology[tech] / (double) alleleObservationCount ));
         }
 
         if (bestOverallComboIsHet) {

@@ -220,7 +220,7 @@ string IUPAC2GenotypeStr(string iupac, int ploidy) {
 
 ostream& operator<<(ostream& out, const GenotypeElement& rhs) {
     for (int i = 0; i < rhs.count; ++i)
-        out << rhs.allele.alternateSequence;
+        out << rhs.allele.base();
     //for (int i = 0; i < rhs.second; ++i)
     //    out << rhs.first.alternateSequence;
     return out;

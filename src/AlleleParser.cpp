@@ -1324,21 +1324,6 @@ void AlleleParser::updateRegisteredAlleles(void) {
     }
 }
 
-void AlleleParser::updatePriorAlleles(void) {
-
-    vector<Allele*>& alleles = priorAlleles;
-
-    for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        long unsigned int position = (*allele)->position;
-        if (currentPosition > position + (*allele)->length) {
-            *allele = NULL;
-        }
-    }
-
-    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-
-}
-
 void AlleleParser::updateInputVariants(void) {
 
     if (variantCallInputFile.is_open()) {
@@ -1346,13 +1331,51 @@ void AlleleParser::updateInputVariants(void) {
         if (hasMoreVariants && currentVariant->position - 1 <= currentPosition && currentVariant->sequenceName == currentSequenceName) {
             do {
                 long double pos = currentVariant->position - 1;
-                //vector<Allele>& variants = priorVariants[pos];
-                // TODO
                 // get alternate alleles
                 map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
                 vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
                 for (vector<string>::iterator a = currentVariant->alleles.begin(); a != currentVariant->alleles.end(); ++a) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
+                }
+
+                for (vector< vector<vcf::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
+
+                    vector<vcf::VariantAllele>& altAllele = *g;
+
+                    for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
+
+                        vcf::VariantAllele& variant = *v;
+                        long double allelePos = pos;
+                        AlleleType type;
+                        string alleleSequence = variant.alt;
+
+                        int len = 0;
+
+                        if (variant.ref == variant.alt) {
+                            len = variant.ref.size();
+                            type = ALLELE_REFERENCE;
+                        } else if (variant.ref.size() == variant.alt.size()) {
+                            len = variant.ref.size();
+                            if (variant.ref.size() == 1) {
+                                type = ALLELE_SNP;
+                            } else {
+                                type = ALLELE_MNP;
+                            }
+                        } else if (variant.ref.size() > variant.alt.size()) {
+                            len = variant.ref.size() - variant.alt.size();
+                            type = ALLELE_DELETION;
+                            allelePos += 0.5;
+                        } else {
+                            len = variant.alt.size() - variant.ref.size();
+                            type = ALLELE_INSERTION;
+                            allelePos += 0.5;
+                        }
+
+                        Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, allelePos);
+
+                        inputVariantAlleles[allelePos].push_back(allele);
+
+                    }
                 }
 
                 // parse them into freebayes alleles
@@ -1446,7 +1469,7 @@ void AlleleParser::updateInputVariants(void) {
                                         false,
                                         false);
 
-                            deque<Allele>& vars = priorVariants[allelePos];
+                            deque<Allele>& vars = inputVariantSampleAlleles[allelePos];
 
                             int coverage = coveragePerAllele * alleleCount;
                             if (!observationCounts.empty()) {
@@ -1758,12 +1781,19 @@ bool AlleleParser::toNextPosition(void) {
         registeredAlignments.erase(f);
     }
     // and do the same for the variants from the input VCF
-    DEBUG2("erasing old prior variants");
-    // XXX weird... - 3 ?
-    map<long unsigned int, deque<Allele> >::iterator v = priorVariants.find(currentPosition - 3);
-    if (v != priorVariants.end()) {
-        priorVariants.erase(v);
+    DEBUG2("erasing old input variant alleles");
+    // XXX weird... - 3 ? otherwise segfault?
+    map<long unsigned int, deque<Allele> >::iterator s = inputVariantSampleAlleles.find(currentPosition - 3);
+    if (s != inputVariantSampleAlleles.end()) {
+        inputVariantSampleAlleles.erase(s);
     }
+
+    map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition - 3);
+    if (v != inputVariantAlleles.end()) {
+        inputVariantAlleles.erase(v);
+    }
+
+
     // so we have to make sure it's still there (this matters in low-coverage)
     DEBUG2("updating reference sequence cache");
     preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
@@ -2069,6 +2099,27 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
     }
 
+    // now add in the alleles from the input variant set
+
+    map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
+    if (v != inputVariantAlleles.end()) {
+        deque<Allele>& inputalleles = v->second;
+        for (deque<Allele>::iterator a = inputalleles.begin(); a != inputalleles.end(); ++a) {
+            Allele& allele = *a;
+            // check if the allele is already present
+            bool alreadyPresent = false;
+            for (vector<Allele>::iterator r = resultAlleles.begin(); r != resultAlleles.end(); ++r) {
+                if (r->equivalent(allele)) {
+                    alreadyPresent = true;
+                    break;
+                }
+            }
+            if (!alreadyPresent) {
+                resultAlleles.push_back(allele);
+            }
+        }
+    }
+
     DEBUG2("found " << resultAlleles.size() << " result alleles");
     return resultAlleles;
 
@@ -2156,5 +2207,14 @@ map<string, int> AlleleParser::repeatCounts(int maxsize) {
         return filteredcounts;
     } else {
         return counts;
+    }
+}
+
+bool AlleleParser::hasInputVariantAllelesAtCurrentPosition(void) {
+    map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
+    if (v != inputVariantAlleles.end()) {
+        return true;
+    } else {
+        return false;
     }
 }

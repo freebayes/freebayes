@@ -184,13 +184,14 @@ public:
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
-        , currentBase(alt) // XXX TODO, the semantics here mean that the 'genotype' alleles don't have normal alternateSequence
         , length(len)
         , quality(0)
         , lnquality(1)
         , position(pos)
         , genotypeAllele(true)
-    { }
+    {
+        currentBase = base();
+    }
 
     /*
     Allele(const Allele& other) 
@@ -217,6 +218,11 @@ public:
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void); // return a string representation of the allele type, for output
+    bool isReference(void); // true if type == ALLELE_REFERENCE
+    bool isSNP(void); // true if type == ALLELE_SNP
+    bool isInsertion(void); // true if type == ALLELE_INSERTION
+    bool isDeletion(void); // true if type == ALLELE_DELETION
+    bool isMNP(void); // true if type == ALLELE_MNP
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;

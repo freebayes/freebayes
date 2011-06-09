@@ -132,8 +132,9 @@ public:
     vcf::VariantCallFile variantCallInputFile;
 
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
-    map<long unsigned int, deque<Allele> > priorVariants;
-    vector<Allele*> priorAlleles;
+    map<long unsigned int, deque<Allele> > inputVariantSampleAlleles; // allele observations, tagged by sample
+    // XXX
+    map<long double, deque<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     vector<Allele*> registeredAlleles;
     //list<Allele*> registeredAlleles;
     //map<string, list<Allele*> > allelesBySample;
@@ -197,6 +198,7 @@ public:
     void setupVCFOutput(void);
     void setupVCFInput(void);
     string vcfHeader(void);
+    bool hasInputVariantAllelesAtCurrentPosition(void);
 
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters

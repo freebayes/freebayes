@@ -133,24 +133,26 @@ int main (int argc, char *argv[]) {
 
         DEBUG("position: " << parser->currentSequenceName << ":" << (long unsigned int) parser->currentPosition + 1 << " coverage: " << coverage);
 
-        // skips 0-coverage regions
-        if (coverage == 0) {
-            DEBUG("no alleles left at this site after filtering");
-            continue;
-        } else if (coverage < parameters.minCoverage) {
-            DEBUG("post-filtering coverage of " << coverage << " is less than --min-coverage of " << parameters.minCoverage);
-            continue;
-        }
+        if (!parser->hasInputVariantAllelesAtCurrentPosition()) {
+            // skips 0-coverage regions
+            if (coverage == 0) {
+                DEBUG("no alleles left at this site after filtering");
+                continue;
+            } else if (coverage < parameters.minCoverage) {
+                DEBUG("post-filtering coverage of " << coverage << " is less than --min-coverage of " << parameters.minCoverage);
+                continue;
+            }
 
-        DEBUG2("coverage " << parser->currentSequenceName << ":" << parser->currentPosition << " == " << coverage);
+            DEBUG2("coverage " << parser->currentSequenceName << ":" << parser->currentPosition << " == " << coverage);
 
-        // establish a set of possible alternate alleles to evaluate at this location
-        // only evaluate alleles with at least one supporting read with mapping
-        // quality (MQL1) and base quality (BQL1)
+            // establish a set of possible alternate alleles to evaluate at this location
+            // only evaluate alleles with at least one supporting read with mapping
+            // quality (MQL1) and base quality (BQL1)
 
-        if (!sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
-            DEBUG("insufficient alternate observations");
-            continue;
+            if (!sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
+                DEBUG("insufficient alternate observations");
+                continue;
+            }
         }
 
         map<string, vector<Allele*> > alleleGroups;
@@ -484,7 +486,7 @@ int main (int argc, char *argv[]) {
                 // cap the number of iterations at 2 x the number of alternate alleles
                 // max it at parameters.genotypingMaxIterations (200 by default) iterations, min at 10
                 int itermax = min(max(10, 2 * bestCombo.hetCount()), parameters.genotypingMaxIterations);
-                //cout << "itermax: " << itermax << endl;
+                //cerr << "itermax: " << itermax << endl;
 
                 // search much longer for convergence
                 convergentGenotypeComboSearch(
@@ -542,8 +544,8 @@ int main (int argc, char *argv[]) {
 
                 // if for some reason there are no het combos, use the first combo
                 if (!hasHetCombo) {
-                    bestCombo = genotypeCombos.front();
                 }
+                bestCombo = genotypeCombos.front();
 
                 marginalGenotypeLikelihoods(genotypeCombos, sampleDataLikelihoods);
 
@@ -580,6 +582,14 @@ int main (int argc, char *argv[]) {
             for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
                 Allele& alt = a->first;
                 alts.push_back(alt);
+            }
+            // if there are no alternate alleles in the best combo, use the genotype alleles
+            if (alts.empty()) {
+                for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
+                    if (!a->isReference()) {
+                        alts.push_back(*a);
+                    }
+                }
             }
 
             vcf::Variant var(parser->variantCallFile);
