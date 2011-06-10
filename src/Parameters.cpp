@@ -90,7 +90,7 @@ void Parameters::usage(char** argv) {
          << "   -I --no-snps    Ignore SNP alleles.  default: only analyze SNP alleles." << endl
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
-         << "                   supporting quality scores.  Set to 0 to use all.  default: 2" << endl
+         << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
          << endl
          << "indel realignment:" << endl
          << endl
@@ -254,7 +254,7 @@ Parameters::Parameters(int argc, char** argv) {
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
     reportAllAlternates = false;
-    useBestNAlleles = 2;         // -n --use-best-n-alleles
+    useBestNAlleles = 0;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
     haploidReference = false;      // -H --haploid-reference
