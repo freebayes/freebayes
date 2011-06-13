@@ -228,8 +228,8 @@ void AlleleParser::getSampleNames(void) {
                        << "To resolve the issue, ensure that RG ids are unique to one sample" << endl
                        << "across all the input files to freebayes." << endl
                        << endl
-                       << "See ./scripts/sam_add_rg.pl in the freebayes source tree for a method" << endl
-                       << "to modify the RG tags in a SAM stream." << endl);
+                       << "See bamaddrg (https://github.com/ekg/bamaddrg) for a method which can" << endl
+                       << "add RG tags to alignments." << endl);
                     exit(1);
                 }
                 // if it's the same sample name and RG combo, no worries
