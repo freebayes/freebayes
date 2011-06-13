@@ -1986,7 +1986,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         if (passesFilters) {
             Allele& allele = *(alleles.front());
             int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length, currentPosition), qSum));
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.alternateSequence, length, currentPosition), qSum));
         }
     }
     DEBUG2("found genotype alleles");
