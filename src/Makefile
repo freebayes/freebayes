@@ -172,17 +172,15 @@ LeftAlign.o: LeftAlign.h LeftAlign.cpp
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
 	$(CC) $(CFLAGS) -c IndelAllele.cpp
 
-Variant.o: ../vcflib/Variant.h ../vcflib/Variant.cpp ../vcflib/tabixpp/tabix.o
+Variant.o: ../vcflib/Variant.h ../vcflib/Variant.cpp
 	$(CC) $(CFLAGS) -c ../vcflib/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
-	cd ../vcflib/tabixpp && make
-
 ../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h
-	cd ../vcflib/tabixpp && make
+	cd ../vcflib/tabixpp && $(MAKE)
 
 ../vcflib/smithwaterman/SmithWatermanGotoh.o: ../vcflib/smithwaterman/SmithWatermanGotoh.h ../vcflib/smithwaterman/SmithWatermanGotoh.cpp
-	cd ../vcflib/smithwaterman && make
+	cd ../vcflib/smithwaterman && $(MAKE)
 
 # versioning for git point releases
 version:
