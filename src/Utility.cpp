@@ -479,3 +479,9 @@ string dateStr(void) {
     return string(buffer);
 
 }
+
+long double string2float(const string& s) {
+    long double r;
+    convert(s, r);
+    return r;
+}

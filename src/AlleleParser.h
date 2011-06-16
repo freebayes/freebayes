@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <deque>
+#include <set>
 #include <utility>
 #include <algorithm>
 #include <time.h>
@@ -131,9 +132,10 @@ public:
     vcf::VariantCallFile variantCallFile;
     vcf::VariantCallFile variantCallInputFile;
 
-    map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
-    map<long double, deque<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     vector<Allele*> registeredAlleles;
+    map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
+    map<long double, vector<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
+    map<long double, map<string, vector<long double> > > inputDataLikelihoods;
 
     // reference names indexed by id
     vector<RefData> referenceSequences;

@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 #include <time.h>
+#include "convert.h"
 
 using namespace std;
 
@@ -87,5 +88,7 @@ int levenshteinDistance(const std::string source, const std::string target);
 bool isTransition(string& ref, string& alt);
 
 string dateStr(void);
+
+long double string2float(const string& s);
 
 #endif

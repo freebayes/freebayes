@@ -278,6 +278,7 @@ void AlleleParser::getSampleNames(void) {
     }
 
     if (sampleList.empty()) {
+        /*
         ERROR(string(80, '-') << endl
              //--------------------------------------------------------------------------------
            << "Warning: No sample file given, and no @RG tags found in BAM header." << endl
@@ -287,6 +288,7 @@ void AlleleParser::getSampleNames(void) {
            << "freebayes source tree, or by specifying read groups and sample names when you" << endl
            << "prepare your sequencing data for alignment." << endl
            << string(80, '-'));
+           */
         sampleList.push_back("unknown");
         readGroupToSampleNames["unknown"] = "unknown";
         oneSampleAnalysis = true;
@@ -369,7 +371,7 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         // this can be regenerated with RA, AA, QR, QA
         << "##FORMAT=<ID=GL,Number=G,Type=String,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
-        << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0:-75.22,1:-223.42,0/0:-323.03,1/0:-99.29,1/1:-802.53\">" << endl
+        << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0=-75.22,1=-223.42,0/0=-323.03,1/0=-99.29,1/1=-802.53\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
@@ -1338,6 +1340,8 @@ void AlleleParser::updateInputVariants(void) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
                 }
 
+                set<long double> positions;
+
                 for (vector< vector<vcf::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
 
                     vector<vcf::VariantAllele>& altAllele = *g;
@@ -1375,6 +1379,18 @@ void AlleleParser::updateInputVariants(void) {
 
                         inputVariantAlleles[allelePos].push_back(allele);
 
+                        positions.insert(allelePos);
+
+                    }
+                }
+
+                map<long double, map<int, vector<Genotype> > > genotypesByPloidyByPosition;
+
+                // XXX hard-coded to a specific set of ploidys
+                for (set<long double>::iterator pos = positions.begin(); pos != positions.end(); ++pos) {
+                    vector<Allele>& genotypeAlleles = inputVariantAlleles[*pos];
+                    for (int p = 1; p <= 2; ++p) {
+                        genotypesByPloidyByPosition[*pos][p] = allPossibleGenotypes(p, genotypeAlleles);
                     }
                 }
 
@@ -1394,21 +1410,17 @@ void AlleleParser::updateInputVariants(void) {
                         ploidy += g->second;
                     }
 
-                    int coveragePerAllele = parameters.variantPriorsCoverage / ploidy;
-
-                    // in the case that we have alternate observation counts in the VCF
-                    vector<int> observationCounts;
-                    if (sample.find("AA") != sample.end() && sample.find("RA") != sample.end()) {
-                        int i;
-                        convert(sample["RA"].front(), i);
-                        observationCounts.push_back(i);
-                        vector<string>& altobs = sample["AA"];
-                        for (vector<string>::iterator a = altobs.begin(); a != altobs.end(); ++a) {
-                            convert(*a, i);
-                            observationCounts.push_back(i);
-                        }
+                    if (ploidy > 2) {
+                        cerr << "warning, cannot handle ploidy > 2 for input VCF due to limitations of the VCF specification" << endl;
                     }
-                    // if we don't, observationCounts will be empty and we resort to the default
+
+                    // in the case that we have genotype likelihoods in the VCF
+                    vector<long double> genotypeLikelihoods;
+                    if (sample.find("GL") != sample.end()) {
+                        vector<string>& gls = sample["GL"];
+                        genotypeLikelihoods.resize(gls.size());
+                        transform(gls.begin(), gls.end(), genotypeLikelihoods.begin(), string2float);
+                    }
 
                 }
 
@@ -1671,7 +1683,10 @@ bool AlleleParser::toNextPosition(void) {
         // TODO rectify this with the other copies of this stanza...
         // implicit step of target sequence
         // XXX this must wait for us to clean out all of our alignments at the end of the target
-        if (registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
+        while (hasMoreAlignments && !currentAlignment.IsMapped()) {
+            hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment);
+        }
+        if (hasMoreAlignments && registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
             clearRegisteredAlignments();
             loadReferenceSequence(currentAlignment);
             justSwitchedTargets = true;
@@ -1708,7 +1723,7 @@ bool AlleleParser::toNextPosition(void) {
 
     // and do the same for the variants from the input VCF
     DEBUG2("erasing old input variant alleles");
-    map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition - 3);
+    map<long double, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition - 3);
     if (v != inputVariantAlleles.end()) {
         inputVariantAlleles.erase(v);
     }
@@ -2021,10 +2036,10 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
     // now add in the alleles from the input variant set
 
-    map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
+    map<long double, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
     if (v != inputVariantAlleles.end()) {
-        deque<Allele>& inputalleles = v->second;
-        for (deque<Allele>::iterator a = inputalleles.begin(); a != inputalleles.end(); ++a) {
+        vector<Allele>& inputalleles = v->second;
+        for (vector<Allele>::iterator a = inputalleles.begin(); a != inputalleles.end(); ++a) {
             Allele& allele = *a;
             // check if the allele is already present
             bool alreadyPresent = false;
@@ -2131,7 +2146,7 @@ map<string, int> AlleleParser::repeatCounts(int maxsize) {
 }
 
 bool AlleleParser::hasInputVariantAllelesAtCurrentPosition(void) {
-    map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
+    map<long double, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
     if (v != inputVariantAlleles.end()) {
         return true;
     } else {
