@@ -132,12 +132,8 @@ public:
     vcf::VariantCallFile variantCallInputFile;
 
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
-    map<long unsigned int, deque<Allele> > inputVariantSampleAlleles; // allele observations, tagged by sample
-    // XXX
     map<long double, deque<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     vector<Allele*> registeredAlleles;
-    //list<Allele*> registeredAlleles;
-    //map<string, list<Allele*> > allelesBySample;
 
     // reference names indexed by id
     vector<RefData> referenceSequences;

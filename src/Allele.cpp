@@ -216,7 +216,7 @@ const string Allele::base(void) const { // the base of this allele
             if (genotypeAllele)
                 return alternateSequence;
             else
-                return string(1, *currentReferenceBase);
+                return currentReferenceBase;
             break;
         case ALLELE_GENOTYPE:
             return alternateSequence;
@@ -228,18 +228,10 @@ const string Allele::base(void) const { // the base of this allele
             return alternateSequence;
             break;
         case ALLELE_INSERTION:
-            {
-                stringstream s;
-                s << "I" << alternateSequence;
-                return s.str();
-            }
+            return "I" + alternateSequence;
             break;
         case ALLELE_DELETION:
-            {
-                stringstream s;
-                s << "D" << length;
-                return s.str();
-            }
+            return "D" + convert(length);
             break;
         default:
             break;

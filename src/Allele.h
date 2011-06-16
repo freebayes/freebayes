@@ -12,6 +12,7 @@
 #include <sstream>
 #include <assert.h>
 #include "Utility.h"
+#include "convert.h"
 
 using namespace std;
 

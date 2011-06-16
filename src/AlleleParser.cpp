@@ -1410,81 +1410,6 @@ void AlleleParser::updateInputVariants(void) {
                     }
                     // if we don't, observationCounts will be empty and we resort to the default
 
-                    for (map<int, int>::iterator g = genotype.begin(); g != genotype.end(); ++g) {
-                        int alleleIndex = g->first;
-                        int alleleCount = g->second;
-                        vector<vcf::VariantAllele>& altAllele = orderedVariantAlleles[alleleIndex];
-
-                        for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
-
-                            vcf::VariantAllele& variant = *v;
-                            long double allelePos = pos;
-                            AlleleType type;
-                            string alleleSequence = variant.alt;
-
-                            //int len = max(variant.ref.size(), variant.alt.size());
-                            int len = 0;
-
-                            if (variant.ref == variant.alt) {
-                                len = variant.ref.size();
-                                type = ALLELE_REFERENCE;
-                            } else if (variant.ref.size() == variant.alt.size()) {
-                                len = variant.ref.size();
-                                if (variant.ref.size() == 1) {
-                                    type = ALLELE_SNP;
-                                } else {
-                                    type = ALLELE_MNP;
-                                }
-                            } else if (variant.ref.size() > variant.alt.size()) {
-                                len = variant.ref.size() - variant.alt.size();
-                                type = ALLELE_DELETION;
-                                allelePos += 0.5;
-                            } else {
-                                len = variant.alt.size() - variant.ref.size();
-                                type = ALLELE_INSERTION;
-                                allelePos += 0.5;
-                            }
-
-                            string dummyAlignmentName = "vcf";
-                            string dummySequencingTech = "vcf";
-
-                            // TODO allow configuration of observation quals
-                            Allele allele = Allele(type,
-                                        currentVariant->sequenceName,
-                                        allelePos,
-                                        &currentPosition,
-                                        &currentReferenceBase,
-                                        (unsigned int) len,
-                                        0,
-                                        0,
-                                        alleleSequence,
-                                        sampleName,
-                                        dummyAlignmentName,
-                                        dummySequencingTech,
-                                        false,
-                                        (long double) 40,
-                                        string(len, 'I'), // base qualities = Q40
-                                        (short int) 100,  // mapping quality
-                                        false,
-                                        false,
-                                        false);
-
-                            deque<Allele>& vars = inputVariantSampleAlleles[allelePos];
-
-                            int coverage = coveragePerAllele * alleleCount;
-                            if (!observationCounts.empty()) {
-                                coverage = observationCounts[alleleIndex];
-                            }
-
-                            //cerr << sampleName << " " << allele << " " << " coverage is " << coverage << endl;
-
-                            for (int i = 0; i < coverage; ++i) {
-                                vars.push_back(allele);
-                                //priorAlleles.push_back(&vars.back());
-                                registeredAlleles.push_back(&vars.back());
-                            }
-                        }
-                    }
                 }
 
             } while ((hasMoreVariants = variantCallInputFile.getNextVariant(*currentVariant))
@@ -1780,14 +1705,9 @@ bool AlleleParser::toNextPosition(void) {
     if (f != registeredAlignments.end()) {
         registeredAlignments.erase(f);
     }
+
     // and do the same for the variants from the input VCF
     DEBUG2("erasing old input variant alleles");
-    // XXX weird... - 3 ? otherwise segfault?
-    map<long unsigned int, deque<Allele> >::iterator s = inputVariantSampleAlleles.find(currentPosition - 3);
-    if (s != inputVariantSampleAlleles.end()) {
-        inputVariantSampleAlleles.erase(s);
-    }
-
     map<long double, deque<Allele> >::iterator v = inputVariantAlleles.find(currentPosition - 3);
     if (v != inputVariantAlleles.end()) {
         inputVariantAlleles.erase(v);
@@ -1986,7 +1906,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         if (passesFilters) {
             Allele& allele = *(alleles.front());
             int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.alternateSequence, length, currentPosition), qSum));
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length, currentPosition), qSum));
         }
     }
     DEBUG2("found genotype alleles");

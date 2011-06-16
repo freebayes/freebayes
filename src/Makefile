@@ -9,7 +9,7 @@ CC=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=-O3 -Wno-deprecated
+CFLAGS=-O3
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 LIBS = -lz -lm -L. -L../vcflib/tabixpp/ -ltabix
 
