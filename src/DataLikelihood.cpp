@@ -22,7 +22,8 @@ probObservedAllelesGivenGenotype(
             vector<Allele*>& alleles = s->second;
             if (useMapQ) {
                 for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                    prodQout += (*a)->lnquality + (*a)->lnmapQuality;
+                    // take the lesser of mapping quality and base quality (in log space)
+                    prodQout += max((*a)->lnquality, (*a)->lnmapQuality);
                 }
             } else {
                 for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
