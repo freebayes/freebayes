@@ -10,10 +10,9 @@
 #include "AlleleParser.h"
 #include "../vcflib/Variant.h"
 #include "Version.h"
+#include "Result.h"
 
 using namespace std;
-
-class Result;
 
 // for sorting data likelihoods
 class DataLikelihoodCompare {
@@ -24,23 +23,6 @@ public:
     }
 };
 
-class Results;
-
-class Result : public vector<SampleDataLikelihood> {
-
-public:
-
-    string name;
-    Sample* observations;
-
-    void sortDataLikelihoods(void) {
-        SampleDataLikelihoodCompare datalikelihoodCompare;
-        sort(begin(), end(), datalikelihoodCompare);
-    }
-
-    pair<Genotype*, long double> bestMarginalGenotype(void);
-
-};
 
 // maps sample names to results
 class Results : public map<string, Result> {

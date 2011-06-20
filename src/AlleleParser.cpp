@@ -699,6 +699,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
     hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
     currentSequenceStart = 0;
+    nullSample = new Sample();
 
 
     // initialization
@@ -731,6 +732,9 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 }
 
 AlleleParser::~AlleleParser(void) {
+
+    delete nullSample;
+
     // close trace file?  seems to get closed properly on object deletion...
     if (currentReferenceAllele != NULL) delete currentReferenceAllele;
 
@@ -1340,11 +1344,16 @@ void AlleleParser::updateInputVariants(void) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
                 }
 
-                set<long double> positions;
+                vector<Allele> genotypeAlleles;
+                set<long double> alternatePositions;
 
                 for (vector< vector<vcf::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
 
                     vector<vcf::VariantAllele>& altAllele = *g;
+                    if (altAllele.size() > 1) {
+                        cerr << "warning, multiple alternates encoded in VCF record "
+                            << currentVariant->sequenceName << ":" << currentVariant->position << endl;
+                    }
 
                     for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
 
@@ -1356,7 +1365,11 @@ void AlleleParser::updateInputVariants(void) {
                         int len = 0;
 
                         if (variant.ref == variant.alt) {
-                            len = variant.ref.size();
+                            // XXX note that for reference alleles, we only use the first base internally
+                            // but this is technically incorrect, so this hack should be noted
+                            //len = variant.ref.size();
+                            len = 1;
+                            alleleSequence = alleleSequence.at(0); // take only the first base
                             type = ALLELE_REFERENCE;
                         } else if (variant.ref.size() == variant.alt.size()) {
                             len = variant.ref.size();
@@ -1378,24 +1391,58 @@ void AlleleParser::updateInputVariants(void) {
                         Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, allelePos);
 
                         inputVariantAlleles[allelePos].push_back(allele);
+                        genotypeAlleles.push_back(allele);
 
-                        positions.insert(allelePos);
+                        if (type != ALLELE_REFERENCE) {
+                            alternatePositions.insert(allelePos);
+                        }
 
                     }
                 }
 
-                map<long double, map<int, vector<Genotype> > > genotypesByPloidyByPosition;
+                if (currentVariant->samples.empty())
+                    continue;
+
+                if (alternatePositions.size() > 1) {
+                    cerr << "warning, ambiguous VCF record (multiple mixed variant classes), unable to use for genotype likelihood input:" << endl
+                         << currentVariant->sequenceName << ":" << currentVariant->position << endl;
+                    continue;
+                }
+
+                // there can be only one alternate allele position, per immediately previous check
+                long double alternatePosition = *alternatePositions.begin();
+
+                map<int, vector<Genotype> > genotypesByPloidy;
 
                 // XXX hard-coded to a specific set of ploidys
-                for (set<long double>::iterator pos = positions.begin(); pos != positions.end(); ++pos) {
-                    vector<Allele>& genotypeAlleles = inputVariantAlleles[*pos];
-                    for (int p = 1; p <= 2; ++p) {
-                        genotypesByPloidyByPosition[*pos][p] = allPossibleGenotypes(p, genotypeAlleles);
+                for (int p = 1; p <= 2; ++p) {
+                    vector<Genotype> genotypes = allPossibleGenotypes(p, genotypeAlleles);
+                    genotypesByPloidy[p] = genotypes;
+                }
+
+                map<int, map<Genotype*, int> > vcfGenotypeOrder;
+                for (map<int, vector<Genotype> >::iterator gtg = genotypesByPloidy.begin(); gtg != genotypesByPloidy.end(); ++gtg) {
+                    int groupPloidy = gtg->first;
+                    vector<Genotype>& genotypes = gtg->second;
+                    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+                        Genotype* genotypePtr = &*g;
+                        Genotype& genotype = *g;
+                        vector<int> gtspec;
+                        genotype.relativeGenotype(gtspec, genotypeAlleles);
+                        // XXX TODO ... EVIL HACKS
+                        if (groupPloidy == 2) {
+                            int j = gtspec.front();
+                            int k = gtspec.back();
+                            vcfGenotypeOrder[groupPloidy][genotypePtr] = (k * (k + 1) / 2) + j;
+                        } else if (groupPloidy == 1) {
+                            vcfGenotypeOrder[groupPloidy][genotypePtr] = gtspec.front();
+                        } else {
+                            // XXX TODO ...
+                        }
                     }
                 }
 
-                // parse them into freebayes alleles
-                // and associate them with samples in the variant file
+                // get the GLs for each sample, and store for use in later computation
                 for (map<string, map<string, vector<string> > >::iterator s = currentVariant->samples.begin();
                         s != currentVariant->samples.end(); ++s) {
 
@@ -1411,23 +1458,82 @@ void AlleleParser::updateInputVariants(void) {
                     }
 
                     if (ploidy > 2) {
-                        cerr << "warning, cannot handle ploidy > 2 for input VCF due to limitations of the VCF specification" << endl;
+                        cerr << "warning, cannot handle ploidy > 2 for in the input VCF due to limitations "
+                             << "of the VCF specification's definition of Genotype ordering" << endl;
+                        continue;
                     }
 
                     // in the case that we have genotype likelihoods in the VCF
-                    vector<long double> genotypeLikelihoods;
                     if (sample.find("GL") != sample.end()) {
                         vector<string>& gls = sample["GL"];
+                        vector<long double> genotypeLikelihoods;
                         genotypeLikelihoods.resize(gls.size());
-                        transform(gls.begin(), gls.end(), genotypeLikelihoods.begin(), string2float);
-                    }
+                        transform(gls.begin(), gls.end(), genotypeLikelihoods.begin(), log10string2ln);
 
+                        // now map the gls into genotype space
+                        map<Genotype*, int>& genotypeOrder = vcfGenotypeOrder[ploidy];
+                        for (map<Genotype*, int>::iterator gto = genotypeOrder.begin(); gto != genotypeOrder.end(); ++gto) {
+                            Genotype& genotype = *gto->first;
+                            int order = gto->second;
+                            map<string, long double>& sampleGenotypeLikelihoods = inputGenotypeLikelihoods[alternatePosition][sampleName];
+                            //cerr << sampleName << ":" << convert(genotype) << ":" << genotypeLikelihoods[order] << endl;
+                            sampleGenotypeLikelihoods[convert(genotype)] = genotypeLikelihoods[order];
+                        }
+                    }
                 }
 
             } while ((hasMoreVariants = variantCallInputFile.getNextVariant(*currentVariant))
                     && currentVariant->position - 1 <= currentPosition
                     && currentVariant->sequenceName == currentSequenceName);
         }
+    }
+
+}
+
+void AlleleParser::addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& genotypesByPloidy,
+    vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods) {
+
+    // check if there are any genotype likelihoods at the current position
+    if (inputGenotypeLikelihoods.find(currentPosition) != inputGenotypeLikelihoods.end()) {
+
+        map<string, map<string, long double> >& inputLikelihoodsBySample = inputGenotypeLikelihoods[currentPosition];
+
+        vector<Genotype*> genotypePtrs;
+        for (map<int, vector<Genotype> >::iterator gp = genotypesByPloidy.begin(); gp != genotypesByPloidy.end(); ++gp) {
+            vector<Genotype>& genotypes = gp->second;
+            for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+                genotypePtrs.push_back(&*g);
+            }
+        }
+        // if there are, add them to the sample data likelihoods
+        for (map<string, map<string, long double> >::iterator gls = inputLikelihoodsBySample.begin();
+                gls != inputLikelihoodsBySample.end(); ++gls) {
+            const string& sampleName = gls->first;
+            map<string, long double>& likelihoods = gls->second;
+            map<Genotype*, long double> likelihoodsPtr;
+            for (map<string, long double>::iterator gl = likelihoods.begin(); gl != likelihoods.end(); ++gl) {
+                const string& genotype = gl->first;
+                long double l = gl->second;
+                for (vector<Genotype*>::iterator g = genotypePtrs.begin(); g != genotypePtrs.end(); ++g) {
+                    if (convert(**g) == genotype) {
+                        //cerr << sampleName << " likelihood of " << **g << " " << l << endl;
+                        likelihoodsPtr[*g] = l;
+                    }
+                }
+            }
+
+            Result sampleData;
+            sampleData.name = sampleName;
+            // TODO add null sample object to sampleData
+            // do you need to????
+            for (map<Genotype*, long double>::iterator p = likelihoodsPtr.begin(); p != likelihoodsPtr.end(); ++p) {
+                sampleData.push_back(SampleDataLikelihood(sampleName, nullSample, p->first, p->second, 0));
+            }
+            sortSampleDataLikelihoods(sampleData);
+            sampleDataLikelihoods.push_back(sampleData);
+        }
+
+        
     }
 
 }
@@ -1728,6 +1834,11 @@ bool AlleleParser::toNextPosition(void) {
         inputVariantAlleles.erase(v);
     }
 
+    DEBUG2("erasing old genotype likelihoods");
+    map<long double, map<string, map<string, long double> > >::iterator l = inputGenotypeLikelihoods.find(currentPosition - 3);
+    if (l != inputGenotypeLikelihoods.end()) {
+        inputGenotypeLikelihoods.erase(l);
+    }
 
     // so we have to make sure it's still there (this matters in low-coverage)
     DEBUG2("updating reference sequence cache");
@@ -1921,7 +2032,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         if (passesFilters) {
             Allele& allele = *(alleles.front());
             int length = (allele.type == ALLELE_REFERENCE || allele.type == ALLELE_SNP) ? 1 : allele.length;
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.currentBase, length, currentPosition), qSum));
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.alternateSequence, length, currentPosition), qSum));
         }
     }
     DEBUG2("found genotype alleles");

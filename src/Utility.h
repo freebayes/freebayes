@@ -25,6 +25,7 @@ char qualityInt2Char(short i);
 long double phred2ln(int qual);
 long double ln2phred(long double prob);
 long double ln2log10(long double prob);
+long double log102ln(long double prob);
 long double phred2float(int qual);
 long double float2phred(long double prob);
 long double powln(long double m, int n);
@@ -90,5 +91,6 @@ bool isTransition(string& ref, string& alt);
 string dateStr(void);
 
 long double string2float(const string& s);
+long double log10string2ln(const string& s);
 
 #endif

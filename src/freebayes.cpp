@@ -277,6 +277,13 @@ int main (int argc, char *argv[]) {
         
         DEBUG2("finished calculating data likelihoods");
 
+        DEBUG2("obtaining genotype likelihoods input from VCF");
+
+        parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
+
+        DEBUG2("finished parsing VCF input genotype likelihoods");
+
+
         // this section is a hack to make output of trace identical to BamBayes trace
         // and also outputs the list of samples
         vector<bool> samplesWithData;

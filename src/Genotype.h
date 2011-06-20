@@ -85,6 +85,7 @@ public:
     string relativeGenotype(string& refbase, vector<Allele>& altbases);
     void relativeGenotype(vector<int>& spec, string& refbase, vector<Allele>& altbases);
     string relativeGenotype(string& refbase, string& altbase);
+    void relativeGenotype(vector<int>& rg, vector<Allele>& alleles);
     bool isHomozygous(void);
     int containedAlleleTypes(void);
     vector<int> alleleObservationCounts(Sample& sample);
@@ -107,6 +108,7 @@ public:
     long double prob;
     long double marginal;
     Sample* sample;
+    bool hasObservations;
     int rank; // the rank of this data likelihood relative to others for the sample, 0 is best
     SampleDataLikelihood(string n, Sample* s, Genotype* g, long double p, int r)
         : name(n)
@@ -115,6 +117,7 @@ public:
         , prob(p)
         , rank(r)
         , marginal(0)
+        , hasObservations(true)
     { }
 
     bool hasSupportingObservations(void) const {

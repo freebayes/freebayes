@@ -27,6 +27,7 @@
 #include "BamMultiReader.h"
 #include "Genotype.h"
 #include "CNV.h"
+#include "Result.h"
 #include "LeftAlign.h"
 #include "../vcflib/Variant.h"
 #include "Version.h"
@@ -135,7 +136,12 @@ public:
     vector<Allele*> registeredAlleles;
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
     map<long double, vector<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
-    map<long double, map<string, vector<long double> > > inputDataLikelihoods;
+    //  position         sample     genotype  likelihood
+    map<long double, map<string, map<string, long double> > > inputGenotypeLikelihoods; // drawn from input VCF
+    Sample* nullSample;
+
+    void addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& genotypesByPloidy,
+            vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods);
 
     // reference names indexed by id
     vector<RefData> referenceSequences;

@@ -80,7 +80,7 @@ string Genotype::relativeGenotype(string& refbase, vector<Allele>& alts) {
         }
     }
     sort(rg.begin(), rg.end()); // enforces the same ordering for all genotypes
-    reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
+    //reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
     string result = join(rg, "/");
     return result; // chop trailing '/'
 }
@@ -110,7 +110,30 @@ void Genotype::relativeGenotype(vector<int>& rg, string& refbase, vector<Allele>
         }
     }
     sort(rg.begin(), rg.end()); // enforces the same ordering for all genotypes
-    reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
+    //reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
+}
+
+void Genotype::relativeGenotype(vector<int>& rg, vector<Allele>& alleles) {
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        Allele& b = i->allele;
+        string& base = b.currentBase;
+        int n = 0;
+        bool matchingalt = false;
+        for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a, ++n) {
+            if (base == a->base()) {
+                matchingalt = true;
+                for (int j = 0; j < i->count; ++j)
+                    rg.push_back(n);
+                break;
+            }
+        }
+        if (!matchingalt) {
+            for (int j = 0; j < i->count; ++j)
+                rg.push_back(-1);
+        }
+    }
+    sort(rg.begin(), rg.end()); // enforces the same ordering for all genotypes
+    //reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
 }
 
 string Genotype::relativeGenotype(string& refbase, string& altbase) {
@@ -129,7 +152,7 @@ string Genotype::relativeGenotype(string& refbase, string& altbase) {
         }
     }
     sort(rg.begin(), rg.end()); // enforces the same ordering for all genotypes
-    reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
+    //reverse(rg.begin(), rg.end()); // 1/0 ordering, or 1/1/0 etc.
     string result = accumulate(rg.begin(), rg.end(), string(""));
     return result.substr(0, result.size() - 1); // chop trailing '/'
 }

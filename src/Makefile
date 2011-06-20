@@ -43,6 +43,7 @@ OBJECTS=BamAlignment.o \
 		Parameters.o \
 		Allele.o \
 		Sample.o \
+		Result.o \
 		AlleleParser.o \
 		Utility.o \
 		Genotype.o \
@@ -148,8 +149,11 @@ DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
 Marginals.o: Marginals.cpp Marginals.h
 	$(CC) $(CFLAGS) -c Marginals.cpp
 
-ResultData.o: ResultData.cpp ResultData.h Allele.h Utility.h Genotype.h AlleleParser.h Version.h
+ResultData.o: ResultData.cpp ResultData.h Result.h Result.cpp Allele.h Utility.h Genotype.h AlleleParser.h Version.h
 	$(CC) $(CFLAGS) -c ResultData.cpp
+
+Result.o: Result.cpp Result.h
+	$(CC) $(CFLAGS) -c Result.cpp
 
 BedReader.o: BedReader.cpp BedReader.h
 	$(CC) $(CFLAGS) -c BedReader.cpp

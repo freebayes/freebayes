@@ -28,6 +28,10 @@ long double ln2log10(long double prob) {
     return M_LOG10E * prob;
 }
 
+long double log102ln(long double prob) {
+    return M_LN10 * prob;
+}
+
 long double phred2ln(int qual) {
     return M_LN10 * qual * -.1;
 }
@@ -484,4 +488,10 @@ long double string2float(const string& s) {
     long double r;
     convert(s, r);
     return r;
+}
+
+long double log10string2ln(const string& s) {
+    long double r;
+    convert(s, r);
+    return log102ln(r);
 }
