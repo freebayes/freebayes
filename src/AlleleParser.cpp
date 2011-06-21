@@ -2002,8 +2002,9 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
 vector<Allele> AlleleParser::genotypeAlleles(
         map<string, vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
         Samples& samples, // alleles grouped by sample
-        vector<Allele>& allGenotypeAlleles      // all possible genotype alleles, 
+        vector<Allele>& allGenotypeAlleles,     // all possible genotype alleles,
                                                 // to add back alleles if we don't have enough to meet our minimum allele count
+        bool useOnlyInputAlleles
         ) {
 
     vector<pair<Allele, int> > unfilteredAlleles;
@@ -2146,6 +2147,9 @@ vector<Allele> AlleleParser::genotypeAlleles(
     }
 
     // now add in the alleles from the input variant set
+
+    if (useOnlyInputAlleles)
+        resultAlleles.clear();
 
     map<long double, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
     if (v != inputVariantAlleles.end()) {

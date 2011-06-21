@@ -452,9 +452,11 @@ vcf::Variant& Results::vcf(
                 }
 
                 vector<string>& datalikelihoods = sampleOutput["GL"];
+                //vector<string>& datalikelihoodsExplicit = sampleOutput["GLE"];
                 // output is sorted by map
                 for (map<int, string>::iterator gl = genotypeLikelihoods.begin(); gl != genotypeLikelihoods.end(); ++gl) {
                     datalikelihoods.push_back(gl->second);
+                    //datalikelihoodsExplicit.push_back(gl->second);
                 }
 
 

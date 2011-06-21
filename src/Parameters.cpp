@@ -45,10 +45,11 @@ void Parameters::usage(char** argv) {
          << "   -@ --variant-input VCF" << endl
          << "                   Use variants reported in VCF file as input to the algorithm." << endl
          << "                   A report will be generated for every record in the VCF file." << endl
-         << "   -l --variant-input-coverage N" << endl
-         << "                   Assume this number of reads support each sample in the input VCF," << endl
-         << "                   Use this if the input VCF does not have per-sample alternate" << endl
-         << "                   observation counts (AA). default: 10" << endl
+         << "   -l --only-use-input-alleles" << endl
+         << "                   Only provide variant calls and genotype likelihoods for sites" << endl
+         << "                   and alleles which are provided in the VCF input, and provide" << endl
+         << "                   output in the VCF for all input alleles, not just those which" << endl
+         << "                   have support in the data." << endl
          << endl
          << "reporting:" << endl
          << endl
@@ -156,6 +157,15 @@ void Parameters::usage(char** argv) {
          << endl
          << "bayesian priors:" << endl
          << endl
+         << "   -Y --no-ewens-priors" << endl
+         << "                   Turns off the Ewens' Sampling Formula component of the priors." << endl
+         << "   -k --no-population-priors" << endl
+         << "                   Equivalent to --pooled --no-ewens-priors" << endl
+         << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
+         << "                   the allele frequency as estimated by observation frequency." << endl
+         << endl
+         << "observation prior expectations:" << endl
+         << endl
          << "   -V --binomial-obs-priors" << endl
          << "                   Incorporate expectations about osbervations into the priors," << endl
          << "                   Uses read placement probability, strand balance probability," << endl
@@ -164,12 +174,6 @@ void Parameters::usage(char** argv) {
          << "                   Use aggregate probability of observation balance between alleles" << endl
          << "                   as a component of the priors.  Best for observations with minimal" << endl
          << "                   inherent reference bias." << endl
-         << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
-         << "                   the allele frequency as estimated by observation frequency." << endl
-         << "   -Y --no-ewens-priors" << endl
-         << "                   Turns off the Ewens' Sampling Formula component of the priors." << endl
-         << "   -k --no-population-priors" << endl
-         << "                   Equivalent to --pooled --no-ewens-priors" << endl
          << endl
          << "algorithmic features:" << endl
          << endl
@@ -253,7 +257,6 @@ Parameters::Parameters(int argc, char** argv) {
     trace = false;                  // -L --trace
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
-    reportAllAlternates = false;
     useBestNAlleles = 0;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
@@ -277,7 +280,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypingMaxIterations = 25;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
-    variantPriorsCoverage = 10;
+    onlyUseInputAlleles = false;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -368,7 +371,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"no-permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
         {"variant-input", required_argument, 0, '@'},
-        {"variant-input-coverage", required_argument, 0, 'l'},
+        {"only-use-input-alleles", no_argument, 0, 'l'},
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
@@ -384,7 +387,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_YkM=wVXJb:G:x:@:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:l:z:1:3:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_YkM=wlVXJb:G:x:@:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -661,7 +664,6 @@ Parameters::Parameters(int argc, char** argv) {
             // -i --indels
             case 'i':
                 allowIndels = true;
-                reportAllAlternates = true;
                 break;
 
             // -X --mnps
@@ -765,10 +767,7 @@ Parameters::Parameters(int argc, char** argv) {
                 break;
 
             case 'l':
-                if (!convert(optarg, variantPriorsCoverage)) {
-                    cerr << "could not parse variant-priors-coverage" << endl;
-                    exit(1);
-                }
+                onlyUseInputAlleles = true;
                 break;
 
             case '_':

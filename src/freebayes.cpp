@@ -173,7 +173,7 @@ int main (int argc, char *argv[]) {
         if (parameters.useRefAllele)
             sampleListPlusRef.push_back(parser->currentSequenceName);
 
-        vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, allGenotypeAlleles);
+        vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, allGenotypeAlleles, parameters.onlyUseInputAlleles);
 
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
@@ -192,8 +192,12 @@ int main (int argc, char *argv[]) {
             if (genotypesByPloidy.find(samplePloidy) == genotypesByPloidy.end()) {
                 DEBUG2("generating all possible genotypes for " << samplePloidy);
                 genotypesByPloidy[samplePloidy] = allPossibleGenotypes(samplePloidy, genotypeAlleles);
-                DEBUG2("done");
             }
+        }
+
+        if (genotypesByPloidy.find(parameters.ploidy) == genotypesByPloidy.end()) {
+            DEBUG2("generating all possible genotypes for " << parameters.ploidy);
+            genotypesByPloidy[parameters.ploidy] = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
         }
 
         DEBUG2("generated all possible genotypes:");
@@ -280,6 +284,8 @@ int main (int argc, char *argv[]) {
         DEBUG2("obtaining genotype likelihoods input from VCF");
 
         parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
+        // add these sample data likelihoods to 'invariant' likelihoods
+        parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, invariantSampleDataLikelihoods);
 
         DEBUG2("finished parsing VCF input genotype likelihoods");
 
@@ -582,19 +588,24 @@ int main (int argc, char *argv[]) {
             if (parameters.showReferenceRepeats) {
                 repeats = parser->repeatCounts(12);
             }
-            // get the unique alternate alleles in this combo, sorted by frequency in the combo
-            vector<pair<Allele, int> > alternates = alternateAlleles(bestCombo, referenceBase);
-            // TODO, sort by allele type, deletions first!
+
             vector<Allele> alts;
-            for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
-                Allele& alt = a->first;
-                alts.push_back(alt);
-            }
-            // if there are no alternate alleles in the best combo, use the genotype alleles
-            if (alts.empty()) {
-                for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
-                    if (!a->isReference()) {
-                        alts.push_back(*a);
+            if (parameters.onlyUseInputAlleles) {
+                alts = genotypeAlleles;
+            } else {
+                // get the unique alternate alleles in this combo, sorted by frequency in the combo
+                vector<pair<Allele, int> > alternates = alternateAlleles(bestCombo, referenceBase);
+                // TODO, sort by allele type, deletions first!
+                for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
+                    Allele& alt = a->first;
+                    alts.push_back(alt);
+                }
+                // if there are no alternate alleles in the best combo, use the genotype alleles
+                if (alts.empty()) {
+                    for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
+                        if (!a->isReference()) {
+                            alts.push_back(*a);
+                        }
                     }
                 }
             }
