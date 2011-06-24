@@ -785,6 +785,56 @@ bool AlleleParser::isCpG(string& altbase) {
     }
 }
 
+void RegisteredAlignment::addAllele(Allele newAllele) {
+
+    // allele combination rules.  combine the last allele in the list of allele
+    // observations according to the following rules
+    // 0) reference + SNP, MNP
+    // 1) INDEL + MNP, INDEL + SNP -> complex (MNP?)
+    // 2) MNP + SNP, SNP + SNP -> MNP
+    // 2) reference + INDEL -> reference.substr(0, reference.size() - 1), reference.at(reference.size()) + INDEL
+    if (alleles.empty()) {
+
+        alleles.push_back(newAllele);
+
+    } else {
+
+        Allele& lastAllele = alleles.back();
+
+        if (newAllele.isReference()) {
+            alleles.push_back(newAllele);
+        } else if (lastAllele.isReference()) {
+            if (newAllele.isSNP() || newAllele.isMNP()) {
+                alleles.push_back(newAllele);
+            } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
+                lastAllele.length -= 1;
+                // this is slightly degenerate, as we don't clean up the allele, just modify its length
+                newAllele.position -= 0.5;
+                newAllele.alternateSequence.insert(0, lastAllele.alternateSequence.substr(lastAllele.alternateSequence.size() - 1, 0));
+                alleles.push_back(newAllele);
+            }
+        } else if (lastAllele.isSNP() || lastAllele.isMNP()) {
+            if (newAllele.isSNP() || newAllele.isMNP()) {
+                // TODO -> MNP
+                alleles.push_back(newAllele);
+            } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
+                // TODO -> complex event
+                alleles.push_back(newAllele);
+            }
+        } else if (lastAllele.isInsertion() || lastAllele.isDeletion()) {
+            if (newAllele.isSNP() || newAllele.isMNP()) {
+                // TODO -> complex event
+                alleles.push_back(newAllele);
+            } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
+                // TODO -> complex event
+                alleles.push_back(newAllele);
+            }
+        }
+
+    }
+
+}
+
 RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech) {
 
     string rDna = alignment.QueryBases;
@@ -914,7 +964,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         string qualstr = rQual.substr(rp - length, length);
                         // record 'reference' allele for last matching region
                         if (allATGC(readSequence)) {
-                            ra.alleles.push_back(Allele(ALLELE_REFERENCE,
+                            ra.addAllele(Allele(ALLELE_REFERENCE,
                                     currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
                                     alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                                     rp, // bases left (for first base in ref allele)
@@ -948,7 +998,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                     long double lqual = sumQuality(qualstr);
                     if (allATGC(readSequence)) {
-                        ra.alleles.push_back(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
+                        ra.addAllele(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
                                     &currentReferenceBase, length,
                                     rp - length, // bases left
                                     alignment.QueryBases.size() - rp, // bases right
@@ -978,7 +1028,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
                 long double lqual = sumQuality(qualstr);
                 if (allATGC(readSequence)) {
-                    ra.alleles.push_back(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
+                    ra.addAllele(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
                                 &currentReferenceBase, length,
                                 rp - length, // bases left
                                 alignment.QueryBases.size() - rp, // bases right
@@ -997,7 +1047,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 if (allATGC(readSequence)) {
-                    ra.alleles.push_back(Allele(ALLELE_REFERENCE,
+                    ra.addAllele(Allele(ALLELE_REFERENCE,
                             currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
                             alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                             rp, // bases left (for first base in ref allele)
@@ -1063,7 +1113,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string refseq = currentSequence.substr(csp, l);
             if (allATGC(refseq)) {
-                ra.alleles.push_back(Allele(ALLELE_DELETION,
+                ra.addAllele(Allele(ALLELE_DELETION,
                         currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l,
                         rp, // bases left
                         alignment.QueryBases.size() - rp, // bases right
@@ -1126,7 +1176,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string readseq = rDna.substr(rp, l);
             if (allATGC(readseq)) {
-                ra.alleles.push_back(Allele(ALLELE_INSERTION,
+                ra.addAllele(Allele(ALLELE_INSERTION,
                         currentSequenceName, sp - 0.5, &currentPosition, &currentReferenceBase, l,
                         rp - l, // bases left
                         alignment.QueryBases.size() - rp, // bases right
@@ -1381,11 +1431,11 @@ void AlleleParser::updateInputVariants(void) {
                         } else if (variant.ref.size() > variant.alt.size()) {
                             len = variant.ref.size() - variant.alt.size();
                             type = ALLELE_DELETION;
-                            allelePos += 0.5;
+                            //allelePos += 0.5;
                         } else {
                             len = variant.alt.size() - variant.ref.size();
                             type = ALLELE_INSERTION;
-                            allelePos += 0.5;
+                            //allelePos += 0.5;
                         }
 
                         Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, allelePos);

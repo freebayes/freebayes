@@ -44,7 +44,6 @@ public:
     bool trace;                  // -L --trace
     bool useDuplicateReads;      // -E --use-duplicate-reads
     bool suppressOutput;         // -S --suppress-output
-    bool reportAllAlternates;    // ...
     int useBestNAlleles;         // -n --use-best-n-alleles
     bool forceRefAllele;         // -F --force-reference-allele
     bool useRefAllele;           // -U --use-reference-allele

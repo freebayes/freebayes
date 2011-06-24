@@ -65,6 +65,8 @@ public:
         , indelCount(0)
     { }
 
+    void addAllele(Allele allele);
+
 };
 
 // functor to filter alleles outside of our analysis window

@@ -591,7 +591,12 @@ int main (int argc, char *argv[]) {
 
             vector<Allele> alts;
             if (parameters.onlyUseInputAlleles) {
-                alts = genotypeAlleles;
+                //alts = genotypeAlleles;
+                for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
+                    if (!a->isReference()) {
+                        alts.push_back(*a);
+                    }
+                }
             } else {
                 // get the unique alternate alleles in this combo, sorted by frequency in the combo
                 vector<pair<Allele, int> > alternates = alternateAlleles(bestCombo, referenceBase);
