@@ -38,7 +38,8 @@ the utilities bamfiltertech and bamleftalign.
 Usage:
 
 In its simplest operation, it requires only two inputs: a FASTA reference
-sequence, and a BAM-format alignment file sorted by reference position.  For instance:
+sequence, and a BAM-format alignment file sorted by reference position.  For
+instance:
 
     % freebayes --fasta-reference h.sapiens.fasta NA20504.bam
 
@@ -56,6 +57,24 @@ of the bamtools merge utility.)
 For a description of available command-line options and their defaults, run:
 
     % freebayes --help
+
+
+Calling variants:
+
+FreeBayes a standard VCF 4.1 outut stream.  This format is designed for the
+probabilistic description of allelic variants within a population of samples,
+but it is equally suited to describing the probability of variation in a single
+sample.
+
+Of primary interest to most users is the QUAL field, which estimates the
+probability that there is a polymorphism at the loci described by the record.
+In freebayes, this value can be understood as 1 - P(locus is homozygous given
+the data).  It is recommended that users use this value to filter their
+results, rather than accepting anything output by freebayes as ground truth.
+
+By default, records are output even if they have very low probability of
+variation, in expectation that the VCF will be filtered using tools such as
+vcffilter in vcflib [6].
 
 
 Calling variants in a population:
@@ -221,3 +240,4 @@ References:
 [3] http://bioinformatics.bc.edu/marthlab/Main_Page
 [4] http://bioinformatics.bc.edu/marthlab/Mosaik
 [5] https://github.com/ekg/bamaddrg
+[6] https://github.com/ekg/vcflib
