@@ -411,6 +411,8 @@ void AlleleParser::setupVCFInput(void) {
         // in the VCF input are also included.  the result is confusing output,
         // but it could be useful in some situations.
         //
+        // TODO optionally include this (via command-line parameter)
+        //
         //for (vector<string>::iterator s = variantCallInputFile.sampleNames.begin(); s != variantCallInputFile.sampleNames.end(); ++s) {
         //    sampleList.push_back(*s);
         //}
@@ -1386,6 +1388,7 @@ void AlleleParser::updateInputVariants(void) {
 
         if (hasMoreVariants && currentVariant->position - 1 <= currentPosition && currentVariant->sequenceName == currentSequenceName) {
             do {
+                DEBUG2("getting input alleles from input VCF at position " << currentVariant->sequenceName << ":" << currentVariant->position);
                 long double pos = currentVariant->position - 1;
                 // get alternate alleles
                 map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
@@ -1431,14 +1434,13 @@ void AlleleParser::updateInputVariants(void) {
                         } else if (variant.ref.size() > variant.alt.size()) {
                             len = variant.ref.size() - variant.alt.size();
                             type = ALLELE_DELETION;
-                            //allelePos += 0.5;
                         } else {
                             len = variant.alt.size() - variant.ref.size();
                             type = ALLELE_INSERTION;
-                            //allelePos += 0.5;
                         }
 
                         Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, allelePos);
+                        DEBUG2("input allele: " << allele);
 
                         inputVariantAlleles[allelePos].push_back(allele);
                         genotypeAlleles.push_back(allele);
@@ -1627,6 +1629,12 @@ bool AlleleParser::toNextTarget(void) {
 
     DEBUG2("seeking to next target with alignments...");
 
+    // XXX
+    // XXX
+    // TODO cleanup the logic in this section
+    // XXX
+    // XXX
+
     // load first target if we have targets and have not loaded the first
     if (!parameters.useStdin && !targets.empty()) {
 
@@ -1662,6 +1670,7 @@ bool AlleleParser::toNextTarget(void) {
         // this happens when you specify stdin + a region string
         if (!targets.empty()) {
             currentTarget = &targets.front();
+            loadTarget(currentTarget);
         }
         if (!getFirstAlignment()) {
             ERROR("Could not get first alignment from target");
@@ -1712,12 +1721,16 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     if (variantCallInputFile.is_open()) {
         stringstream r;
         // TODO check that coordinates must be 1-bsaed
-        r << currentTarget->seq << ":" << currentTarget->left - 1 << "-" << currentTarget->right - 1;
+        r << currentTarget->seq << ":" << max(0, currentTarget->left - 1) << "-" << currentTarget->right - 1;
         if (!variantCallInputFile.setRegion(r.str())) {
             ERROR("Could not set the region of the variants input file to " <<
                     currentTarget->seq << ":" << currentTarget->left << ".." <<
                     currentTarget->right);
             return false;
+        } else {
+            DEBUG("set region of variant input file to " << 
+                    currentTarget->seq << ":" << currentTarget->left << ".." <<
+                    currentTarget->right);
         }
     }
 
@@ -1817,11 +1830,7 @@ bool AlleleParser::toNextPosition(void) {
         }
     } 
     else {
-        if (!parameters.allowIndels) {
-            ++currentPosition;
-        } else {
-            currentPosition += 0.5;
-        }
+        ++currentPosition;
     }
 
     if (!targets.empty() && (

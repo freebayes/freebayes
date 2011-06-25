@@ -74,8 +74,8 @@ alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
 	$(CC) $(CFLAGS) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
-bamleftalign ../bin/bamleftalign: bamleftalign.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) bamleftalign.o $(OBJECTS) -o ../bin/bamleftalign $(LIBS)
+bamleftalign ../bin/bamleftalign: bamleftalign.o BamAlignment.o BamMultiReader.o BamReader.o BamWriter.o BamIndex.o BGZF.o Fasta.o LeftAlign.o IndelAllele.o split.o
+	$(CC) $(CFLAGS) bamleftalign.o BamAlignment.o BamMultiReader.o BamReader.o BamWriter.o BamIndex.o BGZF.o Fasta.o LeftAlign.o IndelAllele.o split.o -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: bamfiltertech.o $(OBJECTS) $(HEADERS)
 	$(CC) $(CFLAGS) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
