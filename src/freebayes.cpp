@@ -475,7 +475,11 @@ int main (int argc, char *argv[]) {
               << " pHom = " << pHom
               << " 1 - pHom = " << 1 - pHom);
 
-        if ((1 - pHom) >= parameters.PVL) {
+        DEBUG2("1 - " << pHom << " >= " << parameters.PVL);
+        // the second clause guards against float underflow causing us not to output a position
+        // practically, parameters.PVL == 0 means "report all genotypes which pass our input filters"
+        if ((1 - pHom) >= parameters.PVL || parameters.PVL == 0) {
+            DEBUG2("passed PVL threshold");
 
             string referenceBase(1, parser->currentReferenceBase);
 
