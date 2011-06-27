@@ -2036,7 +2036,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
 }
 
 Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
-    string base = string(1, currentReferenceBase);
+    string base = currentReferenceBaseString();
     //string name = reference.filename;
     string name = currentSequenceName; // this behavior matches old bambayes
     string sequencingTech = "reference";
@@ -2139,7 +2139,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
     vector<Allele> resultAlleles;
     vector<Allele> resultIndelAndMNPAlleles;
 
-    string refBase = string(1, currentReferenceBase);
+    string refBase = currentReferenceBaseString();
 
     if (parameters.useBestNAlleles == 0) {
         // this means "use everything"

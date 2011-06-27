@@ -481,7 +481,7 @@ int main (int argc, char *argv[]) {
         if ((1 - pHom) >= parameters.PVL || parameters.PVL == 0) {
             DEBUG2("passed PVL threshold");
 
-            string referenceBase(1, parser->currentReferenceBase);
+            string referenceBase = parser->currentReferenceBaseString();
 
             GenotypeCombo bestGenotypeComboByMarginals;
 
