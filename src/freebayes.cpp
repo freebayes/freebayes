@@ -85,6 +85,9 @@ int main (int argc, char *argv[]) {
     if (parameters.allowMNPs) {
         allowedAlleleTypes |= ALLELE_MNP;
     }
+    if (parameters.allowComplex) {
+        allowedAlleleTypes |= ALLELE_COMPLEX;
+    }
 
     // output VCF header
     if (parameters.output == "vcf") {
@@ -315,7 +318,7 @@ int main (int argc, char *argv[]) {
         DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes");
         list<GenotypeCombo> genotypeCombos;
 
-        if (parameters.expectationMaximization && !variantSampleDataLikelihoods.empty()) {
+        if (parameters.siteSelectionMaxIterations > 0 && !variantSampleDataLikelihoods.empty()) {
             GenotypeCombo nullCombo;
             bool addHomozygousCombos = true;
             //cerr << sampleDataLikelihoods.size() << endl;
@@ -340,7 +343,7 @@ int main (int argc, char *argv[]) {
                     parameters.obsBinomialPriors,
                     parameters.alleleBalancePriors,
                     parameters.diffusionPriorScalar,
-                    parameters.expectationMaximizationMaxIterations,
+                    parameters.siteSelectionMaxIterations,
                     addHomozygousCombos);
         } else {
             // handles the case where all samples have highly differentiated GLs

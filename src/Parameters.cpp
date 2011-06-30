@@ -84,11 +84,10 @@ void Parameters::usage(char** argv) {
          << endl
          << "allele scope:" << endl
          << endl
-         << "   -i --indels     Include insertion and deletion alleles in the analysis." << endl
-         << "                   default: only analyze SNP alleles." << endl
-         << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
-         << "                   default: only analyze SNP alleles." << endl
          << "   -I --no-snps    Ignore SNP alleles.  default: only analyze SNP alleles." << endl
+         << "   -i --indels     Include insertion and deletion alleles in the analysis." << endl
+         << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
+         << "   -u --complex    Include complex events, which are composites of other classes." << endl
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
          << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
@@ -177,12 +176,12 @@ void Parameters::usage(char** argv) {
          << endl
          << "algorithmic features:" << endl
          << endl
-         << "   -M --expectation-maximization" << endl
-         << "                   Use expectation maximization algorithm to integrate over posterior" << endl
-         << "                   and obtain maximum likelihood genotype combination across all samples." << endl
-         << "   -u --expectation-maximization-max-iterations N" << endl
-         << "                   Iterate no more than this many times during expectation" << endl
-         << "                   maximization step.  default: 5" << endl
+         << "   -M --site-selection-max-iterations N" << endl
+         << "                   Uses hill-climbing algorithm to search posterior space for N" << endl
+         << "                   iterations to determine if the site should be evaluated.  Set to 0" << endl
+         << "                   to prevent use of this algorithm for site selection, and" << endl
+         << "                   to a low integer for improvide site selection at a slight" << endl
+         << "                   performance penalty. default: 5." << endl
          << "   -B --genotyping-max-iterations N" << endl
          << "                   Iterate no more than N times during genotyping step. default: 25." << endl
          << "   -W --posterior-integration-limits N,M" << endl
@@ -265,6 +264,7 @@ Parameters::Parameters(int argc, char** argv) {
     leftAlignIndels = false;       // -O --left-align-indels
     allowMNPs = false;            // -X --mnps
     allowSNPs = true;          // -I --no-snps
+    allowComplex = false;
     pooled = false;                 // -J --pooled
     ewensPriors = true;
     permute = true;                // -K --permute
@@ -275,8 +275,7 @@ Parameters::Parameters(int argc, char** argv) {
     excludeUnobservedGenotypes = false;
     excludePartiallyObservedGenotypes = false;
     genotypeVariantThreshold = 0;
-    expectationMaximization = false;
-    expectationMaximizationMaxIterations = 5;
+    siteSelectionMaxIterations = 5;
     genotypingMaxIterations = 25;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
@@ -352,6 +351,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"indels", no_argument, 0, 'i'},
         {"left-align-indels", no_argument, 0, 'O'},
         {"mnps", no_argument, 0, 'X'},
+        {"complex", no_argument, 0, 'u'},
         {"no-snps", no_argument, 0, 'I'},
         {"indel-exclusion-window", required_argument, 0, 'x'},
         {"theta", required_argument, 0, 'T'},
@@ -375,8 +375,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
-        {"expectation-maximization", no_argument, 0, 'M'},
-        {"expectation-maximization-max-iterations", required_argument, 0, 'u'},
+        {"site-selection-max-iterations", no_argument, 0, 'M'},
         {"genotyping-max-iterations", required_argument, 0, 'B'},
         {"debug", no_argument, 0, 'd'},
 
@@ -387,7 +386,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_YkM=wlVXJb:G:x:@:A:f:t:r:s:v:n:u:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_YkM=wluVXJb:G:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -517,15 +516,14 @@ Parameters::Parameters(int argc, char** argv) {
 
             // -M --expectation-maximization
             case 'M':
-                expectationMaximization = true;
-                break;
-
-            // -u --expectation-maximization-max-iterations
-            case 'u':
-                if (!convert(optarg, expectationMaximizationMaxIterations)) {
-                    cerr << "could not parse expectation-maximization-max-iterations" << endl;
+                if (!convert(optarg, siteSelectionMaxIterations)) {
+                    cerr << "could not parse site-selection-max-iterations" << endl;
                     exit(1);
                 }
+                break;
+
+            case 'u':
+                allowComplex = true;
                 break;
 
             // -B --genotyping-max-iterations

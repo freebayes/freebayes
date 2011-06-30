@@ -51,6 +51,7 @@ public:
     bool allowIndels;            // -I --allow-indels
     bool leftAlignIndels;        // -O --left-align-indels
     bool allowMNPs;              // -X --allow-mnps
+    bool allowComplex;           // -X --allow-complex
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled
     bool ewensPriors;
@@ -63,8 +64,7 @@ public:
     bool excludePartiallyObservedGenotypes;
     bool excludeUnobservedGenotypes;
     float genotypeVariantThreshold;
-    bool expectationMaximization;
-    int expectationMaximizationMaxIterations;
+    int siteSelectionMaxIterations;
     int minPairedAltCount;
     double minAltMeanMapQ;
     int minAltQSum;

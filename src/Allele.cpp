@@ -99,6 +99,7 @@ const int Allele::subquality(const Allele &a) const {
         }
         spanend = spanstart + L;
     }
+    // TODO ALLELE_COMPLEX
     for (int i = spanstart; i < spanend; ++i) {
         sum += baseQualities.at(i);
     }
@@ -145,6 +146,7 @@ const short Allele::currentQuality(void) const {
         case ALLELE_DELETION:
         case ALLELE_SNP:
         case ALLELE_MNP:
+        case ALLELE_COMPLEX:
             return quality;
             break;
     }
@@ -177,8 +179,8 @@ string Allele::typeStr(void) {
         case ALLELE_DELETION:
             t = "deletion";
             break;
-        case ALLELE_CNV:
-            t = "cnv";
+        case ALLELE_COMPLEX:
+            t = "complex";
             break;
         default:
             t = "unknown";
@@ -209,6 +211,10 @@ bool Allele::isMNP(void) {
     return type == ALLELE_MNP;
 }
 
+bool Allele::isComplex(void) {
+    return type == ALLELE_COMPLEX;
+}
+
 const string Allele::base(void) const { // the base of this allele
 
     switch (this->type) {
@@ -232,6 +238,9 @@ const string Allele::base(void) const { // the base of this allele
             break;
         case ALLELE_DELETION:
             return "D" + convert(length);
+            break;
+        case ALLELE_COMPLEX:
+            return "C" + alternateSequence;
             break;
         default:
             break;
@@ -261,6 +270,7 @@ const bool Allele::masked(void) const {
         case ALLELE_INSERTION: // XXX presently these are masked by default...
         case ALLELE_DELETION:
         case ALLELE_MNP:
+        case ALLELE_COMPLEX:
             return true;
             break;
         default:
@@ -437,6 +447,11 @@ bool Allele::equivalent(Allele &b) {
                 break;
             case ALLELE_INSERTION:
                 if (length == b.length 
+                    && alternateSequence == b.alternateSequence)
+                    return true;
+                break;
+            case ALLELE_COMPLEX:
+                if (length == b.length
                     && alternateSequence == b.alternateSequence)
                     return true;
                 break;
@@ -783,11 +798,11 @@ vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles) {
 }
 
 Allele genotypeAllele(Allele &a) {
-    return Allele(a.type, a.alternateSequence, a.length, a.position);
+    return Allele(a.type, a.alternateSequence, a.length, a.referenceLength, a.position);
 }
 
-Allele genotypeAllele(AlleleType type, string alt, unsigned int len, long double pos) {
-    return Allele(type, alt, len, pos);
+Allele genotypeAllele(AlleleType type, string alt, unsigned int len, unsigned int reflen, long double pos) {
+    return Allele(type, alt, len, reflen, pos);
 }
 
 /*
@@ -947,5 +962,39 @@ baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
     }
 
     return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
+
+}
+
+// combines the two alleles into a complex variant, updates important data
+void Allele::mergeAllele(const Allele& newAllele) {
+    type = ALLELE_COMPLEX;
+    alternateSequence += newAllele.alternateSequence;
+    length += newAllele.length; // hmmm
+    referenceLength += newAllele.referenceLength;
+    basesRight = newAllele.basesRight;
+    bpRight = newAllele.bpRight;
+    currentBase = base();
+    quality += newAllele.quality;
+    lnquality += newAllele.lnquality;
+}
+
+unsigned int Allele::getLengthOnReference(void) {
+
+    switch (type) {
+        case ALLELE_SNP:
+        case ALLELE_MNP:
+        case ALLELE_REFERENCE:
+            return length;
+            break;
+        case ALLELE_INSERTION:
+            return 0;
+            break;
+        case ALLELE_DELETION:
+            return length;
+            break;
+        default:
+            return length;
+            break;
+    }
 
 }

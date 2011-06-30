@@ -65,7 +65,7 @@ public:
         , indelCount(0)
     { }
 
-    void addAllele(Allele allele);
+    void addAllele(Allele allele, bool mergeComplex = true);
 
 };
 

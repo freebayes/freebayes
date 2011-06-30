@@ -59,7 +59,8 @@ enum AlleleType {
     ALLELE_SNP = 8,
     ALLELE_INSERTION = 16,
     ALLELE_DELETION = 32,
-    ALLELE_CNV = 64
+    ALLELE_COMPLEX = 64
+    //ALLELE_CNV = 128,
 };
 
 // used in making allele type filter vectors
@@ -106,8 +107,10 @@ public:
     long double* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
+    unsigned int referenceLength; // length of the event relative to the reference
     int bpLeft; // how many bases are in the read to the left of the allele
     int bpRight; // how many bases are in the read to the left of the allele
+    // TODO cleanup
     int basesLeft;  // these are the "updated" versions of the above
     int basesRight;
     AlleleStrand strand;          // strand, true = +, false = -
@@ -173,19 +176,24 @@ public:
         , genotypeAllele(false)
         , processed(false)
     {
+
         baseQualities.resize(qstr.size()); // cache qualities
         transform(qstr.begin(), qstr.end(), baseQualities.begin(), qualityChar2ShortInt);
+        referenceLength = getLengthOnReference();
+
     }
 
     // for constructing genotype alleles
     Allele(AlleleType t,
             string alt,
             unsigned int len,
+            unsigned int reflen,
             long double pos=0,
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
         , length(len)
+        , referenceLength(reflen)
         , quality(0)
         , lnquality(1)
         , position(pos)
@@ -224,6 +232,7 @@ public:
     bool isInsertion(void); // true if type == ALLELE_INSERTION
     bool isDeletion(void); // true if type == ALLELE_DELETION
     bool isMNP(void); // true if type == ALLELE_MNP
+    bool isComplex(void); // true if type == ALLELE_COMPLEX
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;
@@ -241,6 +250,11 @@ public:
                                     //  for the current base, just use allele.currentBase
 
     string json(void);
+    unsigned int getLengthOnReference(void);
+
+
+
+    void mergeAllele(const Allele& allele);
 
     // overload new and delete for object recycling pool
 
@@ -324,7 +338,7 @@ vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups)
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
-Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, long double position = 0);
+Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, unsigned int reflen = 0, long double position = 0);
 
 
 //AlleleFreeList Allele::_freeList;

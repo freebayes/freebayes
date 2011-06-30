@@ -48,12 +48,18 @@ vcf::Variant& Results::vcf(
             case ALLELE_DELETION:
                 // extend the reference sequence
                 if (var.ref.size() - 1 <= altAllele.length) {
-                    // XXX this a hack, due to fact that deletions are always intra-base, so this gets the previous base
-                    // XXX this means things won't work if we have SNPs mixed with INDEL calls...
                     var.ref = parser->referenceSubstr(referencePosition, altAllele.length + 1);
                 }
                 break;
             case ALLELE_INSERTION:
+                break;
+            case ALLELE_COMPLEX:
+                // if the complex event involves the deletion of some bp, then
+                // we have to treat it like a deletion during reporting,
+                // otherwise, as insertion
+                if (var.ref.size() < altAllele.referenceLength + 1) {
+                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength + 1);
+                }
                 break;
             default:
                 cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
@@ -91,6 +97,11 @@ vcf::Variant& Results::vcf(
                 // XXX hack... resolves the alt allele semantics issue
                 // we have to strip off the leading 'I' from the allele name
                 altSequence.insert(1, altAllele.base().substr(1));
+                break;
+            case ALLELE_COMPLEX:
+                altSequence = var.ref;
+                altSequence.erase(1, altAllele.referenceLength);
+                altSequence.insert(1, altAllele.base().substr(1)); // chop off leading "C"
                 break;
             default:
                 cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
@@ -314,6 +325,8 @@ vcf::Variant& Results::vcf(
             // how large is the repeat, if there is one?
         } else if (altAllele.type == ALLELE_INSERTION) {
             var.infoFlags["INS"] = true;
+        } else if (altAllele.type == ALLELE_COMPLEX) {
+            var.infoFlags["COMPLEX"] = true;
         } else if (altAllele.type == ALLELE_SNP) {
             var.infoFlags["SNP"] = true;
             // ts/tv
