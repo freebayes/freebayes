@@ -47,7 +47,7 @@ public:
     int useBestNAlleles;         // -n --use-best-n-alleles
     bool forceRefAllele;         // -F --force-reference-allele
     bool useRefAllele;           // -U --use-reference-allele
-    bool haploidReference;       // -H --haploid-reference
+    bool diploidReference;       // -H --haploid-reference
     bool allowIndels;            // -I --allow-indels
     bool leftAlignIndels;        // -O --left-align-indels
     bool allowMNPs;              // -X --allow-mnps

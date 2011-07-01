@@ -7,7 +7,7 @@ void Parameters::usage(char** argv) {
     cout 
          << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
          << endl
-         << "Bayesian SNP and short INDEL polymorphism discovery." << endl
+         << "Bayesian small polymorphism discovery." << endl
          << endl
          << "parameters:" << endl
          << endl
@@ -75,9 +75,9 @@ void Parameters::usage(char** argv) {
          << "   -Z --ignore-reference-allele" << endl
          << "                   By default, the reference allele is considered as another" << endl
          << "                   sample.  This flag excludes it from the analysis." << endl
-         << "   -H --haploid-reference" << endl
-         << "                   If using the reference sequence as a sample, consider it" << endl
-         << "                   to be haploid.  default: false" << endl
+         << "   -H --diploid-reference" << endl
+         << "                   If using the reference sequence as a sample (default)," << endl
+         << "                   treat it as diploid.  default: false (reference is haploid)" << endl
          << "   --reference-quality MQ,BQ" << endl
          << "                   Assign mapping quality of MQ to the reference allele at each" << endl
          << "                   site and base quality of BQ.  default: 100,60" << endl
@@ -259,7 +259,7 @@ Parameters::Parameters(int argc, char** argv) {
     useBestNAlleles = 0;         // -n --use-best-n-alleles
     forceRefAllele = true;         // -Z --ignore-reference-allele
     useRefAllele = true;           // .....
-    haploidReference = false;      // -H --haploid-reference
+    diploidReference = false;      // -H --diploid-reference
     allowIndels = false;            // -i --indels
     leftAlignIndels = false;       // -O --left-align-indels
     allowMNPs = false;            // -X --mnps
@@ -331,7 +331,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"use-duplicate-reads", no_argument, 0, 'E'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"ignore-reference-allele", no_argument, 0, 'Z'},
-        {"haploid-reference", no_argument, 0, 'H'},
+        {"diploid-reference", no_argument, 0, 'H'},
         {"no-filters", no_argument, 0, '0'},
         {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
@@ -501,9 +501,9 @@ Parameters::Parameters(int argc, char** argv) {
                 useRefAllele = false;
                 break;
 
-            // -H --haploid-reference
+            // -H --diploid-reference
             case 'H':
-                haploidReference = true;
+                diploidReference = true;
                 break;
 
             // -0 --no-filters

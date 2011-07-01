@@ -665,7 +665,7 @@ void AlleleParser::loadSampleCNVMap(void) {
     // header to get the reference names and sizes, and then setPloidy on them
     // in the sampleCNV map.  note that the reference "sample" is named after
     // the current reference sequence.
-    if (parameters.haploidReference) {
+    if (!parameters.diploidReference) {
         for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
             sampleCNV.setPloidy(r->RefName, r->RefName, 0, r->RefLength, 1);
         }
