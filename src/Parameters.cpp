@@ -375,7 +375,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"show-reference-repeats", no_argument, 0, '_'},
         {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
         {"genotype-variant-threshold", required_argument, 0, 'S'},
-        {"site-selection-max-iterations", no_argument, 0, 'M'},
+        {"site-selection-max-iterations", required_argument, 0, 'M'},
         {"genotyping-max-iterations", required_argument, 0, 'B'},
         {"debug", no_argument, 0, 'd'},
 
@@ -386,7 +386,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_YkM=wluVXJb:G:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:",
+        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
