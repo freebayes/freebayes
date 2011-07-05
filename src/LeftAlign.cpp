@@ -179,9 +179,14 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             int prev_end_ref = previous->insertion ? previous->position : previous->position + previous->length;
             int prev_end_read = !previous->insertion ? previous->readPosition : previous->readPosition + previous->length;
             if (previous->insertion == indel.insertion
-                    && ((previous->insertion && previous->position < indel.position)
+                    && ((previous->insertion
+                        && (previous->position < indel.position
+                        && previous->readPosition + previous->readPosition < indel.readPosition))
                         ||
-                        (!previous->insertion && previous->position + previous->length < indel.position))) {
+                        (!previous->insertion
+                        && (previous->position + previous->length < indel.position)
+                        && (previous->readPosition < indel.readPosition)
+                        ))) {
                 if (previous->homopolymer()) {
                     string seq = referenceSequence.substr(prev_end_ref, indel.position - prev_end_ref);
                     string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
@@ -214,6 +219,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                     }
                 }
             }
+            previous = id;
         }
     }
 
