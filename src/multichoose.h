@@ -1,3 +1,6 @@
+#ifndef __MULTICHOOSE_H
+#define __MULTICHOOSE_H
+
 /* 
 
 multichoose.h  -- n multichoose k for generic vectors
@@ -73,46 +76,4 @@ std::vector< std::vector<T> > multichoose(int k, std::vector<T>& objects) {
     return choices;
 }
 
-
-// test to see if the pointer version provides a performance boost on large objects
-//
-template <class T>
-std::vector< std::vector<T*> > multichoose_ptr(int k, std::vector<T>& objects) {
-
-    std::vector< std::vector<T*> > choices;
-
-    int j,j_1,q,r;
-
-    r = objects.size() - 1;
-
-    // combination indexes
-    std::vector<T*> a, b;
-
-    for (int i=0;i<k;i++) {
-        a.push_back(&objects[0]); b.push_back(&objects[r]);
-    }
-
-    j=k;
-    while(1){
-        std::vector<T*> multiset;
-        for(int i=0;i<k;i++)
-            multiset.push_back(a[i]);
-        choices.push_back(multiset);
-        j=k;
-        do { j--; } while(a[j]==b[j]);
-        if (j<0) break;
-        j_1=j;
-        while(j_1<=k-1){
-            a[j_1]=a[j_1]+1;
-            q=j_1;
-            while(q<k-1) {
-                a[q+1]=a[q];
-                q++;
-            }
-            q++;
-            j_1=q;
-        }
-    }
-    
-    return choices;
-}
+#endif
