@@ -344,15 +344,17 @@ string AlleleParser::vcfHeader() {
         //<< "##INFO=<ID=LRBP,Number=1,Type=Float,Description=\"Left-Right Balance Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between BL and BR given E(BR/BL) ~ 0.5, derived using Hoeffding's inequality\">" << endl
 
         // supplementary information about the site
+        << "##INFO=<ID=ODDS,Number=1,Type=Float,Description=\"The log odds ratio of the best genotype combination to the second-best.\">" << endl
         << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
-        << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele\">" << endl
-        << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"transition SNP\">" << endl
-        << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"transversion SNP\">" << endl
+        << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"site has transition SNP\">" << endl
+        << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"site has transversion SNP\">" << endl
         << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
-        << "##INFO=<ID=MNP,Number=0,Type=Flag,Description=\"MNP allele\">" << endl
-        << "##INFO=<ID=INS,Number=0,Type=Flag,Description=\"insertion allele\">" << endl
-        << "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele\">" << endl
-        << "##INFO=<ID=COMPLEX,Number=0,Type=Flag,Description=\"complex allele (insertion/deletion/substitution composite)\">" << endl
+        << "##INFO=<ID=TYPE,Number=A,Type=String,Description=\"The type of allele, either SNP, MNP, INS, DEL, or COMPLEX.\">" << endl
+        << "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele at site\">" << endl
+        << "##INFO=<ID=MNP,Number=0,Type=Flag,Description=\"MNP allele at site\">" << endl
+        << "##INFO=<ID=INS,Number=0,Type=Flag,Description=\"insertion allele at site\">" << endl
+        << "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele at site\">" << endl
+        << "##INFO=<ID=COMPLEX,Number=0,Type=Flag,Description=\"complex allele (insertion/deletion/substitution composite) at site\">" << endl
         << "##INFO=<ID=LEN,Number=A,Type=Integer,Description=\"allele length\">" << endl
         << "##INFO=<ID=MQM,Number=A,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
         << "##INFO=<ID=PAIRED,Number=1,Type=Float,Description=\"Proportion of observed alternate alleles which are supported by properly paired read fragments\">" << endl;

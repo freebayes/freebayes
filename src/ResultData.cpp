@@ -8,6 +8,7 @@ using namespace std;
 vcf::Variant& Results::vcf(
         vcf::Variant& var, // variant to update
         long double pHom,
+        long double bestComboOddsRatio,
         //long double alleleSamplingProb,
         Samples& samples,
         string refbase,
@@ -319,16 +320,20 @@ vcf::Variant& Results::vcf(
         // allele class
         if (altAllele.type == ALLELE_DELETION) {
             var.infoFlags["DEL"] = true;
+            var.info["TYPE"].push_back("DEL");
             // what is the class of deletion
             // microsatellite repeat?
             // "novel"?
             // how large is the repeat, if there is one?
         } else if (altAllele.type == ALLELE_INSERTION) {
             var.infoFlags["INS"] = true;
+            var.info["TYPE"].push_back("INS");
         } else if (altAllele.type == ALLELE_COMPLEX) {
             var.infoFlags["COMPLEX"] = true;
+            var.info["TYPE"].push_back("COMPLEX");
         } else if (altAllele.type == ALLELE_SNP) {
             var.infoFlags["SNP"] = true;
+            var.info["TYPE"].push_back("SNP");
             // ts/tv
             if (isTransition(refbase, altbase)) {
                 var.infoFlags["TS"] = true;
@@ -342,6 +347,7 @@ vcf::Variant& Results::vcf(
             }
         } else if (altAllele.type == ALLELE_MNP) {
             var.infoFlags["MNP"] = true;
+            var.info["TYPE"].push_back("MNP");
         }
         var.info["LEN"].push_back(convert(altAllele.length));
 
@@ -400,6 +406,8 @@ vcf::Variant& Results::vcf(
         var.info["REPEAT"].clear();
         var.info["REPEAT"].push_back(repeatstr);
     }
+
+    var.info["ODDS"].push_back(convert(bestComboOddsRatio));
 
     // samples
 

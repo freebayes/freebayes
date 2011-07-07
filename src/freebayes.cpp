@@ -411,6 +411,8 @@ int main (int argc, char *argv[]) {
         long double pVar = 1.0;
         long double pHom = 0.0;
 
+        long double bestComboOddsRatio = 0;
+
         bool hasHetCombo = false;
         bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
@@ -432,6 +434,11 @@ int main (int argc, char *argv[]) {
         // if for some reason there are no het combos, use the first combo
         if (!hasHetCombo) {
             bestCombo = genotypeCombos.front();
+        }
+
+        // odds ratio between the first and second-best combinations
+        if (genotypeCombos.size() > 1) {
+            bestComboOddsRatio = genotypeCombos.front().posteriorProb - (++genotypeCombos.begin())->posteriorProb;
         }
 
         DEBUG2("calculated pVar");
@@ -564,8 +571,13 @@ int main (int argc, char *argv[]) {
 
                 // if for some reason there are no het combos, use the first combo
                 if (!hasHetCombo) {
+                    bestCombo = genotypeCombos.front();
                 }
-                bestCombo = genotypeCombos.front();
+
+                // odds ratio between the first and second-best combinations
+                if (genotypeCombos.size() > 1) {
+                    bestComboOddsRatio = genotypeCombos.front().posteriorProb - (++genotypeCombos.begin())->posteriorProb;
+                }
 
                 marginalGenotypeLikelihoods(genotypeCombos, sampleDataLikelihoods);
 
@@ -627,6 +639,7 @@ int main (int argc, char *argv[]) {
             out << results.vcf(
                     var,
                     pHom,
+                    bestComboOddsRatio,
                     samples,
                     referenceBase,
                     alts,
