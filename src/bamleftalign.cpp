@@ -37,7 +37,8 @@ void printUsage(char** argv) {
          << "      -f --fasta-reference FILE   FASTA reference file to use for realignment (required)" << endl
          << "      -d --debug             Print debugging information about realignment process" << endl
          << "      -s --suppress-output   Don't write BAM output stream (for debugging)" << endl
-         << "      -m --max-iterations N  Iterate the left-realignment no more than this many times" << endl;
+         << "      -m --max-iterations N  Iterate the left-realignment no more than this many times" << endl
+         << "      -c --compressed        Write compressed BAM on stdout, default is uncompressed" << endl;
 }
 
 int main(int argc, char** argv) {
@@ -48,6 +49,7 @@ int main(int argc, char** argv) {
     bool has_ref = false;
     bool suppress_output = false;
     bool debug = false;
+    bool isuncompressed = true;
 
     int maxiterations = 50;
     
@@ -64,12 +66,13 @@ int main(int argc, char** argv) {
             {"fasta-reference", required_argument, 0, 'f'},
             {"max-iterations", required_argument, 0, 'm'},
             {"suppress-output", no_argument, 0, 's'},
+            {"compressed", no_argument, 0, 'c'},
             {0, 0, 0, 0}
         };
 
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "hdsf:m:",
+        c = getopt_long (argc, argv, "hdcsf:m:",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -93,6 +96,10 @@ int main(int argc, char** argv) {
 
             case 's':
                 suppress_output = true;
+                break;
+
+            case 'c':
+                isuncompressed = false;
                 break;
 
             case 'h':
@@ -123,7 +130,7 @@ int main(int argc, char** argv) {
     }
 
     BamWriter writer;
-    if (!suppress_output && !writer.Open("stdout", reader.GetHeaderText(), reader.GetReferenceData(), true)) {
+    if (!suppress_output && !writer.Open("stdout", reader.GetHeaderText(), reader.GetReferenceData(), isuncompressed)) {
         cerr << "could not open stdout for writing" << endl;
         exit(1);
     }
