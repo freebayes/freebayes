@@ -126,15 +126,6 @@ In data with high rates of insertion and deletion errors, you can use
 of a putative indel allele.  (This behavior is incompatible with indel
 detection.)
 
-By default, FreeBayes will only consider the best 2 alleles at a site, but this
-may be set explicitly via --use-best-n-alleles.  Typically the best two alleles
-will be the best alternate and the reference, unless a low
---reference-base-quality is set.  To allow all alleles to be considered,
-specify --allow-all-alleles.  To report all alternates in the
-highest-confidence genotype combination, specify --report-all-alleles.  (This
-may be useful in indel calling, where alleles cluster at microsatellite
-repeats.)
-
 
 Usage, advanced:
 

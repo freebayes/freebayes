@@ -65,6 +65,7 @@ public:
     bool excludeUnobservedGenotypes;
     float genotypeVariantThreshold;
     int siteSelectionMaxIterations;
+    bool allSites; // TODO
     int minPairedAltCount;
     double minAltMeanMapQ;
     int minAltQSum;

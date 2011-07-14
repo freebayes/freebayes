@@ -319,21 +319,17 @@ vcf::Variant& Results::vcf(
 
         // allele class
         if (altAllele.type == ALLELE_DELETION) {
-            var.infoFlags["DEL"] = true;
-            var.info["TYPE"].push_back("DEL");
+            var.info["TYPE"].push_back("del");
             // what is the class of deletion
             // microsatellite repeat?
             // "novel"?
             // how large is the repeat, if there is one?
         } else if (altAllele.type == ALLELE_INSERTION) {
-            var.infoFlags["INS"] = true;
-            var.info["TYPE"].push_back("INS");
+            var.info["TYPE"].push_back("ins");
         } else if (altAllele.type == ALLELE_COMPLEX) {
-            var.infoFlags["COMPLEX"] = true;
-            var.info["TYPE"].push_back("COMPLEX");
+            var.info["TYPE"].push_back("complex");
         } else if (altAllele.type == ALLELE_SNP) {
-            var.infoFlags["SNP"] = true;
-            var.info["TYPE"].push_back("SNP");
+            var.info["TYPE"].push_back("snp");
             // ts/tv
             if (isTransition(refbase, altbase)) {
                 var.infoFlags["TS"] = true;
@@ -346,8 +342,7 @@ vcf::Variant& Results::vcf(
                 var.infoFlags["CpG"] = true;
             }
         } else if (altAllele.type == ALLELE_MNP) {
-            var.infoFlags["MNP"] = true;
-            var.info["TYPE"].push_back("MNP");
+            var.info["TYPE"].push_back("mnp");
         }
         var.info["LEN"].push_back(convert(altAllele.length));
 
@@ -395,6 +390,8 @@ vcf::Variant& Results::vcf(
     var.info["NS"].push_back(convert(samplesWithData));
     var.info["DP"].push_back(convert(coverage));
     var.info["RA"].push_back(convert(refAlleleObservations));
+
+    var.info["NUMALT"].push_back(convert(altAlleles.size()));
 
     if (parameters.showReferenceRepeats && !repeats.empty()) {
         stringstream repeatsstr;
