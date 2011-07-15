@@ -335,13 +335,24 @@ string AlleleParser::vcfHeader() {
         //<< "##INFO=<ID=RL,Number=1,Type=Integer,Description=\"Reads Placed Left: number of reads supporting the alternate balanced to the left (5') of the alternate allele\">" << endl
         //<< "##INFO=<ID=RR,Number=1,Type=Integer,Description=\"Reads Placed Right: number of reads supporting the alternate balanced to the right (3') of the alternate allele\">" << endl
         << "##INFO=<ID=RPP,Number=A,Type=Float,Description=\"Read Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=RPPR,Number=1,Type=Float,Description=\"Read Placement Probability for reference observations: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality\">" << endl
         //<< "##INFO=<ID=EL,Number=1,Type=Integer,Description=\"Allele End Left: number of observations of the alternate where the alternate occurs in the left end of the read\">" << endl
         //<< "##INFO=<ID=ER,Number=1,Type=Integer,Description=\"Allele End Right: number of observations of the alternate where the alternate occurs in the right end of the read\">" << endl
         << "##INFO=<ID=EPP,Number=A,Type=Float,Description=\"End Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=EPPR,Number=1,Type=Float,Description=\"End Placement Probability for reference observations: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality\">" << endl
         //<< "##INFO=<ID=BL,Number=1,Type=Integer,Description=\"Base Pairs Left: number of base pairs in reads supporting the alternate to the left (5') of the alternate allele\">" << endl
         //<< "##INFO=<ID=BR,Number=1,Type=Integer,Description=\"Base Pairs Right: number of base pairs in reads supporting the alternate to the right (3') of the alternate allele\">" << endl
         //<< "##INFO=<ID=LRB,Number=1,Type=Float,Description=\"((max(BR, BL) / (BR + BL)) - 0.5) * 2 : The proportion of base pairs in reads on one side of the alternate allele relative to total bases, scaled from [0.5,1] to [0,1]\">" << endl
         //<< "##INFO=<ID=LRBP,Number=1,Type=Float,Description=\"Left-Right Balance Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between BL and BR given E(BR/BL) ~ 0.5, derived using Hoeffding's inequality\">" << endl
+        << "##INFO=<ID=DPRA,Number=A,Type=Float,Description=\"Alternate allele depth ratio.  Ratio between depth in samples with each called alternate allele and those without.\">" << endl
+
+        // error rates
+        << "##INFO=<ID=RRMR,Number=1,Type=Float,Description=\"Reference allele read mismatch rate: The rate of SNPs + MNPs + INDELs in reads supporting the reference allele.\">" << endl
+        << "##INFO=<ID=RRSR,Number=1,Type=Float,Description=\"Reference allele read SNP rate: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the reference allele.\">" << endl
+        << "##INFO=<ID=RRIR,Number=1,Type=Float,Description=\"Reference allele read INDEL rate: The rate of INDELs (gaps) in reads supporting the reference allele.\">" << endl
+        << "##INFO=<ID=ARMR,Number=A,Type=Float,Description=\"Alternate allele read mismatch rate: The rate of SNPs + MNPs + INDELs in reads supporting the alternate allele.\">" << endl
+        << "##INFO=<ID=ARSR,Number=A,Type=Float,Description=\"Alternate allele read SNP rate: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the alternate allele.\">" << endl
+        << "##INFO=<ID=ARIR,Number=A,Type=Float,Description=\"Alternate allele read INDEL rate: The rate of INDELs (gaps) in reads supporting the alternate allele.\">" << endl
 
         // supplementary information about the site
         << "##INFO=<ID=ODDS,Number=1,Type=Float,Description=\"The log odds ratio of the best genotype combination to the second-best.\">" << endl
@@ -358,6 +369,7 @@ string AlleleParser::vcfHeader() {
         << "##INFO=<ID=NUMALT,Number=1,Type=Integer,Description=\"Number of unique non-reference alleles in called genotypes at this position.\">" << endl
         << "##INFO=<ID=LEN,Number=A,Type=Integer,Description=\"allele length\">" << endl
         << "##INFO=<ID=MQM,Number=A,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
+        << "##INFO=<ID=MQMR,Number=1,Type=Float,Description=\"Mean mapping quality of observed reference alleles\">" << endl
         << "##INFO=<ID=PAIRED,Number=1,Type=Float,Description=\"Proportion of observed alternate alleles which are supported by properly paired read fragments\">" << endl;
 
     // sequencing technology tags, which vary according to input data
@@ -372,9 +384,9 @@ string AlleleParser::vcfHeader() {
 
         // format fields for genotypes
     headerss << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
-        << "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=Float,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         // this can be regenerated with RA, AA, QR, QA
-        << "##FORMAT=<ID=GL,Number=G,Type=String,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
+        << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
         << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0=-75.22,1=-223.42,0/0=-323.03,1/0=-99.29,1/1=-802.53\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
@@ -1234,6 +1246,45 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
     } // end cigar iter loop
 
 bailout:
+
+    double alignedBases = 0;
+    double mismatchCount = 0;
+    double matchCount = 0;
+    double indelCount = 0;
+
+    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+        Allele& allele = *a;
+        switch (allele.type) {
+            case ALLELE_REFERENCE:
+                alignedBases += allele.length;
+                matchCount += allele.length;
+                break;
+            case ALLELE_SNP:
+            case ALLELE_MNP:
+                alignedBases += allele.length;
+                mismatchCount += allele.length;
+                break;
+            case ALLELE_INSERTION:
+            case ALLELE_DELETION:
+            case ALLELE_COMPLEX: // should these be counted differently?
+                ++indelCount;
+                break;
+            default:
+                break;
+        }
+    }
+
+    double mismatchRate = ( indelCount + mismatchCount ) / alignedBases;
+    double snpRate = mismatchCount / alignedBases;
+    double indelRate = indelCount / alignedBases;
+
+    // store mismatch information about the alignment in the alleles
+    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+        Allele& allele = *a;
+        allele.readMismatchRate = mismatchRate;
+        allele.readSNPRate = snpRate;
+        allele.readIndelRate = indelRate;
+    }
 
     // mark positions in each alignment which are within IDW bases of an indel
     // these are then filtered at each call to getAlleles()

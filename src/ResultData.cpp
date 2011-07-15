@@ -141,6 +141,69 @@ vcf::Variant& Results::vcf(
     var.format.push_back("GL");
     //var.format.push_back("GLE");
 
+    unsigned int refBasesLeft = 0;
+    unsigned int refBasesRight = 0;
+    unsigned int refReadsLeft = 0;
+    unsigned int refReadsRight = 0;
+    unsigned int refEndLeft = 0;
+    unsigned int refEndRight = 0;
+    unsigned int refmqsum = 0;
+    unsigned int refProperPairs = 0;
+    long double refReadMismatchSum = 0;
+    long double refReadSNPSum = 0;
+    long double refReadIndelSum = 0;
+    unsigned int refObsCount = 0;
+    map<string, int> refObsBySequencingTechnology;
+
+    map<string, vector<Allele*> >::iterator f = alleleGroups.find(refbase);
+    if (f != alleleGroups.end()) {
+        vector<Allele*>& referenceAlleles = alleleGroups.at(refbase);
+        refObsCount = referenceAlleles.size();
+        for (vector<Allele*>::iterator app = referenceAlleles.begin(); app != referenceAlleles.end(); ++app) {
+            Allele& allele = **app;
+            refReadMismatchSum += allele.readMismatchRate;
+            refReadSNPSum += allele.readSNPRate;
+            refReadIndelSum += allele.readIndelRate;
+            if (allele.isProperPair) {
+                ++refProperPairs;
+            }
+            if (!allele.sequencingTechnology.empty()) {
+                ++refObsBySequencingTechnology[allele.sequencingTechnology];
+            }
+            refBasesLeft += allele.basesLeft;
+            refBasesRight += allele.basesRight;
+            if (allele.basesLeft >= allele.basesRight) {
+                refReadsLeft += 1;
+                if (allele.strand == STRAND_FORWARD) {
+                    refEndLeft += 1;
+                } else {
+                    refEndRight += 1;
+                }
+            } else {
+                refReadsRight += 1;
+                if (allele.strand == STRAND_FORWARD) {
+                    refEndRight += 1;
+                } else {
+                    refEndLeft += 1;
+                }
+            }
+            refmqsum += allele.mapQuality;
+        }
+    }
+
+    long double refReadMismatchRate = refReadMismatchSum / refObsCount;
+    long double refReadSNPRate = refReadSNPSum / refObsCount;
+    long double refReadIndelRate = refReadIndelSum / refObsCount;
+
+    var.info["RRMR"].push_back(convert(refReadMismatchRate));
+    var.info["RRSR"].push_back(convert(refReadSNPRate));
+    var.info["RRIR"].push_back(convert(refReadIndelRate));
+
+    var.info["MQMR"].push_back(convert((refObsCount == 0) ? 0 : (double) refmqsum / (double) refObsCount));
+    var.info["RPPR"].push_back(convert((refObsCount == 0) ? 0 : ln2phred(hoeffdingln(refReadsLeft, refReadsRight + refReadsLeft, 0.5))));
+    var.info["EPPR"].push_back(convert((refBasesLeft + refBasesRight == 0) ? 0 : ln2phred(hoeffdingln(refEndLeft, refEndLeft + refEndRight, 0.5))));
+    var.info["PAIREDR"].push_back(convert((refObsCount == 0) ? 0 : (double) refProperPairs / (double) refObsCount));
+
     // loop over all alternate alleles
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
 
@@ -148,18 +211,23 @@ vcf::Variant& Results::vcf(
         string altbase = altAllele.base();
 
         // count alternate alleles in the best genotyping
-        int alternateCount = 0;
-        int alleleCount = 0;
+        unsigned int alternateCount = 0;
+        unsigned int alleleCount = 0;
         // reference / alternate base counts by strand
-        map<string, int> altCountBySample;
-        map<string, int> altQualBySample;
-        int alternateObsCount = 0;
+        map<string, unsigned int> altCountBySample;
+        map<string, unsigned int> altQualBySample;
         // het counts
-        int hetReferenceObsCount = 0;
-        int hetAlternateObsCount = 0;
-        int hetAltRefSamples = 0;
-        int homAltSamples = 0;
-        int homRefSamples = 0;
+        unsigned int hetReferenceObsCount = 0;
+        unsigned int hetAlternateObsCount = 0;
+        unsigned int homReferenceRefObsCount = 0;
+        unsigned int homReferenceAltObsCount = 0;
+        unsigned int homAlternateRefObsCount = 0;
+        unsigned int homAlternateAltObsCount = 0;
+        unsigned int hetAltRefSamples = 0;
+        unsigned int homAltSamples = 0;
+        unsigned int homRefSamples = 0;
+        unsigned int refSampleObsCount = 0; // depth in hom-ref samples
+        unsigned int altSampleObsCount = 0; // depth in samples with called alternates
 
         pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
         pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
@@ -174,7 +242,7 @@ vcf::Variant& Results::vcf(
                 Sample& sample = *gc->second->sample;
 
                 // check that we actually have observations for this sample
-                int observationCount = sample.observationCount();
+                unsigned int observationCount = sample.observationCount();
                 if (observationCount == 0) {
                     continue;
                 }
@@ -183,22 +251,31 @@ vcf::Variant& Results::vcf(
                 alleleCount += genotype->ploidy;
 
                 if (!genotype->homozygous) {
+                    // het case
                     hetReferenceObsCount += sample.observationCount(refbase);
                     hetAlternateObsCount += sample.observationCount(altbase);
                     if (hetAlternateObsCount > 0) {
                         ++hetAltRefSamples;
+                        altSampleObsCount += sample.observationCount();
                     }
                 } else {
+                    // homozygous cases
                     if (genotype->alleleCount(refbase) > 0) {
+                        homReferenceRefObsCount += sample.observationCount(refbase);
+                        homReferenceAltObsCount += sample.observationCount(altbase);
                         ++homRefSamples;
-                    } else {
+                        refSampleObsCount += sample.observationCount();
+                    } else if (genotype->alleleCount(altbase) > 0) {
+                        homAlternateAltObsCount += sample.observationCount(altbase);
+                        homAlternateRefObsCount += sample.observationCount(refbase); // disagreeing obs
                         ++homAltSamples;
-                    }
+                        altSampleObsCount += sample.observationCount();
+                    } // specifically exclude other alts from these sums
                 }
 
-                int altCount = sample.observationCount(altbase);
+                unsigned int altCount = sample.observationCount(altbase);
                 altCountBySample[*sampleName] = altCount;
-                alternateObsCount += altCount;
+                //altObsCount += altCount;
 
                 altQualBySample[*sampleName] = sample.qualSum(altbase);
 
@@ -216,55 +293,65 @@ vcf::Variant& Results::vcf(
             }
         }
 
-        int hetAllObsCount = hetReferenceObsCount + hetAlternateObsCount;
+        unsigned int hetAllObsCount = hetReferenceObsCount + hetAlternateObsCount;
 
-        unsigned int basesLeft = 0;
-        unsigned int basesRight = 0;
-        unsigned int readsLeft = 0;
-        unsigned int readsRight = 0;
-        unsigned int endLeft = 0;
-        unsigned int endRight = 0;
-
-        unsigned int mqsum = 0;
-
-        unsigned int properPairs = 0;
-
-        map<string, int> obsBySequencingTechnology;
-
-        unsigned int alleleObservationCount = 0;
+        unsigned int altBasesLeft = 0;
+        unsigned int altBasesRight = 0;
+        unsigned int altReadsLeft = 0;
+        unsigned int altReadsRight = 0;
+        unsigned int altEndLeft = 0;
+        unsigned int altEndRight = 0;
+        unsigned int altmqsum = 0;
+        unsigned int altproperPairs = 0;
+        long double altReadMismatchSum = 0;
+        long double altReadSNPSum = 0;
+        long double altReadIndelSum = 0;
+        unsigned int altObsCount = 0;
+        map<string, int> altObsBySequencingTechnology;
 
         map<string, vector<Allele*> >::iterator f = alleleGroups.find(altbase);
         if (f != alleleGroups.end()) {
             vector<Allele*>& alternateAlleles = alleleGroups.at(altbase);
-            alleleObservationCount = alternateAlleles.size();
+            altObsCount = alternateAlleles.size();
             for (vector<Allele*>::iterator app = alternateAlleles.begin(); app != alternateAlleles.end(); ++app) {
                 Allele& allele = **app;
+                altReadMismatchSum += allele.readMismatchRate;
+                altReadSNPSum += allele.readSNPRate;
+                altReadIndelSum += allele.readIndelRate;
                 if (allele.isProperPair) {
-                    ++properPairs;
+                    ++altproperPairs;
                 }
                 if (!allele.sequencingTechnology.empty()) {
-                    ++obsBySequencingTechnology[allele.sequencingTechnology];
+                    ++altObsBySequencingTechnology[allele.sequencingTechnology];
                 }
-                basesLeft += allele.basesLeft;
-                basesRight += allele.basesRight;
+                altBasesLeft += allele.basesLeft;
+                altBasesRight += allele.basesRight;
                 if (allele.basesLeft >= allele.basesRight) {
-                    readsLeft += 1;
+                    altReadsLeft += 1;
                     if (allele.strand == STRAND_FORWARD) {
-                        endLeft += 1;
+                        altEndLeft += 1;
                     } else {
-                        endRight += 1;
+                        altEndRight += 1;
                     }
                 } else {
-                    readsRight += 1;
+                    altReadsRight += 1;
                     if (allele.strand == STRAND_FORWARD) {
-                        endRight += 1;
+                        altEndRight += 1;
                     } else {
-                        endLeft += 1;
+                        altEndLeft += 1;
                     }
                 }
-                mqsum += allele.mapQuality;
+                altmqsum += allele.mapQuality;
             }
         }
+
+        long double altReadMismatchRate = altReadMismatchSum / altObsCount;
+        long double altReadSNPRate = altReadSNPSum / altObsCount;
+        long double altReadIndelRate = altReadIndelSum / altObsCount;
+        
+        var.info["ARMR"].push_back(convert(altReadMismatchRate));
+        var.info["ARSR"].push_back(convert(altReadSNPRate));
+        var.info["ARIR"].push_back(convert(altReadIndelRate));
 
         //string refbase = parser->currentReferenceBase();
         // positional information
@@ -275,42 +362,35 @@ vcf::Variant& Results::vcf(
         var.info["AC"].push_back(convert(alternateCount));
         var.info["AN"].push_back(convert(alleleCount));
         var.info["AF"].push_back(convert((alleleCount == 0) ? 0 : (double) alternateCount / (double) alleleCount));
-        var.info["AA"].push_back(convert(alternateObsCount));
-            //<< "ADR=" << ((alleleCount == 0 || alternateCount == 0) ?
-            //        0 : ( (double) altAlleleObservations / (double) alternateCount ) / ( (double) coverage / (double) samplesWithData )<< ";"
+        var.info["AA"].push_back(convert(altObsCount));
+        if (homRefSamples > 0 && hetAltRefSamples + homAltSamples > 0) {
+            double altSampleAverageDepth = (double) altSampleObsCount
+                       / ( (double) hetAltRefSamples + (double) homAltSamples );
+            double refSampleAverageDepth = (double) refSampleObsCount / (double) homRefSamples;
+            var.info["DPRA"].push_back(convert(altSampleAverageDepth / refSampleAverageDepth));
+        } else {
+            var.info["DPRA"].push_back(convert(0));
+        }
             //<< "HETAR=" << hetAltRefSamples << ";"
             //<< "HOMA=" << homAltSamples << ";"
             //<< "HOMR=" << homRefSamples << ";"
-            //<< "SRF=" << baseCountsForwardTotal.first << ";"
-            //<< "SRR=" << baseCountsReverseTotal.first << ";"
-            //<< "SAF=" << baseCountsForwardTotal.second << ";"
-            //<< "SAR=" << baseCountsReverseTotal.second << ";"
-            //<< "SRB=" << ((referenceObsCount == 0) ? 0 : (double) baseCountsForwardTotal.first / (double) referenceObsCount) << ";"
-            //<< "SAB=" << ((alternateObsCount == 0) ? 0 : (double) baseCountsForwardTotal.second / (double) alternateObsCount) << ";"
-        //var.info["SRP"].push_back(convert((referenceObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.first, referenceObsCount, 0.5))));
-        var.info["SAP"].push_back(convert((alternateObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.second, alternateObsCount, 0.5))));
+        var.info["SRP"].clear(); // XXX hack
+        var.info["SRP"].push_back(convert((refObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.first, refObsCount, 0.5))));
+        var.info["SAP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.second, altObsCount, 0.5))));
             //<< "ABR=" << hetReferenceObsCount <<  ";"
             //<< "ABA=" << hetAlternateObsCount <<  ";"
         var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ));
         var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetReferenceObsCount, hetAllObsCount, 0.5))));
         var.info["RUN"].push_back(convert(parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)));
-        var.info["MQM"].push_back(convert((alleleObservationCount == 0) ? 0 : (double) mqsum / (double) alleleObservationCount));
-            //<< "RL=" << readsLeft << ";"
-            //<< "RR=" << readsRight << ";"
-        var.info["RPP"].push_back(convert((alleleObservationCount == 0) ? 0 : ln2phred(hoeffdingln(readsLeft, readsRight + readsLeft, 0.5))));
-            //<< "EL=" << endLeft << ";"
-            //<< "ER=" << endRight << ";"
-        var.info["EPP"].push_back(convert((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(endLeft, endLeft + endRight, 0.5))));
-            //<< "BL=" << basesLeft << ";"
-            //<< "BR=" << basesRight << ";"
-            //<< "LRB=" << ((double) max(basesLeft, basesRight) / (double) (basesRight + basesLeft) - 0.5) * 2 << ";"
-            //<< "LRBP=" << ((basesLeft + basesRight == 0) ? 0 : ln2phred(hoeffdingln(basesLeft, basesLeft + basesRight, 0.5))) << ";"
-        var.info["PAIRED"].push_back(convert((alleleObservationCount == 0) ? 0 : (double) properPairs / (double) alleleObservationCount));
+        var.info["MQM"].push_back(convert((altObsCount == 0) ? 0 : (double) altmqsum / (double) altObsCount));
+        var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5))));
+        var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5))));
+        var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : (double) altproperPairs / (double) altObsCount));
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
                 st != sequencingTechnologies.end(); ++st) { string& tech = *st;
-            var.info["technology." + tech].push_back(convert((alleleObservationCount == 0) ? 0
-                        : (double) obsBySequencingTechnology[tech] / (double) alleleObservationCount ));
+            var.info["technology." + tech].push_back(convert((altObsCount == 0) ? 0
+                        : (double) altObsBySequencingTechnology[tech] / (double) altObsCount ));
         }
 
         if (bestOverallComboIsHet) {
@@ -363,6 +443,10 @@ vcf::Variant& Results::vcf(
 
             }
         }
+
+        // TODO
+        // mismatch rate of reads containing supporting observations
+        // vs. mismatch rate of reads without the alternate, for each alternate
 
     }
 

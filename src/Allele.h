@@ -122,6 +122,9 @@ public:
     string currentBase;       // current base, meant to be updated every position
     short mapQuality;       // map quality for the originating read
     long double lnmapQuality;       // map quality for the originating read
+    double readMismatchRate; // per-base mismatch rate for the read
+    double readIndelRate;  // only considering gaps
+    double readSNPRate;    // only considering snps/mnps
     bool isProperPair;    // if the allele is supported by a properly paired read
     bool isPaired;  // if the allele is supported by a read that is part of a pair
     bool isMateMapped;  // if the mate in the pair is mapped
