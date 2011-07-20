@@ -191,13 +191,13 @@ vcf::Variant& Results::vcf(
         }
     }
 
-    long double refReadMismatchRate = refReadMismatchSum / refObsCount;
-    long double refReadSNPRate = refReadSNPSum / refObsCount;
-    long double refReadIndelRate = refReadIndelSum / refObsCount;
+    long double refReadMismatchRate = (refObsCount == 0 ? 0 : refReadMismatchSum / (long double) refObsCount);
+    long double refReadSNPRate = (refObsCount == 0 ? 0 : refReadSNPSum / (long double) refObsCount);
+    long double refReadIndelRate = (refObsCount == 0 ? 0 : refReadIndelSum / (long double) refObsCount);
 
-    var.info["RRMR"].push_back(convert(refReadMismatchRate));
-    var.info["RRSR"].push_back(convert(refReadSNPRate));
-    var.info["RRIR"].push_back(convert(refReadIndelRate));
+    var.info["XRM"].push_back(convert(refReadMismatchRate));
+    var.info["XRS"].push_back(convert(refReadSNPRate));
+    var.info["XRI"].push_back(convert(refReadIndelRate));
 
     var.info["MQMR"].push_back(convert((refObsCount == 0) ? 0 : (double) refmqsum / (double) refObsCount));
     var.info["RPPR"].push_back(convert((refObsCount == 0) ? 0 : ln2phred(hoeffdingln(refReadsLeft, refReadsRight + refReadsLeft, 0.5))));
@@ -345,13 +345,18 @@ vcf::Variant& Results::vcf(
             }
         }
 
-        long double altReadMismatchRate = altReadMismatchSum / altObsCount;
-        long double altReadSNPRate = altReadSNPSum / altObsCount;
-        long double altReadIndelRate = altReadIndelSum / altObsCount;
+        long double altReadMismatchRate = (altObsCount == 0 ? 0 : altReadMismatchSum / altObsCount);
+        long double altReadSNPRate = (altObsCount == 0 ? 0 : altReadSNPSum / altObsCount);
+        long double altReadIndelRate = (altObsCount == 0 ? 0 : altReadIndelSum / altObsCount);
         
-        var.info["ARMR"].push_back(convert(altReadMismatchRate));
-        var.info["ARSR"].push_back(convert(altReadSNPRate));
-        var.info["ARIR"].push_back(convert(altReadIndelRate));
+        var.info["XAM"].push_back(convert(altReadMismatchRate));
+        var.info["XAS"].push_back(convert(altReadSNPRate));
+        var.info["XAI"].push_back(convert(altReadIndelRate));
+
+        // alt/ref ratios
+        //var.info["ARM"].push_back(convert(refReadMismatchRate == 0 ? 0 : altReadMismatchRate / refReadMismatchRate));
+        //var.info["ARS"].push_back(convert(refReadSNPRate == 0 ? 0 : altReadSNPRate / refReadSNPRate));
+        //var.info["ARI"].push_back(convert(refReadIndelRate == 0 ? 0 : altReadIndelRate / refReadIndelRate));
 
         //string refbase = parser->currentReferenceBase();
         // positional information

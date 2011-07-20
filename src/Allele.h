@@ -178,6 +178,9 @@ public:
         , isMateMapped(ismm)
         , genotypeAllele(false)
         , processed(false)
+        , readMismatchRate(0)
+        , readIndelRate(0)
+        , readSNPRate(0)
     {
 
         baseQualities.resize(qstr.size()); // cache qualities
@@ -201,6 +204,9 @@ public:
         , lnquality(1)
         , position(pos)
         , genotypeAllele(true)
+        , readMismatchRate(0)
+        , readIndelRate(0)
+        , readSNPRate(0)
     {
         currentBase = base();
     }

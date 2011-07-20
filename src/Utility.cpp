@@ -495,3 +495,15 @@ long double log10string2ln(const string& s) {
     convert(s, r);
     return log102ln(r);
 }
+
+long double safedivide(long double a, long double b) {
+    if (b == 0) {
+        if (a == 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        return a / b;
+    }
+}

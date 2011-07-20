@@ -347,12 +347,16 @@ string AlleleParser::vcfHeader() {
         << "##INFO=<ID=DPRA,Number=A,Type=Float,Description=\"Alternate allele depth ratio.  Ratio between depth in samples with each called alternate allele and those without.\">" << endl
 
         // error rates
-        << "##INFO=<ID=RRMR,Number=1,Type=Float,Description=\"Reference allele read mismatch rate: The rate of SNPs + MNPs + INDELs in reads supporting the reference allele.\">" << endl
-        << "##INFO=<ID=RRSR,Number=1,Type=Float,Description=\"Reference allele read SNP rate: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the reference allele.\">" << endl
-        << "##INFO=<ID=RRIR,Number=1,Type=Float,Description=\"Reference allele read INDEL rate: The rate of INDELs (gaps) in reads supporting the reference allele.\">" << endl
-        << "##INFO=<ID=ARMR,Number=A,Type=Float,Description=\"Alternate allele read mismatch rate: The rate of SNPs + MNPs + INDELs in reads supporting the alternate allele.\">" << endl
-        << "##INFO=<ID=ARSR,Number=A,Type=Float,Description=\"Alternate allele read SNP rate: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the alternate allele.\">" << endl
-        << "##INFO=<ID=ARIR,Number=A,Type=Float,Description=\"Alternate allele read INDEL rate: The rate of INDELs (gaps) in reads supporting the alternate allele.\">" << endl
+        << "##INFO=<ID=XRM,Number=1,Type=Float,Description=\"Reference allele read mismatch rate: The rate of SNPs + MNPs + INDELs in reads supporting the reference allele.\">" << endl
+        << "##INFO=<ID=XRS,Number=1,Type=Float,Description=\"Reference allele read SNP rate: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the reference allele.\">" << endl
+        << "##INFO=<ID=XRI,Number=1,Type=Float,Description=\"Reference allele read INDEL rate: The rate of INDELs (gaps) in reads supporting the reference allele.\">" << endl
+        << "##INFO=<ID=XAM,Number=A,Type=Float,Description=\"Alternate allele read mismatch rate: The rate of SNPs + MNPs + INDELs in reads supporting the alternate allele, excluding the called variant.\">" << endl
+        << "##INFO=<ID=XAS,Number=A,Type=Float,Description=\"Alternate allele read SNP rate: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the alternate allele, excluding the called variant.\">" << endl
+        << "##INFO=<ID=XAI,Number=A,Type=Float,Description=\"Alternate allele read INDEL rate: The rate of INDELs (gaps) in reads supporting the alternate allele, excluding the called variant.\">" << endl
+        // error rate ratios
+        //<< "##INFO=<ID=ARM,Number=A,Type=Float,Description=\"Alternate allele / reference allele read mismatch ratio: The rate of SNPs + MNPs + INDELs in reads supporting the alternate allele versus reads supporting the reference allele, excluding the called variant.\">" << endl
+        //<< "##INFO=<ID=ARS,Number=A,Type=Float,Description=\"Alternate allele / reference allele read SNP ratio: The rate of per-base mismatches (SNPs + MNPs) in reads supporting the alternate allele versus reads supporting the reference allele, excluding the called variant.\">" << endl
+        //<< "##INFO=<ID=ARI,Number=A,Type=Float,Description=\"Alternate allele / reference allele read INDEL ratio: The ratio in rate rate of INDELs (gaps) in reads supporting the alternate allele versus reads supporting the reference allele, excluding the called variant.\">" << endl
 
         // supplementary information about the site
         << "##INFO=<ID=ODDS,Number=1,Type=Float,Description=\"The log odds ratio of the best genotype combination to the second-best.\">" << endl
@@ -1252,6 +1256,7 @@ bailout:
     double matchCount = 0;
     double indelCount = 0;
 
+    // tally mismatches in two categories, gaps and mismatched bases
     for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
         Allele& allele = *a;
         switch (allele.type) {
@@ -1266,7 +1271,7 @@ bailout:
                 break;
             case ALLELE_INSERTION:
             case ALLELE_DELETION:
-            case ALLELE_COMPLEX: // should these be counted differently?
+            case ALLELE_COMPLEX:
                 ++indelCount;
                 break;
             default:
@@ -1279,11 +1284,36 @@ bailout:
     double indelRate = indelCount / alignedBases;
 
     // store mismatch information about the alignment in the alleles
+    // for each allele, normalize the mismatch rates by ignoring that allele,
+    // this allows us to relate the mismatch rate without reference to called alleles
     for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
         Allele& allele = *a;
         allele.readMismatchRate = mismatchRate;
         allele.readSNPRate = snpRate;
         allele.readIndelRate = indelRate;
+
+        switch (allele.type) {
+            case ALLELE_REFERENCE:
+                allele.readMismatchRate = mismatchRate;
+                allele.readSNPRate = snpRate;
+                allele.readIndelRate = indelRate;
+                break;
+            case ALLELE_SNP:
+            case ALLELE_MNP:
+                allele.readSNPRate = ( mismatchCount - allele.length ) / alignedBases;
+                allele.readIndelRate = indelRate;
+                allele.readMismatchRate = indelRate + allele.readSNPRate;
+                break;
+            case ALLELE_INSERTION:
+            case ALLELE_DELETION:
+            case ALLELE_COMPLEX:
+                allele.readSNPRate = snpRate;
+                allele.readIndelRate = ( indelCount - 1 ) / alignedBases;
+                allele.readMismatchRate = allele.readIndelRate + snpRate;
+                break;
+            default:
+                break;
+        }
     }
 
     // mark positions in each alignment which are within IDW bases of an indel
