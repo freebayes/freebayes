@@ -2130,7 +2130,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes) {
         }
 
         // and remove the entire sample if it has no alleles
-        if (empty) {
+        if (empty || currentSamplePloidy(name) == 0) {
             samplesToErase.push_back(name);
         }
     }
