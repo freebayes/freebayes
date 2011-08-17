@@ -365,7 +365,7 @@ vcf::Variant& Results::vcf(
         //out.precision(5);
 
         var.info["AC"].push_back(convert(alternateCount));
-        var.info["AN"].push_back(convert(alleleCount));
+        var.info["AN"].clear(); var.info["AN"].push_back(convert(alleleCount)); // XXX hack...
         var.info["AF"].push_back(convert((alleleCount == 0) ? 0 : (double) alternateCount / (double) alleleCount));
         var.info["AA"].push_back(convert(altObsCount));
         if (homRefSamples > 0 && hetAltRefSamples + homAltSamples > 0) {
