@@ -73,8 +73,8 @@ void Parameters::usage(char** argv) {
          << "reference allele:" << endl
          << endl
          << "   -Z --use-reference-allele" << endl
-         << "                   By default, the reference allele is considered as another" << endl
-         << "                   sample.  This flag excludes it from the analysis." << endl
+         << "                   This flag includes the reference allele in the analysis as" << endl
+         << "                   if it is another sample from the same population." << endl
          << "   -H --diploid-reference" << endl
          << "                   If using the reference sequence as a sample (default)," << endl
          << "                   treat it as diploid.  default: false (reference is haploid)" << endl
