@@ -998,3 +998,18 @@ unsigned int Allele::getLengthOnReference(void) {
     }
 
 }
+
+vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2) {
+    map<string, Allele> alleleSet;
+    vector<Allele> results;
+    for (vector<Allele>::iterator a = a1.begin(); a != a1.end(); ++a) {
+        alleleSet.insert(make_pair(a->base(), *a));
+    }
+    for (vector<Allele>::iterator a = a2.begin(); a != a2.end(); ++a) {
+        alleleSet.insert(make_pair(a->base(), *a));
+    }
+    for (map<string, Allele>::iterator a = alleleSet.begin(); a != alleleSet.end(); ++a) {
+        results.push_back(a->second);
+    }
+    return results;
+}

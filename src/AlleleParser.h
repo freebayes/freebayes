@@ -210,7 +210,6 @@ public:
     // sample groups at the current position, according to our filters
     vector<Allele> genotypeAlleles(map<string, vector<Allele*> >& alleleGroups,
             Samples& samples,
-            vector<Allele>& allGenotypeAlleles,
             bool useOnlyInputAlleles);
 
     // pointer to current position in targets

@@ -2170,8 +2170,6 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
 vector<Allele> AlleleParser::genotypeAlleles(
         map<string, vector<Allele*> >& alleleGroups, // alleles grouped by equivalence
         Samples& samples, // alleles grouped by sample
-        vector<Allele>& allGenotypeAlleles,     // all possible genotype alleles,
-                                                // to add back alleles if we don't have enough to meet our minimum allele count
         bool useOnlyInputAlleles
         ) {
 

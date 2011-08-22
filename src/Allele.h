@@ -332,6 +332,8 @@ bool allelesEqual(Allele &a, Allele &b);
 
 void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups);
 
+vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2);
+
 // XXX cleanup
 // is there a way to template these?  difficult as the syntax for pointer-based comparisons is different than non-pointer
 vector<vector<Allele*> >  groupAlleles(list<Allele*> &alleles, bool (*fncompare)(Allele* &a, Allele* &b));

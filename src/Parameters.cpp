@@ -72,7 +72,7 @@ void Parameters::usage(char** argv) {
          << endl
          << "reference allele:" << endl
          << endl
-         << "   -Z --ignore-reference-allele" << endl
+         << "   -Z --use-reference-allele" << endl
          << "                   By default, the reference allele is considered as another" << endl
          << "                   sample.  This flag excludes it from the analysis." << endl
          << "   -H --diploid-reference" << endl
@@ -257,8 +257,8 @@ Parameters::Parameters(int argc, char** argv) {
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
     useBestNAlleles = 0;         // -n --use-best-n-alleles
-    forceRefAllele = true;         // -Z --ignore-reference-allele
-    useRefAllele = true;           // .....
+    forceRefAllele = false;         // -Z --use-reference-allele
+    useRefAllele = false;           // .....
     diploidReference = false;      // -H --diploid-reference
     allowIndels = false;            // -i --indels
     leftAlignIndels = false;       // -O --left-align-indels
@@ -330,7 +330,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"failed-alleles", required_argument, 0, '8'},
         {"use-duplicate-reads", no_argument, 0, 'E'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
-        {"ignore-reference-allele", no_argument, 0, 'Z'},
+        {"use-reference-allele", no_argument, 0, 'Z'},
         {"diploid-reference", no_argument, 0, 'H'},
         {"no-filters", no_argument, 0, '0'},
         {"reference-quality", required_argument, 0, '1'},
@@ -495,10 +495,10 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -Z --ignore-reference-allele
+            // -Z --use-reference-allele
             case 'Z':
-                forceRefAllele = false;
-                useRefAllele = false;
+                forceRefAllele = true;
+                useRefAllele = true;
                 break;
 
             // -H --diploid-reference

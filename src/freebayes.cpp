@@ -176,8 +176,17 @@ int main (int argc, char *argv[]) {
         if (parameters.useRefAllele)
             sampleListPlusRef.push_back(parser->currentSequenceName);
 
-        vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, allGenotypeAlleles, parameters.onlyUseInputAlleles);
+        vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
 
+        if (!parameters.useRefAllele) {
+            vector<Allele> refAlleleVector;
+            refAlleleVector.push_back(genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1));
+            genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
+        }
+
+
+        // TODO change so that there is no need to use the reference allele in
+        // the computations in order to report sites which are variant
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;
@@ -374,11 +383,6 @@ int main (int argc, char *argv[]) {
                     parameters.diffusionPriorScalar);
         }
 
-
-        // add back the invariants to the combos
-
-        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1);
-
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
         GenotypeComboResultSorter gcrSorter;
@@ -417,9 +421,13 @@ int main (int argc, char *argv[]) {
         bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
 
+        string referenceBase = parser->currentReferenceBaseString();
+
         // calculates pvar and gets the best het combo
         for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
-            if (gc->isHomozygous()) {
+            if (gc->isHomozygous()
+                    && (parameters.useRefAllele
+                        || !parameters.useRefAllele && gc->alleles().front() == referenceBase)) {
                 pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
                 pHom += safe_exp(gc->posteriorProb - posteriorNormalizer);
             } else if (!hasHetCombo) { // get the first het combo
@@ -491,8 +499,6 @@ int main (int argc, char *argv[]) {
         if ((1 - pHom) >= parameters.PVL || parameters.PVL == 0) {
             DEBUG2("passed PVL threshold");
 
-            string referenceBase = parser->currentReferenceBaseString();
-
             GenotypeCombo bestGenotypeComboByMarginals;
 
             if (parameters.calculateMarginals) {
@@ -557,7 +563,9 @@ int main (int argc, char *argv[]) {
                 hasHetCombo = false;
                 // calculates pvar and gets the best het combo
                 for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
-                    if (gc->isHomozygous()) {
+                    if (gc->isHomozygous()
+                            && (parameters.useRefAllele
+                                || !parameters.useRefAllele && gc->alleles().front() == referenceBase)) {
                         pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
                         pHom += safe_exp(gc->posteriorProb - posteriorNormalizer);
                     } else if (!hasHetCombo) { // get the first het combo
