@@ -95,7 +95,7 @@ alleles.o: alleles.cpp AlleleParser.o Allele.o
 dummy.o: dummy.cpp AlleleParser.o Allele.o
 	$(CC) $(CFLAGS) $(INCLUDE) -c dummy.cpp
 
-freebayes.o: freebayes.cpp TryCatch.h
+freebayes.o: freebayes.cpp TryCatch.h $(BAMTOOLS_ROOT)/lib/libbamtools.a
 	$(CC) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
@@ -116,7 +116,7 @@ Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 Ewens.o: Ewens.cpp Ewens.h
 	$(CC) $(CFLAGS) $(INCLUDE) -c Ewens.cpp
 
-AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h
+AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(BAMTOOLS_ROOT)/lib/libbamtools.a
 	$(CC) $(CFLAGS) $(INCLUDE) -c AlleleParser.cpp
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h
@@ -155,7 +155,7 @@ bamleftalign.o: bamleftalign.cpp LeftAlign.cpp
 bamfiltertech.o: bamfiltertech.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) -c bamfiltertech.cpp
 
-LeftAlign.o: LeftAlign.h LeftAlign.cpp
+LeftAlign.o: LeftAlign.h LeftAlign.cpp $(BAMTOOLS_ROOT)/lib/libbamtools.a
 	$(CC) $(CFLAGS) $(INCLUDE) -c LeftAlign.cpp
 
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
