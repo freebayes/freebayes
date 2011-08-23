@@ -84,10 +84,10 @@ void Parameters::usage(char** argv) {
          << endl
          << "allele scope:" << endl
          << endl
-         << "   -I --no-snps    Ignore SNP alleles.  default: only analyze SNP alleles." << endl
-         << "   -i --indels     Include insertion and deletion alleles in the analysis." << endl
-         << "   -X --mnps       Include multi-nuceotide polymorphisms, MNPs, in the analysis." << endl
-         << "   -u --complex    Include complex events, which are composites of other classes." << endl
+         << "   -I --no-snps    Ignore SNP alleles." << endl
+         << "   -i --no-indels  Ignore insertion and deletion alleles." << endl
+         << "   -X --no-mnps    Ignore multi-nuceotide polymorphisms, MNPs." << endl
+         << "   -u --no-complex Ignore complex events (composites of other classes)." << endl
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
          << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
@@ -260,11 +260,11 @@ Parameters::Parameters(int argc, char** argv) {
     forceRefAllele = false;         // -Z --use-reference-allele
     useRefAllele = false;           // .....
     diploidReference = false;      // -H --diploid-reference
-    allowIndels = false;            // -i --indels
+    allowIndels = true;            // -i --no-indels
     leftAlignIndels = false;       // -O --left-align-indels
-    allowMNPs = false;            // -X --mnps
+    allowMNPs = true;            // -X --no-mnps
     allowSNPs = true;          // -I --no-snps
-    allowComplex = false;
+    allowComplex = true;
     pooled = false;                 // -J --pooled
     ewensPriors = true;
     permute = true;                // -K --permute
@@ -348,10 +348,10 @@ Parameters::Parameters(int argc, char** argv) {
         {"read-snp-limit", required_argument, 0, '$'},
         {"read-indel-limit", required_argument, 0, 'e'},
         {"genotype-combo-step-max", required_argument, 0, '^'},
-        {"indels", no_argument, 0, 'i'},
+        {"no-indels", no_argument, 0, 'i'},
         {"left-align-indels", no_argument, 0, 'O'},
-        {"mnps", no_argument, 0, 'X'},
-        {"complex", no_argument, 0, 'u'},
+        {"no-mnps", no_argument, 0, 'X'},
+        {"no-complex", no_argument, 0, 'u'},
         {"no-snps", no_argument, 0, 'I'},
         {"indel-exclusion-window", required_argument, 0, 'x'},
         {"theta", required_argument, 0, 'T'},
@@ -523,7 +523,7 @@ Parameters::Parameters(int argc, char** argv) {
                 break;
 
             case 'u':
-                allowComplex = true;
+                allowComplex = false;
                 break;
 
             // -B --genotyping-max-iterations
@@ -661,12 +661,12 @@ Parameters::Parameters(int argc, char** argv) {
 
             // -i --indels
             case 'i':
-                allowIndels = true;
+                allowIndels = false;
                 break;
 
             // -X --mnps
             case 'X':
-                allowMNPs = true;
+                allowMNPs = false;
                 break;
 
             // -I --no-snps

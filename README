@@ -4,14 +4,14 @@ Overview:
 
 FreeBayes is a Bayesian genetic variant detector designed to find small
 polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels
-(insertions and deletions), and MNPs (multi-nucleotide polymorphisms) smaller
-than the length of a short-read sequencing alignment.  It uses short-read
-alignments (BAM files with Phred+33 encoded quality scores) for any number of
-individuals from a population and a reference genome to determine the
-most-likely combination of genotypes for the population at each position in a
-reference genome (FASTA).  It reports positions which it finds to be more
-likely polymorphic than monomorphic in a standard variant interchange format
-(VCF).
+(insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex
+events (composite insertion and substitution events) smaller than the length of
+a short-read sequencing alignment.  It uses short-read alignments (BAM files
+with Phred+33 encoded quality scores) for any number of individuals from a
+population and a reference genome to determine the most-likely combination of
+genotypes for the population at each position in a reference genome (FASTA).
+It reports positions which it finds to be more likely polymorphic than
+monomorphic in a standard variant interchange format (VCF).
 
 
 Obtaining:
@@ -28,6 +28,7 @@ nested git submodules for external repositories.
 Compilation:
 
 FreeBayes requires g++ and the standard C and C++ development libraries.
+Additionally, cmake is required for building the BamTools API.
 
     % make && sudo make install
 
@@ -44,9 +45,9 @@ instance:
     % freebayes --fasta-reference h.sapiens.fasta NA20504.bam
 
 Will produce a VCF (Variant Call Format [1]) file on standard out describing
-all SNPs between the reference and the alignments in NA20504.bam.  In order to
-produce correct output, the reference supplied must be the reference to which
-NA20504.bam was aligned.
+all SNPs, INDELs, MNPs, and Complex events between the reference and the
+alignments in NA20504.bam.  In order to produce correct output, the reference
+supplied must be the reference to which NA20504.bam was aligned.
 
 Users may specify any number of BAM files on the command line.  FreeBayes uses
 the BamTools API [2] to open and parse these files in parallel, virtually
@@ -162,23 +163,22 @@ of variant detection.
 
 Usage, indels:
 
-FreeBayes has been tested as an indel caller in conjunction with Mosaik [4],
-which uses a seeded Smith-Waterman-Gotoh algorithm for alignment.  In
-principle, any gapped aligner which is sensitive to indels will produce
-satisfactory results.
+FreeBayes has been tested as an indel caller as part of the 1000 Genomes
+Project.  In principle, any gapped aligner which is sensitive to indels will
+produce satisfactory results.  Indels are called by default, but they may be
+ignored by using the --no-indels flag.
 
 When calling indels, it is important to homogenize the positional distribution
 of insertions and deletions in the input by using left realignment.  This can
-be done in a streaming fashion as in this indel detection example:
+be done by using the --left-align-indels flag, or in a streaming fashion as in
+this indel detection example:
 
     % bamtools merge -region 10:6000..7000 -in NA20504.bam -in NA20507.bam \
        | bamleftalign -f reference.fasta \
        | samtools fillmd -Aru - reference.fasta \
        | freebayes --stdin \
                    --region 10:6000..7000 \
-                   -f reference.fasta \
-                   --indels \
-                   --mnps
+                   -f reference.fasta
 
 (Note that BAQ is applied after realignment.  Also note the --indels flag,
 which is required for indel detection.  Also, when supplied a --region
