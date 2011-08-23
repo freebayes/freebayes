@@ -16,7 +16,7 @@
 #include <cmath>
 #include "split.h"
 #include "join.h"
-#include "BamReader.h"
+#include "api/BamReader.h"
 #include "BedReader.h"
 #include "Parameters.h"
 #include "Utility.h"
@@ -24,7 +24,7 @@
 #include "Sample.h"
 #include "Fasta.h"
 #include "TryCatch.h"
-#include "BamMultiReader.h"
+#include "api/BamMultiReader.h"
 #include "Genotype.h"
 #include "CNV.h"
 #include "Result.h"

@@ -1,3 +1,6 @@
 [submodule "vcflib"]
 	path = vcflib
 	url = git://github.com/ekg/vcflib.git
+[submodule "bamtools"]
+	path = bamtools
+	url = git://github.com/pezmaster31/bamtools.git

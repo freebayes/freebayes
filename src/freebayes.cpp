@@ -18,7 +18,7 @@
 #include <float.h>
 
 // private libraries
-#include "BamReader.h"
+#include "api/BamReader.h"
 #include "Fasta.h"
 #include "TryCatch.h"
 #include "Parameters.h"

@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "Fasta.h"
-#include "BamAlignment.h"
-#include "BamReader.h"
-#include "BamWriter.h"
+#include "api/BamAlignment.h"
+#include "api/BamReader.h"
+#include "api/BamWriter.h"
 //#include "IndelAllele.h"
 #include "LeftAlign.h"
 
@@ -130,9 +130,12 @@ int main(int argc, char** argv) {
     }
 
     BamWriter writer;
-    if (!suppress_output && !writer.Open("stdout", reader.GetHeaderText(), reader.GetReferenceData(), isuncompressed)) {
+    if (!suppress_output && !writer.Open("stdout", reader.GetHeaderText(), reader.GetReferenceData())) {
         cerr << "could not open stdout for writing" << endl;
         exit(1);
+    }
+    if (isuncompressed) {
+        writer.SetCompressionMode(BamWriter::Uncompressed);
     }
 
     // store the names of all the reference sequences in the BAM file

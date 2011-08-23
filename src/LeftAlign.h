@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "Fasta.h"
-#include "BamAlignment.h"
-#include "BamReader.h"
-#include "BamWriter.h"
+#include "api/BamAlignment.h"
+#include "api/BamReader.h"
+#include "api/BamWriter.h"
 
 #include "IndelAllele.h"
 
