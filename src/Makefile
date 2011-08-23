@@ -15,7 +15,7 @@ CFLAGS=-O3
 BAMTOOLS_ROOT=../bamtools
 
 LIBS = -lz -lm -L./ -L../vcflib/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix -lbamtools
-INCLUDE = -I$(BAMTOOLS_ROOT)/include
+INCLUDE = -I$(BAMTOOLS_ROOT)/src
 
 
 all: ../bin/freebayes ../bin/bamleftalign
