@@ -219,6 +219,13 @@ performance or missed variants.  I will be more than happy to discuss them with
 you and investigate any such issues.
 
 
+Mailing list:
+
+A summary of each commit will be posted to freebayes@groups.google.com.  Please
+use this mailing list for public discussion of freebayes and variant detection
+work.  I will direct answers to questions about freebayes to this mailing list.
+
+
 Author: Erik Garrison <erik.garrison@bc.edu>
         Marth Lab [3], Boston College
 
