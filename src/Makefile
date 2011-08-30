@@ -14,7 +14,7 @@ CFLAGS=-O3
 
 BAMTOOLS_ROOT=../bamtools
 
-LIBS = -lz -lm -L./ -L../vcflib/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix -lbamtools
+LIBS = -lz -lm -L./ -L../vcflib/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix
 INCLUDE = -I$(BAMTOOLS_ROOT)/src
 
 
@@ -62,26 +62,27 @@ OBJECTS=BedReader.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
-		Variant.o
+		Variant.o \
+		$(BAMTOOLS_ROOT)/lib/libbamtools.a
 
 HEADERS=multichoose.h
 
 # executables
 
-freebayes ../bin/freebayes: freebayes.o $(BAMTOOLS_ROOT)/lib/libbamtools.a $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/freebayes $(LIBS)
+freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
-alleles ../bin/alleles: alleles.o $(BAMTOOLS_ROOT)/lib/libbamtools.a $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) alleles.o $(OBJECTS) $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/alleles $(LIBS)
+alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
 
-dummy ../bin/dummy: dummy.o $(BAMTOOLS_ROOT)/lib/libbamtools.a $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/dummy $(LIBS)
+dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
+	$(CC) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
 bamleftalign ../bin/bamleftalign: $(BAMTOOLS_ROOT)/lib/libbamtools.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CC) $(CFLAGS) $(INCLUDE) $(BAMTOOLS_ROOT)/lib/libbamtools.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o -o ../bin/bamleftalign $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: $(BAMTOOLS_ROOT)/lib/libbamtools.a bamfiltertech.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/bamfiltertech $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
 # objects
