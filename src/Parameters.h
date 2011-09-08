@@ -52,6 +52,7 @@ public:
     bool leftAlignIndels;        // -O --left-align-indels
     bool allowMNPs;              // -X --allow-mnps
     bool allowComplex;           // -X --allow-complex
+    int maxComplexGap;
     bool allowSNPs;              // -I --no-snps
     bool pooled;                 // -J --pooled
     bool ewensPriors;

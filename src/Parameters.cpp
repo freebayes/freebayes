@@ -91,6 +91,9 @@ void Parameters::usage(char** argv) {
          << "   -n --use-best-n-alleles N" << endl
          << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
          << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
+         << "   -E --max-complex-gap N" << endl
+         << "                   Allow complex alleles with contiguous embedded matches of up" << endl
+         << "                   to this length." << endl
          << endl
          << "indel realignment:" << endl
          << endl
@@ -99,7 +102,7 @@ void Parameters::usage(char** argv) {
          << endl
          << "input filters:" << endl
          << endl
-         << "   -E --use-duplicate-reads" << endl
+         << "   -4 --use-duplicate-reads" << endl
          << "                   Include duplicate-marked alignments in the analysis." << endl
          << "                   default: exclude duplicates" << endl
          << "   -m --min-mapping-quality Q" << endl
@@ -265,6 +268,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowMNPs = true;            // -X --no-mnps
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
+    maxComplexGap = 3;
     pooled = false;                 // -J --pooled
     ewensPriors = true;
     permute = true;                // -K --permute
@@ -328,7 +332,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"vcf", required_argument, 0, 'v'},
         {"trace", required_argument, 0, 'L'},
         {"failed-alleles", required_argument, 0, '8'},
-        {"use-duplicate-reads", no_argument, 0, 'E'},
+        {"use-duplicate-reads", no_argument, 0, '4'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"use-reference-allele", no_argument, 0, 'Z'},
         {"diploid-reference", no_argument, 0, 'H'},
@@ -352,6 +356,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"left-align-indels", no_argument, 0, 'O'},
         {"no-mnps", no_argument, 0, 'X'},
         {"no-complex", no_argument, 0, 'u'},
+        {"max-complex-gap", required_argument, 0, 'E'},
         {"no-snps", no_argument, 0, 'I'},
         {"indel-exclusion-window", required_argument, 0, 'x'},
         {"theta", required_argument, 0, 'T'},
@@ -386,7 +391,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcOEZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -458,8 +463,8 @@ Parameters::Parameters(int argc, char** argv) {
                 failedFile = optarg;
                 break;
 
-            // -E --use-duplicate-reads
-            case 'E':
+            // -4 --use-duplicate-reads
+            case '4':
                 useDuplicateReads = true;
                 break;
 
@@ -524,6 +529,13 @@ Parameters::Parameters(int argc, char** argv) {
 
             case 'u':
                 allowComplex = false;
+                break;
+
+            case 'E':
+                if (!convert(optarg, maxComplexGap)) {
+                    cerr << "could not parse maxComplexGap" << endl;
+                    exit(1);
+                }
                 break;
 
             // -B --genotyping-max-iterations

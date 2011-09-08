@@ -507,3 +507,52 @@ long double safedivide(long double a, long double b) {
         return a / b;
     }
 }
+
+string mergeCigar(const string& c1, const string& c2) {
+    vector<pair<int, string> > cigar1 = splitCigar(c1);
+    vector<pair<int, string> > cigar2 = splitCigar(c2);
+    // check if the middle elements are the same
+    if (cigar1.back().second == cigar2.front().second) {
+        cigar1.back().first += cigar2.front().first;
+        cigar2.erase(cigar2.begin());
+    }
+    for (vector<pair<int, string> >::iterator c = cigar2.begin(); c != cigar2.end(); ++c) {
+        cigar1.push_back(*c);
+    }
+    return joinCigar(cigar1);
+}
+
+vector<pair<int, string> > splitCigar(const string& cigarStr) {
+    vector<pair<int, string> > cigar;
+    string number;
+    string type;
+    // strings go [Number][Type] ...
+    for (string::const_iterator s = cigarStr.begin(); s != cigarStr.end(); ++s) {
+        char c = *s;
+        if (isdigit(c)) {
+            if (type.empty()) {
+                number += c;
+            } else {
+                // signal for next token, push back the last pair, clean up
+                cigar.push_back(make_pair(atoi(number.c_str()), type));
+                number.clear();
+                type.clear();
+                number += c;
+            }
+        } else {
+            type += c;
+        }
+    }
+    if (!number.empty() && !type.empty()) {
+        cigar.push_back(make_pair(atoi(number.c_str()), type));
+    }
+    return cigar;
+}
+
+string joinCigar(const vector<pair<int, string> >& cigar) {
+    string cigarStr;
+    for (vector<pair<int, string> >::const_iterator c = cigar.begin(); c != cigar.end(); ++c) {
+        cigarStr += convert(c->first) + c->second;
+    }
+    return cigarStr;
+}

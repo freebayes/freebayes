@@ -77,7 +77,7 @@ class Allele {
 
     friend class AlleleFreeList;
 
-    friend string stringForAllele(Allele &a);
+    friend string stringForAllele(const Allele &a);
     friend string stringForAlleles(vector<Allele> &av);
 
     friend bool operator<(const Allele &a, const Allele &b);
@@ -132,6 +132,7 @@ public:
     vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
     const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
     bool processed; // flag to mark if we've presented this allele for analysis
+    string cigar; // a cigar representation of the allele
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
@@ -152,7 +153,8 @@ public:
                 short mapqual,
                 bool ispair,
                 bool ismm,
-                bool isproppair)
+                bool isproppair,
+                string cigarstr)
         : type(t)
         , referenceName(refname)
         , position(pos)
@@ -181,6 +183,7 @@ public:
         , readMismatchRate(0)
         , readIndelRate(0)
         , readSNPRate(0)
+        , cigar(cigarstr)
     {
 
         baseQualities.resize(qstr.size()); // cache qualities
@@ -194,6 +197,7 @@ public:
             string alt,
             unsigned int len,
             unsigned int reflen,
+            string cigarStr,
             long double pos=0,
             bool gallele=true) 
         : type(t)
@@ -207,6 +211,7 @@ public:
         , readMismatchRate(0)
         , readIndelRate(0)
         , readSNPRate(0)
+        , cigar(cigarStr)
     {
         currentBase = base();
     }
@@ -235,7 +240,7 @@ public:
     */
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
-    string typeStr(void); // return a string representation of the allele type, for output
+    string typeStr(void) const; // return a string representation of the allele type, for output
     bool isReference(void); // true if type == ALLELE_REFERENCE
     bool isSNP(void); // true if type == ALLELE_SNP
     bool isInsertion(void); // true if type == ALLELE_INSERTION
@@ -349,7 +354,7 @@ vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups)
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
-Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, unsigned int reflen = 0, long double position = 0);
+Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, string cigar = "", unsigned int reflen = 0, long double position = 0);
 
 
 //AlleleFreeList Allele::_freeList;

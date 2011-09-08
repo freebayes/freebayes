@@ -156,7 +156,7 @@ const long double Allele::lncurrentQuality(void) const {
     return phred2ln(currentQuality());
 }
 
-string Allele::typeStr(void) {
+string Allele::typeStr(void) const {
 
     string t;
 
@@ -240,7 +240,7 @@ const string Allele::base(void) const { // the base of this allele
             return "D" + convert(length);
             break;
         case ALLELE_COMPLEX:
-            return "C" + alternateSequence;
+            return "C" + cigar + alternateSequence;
             break;
         default:
             break;
@@ -279,26 +279,28 @@ const bool Allele::masked(void) const {
 
 }
 
-string stringForAllele(Allele &allele) {
+string stringForAllele(const Allele &allele) {
 
     stringstream out;
     if (!allele.genotypeAllele) {
         out.precision(1);
         out 
-            << allele.sampleID << "\t"
-            << allele.readID << "\t"
-            << allele.typeStr() << "\t" 
-            << scientific << fixed << allele.position << "\t"
-            << allele.length << "\t"
-            << (allele.strand == STRAND_FORWARD ? "+" : "-") << "\t"
-            << allele.referenceSequence << "\t"
-            << allele.alternateSequence << "\t"
-            << allele.quality << "\t" << endl;
+            << allele.sampleID << ":"
+            << allele.readID << ":"
+            << allele.typeStr() << ":"
+            << allele.cigar << ":"
+            << scientific << fixed << allele.position << ":"
+            << allele.length << ":"
+            << (allele.strand == STRAND_FORWARD ? "+" : "-") << ":"
+            << allele.referenceSequence << ":"
+            << allele.alternateSequence << ":"
+            << allele.quality << ":"
+            << allele.basesLeft << ":"
+            << allele.basesRight;
     } else {
-        out << allele.typeStr() << "\t"
-            << allele.length << "\t"
-            << allele.alternateSequence
-            << endl;
+        out << allele.typeStr() << ":"
+            << allele.length << ":"
+            << allele.alternateSequence;
     }
 
     return out.str();
@@ -452,7 +454,8 @@ bool Allele::equivalent(Allele &b) {
                 break;
             case ALLELE_COMPLEX:
                 if (length == b.length
-                    && alternateSequence == b.alternateSequence)
+                    && alternateSequence == b.alternateSequence
+                    && cigar == b.cigar)
                     return true;
                 break;
             default:
@@ -798,11 +801,11 @@ vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles) {
 }
 
 Allele genotypeAllele(Allele &a) {
-    return Allele(a.type, a.alternateSequence, a.length, a.referenceLength, a.position);
+    return Allele(a.type, a.alternateSequence, a.length, a.referenceLength, a.cigar, a.position);
 }
 
-Allele genotypeAllele(AlleleType type, string alt, unsigned int len, unsigned int reflen, long double pos) {
-    return Allele(type, alt, len, reflen, pos);
+Allele genotypeAllele(AlleleType type, string alt, unsigned int len, string cigar, unsigned int reflen, long double pos) {
+    return Allele(type, alt, len, reflen, cigar, pos);
 }
 
 /*
@@ -967,6 +970,7 @@ baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
 
 // combines the two alleles into a complex variant, updates important data
 void Allele::mergeAllele(const Allele& newAllele) {
+    //cout << stringForAllele(*this) << endl << stringForAllele(newAllele) << endl;
     type = ALLELE_COMPLEX;
     alternateSequence += newAllele.alternateSequence;
     length += newAllele.length; // hmmm
@@ -974,8 +978,16 @@ void Allele::mergeAllele(const Allele& newAllele) {
     basesRight = newAllele.basesRight;
     bpRight = newAllele.bpRight;
     currentBase = base();
-    quality += newAllele.quality;
-    lnquality += newAllele.lnquality;
+    // XXX note that we don't add Q values for intermingled gaps in complex alleles
+    if (newAllele.type != ALLELE_REFERENCE) {
+        quality += newAllele.quality;
+        lnquality += newAllele.lnquality;
+    } else {
+        basesRight += newAllele.length;
+        bpRight += newAllele.length;
+    }
+    cigar = mergeCigar(cigar, newAllele.cigar);
+    //cout << stringForAllele(*this) << endl << endl;
 }
 
 unsigned int Allele::getLengthOnReference(void) {

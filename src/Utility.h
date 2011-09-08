@@ -95,4 +95,8 @@ string dateStr(void);
 long double string2float(const string& s);
 long double log10string2ln(const string& s);
 
+string mergeCigar(const string& c1, const string& c2);
+vector<pair<int, string> > splitCigar(const string& cigarStr);
+string joinCigar(const vector<pair<int, string> >& cigar);
+
 #endif

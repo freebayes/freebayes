@@ -36,6 +36,7 @@ vcf::Variant& Results::vcf(
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
 
         Allele& altAllele = *aa;
+        int offset = 0;
 
         switch (altAllele.type) {
             case ALLELE_SNP:
@@ -58,8 +59,11 @@ vcf::Variant& Results::vcf(
                 // if the complex event involves the deletion of some bp, then
                 // we have to treat it like a deletion during reporting,
                 // otherwise, as insertion
-                if (var.ref.size() < altAllele.referenceLength + 1) {
-                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength + 1);
+                if (altAllele.referenceLength != altAllele.alternateSequence.length()) {
+                    offset = 1;
+                }
+                if (var.ref.size() < altAllele.referenceLength + offset) {
+                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength + offset);
                 }
                 break;
             default:
@@ -73,6 +77,7 @@ vcf::Variant& Results::vcf(
 
         Allele& altAllele = *aa;
         string altSequence;
+        int offset = 0;
 
         switch (altAllele.type) {
             case ALLELE_REFERENCE:
@@ -101,8 +106,12 @@ vcf::Variant& Results::vcf(
                 break;
             case ALLELE_COMPLEX:
                 altSequence = var.ref;
-                altSequence.erase(1, altAllele.referenceLength);
-                altSequence.insert(1, altAllele.base().substr(1)); // chop off leading "C"
+                // check if the comples allele begins with an indel
+                if (altAllele.referenceLength != altAllele.alternateSequence.length()) {
+                    offset = 1;
+                }
+                altSequence.erase(offset, altAllele.referenceLength);
+                altSequence.insert(offset, altAllele.alternateSequence);
                 break;
             default:
                 cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
@@ -391,6 +400,7 @@ vcf::Variant& Results::vcf(
         var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5))));
         var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5))));
         var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : (double) altproperPairs / (double) altObsCount));
+        var.info["CIGAR"].push_back(altAllele.cigar);
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
                 st != sequencingTechnologies.end(); ++st) { string& tech = *st;

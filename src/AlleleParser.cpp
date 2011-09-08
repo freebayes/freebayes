@@ -365,6 +365,7 @@ string AlleleParser::vcfHeader() {
         << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"site has transversion SNP\">" << endl
         << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
         << "##INFO=<ID=TYPE,Number=A,Type=String,Description=\"The type of allele, either snp, mnp, ins, del, or complex.\">" << endl
+        << "##INFO=<ID=CIGAR,Number=A,Type=String,Description=\"The extended CIGAR representation of each alternate allele, with the exception that '=' is replaced by 'M' to ease VCF parsing.  Note that INDEL alleles do not have the first matched base (which is provided by default, per the spec) referred to by the CIGAR.\">" << endl
         //<< "##INFO=<ID=SNP,Number=0,Type=Flag,Description=\"SNP allele at site\">" << endl
         //<< "##INFO=<ID=MNP,Number=0,Type=Flag,Description=\"MNP allele at site\">" << endl
         //<< "##INFO=<ID=INS,Number=0,Type=Flag,Description=\"insertion allele at site\">" << endl
@@ -392,7 +393,7 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=GQ,Number=1,Type=Float,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         // this can be regenerated with RA, AA, QR, QA
         << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
-        << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0=-75.22,1=-223.42,0/0=-323.03,1/0=-99.29,1/1=-802.53\">" << endl
+        << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0=-75.22,1M-223.42,0/0=-323.03,1/0=-99.29,1/1M-802.53\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
@@ -808,12 +809,12 @@ bool AlleleParser::isCpG(string& altbase) {
     }
 }
 
-void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex) {
+void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int maxComplexGap) {
 
     // allele combination rules.  combine the last allele in the list of allele
     // observations according to the following rules
     // 0) reference + SNP, MNP
-    // 1) INDEL + MNP, INDEL + SNP -> complex (MNP?)
+    // 1) INDEL + (REF <= maxComplexGap) + MNP, INDEL + (REF <= maxComplexGap) + SNP -> complex
     // 2) MNP + SNP, SNP + SNP -> MNP
     // 2) reference + INDEL -> reference.substr(0, reference.size() - 1), reference.at(reference.size()) + INDEL
     if (alleles.empty()) {
@@ -824,10 +825,10 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex) {
 
         Allele& lastAllele = alleles.back();
 
-        if (newAllele.isReference()) {
+        if (newAllele.isReference() && ( newAllele.length > maxComplexGap || ( newAllele.length <= maxComplexGap && newAllele.basesRight <= maxComplexGap ))) {
             alleles.push_back(newAllele);
         } else if (lastAllele.isReference()) {
-            if (newAllele.isSNP() || newAllele.isMNP()) {
+            if (newAllele.isSNP() || newAllele.isMNP() || newAllele.isComplex()) {
                 alleles.push_back(newAllele);
             } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
                 lastAllele.length -= 1;
@@ -836,33 +837,12 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex) {
                 newAllele.alternateSequence.insert(0, lastAllele.alternateSequence.substr(lastAllele.alternateSequence.size() - 1, 0));
                 alleles.push_back(newAllele);
             }
-        } else if (lastAllele.isSNP() || lastAllele.isMNP()) {
-            if (newAllele.isSNP() || newAllele.isMNP()) {
-                // TODO -> MNP
+        } else {
+            // -> complex event
+            if (mergeComplex) {
+                lastAllele.mergeAllele(newAllele);
+            } else {
                 alleles.push_back(newAllele);
-            } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
-                // -> complex event
-                if (mergeComplex) {
-                    lastAllele.mergeAllele(newAllele);
-                } else {
-                    alleles.push_back(newAllele);
-                }
-            }
-        } else if (lastAllele.isInsertion() || lastAllele.isDeletion()) {
-            if (newAllele.isSNP() || newAllele.isMNP()) {
-                // -> complex event
-                if (mergeComplex) {
-                    lastAllele.mergeAllele(newAllele);
-                } else {
-                    alleles.push_back(newAllele);
-                }
-            } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
-                // -> complex event
-                if (mergeComplex) {
-                    lastAllele.mergeAllele(newAllele);
-                } else {
-                    alleles.push_back(newAllele);
-                }
             }
         }
 
@@ -1001,12 +981,13 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         if (allATGC(readSequence)) {
                             ra.addAllele(Allele(ALLELE_REFERENCE,
                                         currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
-                                        alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                                         rp, // bases left (for first base in ref allele)
+                                        alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                                         readSequence, sampleName, alignment.Name, sequencingTech,
                                         !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                                        alignment.MapQuality, alignment.IsPaired(), alignment.IsMateMapped(), alignment.IsProperPair()),
-                                    parameters.allowComplex);
+                                        alignment.MapQuality, alignment.IsPaired(), alignment.IsMateMapped(), alignment.IsProperPair(),
+                                        convert(length) + "M"),
+                                    parameters.allowComplex, parameters.maxComplexGap);
                             DEBUG2(ra.alleles.back());
                         }
                     }
@@ -1044,8 +1025,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     qualstr, alignment.MapQuality,
                                     alignment.IsPaired(),
                                     alignment.IsMateMapped(),
-                                    alignment.IsProperPair()),
-                                parameters.allowComplex);
+                                    alignment.IsProperPair(),
+                                    convert(length) + "X"),
+                                parameters.allowComplex, parameters.maxComplexGap);
                         DEBUG2(ra.alleles.back());
                     }
                 }
@@ -1074,8 +1056,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 !alignment.IsReverseStrand(), lqual, qualstr,
                                 alignment.MapQuality, alignment.IsPaired(),
                                 alignment.IsMateMapped(),
-                                alignment.IsProperPair()),
-                            parameters.allowComplex);
+                                alignment.IsProperPair(),
+                                convert(length) + "X"),
+                            parameters.allowComplex, parameters.maxComplexGap);
                     DEBUG2(ra.alleles.back());
                 }
             // or, if we are not in a mismatch, construct the last reference allele of the match
@@ -1087,14 +1070,15 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 if (allATGC(readSequence)) {
                     ra.addAllele(Allele(ALLELE_REFERENCE,
                             currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
-                            alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                             rp, // bases left (for first base in ref allele)
+                            alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
                             readSequence, sampleName, alignment.Name, sequencingTech,
                             !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
                             alignment.MapQuality, alignment.IsPaired(),
                             alignment.IsMateMapped(),
-                            alignment.IsProperPair()),
-                        parameters.allowComplex);
+                            alignment.IsProperPair(),
+                            convert(length) + "M"),
+                        parameters.allowComplex, parameters.maxComplexGap);
                     DEBUG2(ra.alleles.back());
                 }
             }
@@ -1159,8 +1143,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         "", sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual, qualstr,
                         alignment.MapQuality, alignment.IsPaired(),
-                        alignment.IsMateMapped(), alignment.IsProperPair()),
-                    parameters.allowComplex);
+                        alignment.IsMateMapped(), alignment.IsProperPair(),
+                        convert(l) + "D"),
+                    parameters.allowComplex, parameters.maxComplexGap);
                 DEBUG2(ra.alleles.back());
             }
             ++ra.indelCount;
@@ -1224,8 +1209,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         sampleName, alignment.Name, sequencingTech,
                         !alignment.IsReverseStrand(), qual,
                         qualstr, alignment.MapQuality, alignment.IsPaired(),
-                        alignment.IsMateMapped(), alignment.IsProperPair()),
-                    parameters.allowComplex);
+                        alignment.IsMateMapped(), alignment.IsProperPair(),
+                        convert(l) + "I"),
+                    parameters.allowComplex, parameters.maxComplexGap);
                 DEBUG2(ra.alleles.back());
             }
             ++ra.indelCount;
@@ -1521,6 +1507,7 @@ void AlleleParser::updateInputVariants(void) {
 
                         int len = 0;
                         int reflen = 0;
+                        string cigar;
 
                         if (variant.ref == variant.alt) {
                             // XXX note that for reference alleles, we only use the first base internally
@@ -1530,6 +1517,7 @@ void AlleleParser::updateInputVariants(void) {
                             reflen = len;
                             alleleSequence = alleleSequence.at(0); // take only the first base
                             type = ALLELE_REFERENCE;
+                            cigar = "1M";
                         } else if (variant.ref.size() == variant.alt.size()) {
                             len = variant.ref.size();
                             reflen = len;
@@ -1538,17 +1526,20 @@ void AlleleParser::updateInputVariants(void) {
                             } else {
                                 type = ALLELE_MNP;
                             }
+                            cigar = convert(len) + "X";
                         } else if (variant.ref.size() > variant.alt.size()) {
                             len = variant.ref.size() - variant.alt.size();
                             reflen = len;
                             type = ALLELE_DELETION;
+                            cigar = convert(len) + "D";
                         } else {
                             len = variant.alt.size() - variant.ref.size();
                             reflen = 0;
                             type = ALLELE_INSERTION;
+                            cigar = convert(len) + "I";
                         }
 
-                        Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, (unsigned int) reflen, allelePos);
+                        Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, cigar, (unsigned int) reflen, allelePos);
                         DEBUG2("input allele: " << allele);
 
                         inputVariantAlleles[allelePos].push_back(allele);
@@ -2160,7 +2151,7 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
             true, baseQ,
             baseQstr,
             mapQ,
-            false, false, false); // pair information
+            false, false, false, "1M"); // pair information
     allele->genotypeAllele = true;
     allele->baseQualities.push_back(baseQ);
     allele->update();
@@ -2204,7 +2195,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
                 length = 1;
                 reflength = 1;
             }
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.alternateSequence, length, reflength, currentPosition), qSum));
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, allele.alternateSequence, length, allele.cigar, reflength, currentPosition), qSum));
         }
     }
     DEBUG2("found genotype alleles");
@@ -2266,7 +2257,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         // and add the reference allele if we need it
         if (parameters.forceRefAllele && !hasRefAllele) {
             DEBUG2("including reference allele");
-            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1, 1, currentPosition));
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1, "1M", 1, currentPosition));
         }
     } else {
         // this means, use the N best
@@ -2302,7 +2293,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         // haven't included the reference allele, include it
         if (parameters.forceRefAllele && !hasRefAllele) {
             DEBUG2("including reference allele in analysis");
-            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1, 1, currentPosition));
+            resultAlleles.insert(resultAlleles.begin(), genotypeAllele(ALLELE_REFERENCE, refBase, 1, "1M", 1, currentPosition));
         }
 
         // if we now have too many alleles (most likely one too many), get rid of some

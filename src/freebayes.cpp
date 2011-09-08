@@ -180,7 +180,7 @@ int main (int argc, char *argv[]) {
 
         if (!parameters.useRefAllele) {
             vector<Allele> refAlleleVector;
-            refAlleleVector.push_back(genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1));
+            refAlleleVector.push_back(genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1, "1M"));
             genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
         }
 
