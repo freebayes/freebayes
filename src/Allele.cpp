@@ -228,10 +228,10 @@ const string Allele::base(void) const { // the base of this allele
             return alternateSequence;
             break;
         case ALLELE_SNP:
-            return alternateSequence;
+            return "S" + alternateSequence;
             break;
         case ALLELE_MNP:
-            return alternateSequence;
+            return "M" + alternateSequence;
             break;
         case ALLELE_INSERTION:
             return "I" + alternateSequence;

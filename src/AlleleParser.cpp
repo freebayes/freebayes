@@ -831,10 +831,11 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
             if (newAllele.isSNP() || newAllele.isMNP() || newAllele.isComplex()) {
                 alleles.push_back(newAllele);
             } else if (newAllele.isInsertion() || newAllele.isDeletion()) {
-                lastAllele.length -= 1;
-                // this is slightly degenerate, as we don't clean up the allele, just modify its length
                 newAllele.position -= 0.5;
-                newAllele.alternateSequence.insert(0, lastAllele.alternateSequence.substr(lastAllele.alternateSequence.size() - 1, 0));
+                newAllele.alternateSequence.insert(0, lastAllele.alternateSequence.substr(lastAllele.alternateSequence.size() - 1, 1));
+                lastAllele.length -= 1;
+                lastAllele.alternateSequence.resize(lastAllele.alternateSequence.size() - 1);
+                newAllele.cigar.insert(0, "1M");
                 alleles.push_back(newAllele);
             }
         } else {
@@ -2019,6 +2020,34 @@ bool AlleleParser::dummyProcessNextTarget(void) {
     }
 
     return true;
+}
+
+void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& allelesBySample, int allowedAlleleTypes) {
+    // run through the alleles and find the longest sequence
+    int haplotypeLength = 1;
+    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& allele = *a;
+        if (allele.referenceLength > haplotypeLength) {
+            haplotypeLength = allele.referenceLength;
+        }
+    }
+    if (haplotypeLength > 1) {
+        // we need to construct all the overlapping haplotypes
+        // and... make it so the next position is after the haplotype ? ... that's big fish
+
+        // for each registered alignment, if it has a non-reference allele
+        // within the haplotype length of this position, adjust the length and
+        // reference sequences of the adjacent alleles 
+
+        // now the alleles have been adjusted,
+        //
+        // re-group the alleles using groupAlleles()
+        //
+        // re-run getAlleles() to repopulate the set of alleles
+        //
+        // re-run genotypeAlleles() to update the set of genotype alleles,
+        // which is passed by reference
+    }
 }
 
 bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {

@@ -184,9 +184,9 @@ int main (int argc, char *argv[]) {
             genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
         }
 
+        // TODO hook here to adjust the current alleles when we have multi-base events passing the filters
+        //parser->buildHaplotypeAlleles(genotypeAlleles, samples, allowedAlleleTypes);
 
-        // TODO change so that there is no need to use the reference allele in
-        // the computations in order to report sites which are variant
         if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;

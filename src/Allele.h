@@ -184,6 +184,8 @@ public:
         , readIndelRate(0)
         , readSNPRate(0)
         , cigar(cigarstr)
+        , previousAllele(NULL)
+        , nextAllele(NULL)
     {
 
         baseQualities.resize(qstr.size()); // cache qualities
@@ -212,32 +214,11 @@ public:
         , readIndelRate(0)
         , readSNPRate(0)
         , cigar(cigarStr)
+        , previousAllele(NULL)
+        , nextAllele(NULL)
     {
         currentBase = base();
     }
-
-    /*
-    Allele(const Allele& other) 
-        : type(other.type)
-        , referenceName(other.referenceName)
-        , position(other.position)
-        , currentReferencePosition(other.currentReferencePosition)
-        , currentReferenceBase(other.currentReferenceBase)
-        , length(other.length)
-        , referenceSequence(other.referenceSequence)
-        , alternateSequence(other.alternateSequence)
-        , sampleID(other.sampleID)
-        , readID(other.readID)
-        , strand(other.strand)
-        , quality(other.quality)
-        , lnquality(other.lnquality)
-        , currentBase(other.currentBase)
-        , baseQualities(other.baseQualities)
-        , mapQuality(other.mapQuality) 
-        , genotypeAllele(other.genotypeAllele)
-        , processed(other.processed)
-    { }
-    */
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void) const; // return a string representation of the allele type, for output
@@ -266,30 +247,13 @@ public:
     string json(void);
     unsigned int getLengthOnReference(void);
 
+    Allele* previousAllele; // 5' allele relative to this one, NULL if no previous allele is present
+    Allele* nextAllele; // 3' allele relative to this one, NULL if none are present
+
 
 
     void mergeAllele(const Allele& allele);
 
-    // overload new and delete for object recycling pool
-
-    /*
-    void* operator new (size_t size) {
-        assert (size == sizeof(Allele));
-        return _freeList.NewAllele();
-    }
-
-    void operator delete (void* mem) {
-        if (mem) _freeList.Recycle(mem);  // check allows us to safely subclass Allele
-    }
-
-    static void Purge() { _freeList.Purge(); }
-
-    Allele* pNext() const { return _pNext; } // next allocated allele
-
-private:
-    static AlleleFreeList _freeList; // for object recycling
-    Allele* _pNext; // for use in object recycling on the AlleleFreeList, used to link freed alleles into a list
-    */
 
 };
 

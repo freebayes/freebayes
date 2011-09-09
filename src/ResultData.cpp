@@ -36,8 +36,6 @@ vcf::Variant& Results::vcf(
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
 
         Allele& altAllele = *aa;
-        int offset = 0;
-
         switch (altAllele.type) {
             case ALLELE_SNP:
             case ALLELE_REFERENCE:
@@ -56,14 +54,8 @@ vcf::Variant& Results::vcf(
             case ALLELE_INSERTION:
                 break;
             case ALLELE_COMPLEX:
-                // if the complex event involves the deletion of some bp, then
-                // we have to treat it like a deletion during reporting,
-                // otherwise, as insertion
-                if (altAllele.referenceLength != altAllele.alternateSequence.length()) {
-                    offset = 1;
-                }
-                if (var.ref.size() < altAllele.referenceLength + offset) {
-                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength + offset);
+                if (var.ref.size() < altAllele.referenceLength) {
+                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength);
                 }
                 break;
             default:
@@ -77,7 +69,6 @@ vcf::Variant& Results::vcf(
 
         Allele& altAllele = *aa;
         string altSequence;
-        int offset = 0;
 
         switch (altAllele.type) {
             case ALLELE_REFERENCE:
@@ -85,14 +76,11 @@ vcf::Variant& Results::vcf(
                 break;
             case ALLELE_SNP:
                 altSequence = var.ref;
-                // XXX hack, what happens when we are co-present with indels?
-                // ... this would break.  in the current arrangement this is not an issue
-                altSequence.replace(0, 1, altAllele.base());
+                altSequence.replace(0, 1, altAllele.alternateSequence);
                 break;
             case ALLELE_MNP:
-                // XXX also a hack, implicitly groups MNPs with SNPs
                 altSequence = var.ref;
-                altSequence.replace(0, altAllele.length, altAllele.base());
+                altSequence.replace(0, altAllele.length, altAllele.alternateSequence);
                 break;
             case ALLELE_DELETION:
                 altSequence = var.ref;
@@ -100,18 +88,13 @@ vcf::Variant& Results::vcf(
                 break;
             case ALLELE_INSERTION:
                 altSequence = var.ref;
-                // XXX hack... resolves the alt allele semantics issue
-                // we have to strip off the leading 'I' from the allele name
-                altSequence.insert(1, altAllele.base().substr(1));
+                altSequence.insert(1, altAllele.alternateSequence.substr(1));
                 break;
             case ALLELE_COMPLEX:
                 altSequence = var.ref;
                 // check if the comples allele begins with an indel
-                if (altAllele.referenceLength != altAllele.alternateSequence.length()) {
-                    offset = 1;
-                }
-                altSequence.erase(offset, altAllele.referenceLength);
-                altSequence.insert(offset, altAllele.alternateSequence);
+                altSequence.erase(0, altAllele.referenceLength);
+                altSequence.insert(0, altAllele.alternateSequence);
                 break;
             default:
                 cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
@@ -438,6 +421,10 @@ vcf::Variant& Results::vcf(
             }
         } else if (altAllele.type == ALLELE_MNP) {
             var.info["TYPE"].push_back("mnp");
+        } else {
+            cout << "WTF is this?" << endl;
+            cout << altAllele.type << endl;
+            cout << altAllele << endl;
         }
         var.info["LEN"].push_back(convert(altAllele.length));
 
