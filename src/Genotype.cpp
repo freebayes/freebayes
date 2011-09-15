@@ -267,6 +267,7 @@ ostream& operator<<(ostream& out, list<GenotypeCombo>& g) {
 
 ostream& operator<<(ostream& out, GenotypeCombo& g) {
     GenotypeCombo::iterator i = g.begin(); ++i;
+    out << "combo posterior prob: " << g.posteriorProb << endl;
     out << "{\"" << g.front()->name << "\":[\"" << *(g.front()->genotype) << "\"," << exp(g.front()->prob) << "]";
     for (;i != g.end(); ++i) {
         out << ", \"" << (*i)->name << "\":[\"" << *((*i)->genotype) << "\"," << exp((*i)->prob) << "]";
@@ -817,6 +818,8 @@ allLocalGenotypeCombinations(
                 diffusionPriorScalar);
     }
 
+    combos.push_back(comboKing);
+
     // for each sampledatalikelihood
     // add a combo for each genotype where the combo is one step from the comboKing
     size_t sampleOffset = 0;
@@ -1096,18 +1099,19 @@ convergentGenotypeComboSearch(
         //int previous_size = combos.size();
         // remove duplicates
         combos.unique();
-        //cout << "removed " << previous_size - combos.size() << " duplicates" << endl;
+        //cerr << "removed " << previous_size - combos.size() << " duplicates" << endl;
 
         // we've converged on the best homozygous combo, which suggests weak support for variation
         if (combos.front().isHomozygous()) {
-            //cout << "homozygous convergence in " << i << " iterations" << endl;
+            //cerr << "homozygous convergence in " << i << " iterations" << endl;
             break;
         }
 
         // check for convergence
         if (bestCombo == combos.front()) {
             // we've converged
-            //cout << "standard convergence in " << i << " iterations" << endl;
+            //cerr << "standard convergence in " << i << " iterations" << endl;
+            //cerr << bestCombo << endl;
             break;
         } else {
             bestCombo = combos.front();
