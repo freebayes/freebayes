@@ -818,7 +818,10 @@ allLocalGenotypeCombinations(
                 diffusionPriorScalar);
     }
 
-    combos.push_back(comboKing);
+    // ensure the comboKing is added
+    if (combos.empty()) {
+        combos.push_back(comboKing);
+    }
 
     // for each sampledatalikelihood
     // add a combo for each genotype where the combo is one step from the comboKing
