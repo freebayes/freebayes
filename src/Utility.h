@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <vector>
+#include <list>
 #include <string>
 #include <algorithm>
 #include <string>
@@ -35,6 +36,7 @@ long double jointQuality(const std::string& qualstr);
 std::vector<short> qualities(const std::string& qualstr);
 // 
 long double sumQuality(const std::string& qualstr);
+long double minQuality(const std::string& qualstr);
 long double averageQuality(const std::string& qualstr);
 //unsigned int factorial(int n);
 bool stringInVector(string item, vector<string> items);
@@ -97,6 +99,9 @@ long double log10string2ln(const string& s);
 
 string mergeCigar(const string& c1, const string& c2);
 vector<pair<int, string> > splitCigar(const string& cigarStr);
+list<pair<int, string> > splitCigarList(const string& cigarStr);
 string joinCigar(const vector<pair<int, string> >& cigar);
+string joinCigarList(const list<pair<int, string> >& cigar);
+bool isEmptyCigarElement(const pair<int, string>& elem);
 
 #endif

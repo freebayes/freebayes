@@ -39,16 +39,15 @@ vcf::Variant& Results::vcf(
         switch (altAllele.type) {
             case ALLELE_SNP:
             case ALLELE_REFERENCE:
-                break;
             case ALLELE_MNP:
-                if (var.ref.size() < altAllele.length) {
-                    var.ref = parser->referenceSubstr(referencePosition, altAllele.length);
+                if (var.ref.size() < altAllele.referenceLength) {
+                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength);
                 }
                 break;
             case ALLELE_DELETION:
                 // extend the reference sequence
-                if (var.ref.size() - 1 <= altAllele.length) {
-                    var.ref = parser->referenceSubstr(referencePosition, altAllele.length + 1);
+                if (var.ref.size() < altAllele.referenceLength) {
+                    var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength);
                 }
                 break;
             case ALLELE_INSERTION:
@@ -66,42 +65,26 @@ vcf::Variant& Results::vcf(
     }
 
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
-
         Allele& altAllele = *aa;
-        string altSequence;
-
+        string altseq;
         switch (altAllele.type) {
             case ALLELE_REFERENCE:
-                altSequence = var.ref;
                 break;
             case ALLELE_SNP:
-                altSequence = var.ref;
-                altSequence.replace(0, 1, altAllele.alternateSequence);
-                break;
             case ALLELE_MNP:
-                altSequence = var.ref;
-                altSequence.replace(0, altAllele.length, altAllele.alternateSequence);
+                altseq = var.ref;
+                altseq.replace(0, altAllele.alternateSequence.size(), altAllele.alternateSequence);
+                var.alt.push_back(altseq);
                 break;
             case ALLELE_DELETION:
-                altSequence = var.ref;
-                altSequence.erase(1, altAllele.length);
-                break;
-            case ALLELE_INSERTION:
-                altSequence = var.ref;
-                altSequence.insert(1, altAllele.alternateSequence.substr(1));
-                break;
+            case ALLELE_INSERTION: // XXX is this correct???
             case ALLELE_COMPLEX:
-                altSequence = var.ref;
-                // check if the comples allele begins with an indel
-                altSequence.erase(0, altAllele.referenceLength);
-                altSequence.insert(0, altAllele.alternateSequence);
+                var.alt.push_back(altAllele.alternateSequence);
                 break;
             default:
                 cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
                 break;
         }
-
-        var.alt.push_back(altSequence);
     }
 
 
@@ -266,7 +249,10 @@ vcf::Variant& Results::vcf(
                 }
 
                 unsigned int altCount = sample.observationCount(altbase);
+                //cerr << "altbase: " << altbase << endl;
+                //cerr << "sample: " << sample << endl;
                 altCountBySample[*sampleName] = altCount;
+                //cerr << "altcount: " << altCount << endl;
                 //altObsCount += altCount;
 
                 altQualBySample[*sampleName] = sample.qualSum(altbase);
@@ -335,6 +321,12 @@ vcf::Variant& Results::vcf(
                 }
                 altmqsum += allele.mapQuality;
             }
+        } else {
+            cerr << "couldn't find altbase: " << altbase << " in allele groups" << endl;
+            for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
+                cerr << a->first << " " << a->second.size() << endl;
+            }
+            assert(false);
         }
 
         long double altReadMismatchRate = (altObsCount == 0 ? 0 : altReadMismatchSum / altObsCount);
@@ -496,24 +488,38 @@ vcf::Variant& Results::vcf(
 
     // for ordering GLs
     // ordering is F(j/k) = (k*(k+1)/2)+j.
-    map<int, map<Genotype*, int> > vcfGenotypeOrder;
+    map<int, map<string, int> > vcfGenotypeOrder;
     for (map<int, vector<Genotype> >::iterator gtg = genotypesByPloidy.begin(); gtg != genotypesByPloidy.end(); ++gtg) {
+
         int groupPloidy = gtg->first;
         vector<Genotype>& genotypes = gtg->second;
         for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
             Genotype* genotypePtr = &*g;
             Genotype& genotype = *g;
+            string genotypeStr = genotype.str();
+            // only provide output for genotypes for which we have data
+            bool fullySpecified = true;
             vector<int> gtspec;
             genotype.relativeGenotype(gtspec, refbase, altAlleles);
-            // XXX TODO ... EVIL HACKS
-            if (groupPloidy == 2) {
-                int j = gtspec.front();
-                int k = gtspec.back();
-                vcfGenotypeOrder[groupPloidy][genotypePtr] = (k * (k + 1) / 2) + j;
-            } else if (groupPloidy == 1) {
-                vcfGenotypeOrder[groupPloidy][genotypePtr] = gtspec.front();
+            for (vector<int>::iterator n = gtspec.begin(); n != gtspec.end(); ++n) {
+                if (*n < 0) {
+                    fullySpecified = false;
+                    break;
+                }
+            }
+            if (fullySpecified) {
+                // XXX TODO ... EVIL HACKS
+                if (groupPloidy == 2) {
+                    int j = gtspec.front();
+                    int k = gtspec.back();
+                    vcfGenotypeOrder[groupPloidy][genotypeStr] = (k * (k + 1) / 2) + j;
+                } else if (groupPloidy == 1) {
+                    vcfGenotypeOrder[groupPloidy][genotypeStr] = gtspec.front();
+                } else {
+                    // XXX TODO ...
+                }
             } else {
-                // XXX TODO ...
+                vcfGenotypeOrder[groupPloidy][genotypeStr] = -1;
             }
         }
     }
@@ -549,11 +555,20 @@ vcf::Variant& Results::vcf(
 
                 for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
                     //vector<Genotype>& genotypes = genotypesByPloidy[sample.ploidy];
-                    genotypeLikelihoods[vcfGenotypeOrder[g->genotype->ploidy][g->genotype]] = convert(ln2log10(g->prob));
+                    int order = vcfGenotypeOrder[g->genotype->ploidy][g->genotype->str()];
+                    if (order >= 0) {
+                        genotypeLikelihoods[order] = convert(ln2log10(g->prob));
+                    }
 
                     //string gle = g->genotype->relativeGenotype(refbase, altAlleles) + "=" + convert(ln2log10(g->prob));
                     //taggedDataLikelihoods.push_back(gle);
                 }
+
+                //if (altAlleles.size() == 1) {
+                //    if (!genotypeLikelihoods.size() == 3) {
+                //        assert(false);
+                //    }
+                //}
 
                 vector<string>& datalikelihoods = sampleOutput["GL"];
                 //vector<string>& datalikelihoodsExplicit = sampleOutput["GLE"];

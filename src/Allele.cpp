@@ -12,12 +12,14 @@ int Allele::referenceOffset(void) const {
 
 // called prior to using the allele in analysis
 void Allele::update(void) {
-    currentBase = base();
     quality = currentQuality();
     lnquality = phred2ln(quality);
     if (type == ALLELE_REFERENCE) {
+        currentBase = string(1, *currentReferenceBase);
         basesLeft = bpLeft + referenceOffset();
         basesRight = bpRight - referenceOffset();
+    } else {
+        currentBase = base();
     }
 }
 
@@ -138,6 +140,8 @@ const int Allele::basesRight(void) const {
 const short Allele::currentQuality(void) const {
     switch (this->type) {
         case ALLELE_REFERENCE:
+            assert(alternateSequence.size() == baseQualities.size());
+            assert(referenceOffset() >= 0);
             TRY {
             return baseQualities.at(referenceOffset());
             } CATCH;
@@ -222,25 +226,25 @@ const string Allele::base(void) const { // the base of this allele
             if (genotypeAllele)
                 return alternateSequence;
             else
-                return currentReferenceBase;
+                return currentBase;
             break;
         case ALLELE_GENOTYPE:
             return alternateSequence;
             break;
         case ALLELE_SNP:
-            return "S" + alternateSequence;
+            return "S:" + convert(position) + ":" + cigar + ":" + alternateSequence;
             break;
         case ALLELE_MNP:
-            return "M" + alternateSequence;
+            return "M:" + convert(position) + ":" + cigar + ":" + alternateSequence;
             break;
         case ALLELE_INSERTION:
-            return "I" + alternateSequence;
+            return "I:" + convert(position) + ":" + cigar + ":" + alternateSequence;
             break;
         case ALLELE_DELETION:
-            return "D" + convert(length);
+            return "D:" + convert(position) + ":" + cigar;
             break;
         case ALLELE_COMPLEX:
-            return "C" + cigar + alternateSequence;
+            return "C:" + convert(position) + ":" + cigar + ":" + alternateSequence;
             break;
         default:
             break;
@@ -402,6 +406,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence
             //<< ":" << allele.referenceSequence
+            << ":" << allele.cigar
             << ":" << allele.quality;
     } else {
         out << allele.typeStr() 
@@ -804,77 +809,9 @@ Allele genotypeAllele(Allele &a) {
     return Allele(a.type, a.alternateSequence, a.length, a.referenceLength, a.cigar, a.position);
 }
 
-Allele genotypeAllele(AlleleType type, string alt, unsigned int len, string cigar, unsigned int reflen, long double pos) {
+Allele genotypeAllele(AlleleType type, string alt, unsigned int len, string cigar, unsigned int reflen, long int pos) {
     return Allele(type, alt, len, reflen, cigar, pos);
 }
-
-/*
-vector<Allele> uniqueAlleleObservations(vector<vector<Allele> > &alleleObservations) {
-}
-*/
-
-
-/*
-void* AlleleFreeList::NewAllele() {
-    if (_allocs > _tick_allocs) {
-        _allocs = 0; // reset allocation counter
-        // cerr << "_size = " << _size
-        //  << " _min_size = " << _min_size
-        //  << " _max_size = " << _max_size << endl;
-        Resize(_size - _min_size);  // resize to max flux in freelist size
-        _min_size = _size; // reset size counters
-        _max_size = _size;
-    } else {
-        ++_allocs;
-    }
-    if (_p != NULL) {
-        void* mem = _p;
-        _p = _p->pNext();
-        --_size;
-        if (_size < _min_size) {
-            _min_size = _size;
-        }
-        return mem;
-    } else {
-        return ::new char [sizeof (Allele)];
-    }
-}
-
-void AlleleFreeList::Recycle(void* mem) {
-    Allele* allele = static_cast<Allele*> (mem);
-    allele->_pNext = _p;
-    _p = allele;
-    ++_size;
-    ++_allocs;
-    if (_size > _max_size) {
-        _max_size = _size;
-    }
-}
-
-void AlleleFreeList::Resize(int new_size) {
-    //cerr << "resizing free list from " << _size << " to " << new_size << endl;
-    while (_size > new_size && _p != NULL) {
-        char * mem = reinterpret_cast<char *> (_p);
-        _p = _p->pNext();
-        ::delete [] mem;
-        --_size;
-    }
-    //cerr << "new size " << _size << endl;
-}
-
-AlleleFreeList::~AlleleFreeList() {
-    Purge();
-}
-
-void AlleleFreeList::Purge() {
-    while (_p != NULL) {
-        char * mem = reinterpret_cast<char *> (_p);
-        _p = _p->pNext();
-        ::delete [] mem;
-        --_size;
-    }
-}
-*/
 
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes) {
     int allowedTypes = 0;// (numberOfPossibleAlleleTypes, false);
@@ -896,7 +833,7 @@ void filterAlleles(list<Allele*>& alleles, int allowedTypes) {
 }
 
 // removes alleles which are indelmasked at position
-void removeIndelMaskedAlleles(list<Allele*>& alleles, long double position) {
+void removeIndelMaskedAlleles(list<Allele*>& alleles, long int position) {
 
     for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         //cerr << *allele << " " << (*allele)->indelMask.size() << " " << (*allele)->referenceOffset() << endl;
@@ -968,47 +905,378 @@ baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
 
 }
 
+// adjusts the allele to have a new start
+// returns the ref/alt sequence obtained by subtracting length from the left end of the allele
+void Allele::subtract(
+        int subtractFromRefStart,
+        int subtractFromRefEnd,
+        string& substart,
+        string& subend,
+        vector<pair<int, string> >& cigarStart,
+        vector<pair<int, string> >& cigarEnd,
+        vector<short>& qsubstart,
+        vector<short>& qsubend
+    ) {
+
+    substart.clear();
+    subend.clear();
+    cigarStart.clear();
+    cigarEnd.clear();
+    qsubstart.clear();
+    qsubend.clear();
+
+    // prepare to adjust cigar
+    list<pair<int, string> > cigarL = splitCigarList(cigar);
+
+    // walk the cigar string to determine where to make the left cut in the alternate sequence
+    int subtractFromAltStart = 0;
+    if (subtractFromRefStart) {
+        int refbpstart = subtractFromRefStart;
+        pair<int, string> c;
+        while (!cigarL.empty()) {
+            c = cigarL.front();
+            cigarL.pop_front();
+            char op = c.second[0];
+            switch (op) {
+                case 'M':
+                case 'X':
+                    refbpstart -= c.first;
+                    subtractFromAltStart += c.first;
+                    break;
+                case 'I':
+                    subtractFromAltStart += c.first;
+                    break;
+                case 'D':
+                    refbpstart -= c.first;
+                    break;
+                default:
+                    break;
+            }
+
+            cigarStart.push_back(c);
+
+            if (refbpstart < 0) {
+                // split/adjust the last cigar element
+                cigarL.push_front(c);
+                cigarL.front().first = -refbpstart;
+                cigarStart.back().first += refbpstart;
+                switch (op) {
+                    case 'M':
+                    case 'X':
+                    case 'I':
+                        subtractFromAltStart += refbpstart;
+                        break;
+                    case 'D':
+                    default:
+                        break;
+                }
+                break; // we're done
+            }
+        }
+    }
+
+
+    int subtractFromAltEnd = 0;
+    // walk the cigar string to determine where to make the right cut in the alternate sequence
+    if (subtractFromRefEnd) {
+        int refbpend = subtractFromRefEnd;
+        pair<int, string> c;
+        while (!cigarL.empty()) {
+            c = cigarL.back();
+            cigarL.pop_back();
+            char op = c.second[0];
+            switch (op) {
+                case 'M':
+                case 'X':
+                    subtractFromAltEnd += c.first;
+                    refbpend -= c.first;
+                    break;
+                case 'I':
+                    subtractFromAltEnd += c.first;
+                    break;
+                case 'D':
+                    refbpend -= c.first;
+                    break;
+                default:
+                    break;
+            }
+
+            cigarEnd.insert(cigarEnd.begin(), c);
+
+            if (refbpend < 0) {
+                // split/adjust the last cigar element
+                cigarL.push_back(c);
+                cigarL.back().first = -refbpend;
+                cigarEnd.front().first += refbpend;
+                switch (op) {
+                    case 'M':
+                    case 'X':
+                    case 'I':
+                        subtractFromAltEnd += refbpend;
+                        break;
+                    case 'D':
+                    default:
+                        break;
+                }
+                break; // drop out of loop, we're done
+            }
+        }
+    }
+
+
+    // adjust the alternateSequence
+    substart = alternateSequence.substr(0, subtractFromAltStart);
+    subend = alternateSequence.substr(alternateSequence.size() - subtractFromAltEnd, subtractFromAltEnd);
+    alternateSequence.erase(0, subtractFromAltStart);
+    alternateSequence.erase(alternateSequence.size() - subtractFromAltEnd, subtractFromAltEnd);
+
+    // adjust the quality string
+    qsubstart.insert(qsubstart.begin(), baseQualities.begin(), baseQualities.begin() + subtractFromAltStart);
+    qsubend.insert(qsubend.begin(), baseQualities.begin() + baseQualities.size() - subtractFromAltEnd, baseQualities.end());
+    baseQualities.erase(baseQualities.begin(), baseQualities.begin() + subtractFromAltStart);
+    baseQualities.erase(baseQualities.begin() + baseQualities.size() - subtractFromAltEnd, baseQualities.end());
+
+    // reset the cigar
+    cigarL.erase(remove_if(cigarL.begin(), cigarL.end(), isEmptyCigarElement), cigarL.end());
+    cigar = joinCigarList(cigarL);
+
+    // reset the length
+    length = alternateSequence.size();
+
+    // update the type specification
+    updateTypeAndLengthFromCigar();
+
+    // adjust the position
+    position += subtractFromRefStart; // assumes the first-base of the alleles is reference==, not ins
+
+    //referenceLength -= subtractFromRefStart;
+    //referenceLength -= subtractFromRefEnd;
+
+    referenceLength = referenceLengthFromCigar();
+
+}
+
+void Allele::subtractFromStart(int bp, string& seq, vector<pair<int, string> >& cig, vector<short>& quals) {
+    string emptystr;
+    vector<pair<int, string> > emptycigar;
+    vector<short> emptyquals;
+    subtract(bp, 0, seq, emptystr, cig, emptycigar, quals, emptyquals);
+}
+
+void Allele::subtractFromEnd(int bp, string& seq, vector<pair<int, string> >& cig, vector<short>& quals) {
+    string emptystr;
+    vector<pair<int, string> > emptycigar;
+    vector<short> emptyquals;
+    subtract(0, bp, emptystr, seq, emptycigar, cig, emptyquals, quals);
+}
+
+void Allele::addToStart(string& seq, vector<pair<int, string> >& cig, vector<short>& quals) {
+    string emptystr;
+    vector<pair<int, string> > emptycigar;
+    vector<short> emptyquals;
+    add(seq, emptystr, cig, emptycigar, quals, emptyquals);
+}
+
+void Allele::addToEnd(string& seq, vector<pair<int, string> >& cig, vector<short>& quals) {
+    string emptystr;
+    vector<pair<int, string> > emptycigar;
+    vector<short> emptyquals;
+    add(emptystr, seq, emptycigar, cig, emptyquals, quals);
+}
+
+void Allele::add(
+        string& addToStart,
+        string& addToEnd,
+        vector<pair<int, string> >& cigarStart,
+        vector<pair<int, string> >& cigarEnd,
+        vector<short>& qaddToStart,
+        vector<short>& qaddToEnd
+    ) {
+
+    // adjust the position
+    for (vector<pair<int, string> >::iterator c = cigarStart.begin(); c != cigarStart.end(); ++c) {
+        switch (c->second[0]) {
+            case 'M':
+            case 'X':
+            case 'D':
+                position -= c->first;
+                break;
+            case 'I':
+            default:
+                break;
+        }
+    }
+
+    // prepare to adjust cigar
+    vector<pair<int, string> > cigarV = splitCigar(cigar);
+
+    // adjust the cigar
+    if (!cigarStart.empty()) {
+        if (cigarStart.back().second == cigarV.front().second) {
+            // merge
+            cigarV.front().first += cigarStart.back().first;
+            cigarStart.pop_back();
+        }
+    }
+    cigarV.insert(cigarV.begin(), cigarStart.begin(), cigarStart.end());
+
+    if (!cigarEnd.empty()) {
+        if (cigarEnd.front().second == cigarV.back().second) {
+            // merge
+            cigarV.back().first += cigarEnd.front().first;
+            cigarEnd.pop_back();
+        } else {
+            cigarV.insert(cigarV.end(), cigarEnd.begin(), cigarEnd.end());
+        }
+    }
+
+    // adjust the alternateSequence
+    alternateSequence.insert(0, addToStart);
+    alternateSequence.append(addToEnd);
+
+    // adjust the quality string
+    baseQualities.insert(baseQualities.begin(), qaddToStart.begin(), qaddToStart.end());
+    baseQualities.insert(baseQualities.end(), qaddToEnd.begin(), qaddToEnd.end());
+
+    // reset the cigar
+    cigarV.erase(remove_if(cigarV.begin(), cigarV.end(), isEmptyCigarElement), cigarV.end());
+    cigar = joinCigar(cigarV);
+
+    updateTypeAndLengthFromCigar();
+
+    // reset referenceLength
+    referenceLength = referenceLengthFromCigar();
+
+}
+
+void Allele::updateTypeAndLengthFromCigar(void) {
+
+    vector<pair<int, string> > cigarV = splitCigar(cigar);
+
+    map<char, int> cigarTypes;
+    map<char, int> cigarLengths;
+    for (vector<pair<int, string> >::iterator c = cigarV.begin(); c != cigarV.end(); ++c) {
+        ++cigarTypes[c->second[0]];
+        cigarLengths[c->second[0]] += c->first;
+    }
+    if (cigarTypes.size() == 1) {
+        switch (cigarTypes.begin()->first) {
+            case 'M':
+                type = ALLELE_REFERENCE;
+                break;
+            case 'I':
+                type = ALLELE_INSERTION;
+                break;
+            case 'D':
+                type = ALLELE_DELETION;
+                break;
+            case 'X':
+                if (cigarLengths['X'] > 1) {
+                    type = ALLELE_MNP;
+                } else {
+                    type = ALLELE_SNP;
+                }
+                break;
+            default:
+                break;
+        }
+    } else if (cigarTypes.size() == 2) {
+        if (cigarTypes['M'] > 0) {
+            if (cigarTypes['I'] == 1) {
+                type = ALLELE_INSERTION;
+            } else if (cigarTypes['D'] == 1) {
+                type = ALLELE_DELETION;
+            } else if (cigarTypes['X'] == 1) {
+                if (cigarLengths['X'] > 1) {
+                    type = ALLELE_MNP;
+                } else {
+                    type = ALLELE_SNP;
+                }
+            } else {
+                type = ALLELE_COMPLEX;
+            }
+        } else {
+            type = ALLELE_COMPLEX;
+        }
+    } else {
+        type = ALLELE_COMPLEX;
+    }
+
+    // recalculate allele length and quality, based on type
+    switch (type) {
+        case ALLELE_REFERENCE:
+            length = alternateSequence.size();
+            break;
+        case ALLELE_SNP:
+        case ALLELE_MNP:
+            length = cigarLengths['X'];
+            break;
+        case ALLELE_INSERTION:
+            length = cigarLengths['I'];
+            break;
+        case ALLELE_DELETION:
+            length = cigarLengths['D'];
+            break;
+        case ALLELE_COMPLEX:
+            length = alternateSequence.size();
+            break;
+        default:
+            break;
+    }
+
+}
+
+
+int Allele::referenceLengthFromCigar(void) {
+    int r = 0;
+    vector<pair<int, string> > cigarV = splitCigar(cigar);
+    for (vector<pair<int, string> >::iterator c = cigarV.begin(); c != cigarV.end(); ++c) {
+        switch (c->second[0]) {
+            case 'M':
+            case 'X':
+            case 'D':
+                r += c->first;
+                break;
+            case 'I':
+            default:
+                break;
+        }
+    }
+    return r;
+}
+
+
 // combines the two alleles into a complex variant, updates important data
-void Allele::mergeAllele(const Allele& newAllele) {
+void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
     //cout << stringForAllele(*this) << endl << stringForAllele(newAllele) << endl;
-    type = ALLELE_COMPLEX;
+    type = newType;
     alternateSequence += newAllele.alternateSequence;
     length += newAllele.length; // hmmm
-    referenceLength += newAllele.referenceLength;
     basesRight = newAllele.basesRight;
     bpRight = newAllele.bpRight;
+    baseQualities.insert(baseQualities.end(), newAllele.baseQualities.begin(), newAllele.baseQualities.end());
     currentBase = base();
-    // XXX note that we don't add Q values for intermingled gaps in complex alleles
+    // XXX note that we don't add Q values for intermingled gaps in combined alleles
     if (newAllele.type != ALLELE_REFERENCE) {
-        quality += newAllele.quality;
-        lnquality += newAllele.lnquality;
+        quality = min(newAllele.quality, quality);
+        lnquality = max(newAllele.lnquality, lnquality);
     } else {
-        basesRight += newAllele.length;
-        bpRight += newAllele.length;
+        basesRight += newAllele.referenceLength;
+        bpRight += newAllele.referenceLength;
     }
     cigar = mergeCigar(cigar, newAllele.cigar);
+    referenceLength = referenceLengthFromCigar();
     //cout << stringForAllele(*this) << endl << endl;
 }
 
+void Allele::squash(void) {
+    // will trigger destruction of this allele in the AlleleParser
+    length = 0;
+    position = 0;
+}
+
 unsigned int Allele::getLengthOnReference(void) {
-
-    switch (type) {
-        case ALLELE_SNP:
-        case ALLELE_MNP:
-        case ALLELE_REFERENCE:
-            return length;
-            break;
-        case ALLELE_INSERTION:
-            return 0;
-            break;
-        case ALLELE_DELETION:
-            return length;
-            break;
-        default:
-            return length;
-            break;
-    }
-
+    return referenceLengthFromCigar();
 }
 
 vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2) {
@@ -1024,4 +1292,8 @@ vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2) {
         results.push_back(a->second);
     }
     return results;
+}
+
+bool isEmptyAllele(const Allele& allele) {
+    return allele.length == 0;
 }

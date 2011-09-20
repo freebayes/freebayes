@@ -130,12 +130,14 @@ int main(int argc, char** argv) {
     }
 
     BamWriter writer;
+
+    if (isuncompressed) {
+        writer.SetCompressionMode(BamWriter::Uncompressed);
+    }
+
     if (!suppress_output && !writer.Open("stdout", reader.GetHeaderText(), reader.GetReferenceData())) {
         cerr << "could not open stdout for writing" << endl;
         exit(1);
-    }
-    if (isuncompressed) {
-        writer.SetCompressionMode(BamWriter::Uncompressed);
     }
 
     // store the names of all the reference sequences in the BAM file

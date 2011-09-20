@@ -71,7 +71,7 @@ enum AlleleStrand {
     STRAND_REVERSE
 };
 
-typedef long double Position;
+typedef long int Position;
 
 class Allele {
 
@@ -91,9 +91,9 @@ class Allele {
     friend ostream &operator<<(ostream &out, Allele &a);
     friend ostream &operator<<(ostream &out, Allele* &a);
 
-    friend string json(vector<Allele*> &alleles, long double &position);
+    friend string json(vector<Allele*> &alleles, long int &position);
     friend string json(vector<Allele*> &alleles);
-    friend string json(Allele &allele, long double &position);
+    friend string json(Allele &allele, long int &position);
     friend string json(Allele* &allele);
 
 public:
@@ -103,8 +103,8 @@ public:
     string referenceSequence; // reference sequence or "" (in case of insertions)
     string alternateSequence; // alternate sequence or "" (in case of deletions and reference alleles)
     string sequencingTechnology; // the technology used to generate this allele
-    long double position;      // position 0-based against reference
-    long double* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
+    long int position;      // position 0-based against reference
+    long int* currentReferencePosition; // pointer to the current reference position (which may be updated during the life of this allele)
     char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     unsigned int referenceLength; // length of the event relative to the reference
@@ -133,12 +133,13 @@ public:
     const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
     bool processed; // flag to mark if we've presented this allele for analysis
     string cigar; // a cigar representation of the allele
+    vector<Allele>* alignmentAlleles;
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
                 string& refname,
-                long double pos, 
-                long double* crefpos,
+                long int pos, 
+                long int* crefpos,
                 char* crefbase,
                 unsigned int len, 
                 int bleft,
@@ -154,7 +155,8 @@ public:
                 bool ispair,
                 bool ismm,
                 bool isproppair,
-                string cigarstr)
+                string cigarstr,
+                vector<Allele>* ra)
         : type(t)
         , referenceName(refname)
         , position(pos)
@@ -184,13 +186,12 @@ public:
         , readIndelRate(0)
         , readSNPRate(0)
         , cigar(cigarstr)
-        , previousAllele(NULL)
-        , nextAllele(NULL)
+        , alignmentAlleles(ra)
     {
 
         baseQualities.resize(qstr.size()); // cache qualities
         transform(qstr.begin(), qstr.end(), baseQualities.begin(), qualityChar2ShortInt);
-        referenceLength = getLengthOnReference();
+        referenceLength = referenceLengthFromCigar();
 
     }
 
@@ -200,7 +201,7 @@ public:
             unsigned int len,
             unsigned int reflen,
             string cigarStr,
-            long double pos=0,
+            long int pos=0,
             bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
@@ -214,10 +215,10 @@ public:
         , readIndelRate(0)
         , readSNPRate(0)
         , cigar(cigarStr)
-        , previousAllele(NULL)
-        , nextAllele(NULL)
+        , alignmentAlleles(NULL)
     {
         currentBase = base();
+        referenceLength = referenceLengthFromCigar();
     }
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
@@ -246,13 +247,35 @@ public:
 
     string json(void);
     unsigned int getLengthOnReference(void);
+    int referenceLengthFromCigar(void);
 
-    Allele* previousAllele; // 5' allele relative to this one, NULL if no previous allele is present
-    Allele* nextAllele; // 3' allele relative to this one, NULL if none are present
+    vector<Allele*> extend(int pos, int haplotypeLength);
+    void squash(void);
+    void subtract(int subtractFromRefStart,
+            int subtractFromRefEnd,
+            string& substart,
+            string& subend,
+            vector<pair<int, string> >& cigarstart,
+            vector<pair<int, string> >& cigarend,
+            vector<short>& qsubstart,
+            vector<short>& qsubend);
+
+    void add(string& addToStart,
+            string& addToEnd,
+            vector<pair<int, string> >& cigarStart,
+            vector<pair<int, string> >& cigarEnd,
+            vector<short>& qaddToStart,
+            vector<short>& qaddToEnd);
 
 
+    void subtractFromStart(int bp, string& seq, vector<pair<int, string> >& cig, vector<short>& quals);
+    void subtractFromEnd(int bp, string& seq, vector<pair<int, string> >& cig, vector<short>& quals);
+    void addToStart(string& seq, vector<pair<int, string> >& cig, vector<short>& quals);
+    void addToEnd(string& seq, vector<pair<int, string> >& cig, vector<short>& quals);
 
-    void mergeAllele(const Allele& allele);
+    void mergeAllele(const Allele& allele, AlleleType newType);
+
+    void updateTypeAndLengthFromCigar(void);
 
 
 };
@@ -265,6 +288,12 @@ public:
     }
 };
 
+class AllelePositionCompare {
+public:
+    bool operator()(const Allele& a, const Allele& b) {
+        return a.position < b.position;
+    }
+};
 
 
 void updateAllelesCachedData(vector<Allele*>& alleles);
@@ -274,7 +303,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
 void filterAlleles(list<Allele*>& alleles, int allowedTypes);
-void removeIndelMaskedAlleles(list<Allele*>& alleles, long double position);
+void removeIndelMaskedAlleles(list<Allele*>& alleles, long int position);
 int countAlleles(map<string, vector<Allele*> >& sampleGroups);
 int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand);
 pair<pair<int, int>, pair<int, int> >
@@ -318,7 +347,9 @@ vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups)
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
-Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, string cigar = "", unsigned int reflen = 0, long double position = 0);
+Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, string cigar = "", unsigned int reflen = 0, long int position = 0);
+
+bool isEmptyAllele(const Allele& allele);
 
 
 //AlleleFreeList Allele::_freeList;

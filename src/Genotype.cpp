@@ -66,7 +66,7 @@ string Genotype::relativeGenotype(string& refbase, vector<Allele>& alts) {
             int n = 1;
             bool matchingalt = false;
             for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a, ++n) {
-                if (base == a->base()) {
+                if (base == a->currentBase) {
                     matchingalt = true;
                     for (int j = 0; j < i->count; ++j)
                         rg.push_back(convert(n));
@@ -96,7 +96,7 @@ void Genotype::relativeGenotype(vector<int>& rg, string& refbase, vector<Allele>
             int n = 1;
             bool matchingalt = false;
             for (vector<Allele>::iterator a = alts.begin(); a != alts.end(); ++a, ++n) {
-                if (base == a->base()) {
+                if (base == a->currentBase) {
                     matchingalt = true;
                     for (int j = 0; j < i->count; ++j)
                         rg.push_back(n);
@@ -188,20 +188,11 @@ vector<long double> Genotype::alleleProbabilities(void) {
     return probs;
 }
 
-string Genotype::slashstr(void) {
+string Genotype::str(void) const {
     string s;
     for (Genotype::const_iterator ge = this->begin(); ge != this->end(); ++ge) {
         for (int i = 0; i < ge->count; ++i)
-            s += ((ge == this->begin() && i == 0) ? "" : "/") + ge->allele.alternateSequence;
-    }
-    return s;
-}
-
-string Genotype::str(void) {
-    string s;
-    for (Genotype::const_iterator ge = this->begin(); ge != this->end(); ++ge) {
-        for (int i = 0; i < ge->count; ++i)
-            s += ge->allele.alternateSequence;
+            s += ((ge == this->begin() && i == 0) ? "" : "/") + ge->allele.currentBase;
     }
     return s;
 }
@@ -243,18 +234,14 @@ string IUPAC2GenotypeStr(string iupac, int ploidy) {
 
 ostream& operator<<(ostream& out, const GenotypeElement& rhs) {
     for (int i = 0; i < rhs.count; ++i)
-        out << rhs.allele.base();
+        out << rhs.allele.base() << "/";
     //for (int i = 0; i < rhs.second; ++i)
-    //    out << rhs.first.alternateSequence;
+    //    out << rhs.first.currentBase;
     return out;
 }
 
 ostream& operator<<(ostream& out, const Genotype& g) {
-    Genotype::const_iterator i = g.begin(); ++i;
-    out << g.front();
-    for (;i != g.end(); ++i) {
-        out << *i;
-    }
+    out << g.str();
     return out;
 }
 
@@ -296,7 +283,7 @@ bool operator<(Genotype& a, Genotype& b) {
     return false; // if the two are equal, then we return false per C++ convention
 }
 
-vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles) {
+vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele>& potentialAlleles) {
     vector<Genotype> genotypes;
     vector<vector<Allele> > alleleCombinations = multichoose(ploidy, potentialAlleles);
     for (vector<vector<Allele> >::iterator combo = alleleCombinations.begin(); combo != alleleCombinations.end(); ++combo) {
@@ -1701,4 +1688,20 @@ bool Genotype::sampleHasSupportingObservationsForAllAlleles(Sample& sample) {
         }
     }
     return true;
+}
+
+
+map<int, vector<Genotype> > getGenotypesByPloidy(vector<int>& ploidies, vector<Allele>& genotypeAlleles) {
+
+    map<int, vector<Genotype> > genotypesByPloidy;
+
+    for (vector<int>::iterator p = ploidies.begin(); p != ploidies.end(); ++p) {
+        int ploidy = *p;
+        if (genotypesByPloidy.find(ploidy) == genotypesByPloidy.end()) {
+            genotypesByPloidy[ploidy] = allPossibleGenotypes(ploidy, genotypeAlleles);
+        }
+    }
+
+    return genotypesByPloidy;
+
 }

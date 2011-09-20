@@ -99,7 +99,20 @@ std::vector<short> qualities(const std::string& qualstr) {
 long double sumQuality(const std::string& qualstr) {
     long double qual = 0;
     for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
-            qual += qualityChar2LongDouble(*q);
+        qual += qualityChar2LongDouble(*q);
+    return qual;
+}
+
+long double minQuality(const std::string& qualstr) {
+    long double qual = 0;
+    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q) {
+        long double nq = qualityChar2LongDouble(*q);
+        if (qual == 0) {
+            qual = nq;
+        } else if (nq < qual) {
+            qual = nq;
+        }
+    }
     return qual;
 }
 
@@ -549,10 +562,49 @@ vector<pair<int, string> > splitCigar(const string& cigarStr) {
     return cigar;
 }
 
+list<pair<int, string> > splitCigarList(const string& cigarStr) {
+    list<pair<int, string> > cigar;
+    string number;
+    string type;
+    // strings go [Number][Type] ...
+    for (string::const_iterator s = cigarStr.begin(); s != cigarStr.end(); ++s) {
+        char c = *s;
+        if (isdigit(c)) {
+            if (type.empty()) {
+                number += c;
+            } else {
+                // signal for next token, push back the last pair, clean up
+                cigar.push_back(make_pair(atoi(number.c_str()), type));
+                number.clear();
+                type.clear();
+                number += c;
+            }
+        } else {
+            type += c;
+        }
+    }
+    if (!number.empty() && !type.empty()) {
+        cigar.push_back(make_pair(atoi(number.c_str()), type));
+    }
+    return cigar;
+}
+
 string joinCigar(const vector<pair<int, string> >& cigar) {
     string cigarStr;
     for (vector<pair<int, string> >::const_iterator c = cigar.begin(); c != cigar.end(); ++c) {
         cigarStr += convert(c->first) + c->second;
     }
     return cigarStr;
+}
+
+string joinCigarList(const list<pair<int, string> >& cigar) {
+    string cigarStr;
+    for (list<pair<int, string> >::const_iterator c = cigar.begin(); c != cigar.end(); ++c) {
+        cigarStr += convert(c->first) + c->second;
+    }
+    return cigarStr;
+}
+
+bool isEmptyCigarElement(const pair<int, string>& elem) {
+    return elem.first == 0;
 }

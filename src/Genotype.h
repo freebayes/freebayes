@@ -80,8 +80,7 @@ public:
     vector<int> counts(void);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
-    string slashstr(void);
-    string str(void);
+    string str(void) const;
     string relativeGenotype(string& refbase, vector<Allele>& altbases);
     void relativeGenotype(vector<int>& spec, string& refbase, vector<Allele>& altbases);
     string relativeGenotype(string& refbase, string& altbase);
@@ -99,7 +98,7 @@ public:
 string IUPAC(Genotype& g);
 string IUPAC2GenotypeStr(string iupac);
 
-vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele> potentialAlleles);
+vector<Genotype> allPossibleGenotypes(int ploidy, vector<Allele>& potentialAlleles);
 
 class SampleDataLikelihood {
 public:
@@ -457,6 +456,7 @@ pair<int, int> alternateAndReferenceCount(vector<Allele*>& observations, string&
 ostream& operator<<(ostream& out, list<GenotypeCombo>& combo);
 ostream& operator<<(ostream& out, GenotypeCombo& g);
 
+map<int, vector<Genotype> > getGenotypesByPloidy(vector<int>& ploidies, vector<Allele>& genotypeAlleles);
 
 
 #endif

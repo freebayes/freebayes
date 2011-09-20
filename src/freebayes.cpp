@@ -158,15 +158,6 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        map<string, vector<Allele*> > alleleGroups;
-        groupAlleles(samples, alleleGroups);
-        DEBUG2("grouped alleles by equivalence");
-
-        int containedAlleleTypes = 0;
-        for (map<string, vector<Allele*> >::iterator group = alleleGroups.begin(); group != alleleGroups.end(); ++group) {
-            containedAlleleTypes |= group->second.front()->type;
-        }
-
         // to ensure proper ordering of output stream
         vector<string> sampleListPlusRef;
 
@@ -176,18 +167,29 @@ int main (int argc, char *argv[]) {
         if (parameters.useRefAllele)
             sampleListPlusRef.push_back(parser->currentSequenceName);
 
+        // establish genotype alleles using input filters
+        map<string, vector<Allele*> > alleleGroups;
+        groupAlleles(samples, alleleGroups);
+        DEBUG2("grouped alleles by equivalence");
+
         vector<Allele> genotypeAlleles = parser->genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
 
+        // always include the reference allele as a possible genotype, even when we don't include it by default
         if (!parameters.useRefAllele) {
             vector<Allele> refAlleleVector;
             refAlleleVector.push_back(genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1, "1M"));
             genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
         }
 
-        // TODO hook here to adjust the current alleles when we have multi-base events passing the filters
-        //parser->buildHaplotypeAlleles(genotypeAlleles, samples, allowedAlleleTypes);
+        // build haplotype alleles matching the current longest allele (often will do nothing)
+        // this will adjust genotypeAlleles if changes are made
+        DEBUG("building haplotype alleles, currently there are " << genotypeAlleles.size() << " genotype alleles");
+        DEBUG(genotypeAlleles);
+        parser->buildHaplotypeAlleles(genotypeAlleles, samples, alleleGroups, allowedAlleleTypes);
+        DEBUG("built haplotype alleles, now there are " << genotypeAlleles.size() << " genotype alleles");
+        DEBUG(genotypeAlleles);
 
-        if (genotypeAlleles.size() <= 1) { // if we have only one viable alternate, we don't have evidence for variation at this site
+        if (genotypeAlleles.size() <= 1) { // if we have only one viable allele, we don't have evidence for variation at this site
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;
         }
@@ -195,22 +197,12 @@ int main (int argc, char *argv[]) {
 
         ++processed_sites;
 
+        // generate possible genotypes
+
         // for each possible ploidy in the dataset, generate all possible genotypes
-        map<int, vector<Genotype> > genotypesByPloidy;
+        vector<int> ploidies = parser->currentPloidies(samples);
+        map<int, vector<Genotype> > genotypesByPloidy = getGenotypesByPloidy(ploidies, genotypeAlleles);
 
-        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-            string const& name = s->first;
-            int samplePloidy = parser->currentSamplePloidy(name);
-            if (genotypesByPloidy.find(samplePloidy) == genotypesByPloidy.end()) {
-                DEBUG2("generating all possible genotypes for " << samplePloidy);
-                genotypesByPloidy[samplePloidy] = allPossibleGenotypes(samplePloidy, genotypeAlleles);
-            }
-        }
-
-        if (genotypesByPloidy.find(parameters.ploidy) == genotypesByPloidy.end()) {
-            DEBUG2("generating all possible genotypes for " << parameters.ploidy);
-            genotypesByPloidy[parameters.ploidy] = allPossibleGenotypes(parameters.ploidy, genotypeAlleles);
-        }
 
         DEBUG2("generated all possible genotypes:");
         if (parameters.debug2) {
@@ -443,6 +435,7 @@ int main (int argc, char *argv[]) {
         if (!hasHetCombo) {
             bestCombo = genotypeCombos.front();
         }
+        DEBUG2("best combo: " << bestCombo);
 
         // odds ratio between the first and second-best combinations
         if (genotypeCombos.size() > 1) {
@@ -581,6 +574,8 @@ int main (int argc, char *argv[]) {
                 if (!hasHetCombo) {
                     bestCombo = genotypeCombos.front();
                 }
+
+                DEBUG2("best combo: " << bestCombo);
 
                 // odds ratio between the first and second-best combinations
                 if (genotypeCombos.size() > 1) {

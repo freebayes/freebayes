@@ -53,6 +53,7 @@ public:
     int mismatches;
     int snpCount;
     int indelCount;
+    int alleleTypes;
 
     RegisteredAlignment(BamAlignment& alignment)
         //: alignment(alignment)
@@ -63,9 +64,11 @@ public:
         , mismatches(0)
         , snpCount(0)
         , indelCount(0)
+        , alleleTypes(0)
     { }
 
     void addAllele(Allele allele, bool mergeComplex = true, int maxComplexGap = 0);
+    bool fitHaplotype(int pos, int haplotypeLength, Allele*& aptr);
 
 };
 
@@ -137,9 +140,9 @@ public:
 
     vector<Allele*> registeredAlleles;
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
-    map<long double, vector<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
+    map<long int, vector<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     //  position         sample     genotype  likelihood
-    map<long double, map<string, map<string, long double> > > inputGenotypeLikelihoods; // drawn from input VCF
+    map<long int, map<string, map<string, long double> > > inputGenotypeLikelihoods; // drawn from input VCF
     Sample* nullSample;
 
     void addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& genotypesByPloidy,
@@ -163,6 +166,7 @@ public:
     void getSequencingTechnologies(void);
     void loadSampleCNVMap(void);
     int currentSamplePloidy(string const& sample);
+    vector<int> currentPloidies(Samples& samples);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
     void loadReferenceSequence(BedTarget*, int, int);
@@ -171,7 +175,7 @@ public:
     void extendReferenceSequence(int);
     void extendReferenceSequence(BamAlignment& alignment);
     void eraseReferenceSequence(int leftErasure);
-    string referenceSubstr(long double position, unsigned int length);
+    string referenceSubstr(long int position, unsigned int length);
     void loadTargets(void);
     bool getFirstAlignment(void);
     bool getFirstVariant(void);
@@ -181,7 +185,7 @@ public:
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(void);
     void updateInputVariants(void);
-    void removeNonOverlappingAlleles(vector<Allele*>& alleles);
+    void removeNonOverlappingAlleles(vector<Allele*>& alleles, int haplotypeLength = 1, bool getAllAllelesInHaplotype = false);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void updateRegisteredAlleles(void);
     void updatePriorAlleles(void);
@@ -197,8 +201,8 @@ public:
     bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
     // builds up haplotype (longer, e.g. ref+snp+ref) alleles to match the longest allele in genotypeAlleles
     // updates vector<Allele>& alleles with the new alleles
-    void buildHaplotypeAlleles(vector<Allele>& alleles, Samples& allelesBySample, int allowedAlleleTypes);
-    void getAlleles(Samples& allelesBySample, int allowedAlleleTypes);
+    void buildHaplotypeAlleles(vector<Allele>& alleles, Samples& allelesBySample, map<string, vector<Allele*> >& alleleGroups, int allowedAlleleTypes);
+    void getAlleles(Samples& allelesBySample, int allowedAlleleTypes, int haplotypeLength = 1, bool getAllAllelesInHaplotype = false);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
     int homopolymerRunLeft(string altbase);
@@ -219,7 +223,8 @@ public:
     int fastaReferenceSequenceCount; // number of reference sequences
     bool hasTarget;
     BedTarget* currentTarget;
-    long double currentPosition;  // 0-based current position
+    long int currentPosition;  // 0-based current position
+    int lastHaplotypeLength;
     char currentReferenceBase;
     string currentSequence;
     char currentReferenceBaseChar();
