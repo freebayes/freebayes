@@ -402,6 +402,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << allele.readID 
             << ":" << allele.typeStr() 
             << ":" << allele.length 
+            << ":" << allele.referenceLength
             << ":" << scientific << fixed << allele.position 
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence

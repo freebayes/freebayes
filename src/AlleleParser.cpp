@@ -2098,7 +2098,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
     vector<Allele*> newAllelesPtr;
     vector<Allele> newAlleles;
 
-    int haplotypeEnd = haplotypeStart + haplotypeLength - 1;
+    int haplotypeEnd = haplotypeStart + haplotypeLength;
     
     //if (containedAlleleTypes == ALLELE_REFERENCE) {
     //    return false;
@@ -2107,11 +2107,11 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
     if (start <= haplotypeStart && end >= haplotypeEnd) {
         vector<Allele>::iterator a = alleles.begin();
         //cerr << "trying to find overlapping haplotype alleles for the range " << haplotypeStart << " to " << haplotypeEnd << endl;
-        while (a + 1 != alleles.end() && a->position + a->referenceLength - 1 < haplotypeStart) {
+        while (a + 1 != alleles.end() && a->position + a->referenceLength <= haplotypeStart) {
             ++a;
         }
         vector<Allele>::iterator b = a;
-        while (b + 1 != alleles.end() && b->position + b->referenceLength - 1 < haplotypeEnd) {
+        while (b + 1 != alleles.end() && b->position + b->referenceLength < haplotypeEnd) {
             ++b;
         }
 
@@ -2138,34 +2138,22 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         // adjust a to match the start of the haplotype block
         if (a->position == haplotypeStart) {
             // nothing to do!
-        } else if (a->position < haplotypeStart) {// && a->position + a->referenceLength - 1 >= haplotypeEnd) {
+        } else if (a->position < haplotypeStart) {
             // squeeze bases off the front of this allele onto the last allele
             // generating a new allele if there isn't one
-            //if (a == alleles.begin()) {
-                // add a new allele
-                Allele newAllele = *a;
-                newAllele.subtractFromEnd(a->position + a->referenceLength - haplotypeStart, seq, cigar, quals);
-                a->subtractFromStart(haplotypeStart - a->position, seq, cigar, quals);
-                newAlleles.push_back(newAllele);
-            //} else {
-                // add the sequence, cigar, and qualities to the previous allele
-            //    a->subtractFromStart(haplotypeStart - a->position, seq, cigar, quals);
-            //    (a - 1)->addToEnd(seq, cigar, quals);
-            //}
+            Allele newAllele = *a;
+            newAllele.subtractFromEnd(a->position + a->referenceLength - haplotypeStart, seq, cigar, quals);
+            a->subtractFromStart(haplotypeStart - a->position, seq, cigar, quals);
+            newAlleles.push_back(newAllele);
         }
 
-        if (b->position + b->referenceLength - 1 == haplotypeEnd) {
+        if (b->position + b->referenceLength == haplotypeEnd) {
             // nothing to do!!!!
-        } else if (b->position + b->referenceLength - 1 > haplotypeEnd) {
-            //if (b + 1 == alleles.end()) {
-                Allele newAllele = *b;
-                newAllele.subtractFromStart(haplotypeEnd + 1 - b->position, seq, cigar, quals);
-                b->subtractFromEnd(b->position + b->referenceLength - 1 - haplotypeEnd, seq, cigar, quals);
-                newAlleles.push_back(newAllele);
-            //} else {
-            //    b->subtractFromEnd(b->position + b->referenceLength - 1 - haplotypeEnd, seq, cigar, quals);
-            //    (b + 1)->addToStart(seq, cigar, quals);
-            //}
+        } else if (b->position + b->referenceLength > haplotypeEnd) {
+            Allele newAllele = *b;
+            newAllele.subtractFromStart(haplotypeEnd - b->position, seq, cigar, quals);
+            b->subtractFromEnd(b->position + b->referenceLength - haplotypeEnd, seq, cigar, quals);
+            newAlleles.push_back(newAllele);
         }
 
         // now, for everything between a and b, merge them into one allele
@@ -2196,7 +2184,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         // now the pointers have changed, so find the allele we want... again!!!!!!
         bool hasHaplotypeAllele = false;
         for (vector<Allele>::iterator p = alleles.begin(); p != alleles.end(); ++p) {
-            if (p->position == haplotypeStart && p->position + p->referenceLength - 1 == haplotypeEnd) {
+            if (p->position == haplotypeStart && p->position + p->referenceLength == haplotypeEnd) {
                 aptr = &*p;
                 hasHaplotypeAllele = true;
                 break;
