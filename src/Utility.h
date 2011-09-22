@@ -58,11 +58,16 @@ long double factorial( int n);
 long double factorialln( int n);
 long double __factorialln( int n);
 
+#define MAX_FACTORIAL_CACHE_SIZE 100000
+
 class FactorialCache : public map<int, long double> {
 public:
     long double factorialln(int n) {
         map<int, long double>::iterator f = find(n);
         if (f == end()) {
+            if (size() > MAX_FACTORIAL_CACHE_SIZE) {
+                clear();
+            }
             long double fln = __factorialln(n);
             insert(make_pair(n, fln));
             return fln;
