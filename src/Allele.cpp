@@ -186,6 +186,9 @@ string Allele::typeStr(void) const {
         case ALLELE_COMPLEX:
             t = "complex";
             break;
+        case ALLELE_NULL:
+            t = "null";
+            break;
         default:
             t = "unknown";
             break;
@@ -219,6 +222,10 @@ bool Allele::isComplex(void) {
     return type == ALLELE_COMPLEX;
 }
 
+bool Allele::isNull(void) {
+    return type == ALLELE_NULL;
+}
+
 const string Allele::base(void) const { // the base of this allele
 
     switch (this->type) {
@@ -246,6 +253,8 @@ const string Allele::base(void) const { // the base of this allele
         case ALLELE_COMPLEX:
             return "C:" + convert(position) + ":" + cigar + ":" + alternateSequence;
             break;
+        case ALLELE_NULL:
+            return "N:" + convert(position) + ":" + alternateSequence;
         default:
             break;
     }
@@ -275,6 +284,7 @@ const bool Allele::masked(void) const {
         case ALLELE_DELETION:
         case ALLELE_MNP:
         case ALLELE_COMPLEX:
+        case ALLELE_NULL:
             return true;
             break;
         default:
@@ -464,6 +474,8 @@ bool Allele::equivalent(Allele &b) {
                     && cigar == b.cigar)
                     return true;
                 break;
+            case ALLELE_NULL:
+                return alternateSequence == b.alternateSequence;
             default:
                 break;
         }
@@ -1219,6 +1231,9 @@ void Allele::updateTypeAndLengthFromCigar(void) {
             length = cigarLengths['D'];
             break;
         case ALLELE_COMPLEX:
+            length = alternateSequence.size();
+            break;
+        case ALLELE_NULL:
             length = alternateSequence.size();
             break;
         default:

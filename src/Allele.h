@@ -59,8 +59,8 @@ enum AlleleType {
     ALLELE_SNP = 8,
     ALLELE_INSERTION = 16,
     ALLELE_DELETION = 32,
-    ALLELE_COMPLEX = 64
-    //ALLELE_CNV = 128,
+    ALLELE_COMPLEX = 64,
+    ALLELE_NULL = 128
 };
 
 // used in making allele type filter vectors
@@ -229,6 +229,7 @@ public:
     bool isDeletion(void); // true if type == ALLELE_DELETION
     bool isMNP(void); // true if type == ALLELE_MNP
     bool isComplex(void); // true if type == ALLELE_COMPLEX
+    bool isNull(void); // true if type == ALLELE_NULL
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;

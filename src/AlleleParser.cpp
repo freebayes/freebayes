@@ -862,9 +862,23 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                 alleles.push_back(newAllele);
                 assert(newAllele.alternateSequence.size() == newAllele.baseQualities.size());
             }
+        } else if (newAllele.isNull()) {
+            if (lastAllele.isComplex()) {
+                // split apart the last allele if it's 'complex' but followed by a null allele
+                vector<pair<int, string> > cigar = splitCigar(lastAllele.cigar);
+                if (cigar.back().second == "M") {
+                    int matchlen = cigar.back().first;
+                    alleles.push_back(lastAllele);
+                    Allele& pAllele = alleles.at(alleles.size() - 2);
+                    string seq; vector<pair<int, string> > cig; vector<short> quals;
+                    pAllele.subtractFromEnd(matchlen, seq, cig, quals);
+                    alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
+                }
+            }
+            alleles.push_back(newAllele);
         } else {
-            // -> complex event
-            if (mergeComplex) {
+            // -> complex event, null allele
+            if (mergeComplex && lastAllele.position + lastAllele.referenceLength == newAllele.position && !lastAllele.isNull()) {
                 lastAllele.mergeAllele(newAllele, ALLELE_COMPLEX);
                 assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
             } else {
@@ -1057,6 +1071,21 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     &ra.alleles),
                                 parameters.allowComplex, parameters.maxComplexGap);
                         DEBUG2(ra.alleles.back());
+                    } else {
+                        ra.addAllele(Allele(ALLELE_NULL, currentSequenceName, sp - length, &currentPosition,
+                                    &currentReferenceBase, length,
+                                    rp - length, // bases left
+                                    alignment.QueryBases.size() - rp, // bases right
+                                    readSequence,
+                                    sampleName, alignment.Name, sequencingTech,
+                                    !alignment.IsReverseStrand(), lqual, qualstr,
+                                    alignment.MapQuality, alignment.IsPaired(),
+                                    alignment.IsMateMapped(),
+                                    alignment.IsProperPair(),
+                                    convert(length) + "N",
+                                    &ra.alleles),
+                                parameters.allowComplex, parameters.maxComplexGap);
+                        DEBUG2(ra.alleles.back());
                     }
                 }
 
@@ -1086,6 +1115,21 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 alignment.IsMateMapped(),
                                 alignment.IsProperPair(),
                                 convert(length) + "X",
+                                &ra.alleles),
+                            parameters.allowComplex, parameters.maxComplexGap);
+                    DEBUG2(ra.alleles.back());
+                } else {
+                    ra.addAllele(Allele(ALLELE_NULL, currentSequenceName, sp - length, &currentPosition,
+                                &currentReferenceBase, length,
+                                rp - length, // bases left
+                                alignment.QueryBases.size() - rp, // bases right
+                                readSequence,
+                                sampleName, alignment.Name, sequencingTech,
+                                !alignment.IsReverseStrand(), lqual, qualstr,
+                                alignment.MapQuality, alignment.IsPaired(),
+                                alignment.IsMateMapped(),
+                                alignment.IsProperPair(),
+                                convert(length) + "N",
                                 &ra.alleles),
                             parameters.allowComplex, parameters.maxComplexGap);
                     DEBUG2(ra.alleles.back());
@@ -1270,6 +1314,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
 bailout:
 
+
+    // this deals with the case in which we have embedded Ns in the read
+    // often this happens at the start or end of reads, thus affecting our RegisteredAlignment::start and ::end
+    ra.start = ra.alleles.front().position;
+    ra.end = ra.alleles.back().position + ra.alleles.back().referenceLength;
+
     double alignedBases = 0;
     double mismatchCount = 0;
     double matchCount = 0;
@@ -1350,16 +1400,16 @@ bailout:
         }
         for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
             Allele& allele = *a;
-            int start = (allele.position - alignment.Position);
-            int end = start + allele.length;
+            int startpos = (allele.position - alignment.Position);
+            int endpos = startpos + allele.length;
             vector<bool>::iterator im = indelMask.begin();
             // if there is anything masked, store it, otherwise just leave the
             // indelMask on this alignment empty, which means, "no masking" in
             // Allele::masked()
-            for (vector<bool>::iterator q = im + start; q != im + end; ++q) {
+            for (vector<bool>::iterator q = im + startpos; q != im + endpos; ++q) {
                 if (*q) { // there is a masked element
                     allele.indelMask.resize(allele.length);
-                    copy(im + start, im + end, allele.indelMask.begin());
+                    copy(im + startpos, im + endpos, allele.indelMask.begin());
                     break;
                 }
             }
@@ -1448,7 +1498,7 @@ void AlleleParser::updateAlignmentQueue(void) {
                 string sequencingTech = readGroupToTechnology[readGroup];
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition(true)];
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
                 // and insert the registered alignment into that deque
                 rq.push_front(RegisteredAlignment(currentAlignment));
                 RegisteredAlignment& ra = rq.front();
@@ -2103,6 +2153,9 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
     //if (containedAlleleTypes == ALLELE_REFERENCE) {
     //    return false;
     //}
+    //cerr << "registered alignment alleles," << endl << alleles << endl;
+    //cerr << "start: " << start << " end: " << end << endl;
+    //cerr << "haplotypestart: " << haplotypeStart << " haplotypeend: " << haplotypeEnd << endl;
 
     if (start <= haplotypeStart && end >= haplotypeEnd) {
         vector<Allele>::iterator a = alleles.begin();
@@ -2182,8 +2235,10 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         sort(alleles.begin(), alleles.end(), apcomp);
 
         // now the pointers have changed, so find the allele we want... again!!!!!!
+        //cerr << "registered alignment alleles, after haplotype construction," << endl << alleles << endl;
         bool hasHaplotypeAllele = false;
         for (vector<Allele>::iterator p = alleles.begin(); p != alleles.end(); ++p) {
+            //cerr << *p << endl;
             if (p->position == haplotypeStart && p->position + p->referenceLength == haplotypeEnd) {
                 aptr = &*p;
                 hasHaplotypeAllele = true;
@@ -2400,11 +2455,12 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes, int hapl
                       && allele.position >= currentPosition
                       && allele.position < currentPosition + haplotypeLength)))
                   ||
-                    ((allele.type == ALLELE_REFERENCE
+                    (haplotypeLength == 1 &&
+                     ((allele.type == ALLELE_REFERENCE
                       && allele.position <= currentPosition
                       && allele.position + allele.referenceLength > currentPosition)
                       || 
-                     (allele.position == currentPosition))
+                     (allele.position == currentPosition)))
                    ) ) {
             allele.update();
             if (allele.quality >= parameters.BQL0 && !allele.masked() && allele.currentBase != "N") {
@@ -2412,6 +2468,14 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes, int hapl
                 // XXX testing
                 if (!getAllAllelesInHaplotype) {
                     allele.processed = true;
+                    if (haplotypeLength > 1) {
+                        if (!allele.isReference() && !(allele.position == currentPosition && allele.referenceLength == haplotypeLength)) {
+                            cerr << "non-reference allele should not be added to result alleles because it does not match the haplotype!:" << endl;
+                            cerr << "haplotype is from " << currentPosition << " to " << currentPosition + haplotypeLength << ", " << haplotypeLength << "bp" << endl;
+                            cerr << allele << endl;
+                            assert(false);
+                        }
+                    }
                 }
             }
         }
