@@ -195,6 +195,10 @@ int main (int argc, char *argv[]) {
         }
         DEBUG("genotype alleles: " << genotypeAlleles);
 
+        // add the null genotype
+        Allele nullAllele = genotypeAllele(ALLELE_NULL, "N", 1, "1N");
+        genotypeAlleles.push_back(nullAllele);
+
         ++processed_sites;
 
         // generate possible genotypes
@@ -237,6 +241,11 @@ int main (int argc, char *argv[]) {
                     }
                 } else if (parameters.excludeUnobservedGenotypes) {
                     if (g->sampleHasSupportingObservations(sample)) {
+                        //cerr << sampleName << " has suppporting obs for " << *g << endl;
+                        genotypesWithObs.push_back(&*g);
+                    } else if (g->hasNullAllele() && g->homozygous) {
+                        // this genotype will never be added if we are running in observed-only mode, but
+                        // we still need it for consistency
                         genotypesWithObs.push_back(&*g);
                     }
                 } else {
@@ -287,6 +296,7 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("obtaining genotype likelihoods input from VCF");
 
+        // TODO, question, do these need to change wrt. NULL genotypes?
         parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
         // add these sample data likelihoods to 'invariant' likelihoods
         parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, invariantSampleDataLikelihoods);
@@ -622,12 +632,13 @@ int main (int argc, char *argv[]) {
             } else {
                 // get the unique alternate alleles in this combo, sorted by frequency in the combo
                 vector<pair<Allele, int> > alternates = alternateAlleles(bestCombo, referenceBase);
-                // TODO, sort by allele type, deletions first!
                 for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
                     Allele& alt = a->first;
-                    alts.push_back(alt);
+                    if (!alt.isNull())
+                        alts.push_back(alt);
                 }
                 // if there are no alternate alleles in the best combo, use the genotype alleles
+                // XXX ...
                 if (alts.empty()) {
                     for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
                         if (!a->isReference()) {

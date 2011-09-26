@@ -784,7 +784,8 @@ allLocalGenotypeCombinations(
     bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
-    long double diffusionPriorScalar) {
+    long double diffusionPriorScalar,
+    bool keepCombos) {
 
     // make the data likelihood maximum if needed
     if (comboKing.empty()) {
@@ -846,8 +847,23 @@ allLocalGenotypeCombinations(
                                             binomialObsPriors,
                                             alleleBalancePriors,
                                             diffusionPriorScalar);
+            // TODO
+            // memory-saving intervention, improve this
+            // difficult if we want to calculate marginals...
+            if (!keepCombos) {
+                // we should only have two combos in the list now...
+                if (combos.front().posteriorProb < combos.back().posteriorProb) {
+                    combos.pop_front();
+                } else {
+                    combos.pop_back();
+                }
+            }
         }
     }
+
+    GenotypeComboResultSorter gcrSorter;
+    combos.sort(gcrSorter);
+    combos.unique();
 
 }
 
@@ -995,6 +1011,10 @@ bandedGenotypeCombinations(
         }
     }
 
+    GenotypeComboResultSorter gcrSorter;
+    combos.sort(gcrSorter);
+    combos.unique();
+
     return true;
 }
 
@@ -1021,8 +1041,6 @@ convergentGenotypeComboSearch(
     bool addHomozygousCombos) {
 
     // sorting function object
-    GenotypeComboResultSorter gcrSorter;
-
     if (comboKing.empty()) {
         // seed EM with the data likelihood maximum
         vector<int> initialPosition;
@@ -1063,7 +1081,8 @@ convergentGenotypeComboSearch(
                     hwePriors,
                     binomialObsPriors,
                     alleleBalancePriors,
-                    diffusionPriorScalar);
+                    diffusionPriorScalar,
+                    false); // throw away combos, so as to reduce memory usage
         } else {
             bandedGenotypeCombinations(
                     combos,
@@ -1084,24 +1103,34 @@ convergentGenotypeComboSearch(
                     diffusionPriorScalar);
         }
 
-        // sort the results
-        combos.sort(gcrSorter);
-        //int previous_size = combos.size();
-        // remove duplicates
-        combos.unique();
-        //cerr << "removed " << previous_size - combos.size() << " duplicates" << endl;
-
-        // we've converged on the best homozygous combo, which suggests weak support for variation
-        if (combos.front().isHomozygous()) {
-            //cerr << "homozygous convergence in " << i << " iterations" << endl;
-            break;
-        }
+        //cerr << "combos size = " << combos.size() << endl;
 
         // check for convergence
-        if (bestCombo == combos.front()) {
+        //
+        // either we've converged on the best homozygous combo, which suggests
+        // weak support for variation, or we've got the same combo twice in a
+        // row as our best
+        if (combos.front().isHomozygous() || bestCombo == combos.front()) {
             // we've converged
-            //cerr << "standard convergence in " << i << " iterations" << endl;
-            //cerr << bestCombo << endl;
+            if (combos.size() == 1) {
+                // XXX temporary hack
+                // get the rest of the combos in memory so we can do computation with them...
+                allLocalGenotypeCombinations(
+                        combos,
+                        bestCombo,
+                        sampleDataLikelihoods,
+                        samples,
+                        logStepMax,
+                        theta,
+                        pooled,
+                        ewensPriors,
+                        permute,
+                        hwePriors,
+                        binomialObsPriors,
+                        alleleBalancePriors,
+                        diffusionPriorScalar,
+                        true); // keep combos
+            }
             break;
         } else {
             bestCombo = combos.front();
@@ -1132,14 +1161,6 @@ convergentGenotypeComboSearch(
                 alleleBalancePriors,
                 diffusionPriorScalar);
     }
-
-    // sort the homozygous combos
-    combos.sort(gcrSorter);
-
-    // get best homozygous combo
-    //GenotypeCombo* bestHomozygousCombo = &combos.front();
-
-    combos.unique(); // remove duplicate combos!
 
 }
 
@@ -1377,6 +1398,11 @@ void addAllHomozygousCombos(
                                      diffusionPriorScalar);
         combos.push_back(gc);
     }
+
+
+    GenotypeComboResultSorter gcrSorter;
+    combos.sort(gcrSorter);
+    combos.unique();
 
 }
 
@@ -1704,4 +1730,30 @@ map<int, vector<Genotype> > getGenotypesByPloidy(vector<int>& ploidies, vector<A
 
     return genotypesByPloidy;
 
+}
+
+vector<Genotype*> Genotype::nullMatchingGenotypes(vector<Genotype>& gts) {
+    vector<Genotype*> results;
+    // assert that this genotype has null alleles
+    for (vector<Genotype>::iterator g = gts.begin(); g != gts.end(); ++g) {
+        Genotype& genotype = *g;
+        if (genotype.ploidy == ploidy) {
+            bool match = true;
+            // if the non-null alleles and counts are the same between genotypes, add the genotype to the results
+            // null matching genotypes have the same number of alleles and alts as this genotype,
+            for (Genotype::iterator gt = begin(); gt != end(); ++gt) {
+                if (genotype.alleleCount(gt->allele) != gt->count) {
+                    match = false;
+                }
+            }
+            if (match) {
+                results.push_back(&*g);
+            }
+        }
+    }
+    return results;
+}
+
+bool Genotype::hasNullAllele(void) {
+    return alleleCount("N") != 0;
 }

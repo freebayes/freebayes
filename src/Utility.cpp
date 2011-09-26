@@ -176,8 +176,14 @@ long double binomialProb(int k, int n, long double p) {
     return factorial(n) / (factorial(k) * factorial(n - k)) * pow(p, k) * pow(1 - p, n - k);
 }
 
-long double binomialProbln(int k, int n, long double p) {
+long double __binomialProbln(int k, int n, long double p) {
     return factorialln(n) - (factorialln(k) + factorialln(n - k)) + powln(log(p), k) + powln(log(1 - p), n - k);
+}
+
+BinomialCache binomialCache;
+
+long double binomialProbln(int k, int n, long double p) {
+    return binomialCache.binomialProbln(k, n, p);
 }
 
 long double poissonpln(int observed, int expected) {

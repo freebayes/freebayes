@@ -91,6 +91,8 @@ public:
     int alleleObservationCount(Sample& sample);
     bool sampleHasSupportingObservations(Sample& sample);
     bool sampleHasSupportingObservationsForAllAlleles(Sample& sample);
+    bool hasNullAllele(void);
+    vector<Genotype*> nullMatchingGenotypes(vector<Genotype>& gts);
 
 };
 
@@ -405,7 +407,8 @@ allLocalGenotypeCombinations(
     bool hwePriors,
     bool binomialObsPriors,
     bool alleleBalancePriors,
-    long double diffusionPriorScalar);
+    long double diffusionPriorScalar,
+    bool keepCombos);
 
 void
 convergentGenotypeComboSearch(

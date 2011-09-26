@@ -12,7 +12,7 @@ vcf::Variant& Results::vcf(
         //long double alleleSamplingProb,
         Samples& samples,
         string refbase,
-        vector<Allele>& altAlleles,
+        vector<Allele>& altAllelesIncludingNulls,
         map<string, int> repeats,
         vector<string>& sampleNames,
         int coverage,
@@ -31,6 +31,14 @@ vcf::Variant& Results::vcf(
     // set up the reported reference allele
     long int referencePosition = (long int) parser->currentPosition; // 0-based
     var.ref = refbase;
+
+    // remove alt alleles
+    vector<Allele> altAlleles;
+    for (vector<Allele>::iterator aa = altAllelesIncludingNulls.begin(); aa != altAllelesIncludingNulls.end(); ++aa) {
+        if (!aa->isNull()) {
+            altAlleles.push_back(*aa);
+        }
+    }
 
     // the reference sequence should be able to encompass all events at the site, +1bp on the left
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
@@ -113,7 +121,9 @@ vcf::Variant& Results::vcf(
     var.format.push_back("QR");
     var.format.push_back("AA");
     var.format.push_back("QA");
-    var.format.push_back("GL");
+    if (!parameters.excludeUnobservedGenotypes) {
+        var.format.push_back("GL");
+    }
     //var.format.push_back("GLE");
 
     unsigned int refBasesLeft = 0;
@@ -501,6 +511,7 @@ vcf::Variant& Results::vcf(
             bool fullySpecified = true;
             vector<int> gtspec;
             genotype.relativeGenotype(gtspec, refbase, altAlleles);
+            // null allele case handled by the fact that we don't have any null alternate alleles
             for (vector<int>::iterator n = gtspec.begin(); n != gtspec.end(); ++n) {
                 if (*n < 0) {
                     fullySpecified = false;
@@ -518,8 +529,6 @@ vcf::Variant& Results::vcf(
                 } else {
                     // XXX TODO ...
                 }
-            } else {
-                vcfGenotypeOrder[groupPloidy][genotypeStr] = -1;
             }
         }
     }
@@ -550,18 +559,30 @@ vcf::Variant& Results::vcf(
             map<int, string> genotypeLikelihoods;
             if (!parameters.excludeUnobservedGenotypes && !parameters.excludePartiallyObservedGenotypes) {
 
-                // TODO
-                //vector<string>& taggedDataLikelihoods = sampleOutput["GLE"];
-
                 for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
-                    //vector<Genotype>& genotypes = genotypesByPloidy[sample.ploidy];
-                    int order = vcfGenotypeOrder[g->genotype->ploidy][g->genotype->str()];
-                    if (order >= 0) {
-                        genotypeLikelihoods[order] = convert(ln2log10(g->prob));
+                    if (g->genotype->hasNullAllele()) {
+                        // if the genotype has null (unspecified) alleles, find
+                        // the fully specified genotypes it can match with.
+                        vector<Genotype*> nullmatchgts = g->genotype->nullMatchingGenotypes(genotypesByPloidy[g->genotype->ploidy]);
+                        // the gls for these will be the same, so the gl for
+                        // this genotype can be used for all of them.  these
+                        // are the genotypes which the sample does not have,
+                        // but for which one allele or no alleles match
+                        for (vector<Genotype*>::iterator n = nullmatchgts.begin(); n != nullmatchgts.end(); ++n) {
+                            map<string, int>::iterator o = vcfGenotypeOrder[(*n)->ploidy].find((*n)->str());
+                            if (o != vcfGenotypeOrder[(*n)->ploidy].end()) {
+                                genotypeLikelihoods[o->second] = convert(ln2log10(g->prob));
+                            }
+                        }
+                    } else {
+                        // otherwise, we are well-specified, and only one
+                        // genotype should match
+                        map<string, int>::iterator o = vcfGenotypeOrder[g->genotype->ploidy].find(g->genotype->str());
+                        if (o != vcfGenotypeOrder[g->genotype->ploidy].end()) {
+                            genotypeLikelihoods[o->second] = convert(ln2log10(g->prob));
+                        }
                     }
 
-                    //string gle = g->genotype->relativeGenotype(refbase, altAlleles) + "=" + convert(ln2log10(g->prob));
-                    //taggedDataLikelihoods.push_back(gle);
                 }
 
                 //if (altAlleles.size() == 1) {
@@ -571,11 +592,9 @@ vcf::Variant& Results::vcf(
                 //}
 
                 vector<string>& datalikelihoods = sampleOutput["GL"];
-                //vector<string>& datalikelihoodsExplicit = sampleOutput["GLE"];
                 // output is sorted by map
                 for (map<int, string>::iterator gl = genotypeLikelihoods.begin(); gl != genotypeLikelihoods.end(); ++gl) {
                     datalikelihoods.push_back(gl->second);
-                    //datalikelihoodsExplicit.push_back(gl->second);
                 }
 
 

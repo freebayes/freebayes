@@ -47,6 +47,7 @@ string strip(string const& str, char const* separators = " \t");
 
 int binomialCoefficient(int n, int k);
 long double binomialProb(int k, int n, long double p);
+long double __binomialProbln(int k, int n, long double p);
 long double binomialProbln(int k, int n, long double p);
 
 long double poissonpln(int observed, int expected);
@@ -71,6 +72,27 @@ public:
             long double fln = __factorialln(n);
             insert(make_pair(n, fln));
             return fln;
+        } else {
+            return f->second;
+        }
+    }
+};
+
+#define MAX_BINOMIAL_CACHE_SIZE 100000
+
+class BinomialCache : public map<long double, map<pair<int, int>, long double> > {
+public:
+    long double binomialProbln(int k, int n, long double p) {
+        map<pair<int, int>, long double>& t = (*this)[p];
+        pair<int, int> kn = make_pair(k, n);
+        map<pair<int, int>, long double>::iterator f = t.find(kn);
+        if (f == t.end()) {
+            if (t.size() > MAX_BINOMIAL_CACHE_SIZE) {
+                t.clear();
+            }
+            long double bln = __binomialProbln(k, n, p);
+            t.insert(make_pair(kn, bln));
+            return bln;
         } else {
             return f->second;
         }
