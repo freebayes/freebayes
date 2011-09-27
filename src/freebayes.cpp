@@ -94,6 +94,8 @@ int main (int argc, char *argv[]) {
         out << parser->variantCallFile.header;
     }
 
+    Allele nullAllele = genotypeAllele(ALLELE_NULL, "N", 1, "1N");
+
     unsigned long total_sites = 0;
     unsigned long processed_sites = 0;
 
@@ -196,8 +198,11 @@ int main (int argc, char *argv[]) {
         DEBUG("genotype alleles: " << genotypeAlleles);
 
         // add the null genotype
-        Allele nullAllele = genotypeAllele(ALLELE_NULL, "N", 1, "1N");
-        genotypeAlleles.push_back(nullAllele);
+        bool usingNull = false;
+        if (parameters.excludeUnobservedGenotypes && genotypeAlleles.size() > 2) {
+            genotypeAlleles.push_back(nullAllele);
+            usingNull = true;
+        }
 
         ++processed_sites;
 
@@ -239,7 +244,7 @@ int main (int argc, char *argv[]) {
                     if (g->sampleHasSupportingObservationsForAllAlleles(sample)) {
                         genotypesWithObs.push_back(&*g);
                     }
-                } else if (parameters.excludeUnobservedGenotypes) {
+                } else if (parameters.excludeUnobservedGenotypes && usingNull) {
                     if (g->sampleHasSupportingObservations(sample)) {
                         //cerr << sampleName << " has suppporting obs for " << *g << endl;
                         genotypesWithObs.push_back(&*g);
