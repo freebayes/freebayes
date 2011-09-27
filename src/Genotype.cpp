@@ -1112,12 +1112,12 @@ convergentGenotypeComboSearch(
         // row as our best
         if (combos.front().isHomozygous() || bestCombo == combos.front()) {
             // we've converged
-            if (combos.size() == 1) {
+            if (bandwidth == 0 && banddepth == 0) {
                 // XXX temporary hack
                 // get the rest of the combos in memory so we can do computation with them...
                 allLocalGenotypeCombinations(
                         combos,
-                        bestCombo,
+                        combos.front(),
                         sampleDataLikelihoods,
                         samples,
                         logStepMax,
