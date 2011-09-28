@@ -410,12 +410,6 @@ vcf::Variant& Results::vcf(
             var.info["TYPE"].push_back("complex");
         } else if (altAllele.type == ALLELE_SNP) {
             var.info["TYPE"].push_back("snp");
-            // ts/tv
-            if (isTransition(refbase, altbase)) {
-                var.infoFlags["TS"] = true;
-            } else {
-                var.infoFlags["TV"] = true;
-            }
 
             // CpG
             if (parser->isCpG(altbase)) {
@@ -424,7 +418,7 @@ vcf::Variant& Results::vcf(
         } else if (altAllele.type == ALLELE_MNP) {
             var.info["TYPE"].push_back("mnp");
         } else {
-            cout << "WTF is this?" << endl;
+            cout << "What is this?" << endl;
             cout << altAllele.type << endl;
             cout << altAllele << endl;
         }

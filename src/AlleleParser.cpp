@@ -361,8 +361,8 @@ string AlleleParser::vcfHeader() {
         // supplementary information about the site
         << "##INFO=<ID=ODDS,Number=1,Type=Float,Description=\"The log odds ratio of the best genotype combination to the second-best.\">" << endl
         << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
-        << "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"site has transition SNP\">" << endl
-        << "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"site has transversion SNP\">" << endl
+        //<< "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"site has transition SNP\">" << endl
+        //<< "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"site has transversion SNP\">" << endl
         << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
         << "##INFO=<ID=TYPE,Number=A,Type=String,Description=\"The type of allele, either snp, mnp, ins, del, or complex.\">" << endl
         << "##INFO=<ID=CIGAR,Number=A,Type=String,Description=\"The extended CIGAR representation of each alternate allele, with the exception that '=' is replaced by 'M' to ease VCF parsing.  Note that INDEL alleles do not have the first matched base (which is provided by default, per the spec) referred to by the CIGAR.\">" << endl
