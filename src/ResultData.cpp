@@ -204,10 +204,6 @@ vcf::Variant& Results::vcf(
         // het counts
         unsigned int hetReferenceObsCount = 0;
         unsigned int hetAlternateObsCount = 0;
-        unsigned int homReferenceRefObsCount = 0;
-        unsigned int homReferenceAltObsCount = 0;
-        unsigned int homAlternateRefObsCount = 0;
-        unsigned int homAlternateAltObsCount = 0;
         unsigned int hetAltRefSamples = 0;
         unsigned int homAltSamples = 0;
         unsigned int homRefSamples = 0;
@@ -235,39 +231,20 @@ vcf::Variant& Results::vcf(
                 alternateCount += genotype->alleleCount(altbase);
                 alleleCount += genotype->ploidy;
 
+                unsigned int altCount = sample.observationCount(altbase);
                 if (!genotype->homozygous) {
                     // het case
-                    hetReferenceObsCount += sample.observationCount(refbase);
-                    hetAlternateObsCount += sample.observationCount(altbase);
-                    if (hetAlternateObsCount > 0) {
+                    if (altCount > 0) {
                         ++hetAltRefSamples;
+                        hetReferenceObsCount += sample.observationCount(refbase);
+                        hetAlternateObsCount += altCount;
                         altSampleObsCount += sample.observationCount();
                     }
-                } else {
-                    // homozygous cases
-                    if (genotype->alleleCount(refbase) > 0) {
-                        homReferenceRefObsCount += sample.observationCount(refbase);
-                        homReferenceAltObsCount += sample.observationCount(altbase);
-                        ++homRefSamples;
-                        refSampleObsCount += sample.observationCount();
-                    } else if (genotype->alleleCount(altbase) > 0) {
-                        homAlternateAltObsCount += sample.observationCount(altbase);
-                        homAlternateRefObsCount += sample.observationCount(refbase); // disagreeing obs
-                        ++homAltSamples;
-                        altSampleObsCount += sample.observationCount();
-                    } // specifically exclude other alts from these sums
                 }
-
-                unsigned int altCount = sample.observationCount(altbase);
-                //cerr << "altbase: " << altbase << endl;
-                //cerr << "sample: " << sample << endl;
                 altCountBySample[*sampleName] = altCount;
-                //cerr << "altcount: " << altCount << endl;
-                //altObsCount += altCount;
 
                 altQualBySample[*sampleName] = sample.qualSum(altbase);
 
-                // TODO cleanup
                 pair<pair<int,int>, pair<int,int> > baseCounts = sample.baseCount(refbase, altbase);
                 baseCountsForwardBySample[*sampleName] = baseCounts.first;
                 baseCountsReverseBySample[*sampleName] = baseCounts.second;
@@ -275,9 +252,6 @@ vcf::Variant& Results::vcf(
                 baseCountsForwardTotal.second += baseCounts.first.second;
                 baseCountsReverseTotal.first += baseCounts.second.first;
                 baseCountsReverseTotal.second += baseCounts.second.second;
-                // TODO, redundant...
-                //refAlleleObservations += baseCounts.first.first + baseCounts.second.first;
-                //altAlleleObservations += baseCounts.first.second + baseCounts.second.second;
             }
         }
 
