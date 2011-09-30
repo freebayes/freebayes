@@ -62,6 +62,7 @@ public:
     bool alleleBalancePriors;
     bool hwePriors;
     int genotypingMaxIterations;
+    int genotypingMaxBandDepth;
     bool excludePartiallyObservedGenotypes;
     bool excludeUnobservedGenotypes;
     float genotypeVariantThreshold;
@@ -82,7 +83,6 @@ public:
     float readMaxMismatchFraction;  // -z --read-max-mismatch-fraction
     int readSnpLimit;            // -$ --read-snp-limit
     int readIndelLimit;          // -e --read-indel-limit
-    float genotypeComboStepMax;  // -^ --genotype-combo-step-max
     int IDW;                     // -I --indel-exclusion-window
     long double TH;              // -T --theta
     long double PVL;             // -P --pvar

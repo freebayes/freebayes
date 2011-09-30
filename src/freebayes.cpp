@@ -334,61 +334,36 @@ int main (int argc, char *argv[]) {
         DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes");
         list<GenotypeCombo> genotypeCombos;
 
-        if (parameters.siteSelectionMaxIterations > 0 && !variantSampleDataLikelihoods.empty()) {
-            GenotypeCombo nullCombo;
-            bool addHomozygousCombos = true;
-            //cerr << sampleDataLikelihoods.size() << endl;
-            //cerr << variantSampleDataLikelihoods.size() << endl;
-            //cerr << invariantSampleDataLikelihoods.size() << endl;
-            convergentGenotypeComboSearch(
-                    genotypeCombos,
-                    nullCombo,  // passing an empty combo triggers use of the data likelihood max combo
-                    sampleDataLikelihoods,
-                    variantSampleDataLikelihoods,
-                    invariantSampleDataLikelihoods,
-                    samples,
-                    genotypeAlleles,
-                    parameters.WB,
-                    parameters.TB,
-                    parameters.genotypeComboStepMax,
-                    parameters.TH,
-                    parameters.pooled,
-                    parameters.ewensPriors,
-                    parameters.permute,
-                    parameters.hwePriors,
-                    parameters.obsBinomialPriors,
-                    parameters.alleleBalancePriors,
-                    parameters.diffusionPriorScalar,
-                    parameters.siteSelectionMaxIterations,
-                    addHomozygousCombos);
-        } else {
-            // handles the case where all samples have highly differentiated GLs
-            if (variantSampleDataLikelihoods.empty()) {
-                variantSampleDataLikelihoods = invariantSampleDataLikelihoods;
-                invariantSampleDataLikelihoods.clear();
-            }
-            DEBUG2("generating banded genotype combinations");
-            GenotypeCombo nullCombo;
-            bandedGenotypeCombinationsIncludingAllHomozygousCombos(
-                    genotypeCombos,
-                    nullCombo, // use data likelihood max
-                    sampleDataLikelihoods,
-                    variantSampleDataLikelihoods,
-                    invariantSampleDataLikelihoods,
-                    samples,
-                    genotypeAlleles,
-                    parameters.WB,
-                    parameters.TB,
-                    parameters.genotypeComboStepMax,
-                    parameters.TH,
-                    parameters.pooled,
-                    parameters.ewensPriors,
-                    parameters.permute,
-                    parameters.hwePriors,
-                    parameters.obsBinomialPriors,
-                    parameters.alleleBalancePriors,
-                    parameters.diffusionPriorScalar);
+        GenotypeCombo nullCombo;
+        bool addHomozygousCombos = true;
+        // handles the case where all samples have highly differentiated GLs
+        if (variantSampleDataLikelihoods.empty()) {
+            variantSampleDataLikelihoods = invariantSampleDataLikelihoods;
+            invariantSampleDataLikelihoods.clear();
         }
+        //cerr << sampleDataLikelihoods.size() << endl;
+        //cerr << variantSampleDataLikelihoods.size() << endl;
+        //cerr << invariantSampleDataLikelihoods.size() << endl;
+        convergentGenotypeComboSearch(
+                genotypeCombos,
+                nullCombo,  // passing an empty combo triggers use of the data likelihood max combo
+                sampleDataLikelihoods,
+                variantSampleDataLikelihoods,
+                invariantSampleDataLikelihoods,
+                samples,
+                genotypeAlleles,
+                parameters.WB,
+                parameters.TB,
+                parameters.TH,
+                parameters.pooled,
+                parameters.ewensPriors,
+                parameters.permute,
+                parameters.hwePriors,
+                parameters.obsBinomialPriors,
+                parameters.alleleBalancePriors,
+                parameters.diffusionPriorScalar,
+                parameters.siteSelectionMaxIterations,
+                addHomozygousCombos);
 
         // sort by the normalized datalikelihood + prior
         DEBUG2("sorting genotype combination likelihoods");
@@ -450,6 +425,7 @@ int main (int argc, char *argv[]) {
         if (!hasHetCombo) {
             bestCombo = genotypeCombos.front();
         }
+
         DEBUG2("best combo: " << bestCombo);
 
         // odds ratio between the first and second-best combinations
@@ -525,9 +501,20 @@ int main (int argc, char *argv[]) {
                 genotypeCombos.clear();
 
                 // cap the number of iterations at 2 x the number of alternate alleles
-                // max it at parameters.genotypingMaxIterations (200 by default) iterations, min at 10
+                // max it at parameters.genotypingMaxIterations iterations, min at 10
                 int itermax = min(max(10, 2 * bestCombo.hetCount()), parameters.genotypingMaxIterations);
                 //cerr << "itermax: " << itermax << endl;
+                // XXX HACK
+                // passing 0 for bandwidth and banddepth means "exhaustive local search"
+                // this produces properly normalized GQ's at polyallelic sites
+                int adjustedBandwidth = 0;
+                int adjustedBanddepth = 0;
+                // however, this can lead to huge performance problems at complex sites,
+                // so we implement this hack...
+                if (genotypeAlleles.size() > parameters.genotypingMaxBandDepth) {
+                    adjustedBandwidth = 1;
+                    adjustedBanddepth = parameters.genotypingMaxBandDepth;
+                }
 
                 // search much longer for convergence
                 convergentGenotypeComboSearch(
@@ -538,12 +525,8 @@ int main (int argc, char *argv[]) {
                         nullSampleDataLikelihoods,
                         samples,
                         genotypeAlleles,
-                        // XXX HACK
-                        0, 0, // passing 0 for bandwidth and banddepth means "exhaustive local search"
-                        // this produces properly normalized GQ's at polyallelic sites
-                        //parameters.WB,
-                        //parameters.TB,
-                        parameters.genotypeComboStepMax,
+                        adjustedBandwidth,
+                        adjustedBanddepth,
                         parameters.TH,
                         parameters.pooled,
                         parameters.ewensPriors,

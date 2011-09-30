@@ -187,6 +187,9 @@ void Parameters::usage(char** argv) {
          << "                   performance penalty. default: 5." << endl
          << "   -B --genotyping-max-iterations N" << endl
          << "                   Iterate no more than N times during genotyping step. default: 25." << endl
+         << "   --genotyping-max-banddepth N" << endl
+         << "                   Integrate no deeper than the Nth best genotype by likelihood when" << endl
+         << "                   genotyping. default: 6." << endl
          << "   -W --posterior-integration-limits N,M" << endl
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
@@ -194,10 +197,6 @@ void Parameters::usage(char** argv) {
          << "   -K --no-permute" << endl
          << "                   Do not scale prior probability of genotype combination given allele" << endl
          << "                   frequency by the number of permutations of included genotypes." << endl
-         << "   -^ --genotype-combo-step-max N" << endl
-         << "                   When generating genotype combinations, do not include genotypes" << endl
-         << "                   where the genotype data likelihood is log(N) from the highest" << endl
-         << "                   likelihood genotype for that individual.  default: ~unbounded" << endl
          << "   -N --exclude-unobserved-genotypes" << endl
          << "                   Skip sample genotypings for which the sample has no supporting reads." << endl
          << "   -S --genotype-variant-threshold N" << endl
@@ -281,6 +280,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeVariantThreshold = 0;
     siteSelectionMaxIterations = 5;
     genotypingMaxIterations = 25;
+    genotypingMaxBandDepth = 6;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
     onlyUseInputAlleles = false;
@@ -296,7 +296,6 @@ Parameters::Parameters(int argc, char** argv) {
     readMaxMismatchFraction = 1.0;    //  -z --read-max-mismatch-fraction
     readSnpLimit = 10000000;       // -$ --read-snp-limit
     readIndelLimit = 10000000;     // -e --read-indel-limit
-    genotypeComboStepMax = -1.0;                // -^ --genotype-combo-step-max
     IDW = -1;                     // -x --indel-exclusion-window
     TH = 10e-3;              // -T --theta
     PVL = 0.0001;             // -P --pvar
@@ -351,7 +350,6 @@ Parameters::Parameters(int argc, char** argv) {
         {"read-max-mismatch-fraction", required_argument, 0, 'z'},
         {"read-snp-limit", required_argument, 0, '$'},
         {"read-indel-limit", required_argument, 0, 'e'},
-        {"genotype-combo-step-max", required_argument, 0, '^'},
         {"no-indels", no_argument, 0, 'i'},
         {"left-align-indels", no_argument, 0, 'O'},
         {"no-mnps", no_argument, 0, 'X'},
@@ -382,6 +380,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"genotype-variant-threshold", required_argument, 0, 'S'},
         {"site-selection-max-iterations", required_argument, 0, 'M'},
         {"genotyping-max-iterations", required_argument, 0, 'B'},
+        {"genotyping-max-banddepth", required_argument, 0, '7'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -391,7 +390,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -546,6 +545,14 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
+            // -7 --genotyping-max-banddepth
+            case '7':
+                if (!convert(optarg, genotypingMaxBandDepth)) {
+                    cerr << "could not parse genotyping-max-iterations" << endl;
+                    exit(1);
+                }
+                break;
+
             // -1 --reference-quality
             case '1':
                 if (!convert(split(optarg, ",").front(), MQR)) {
@@ -652,13 +659,6 @@ Parameters::Parameters(int argc, char** argv) {
             case 'e':
                 if (!convert(optarg, readIndelLimit)) {
                     cerr << "could not parse read-indel-limit" << endl;
-                    exit(1);
-                }
-                break;
-
-            case '^':
-                if (!convert(optarg, genotypeComboStepMax)) {
-                    cerr << "could not parse genotype-combo-step-max" << endl;
                     exit(1);
                 }
                 break;
