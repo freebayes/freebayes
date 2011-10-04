@@ -240,6 +240,14 @@ vcf::Variant& Results::vcf(
                         hetAlternateObsCount += altCount;
                         altSampleObsCount += sample.observationCount();
                     }
+                } else {
+                    if (altCount > 0) {
+                        ++homAltSamples;
+                        altSampleObsCount += sample.observationCount();
+                    } else {
+                        ++homRefSamples;
+                        refSampleObsCount += observationCount;
+                    }
                 }
                 altCountBySample[*sampleName] = altCount;
 
