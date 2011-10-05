@@ -2187,6 +2187,8 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         vector<short> quals;
 
         // now "a" should overlap the start of the haplotype block, and "b" the end
+        //cerr << "block start overlaps: " << *a << endl;
+        //cerr << "block end overlaps: " << *a << endl;
 
         // adjust a to match the start of the haplotype block
         if (a->position == haplotypeStart) {
@@ -2463,7 +2465,8 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes, int hapl
                      (allele.position == currentPosition)))
                    ) ) {
             allele.update();
-            if (allele.quality >= parameters.BQL0 && !allele.masked() && allele.currentBase != "N") {
+            if (allele.quality >= parameters.BQL0 && !allele.masked() && allele.currentBase != "N"
+                    && (allele.isReference() || !allele.alternateSequence.empty())) { // filters haplotype construction chaff
                 samples[allele.sampleID][allele.currentBase].push_back(*a);
                 // XXX testing
                 if (!getAllAllelesInHaplotype) {
