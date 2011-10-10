@@ -313,13 +313,14 @@ vcf::Variant& Results::vcf(
                 }
                 altmqsum += allele.mapQuality;
             }
-        } else {
+        } /*else {
             cerr << "couldn't find altbase: " << altbase << " in allele groups" << endl;
             for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
                 cerr << a->first << " " << a->second.size() << endl;
             }
             assert(false);
         }
+        */
 
         long double altReadMismatchRate = (altObsCount == 0 ? 0 : altReadMismatchSum / altObsCount);
         long double altReadSNPRate = (altObsCount == 0 ? 0 : altReadSNPSum / altObsCount);

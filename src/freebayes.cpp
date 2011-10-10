@@ -190,6 +190,16 @@ int main (int argc, char *argv[]) {
         parser->buildHaplotypeAlleles(genotypeAlleles, samples, alleleGroups, allowedAlleleTypes);
         DEBUG("built haplotype alleles, now there are " << genotypeAlleles.size() << " genotype alleles");
         DEBUG(genotypeAlleles);
+        // always include the reference allele as a possible genotype, even when we don't include it by default
+        if (!parameters.useRefAllele) {
+            vector<Allele> refAlleleVector;
+            refAlleleVector.push_back(genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1, "1M"));
+            genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
+        }
+        DEBUG(genotypeAlleles);
+
+        // re-calculate coverage, as this could change now that we've built haplotype alleles
+        coverage = countAlleles(samples);
 
         if (genotypeAlleles.size() <= 1) { // if we have only one viable allele, we don't have evidence for variation at this site
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
@@ -265,12 +275,14 @@ int main (int argc, char *argv[]) {
 
             vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypesWithObs, parameters.RDF, parameters.useMappingQuality);
 
-            if (parameters.trace) {
+#ifdef VERBOSE_DEBUG
+            if (parameters.debug2) {
                 for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
-                    parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
+                    cerr << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
                         << sampleName << ",likelihood," << *(p->first) << "," << p->second << endl;
                 }
             }
+#endif
 
             Result& sampleData = results[sampleName];
             sampleData.name = sampleName;
@@ -280,7 +292,6 @@ int main (int argc, char *argv[]) {
             }
             sortSampleDataLikelihoods(sampleData);
 
-            //cout << exp(thisSampleDataLikelihoods.front().prob) << " - " << exp(thisSampleDataLikelihoods.at(1).prob) << endl;
             if (parameters.genotypeVariantThreshold != 0) {
                 if (sampleData.size() > 1
                         && float2phred(1 - (exp(sampleData.front().prob) - exp(sampleData.at(1).prob)))
@@ -434,6 +445,13 @@ int main (int argc, char *argv[]) {
         }
 
         DEBUG2("calculated pVar");
+#ifdef VERBOSE_DEBUG
+        if (parameters.debug2) {
+            for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+                cerr << *gc << endl;
+            }
+        }
+#endif
 
         if (parameters.trace) {
             for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {

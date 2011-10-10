@@ -1575,10 +1575,8 @@ void AlleleParser::updateInputVariants(void) {
                 for (vector< vector<vcf::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
 
                     vector<vcf::VariantAllele>& altAllele = *g;
-                    if (altAllele.size() > 1) {
-                        cerr << "warning, multiple alternates encoded in VCF record "
-                            << currentVariant->sequenceName << ":" << currentVariant->position << endl;
-                    }
+
+                    vector<Allele> alleles;
 
                     for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
 
@@ -1623,15 +1621,24 @@ void AlleleParser::updateInputVariants(void) {
 
                         Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, cigar, (unsigned int) reflen, allelePos);
                         DEBUG2("input allele: " << allele);
-
-                        inputVariantAlleles[allelePos].push_back(allele);
-                        genotypeAlleles.push_back(allele);
-
-                        if (type != ALLELE_REFERENCE) {
-                            alternatePositions.insert(allelePos);
-                        }
+                        alleles.push_back(allele);
 
                     }
+
+                    Allele& allele = alleles.front();
+                    if (alleles.size() > 1) {
+                        vector<Allele>::iterator a = alleles.begin(); ++a;
+                        for (; a != alleles.end(); ++a) {
+                            allele.mergeAllele(*a, ALLELE_COMPLEX);
+                        }
+                    }
+                    inputVariantAlleles[allele.position].push_back(allele);
+                    genotypeAlleles.push_back(allele);
+
+                    if (allele.type != ALLELE_REFERENCE) {
+                        alternatePositions.insert(allele.position);
+                    }
+
                 }
 
                 if (currentVariant->samples.empty())
@@ -2261,19 +2268,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
 }
 
 void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& samples, map<string, vector<Allele*> >& alleleGroups, int allowedAlleleTypes) {
-    // run through the alleles and find the longest sequence
-    // TODO
-    // this simplistic haplotype length estimation can fail
-    // to construct the correct haplotype length
-    // in the case that there are alleles which do not start at the
-    // current position, but partially overlap the window
-    // and have high enough frequency that they would trigger evaluation.
-    // to find the end of the optimal block, we should step forward until
-    // we reach a position without overlapping variant alleles passing
-    // the input filters, then use that length as the haplotype basis.
-    // there has to be some kind of bounded limit to this-- and there will be
-    // a practical one due to read length and the requirement that contigs
-    // span the haplotype window.
+
     int haplotypeLength = 1;
     for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele& allele = *a;
@@ -2307,6 +2302,9 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
         // position, adjust the length and reference sequences of the adjacent
         // alleles 
         DEBUG2("fitting haplotype block " << currentPosition << " to " << currentPosition + haplotypeLength << ", " << haplotypeLength << "bp");
+
+        registeredAlleles.clear();
+        samples.clear();
 
         vector<Allele*> newAlleles;
         map<Allele*, bool> oldAllelePtrs;
@@ -2344,6 +2342,7 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             }
         }
 
+        /*
         // clean up old allele pointers!
         for (vector<Allele*>::iterator r = registeredAlleles.begin(); r != registeredAlleles.end(); ++r) {
             if (oldAllelePtrs.find(*r) != oldAllelePtrs.end()) {
@@ -2367,6 +2366,7 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
                             alleles.end(), (Allele*)NULL), alleles.end());
             }
         }
+        */
 
         updateRegisteredAlleles();
 

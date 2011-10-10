@@ -280,7 +280,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeVariantThreshold = 0;
     siteSelectionMaxIterations = 5;
     genotypingMaxIterations = 25;
-    genotypingMaxBandDepth = 6;
+    genotypingMaxBandDepth = 7;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
     onlyUseInputAlleles = false;
