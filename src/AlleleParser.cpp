@@ -372,6 +372,7 @@ string AlleleParser::vcfHeader() {
         //<< "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele at site\">" << endl
         //<< "##INFO=<ID=COMPLEX,Number=0,Type=Flag,Description=\"complex allele (insertion/deletion/substitution composite) at site\">" << endl
         << "##INFO=<ID=NUMALT,Number=1,Type=Integer,Description=\"Number of unique non-reference alleles in called genotypes at this position.\">" << endl
+        << "##INFO=<ID=MEANALT,Number=A,Type=Integer,Description=\"Mean number of unique non-reference allele observations per sample with the corresponding alternate alleles.\">" << endl
         << "##INFO=<ID=LEN,Number=A,Type=Integer,Description=\"allele length\">" << endl
         << "##INFO=<ID=MQM,Number=A,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
         << "##INFO=<ID=MQMR,Number=1,Type=Float,Description=\"Mean mapping quality of observed reference alleles\">" << endl
@@ -2307,7 +2308,6 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
         samples.clear();
 
         vector<Allele*> newAlleles;
-        map<Allele*, bool> oldAllelePtrs;
         for (map<long unsigned int, deque<RegisteredAlignment> >::iterator ras = registeredAlignments.begin(); ras != registeredAlignments.end(); ++ras) {
             deque<RegisteredAlignment>& rq = ras->second;
             for (deque<RegisteredAlignment>::iterator rai = rq.begin(); rai != rq.end(); ++rai) {
@@ -2324,49 +2324,13 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
                     assert(aptr->referenceLength == haplotypeLength);
                     //cerr << "generated haplotype-matching allele: " << *aptr << endl;
                     //cerr << "and these alleles, " << ra.alleles << endl;
-                    for (vector<Allele*>::iterator p = oldptrs.begin(); p != oldptrs.end(); ++p) {
-                        oldAllelePtrs[*p] = true;
-                    }
-                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                        a->processed = false; // re-trigger use
-                        registeredAlleles.push_back(&*a);
-                        if (oldAllelePtrs.find(&*a) != oldAllelePtrs.end()) {
-                            oldAllelePtrs.erase(&*a);
-                        }
-                    }
-                } else {
-                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                        a->processed = false; // re-trigger use
-                    }
+                }
+                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                    a->processed = false; // re-trigger use of all alleles
+                    registeredAlleles.push_back(&*a);
                 }
             }
         }
-
-        /*
-        // clean up old allele pointers!
-        for (vector<Allele*>::iterator r = registeredAlleles.begin(); r != registeredAlleles.end(); ++r) {
-            if (oldAllelePtrs.find(*r) != oldAllelePtrs.end()) {
-                *r = NULL;
-            }
-        }
-        registeredAlleles.erase(remove(registeredAlleles.begin(),
-                    registeredAlleles.end(), (Allele*)NULL), registeredAlleles.end());
-
-        // life would be easier if registered alleles was a list
-        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-            Sample& sample = s->second;
-            for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
-                vector<Allele*>& alleles = g->second;
-                for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                    if (oldAllelePtrs.find(*a) != oldAllelePtrs.end()) {
-                        *a = NULL;
-                    }
-                }
-                alleles.erase(remove(alleles.begin(),
-                            alleles.end(), (Allele*)NULL), alleles.end());
-            }
-        }
-        */
 
         updateRegisteredAlleles();
 

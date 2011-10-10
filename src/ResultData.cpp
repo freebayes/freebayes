@@ -203,12 +203,15 @@ vcf::Variant& Results::vcf(
         map<string, unsigned int> altQualBySample;
         // het counts
         unsigned int hetReferenceObsCount = 0;
+        unsigned int hetOtherObsCount = 0;
         unsigned int hetAlternateObsCount = 0;
-        unsigned int hetAltRefSamples = 0;
+        unsigned int hetAltSamples = 0;
         unsigned int homAltSamples = 0;
         unsigned int homRefSamples = 0;
         unsigned int refSampleObsCount = 0; // depth in hom-ref samples
         unsigned int altSampleObsCount = 0; // depth in samples with called alternates
+        // unique alternate alleles / all alternate alleles in alt-associated samples
+        unsigned int uniqueAllelesInAltSamples = 0;
 
         pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
         pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
@@ -232,18 +235,28 @@ vcf::Variant& Results::vcf(
                 alleleCount += genotype->ploidy;
 
                 unsigned int altCount = sample.observationCount(altbase);
+                unsigned int refCount = sample.observationCount(refbase);
                 if (!genotype->homozygous) {
                     // het case
                     if (altCount > 0) {
-                        ++hetAltRefSamples;
-                        hetReferenceObsCount += sample.observationCount(refbase);
+                        ++hetAltSamples;
+                        hetReferenceObsCount += refCount;
+                        hetOtherObsCount += observationCount - altCount;
                         hetAlternateObsCount += altCount;
-                        altSampleObsCount += sample.observationCount();
+                        altSampleObsCount += observationCount;
+                        uniqueAllelesInAltSamples += sample.size();
+                        if (refCount > 0) {
+                            --uniqueAllelesInAltSamples; // ignore reference allele
+                        }
                     }
                 } else {
                     if (altCount > 0) {
                         ++homAltSamples;
-                        altSampleObsCount += sample.observationCount();
+                        altSampleObsCount += observationCount;
+                        uniqueAllelesInAltSamples += sample.size();
+                        if (refCount > 0) {
+                            --uniqueAllelesInAltSamples; // ignore reference allele
+                        }
                     } else {
                         ++homRefSamples;
                         refSampleObsCount += observationCount;
@@ -263,7 +276,7 @@ vcf::Variant& Results::vcf(
             }
         }
 
-        unsigned int hetAllObsCount = hetReferenceObsCount + hetAlternateObsCount;
+        unsigned int hetAllObsCount = hetOtherObsCount + hetAlternateObsCount;
 
         unsigned int altBasesLeft = 0;
         unsigned int altBasesRight = 0;
@@ -345,15 +358,15 @@ vcf::Variant& Results::vcf(
         var.info["AN"].clear(); var.info["AN"].push_back(convert(alleleCount)); // XXX hack...
         var.info["AF"].push_back(convert((alleleCount == 0) ? 0 : (double) alternateCount / (double) alleleCount));
         var.info["AA"].push_back(convert(altObsCount));
-        if (homRefSamples > 0 && hetAltRefSamples + homAltSamples > 0) {
+        if (homRefSamples > 0 && hetAltSamples + homAltSamples > 0) {
             double altSampleAverageDepth = (double) altSampleObsCount
-                       / ( (double) hetAltRefSamples + (double) homAltSamples );
+                       / ( (double) hetAltSamples + (double) homAltSamples );
             double refSampleAverageDepth = (double) refSampleObsCount / (double) homRefSamples;
             var.info["DPRA"].push_back(convert(altSampleAverageDepth / refSampleAverageDepth));
         } else {
             var.info["DPRA"].push_back(convert(0));
         }
-            //<< "HETAR=" << hetAltRefSamples << ";"
+            //<< "HETAR=" << hetAltSamples << ";"
             //<< "HOMA=" << homAltSamples << ";"
             //<< "HOMR=" << homRefSamples << ";"
         var.info["SRP"].clear(); // XXX hack
@@ -361,14 +374,15 @@ vcf::Variant& Results::vcf(
         var.info["SAP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.second, altObsCount, 0.5))));
             //<< "ABR=" << hetReferenceObsCount <<  ";"
             //<< "ABA=" << hetAlternateObsCount <<  ";"
-        var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : (double) hetReferenceObsCount / (double) hetAllObsCount ));
-        var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetReferenceObsCount, hetAllObsCount, 0.5))));
+        var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : (double) hetAlternateObsCount / (double) hetAllObsCount ));
+        var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetAlternateObsCount, hetAllObsCount, 0.5))));
         var.info["RUN"].push_back(convert(parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)));
         var.info["MQM"].push_back(convert((altObsCount == 0) ? 0 : (double) altmqsum / (double) altObsCount));
         var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5))));
         var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5))));
         var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : (double) altproperPairs / (double) altObsCount));
         var.info["CIGAR"].push_back(altAllele.cigar);
+        var.info["MEANALT"].push_back(convert((double) uniqueAllelesInAltSamples / (double) (hetAltSamples + homAltSamples)));
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
                 st != sequencingTechnologies.end(); ++st) { string& tech = *st;
