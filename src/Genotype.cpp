@@ -1281,6 +1281,15 @@ long double GenotypeCombo::probabilityGivenAlleleFrequencyln(bool permute) {
 
 }
 
+long double GenotypeCombo::hweComboProb(void) {
+    long double comboHweProb = 0;
+    for (map<Genotype*, int>::iterator gc = genotypeCounts.begin(); gc != genotypeCounts.end(); ++gc) {
+        Genotype* genotype = gc->first;
+        comboHweProb += hweProbGenotypeFrequencyln(genotype);
+    }
+    return comboHweProb;
+}
+
 // probability of the combo under HWE
 long double GenotypeCombo::hweExpectedFrequencyln(Genotype* genotype) {
 

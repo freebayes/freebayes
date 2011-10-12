@@ -372,7 +372,8 @@ string AlleleParser::vcfHeader() {
         //<< "##INFO=<ID=DEL,Number=0,Type=Flag,Description=\"deletion allele at site\">" << endl
         //<< "##INFO=<ID=COMPLEX,Number=0,Type=Flag,Description=\"complex allele (insertion/deletion/substitution composite) at site\">" << endl
         << "##INFO=<ID=NUMALT,Number=1,Type=Integer,Description=\"Number of unique non-reference alleles in called genotypes at this position.\">" << endl
-        << "##INFO=<ID=MEANALT,Number=A,Type=Integer,Description=\"Mean number of unique non-reference allele observations per sample with the corresponding alternate alleles.\">" << endl
+        << "##INFO=<ID=MEANALT,Number=A,Type=Float,Description=\"Mean number of unique non-reference allele observations per sample with the corresponding alternate alleles.\">" << endl
+        << "##INFO=<ID=HWE,Number=1,Type=Float,Description=\"Phred-scaled discrete HWE prior probability of the genotyping across all samples.\">" << endl
         << "##INFO=<ID=LEN,Number=A,Type=Integer,Description=\"allele length\">" << endl
         << "##INFO=<ID=MQM,Number=A,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
         << "##INFO=<ID=MQMR,Number=1,Type=Float,Description=\"Mean mapping quality of observed reference alleles\">" << endl

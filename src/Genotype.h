@@ -229,6 +229,7 @@ public:
 
     long double hweExpectedFrequencyln(Genotype* genotype);
     long double hweProbGenotypeFrequencyln(Genotype* genotype);
+    long double hweComboProb(void);
 
 };
 

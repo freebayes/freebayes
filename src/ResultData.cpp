@@ -189,6 +189,8 @@ vcf::Variant& Results::vcf(
     var.info["EPPR"].push_back(convert((refBasesLeft + refBasesRight == 0) ? 0 : ln2phred(hoeffdingln(refEndLeft, refEndLeft + refEndRight, 0.5))));
     var.info["PAIREDR"].push_back(convert((refObsCount == 0) ? 0 : (double) refProperPairs / (double) refObsCount));
 
+    var.info["HWE"].push_back(convert(ln2phred(genotypeCombo.hweComboProb())));
+
     // loop over all alternate alleles
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
 
@@ -212,6 +214,8 @@ vcf::Variant& Results::vcf(
         unsigned int altSampleObsCount = 0; // depth in samples with called alternates
         // unique alternate alleles / all alternate alleles in alt-associated samples
         unsigned int uniqueAllelesInAltSamples = 0;
+        //unsigned int hetAllObsCount = hetOtherObsCount + hetAlternateObsCount + hetReferenceObsCount;
+        unsigned int hetAllObsCount = 0;
 
         pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
         pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
@@ -240,6 +244,7 @@ vcf::Variant& Results::vcf(
                     // het case
                     if (altCount > 0) {
                         ++hetAltSamples;
+                        hetAllObsCount += observationCount;
                         hetReferenceObsCount += refCount;
                         hetOtherObsCount += observationCount - altCount;
                         hetAlternateObsCount += altCount;
@@ -275,8 +280,6 @@ vcf::Variant& Results::vcf(
                 baseCountsReverseTotal.second += baseCounts.second.second;
             }
         }
-
-        unsigned int hetAllObsCount = hetOtherObsCount + hetAlternateObsCount;
 
         unsigned int altBasesLeft = 0;
         unsigned int altBasesRight = 0;
