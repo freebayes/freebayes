@@ -1029,7 +1029,6 @@ convergentGenotypeComboSearch(
     int maxiterations,
     bool addHomozygousCombos) {
 
-    // sorting function object
     if (comboKing.empty()) {
         // seed EM with the data likelihood maximum
         vector<int> initialPosition;
@@ -1092,6 +1091,7 @@ convergentGenotypeComboSearch(
         }
 
         //cerr << "combos size = " << combos.size() << endl;
+        //cerr << "best combo: " << combos.front() << endl;
 
         // check for convergence
         //
@@ -1241,6 +1241,9 @@ void addAllHomozygousCombos(
     // accumulate homozygous combos and set their combo data probabilities
     for (map<Allele, GenotypeCombo>::iterator c = homozygousCombos.begin(); c != homozygousCombos.end(); ++c) {
         GenotypeCombo& gc = c->second;
+        if (gc.empty()) {
+            continue;
+        }
         gc.probObsGivenGenotypes = 0;
         for (GenotypeCombo::iterator sdl = gc.begin(); sdl != gc.end(); ++sdl) {
             gc.probObsGivenGenotypes += (*sdl)->prob; // set up data likelihood for combo

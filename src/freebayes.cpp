@@ -337,6 +337,10 @@ int main (int argc, char *argv[]) {
             parser->traceFile << endl;
         }
 
+        // if somehow we get here without any possible samples genotype likelihoods, bail out
+        if (sampleDataLikelihoods.empty()) {
+            continue;
+        }
 
         // calculate genotype combo likelihoods, integral over nearby genotypes
         // calculate marginals
@@ -352,9 +356,6 @@ int main (int argc, char *argv[]) {
             variantSampleDataLikelihoods = invariantSampleDataLikelihoods;
             invariantSampleDataLikelihoods.clear();
         }
-        //cerr << sampleDataLikelihoods.size() << endl;
-        //cerr << variantSampleDataLikelihoods.size() << endl;
-        //cerr << invariantSampleDataLikelihoods.size() << endl;
         convergentGenotypeComboSearch(
                 genotypeCombos,
                 nullCombo,  // passing an empty combo triggers use of the data likelihood max combo

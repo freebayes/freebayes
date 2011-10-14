@@ -218,6 +218,7 @@ public:
         , alignmentAlleles(NULL)
     {
         currentBase = base();
+        baseQualities.assign(alternateSequence.size(), 0);
         referenceLength = referenceLengthFromCigar();
     }
 

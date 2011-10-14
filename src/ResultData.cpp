@@ -385,7 +385,7 @@ vcf::Variant& Results::vcf(
         var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5))));
         var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : (double) altproperPairs / (double) altObsCount));
         var.info["CIGAR"].push_back(altAllele.cigar);
-        var.info["MEANALT"].push_back(convert((double) uniqueAllelesInAltSamples / (double) (hetAltSamples + homAltSamples)));
+        var.info["MEANALT"].push_back(convert((hetAltSamples + homAltSamples == 0) ? 0 : (double) uniqueAllelesInAltSamples / (double) (hetAltSamples + homAltSamples)));
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
                 st != sequencingTechnologies.end(); ++st) { string& tech = *st;

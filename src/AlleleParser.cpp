@@ -1567,7 +1567,7 @@ void AlleleParser::updateInputVariants(void) {
                 // get alternate alleles
                 map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
                 vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
-                for (vector<string>::iterator a = currentVariant->alleles.begin(); a != currentVariant->alleles.end(); ++a) {
+                for (vector<string>::iterator a = currentVariant->alt.begin(); a != currentVariant->alt.end(); ++a) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
                 }
 
@@ -1583,7 +1583,7 @@ void AlleleParser::updateInputVariants(void) {
                     for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
 
                         vcf::VariantAllele& variant = *v;
-                        long int allelePos = pos;
+                        long int allelePos = variant.position - 1;
                         AlleleType type;
                         string alleleSequence = variant.alt;
 
@@ -1591,15 +1591,19 @@ void AlleleParser::updateInputVariants(void) {
                         int reflen = 0;
                         string cigar;
 
+                        // XXX
+                        // FAIL
+                        // you need to add in the reference bases between the non-reference ones!
+                        // to allow for complex events!
+
                         if (variant.ref == variant.alt) {
                             // XXX note that for reference alleles, we only use the first base internally
                             // but this is technically incorrect, so this hack should be noted
-                            //len = variant.ref.size();
-                            len = 1;
+                            len = variant.ref.size();
                             reflen = len;
-                            alleleSequence = alleleSequence.at(0); // take only the first base
+                            //alleleSequence = alleleSequence.at(0); // take only the first base
                             type = ALLELE_REFERENCE;
-                            cigar = "1M";
+                            cigar = convert(len) + "M";
                         } else if (variant.ref.size() == variant.alt.size()) {
                             len = variant.ref.size();
                             reflen = len;
@@ -1627,13 +1631,62 @@ void AlleleParser::updateInputVariants(void) {
 
                     }
 
+                    // Variant::parsedAlternates() only gives us alternate alleles
+                    // for now, add reference sequences back between the alternates here
+                    if (alleles.size() > 1) {
+                        vector<Allele> newAlleles;
+                        vector<Allele>::iterator p = alleles.begin();
+                        for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                            if (p != a) {
+                                if (p->position + p->referenceLength < a->position) {
+                                    // insert a reference allele
+                                    long int pend = p->position + p->referenceLength;
+                                    string refsequence = reference.getSubSequence(currentVariant->sequenceName, pend, a->position - pend);
+                                    string cigar = convert(refsequence.size()) + "M";
+                                    Allele refAllele = genotypeAllele(ALLELE_REFERENCE, refsequence, refsequence.size(), cigar, refsequence.size(), pend);
+                                    newAlleles.push_back(refAllele);
+                                }
+                            }
+                            newAlleles.push_back(*a);
+                            p = a;
+                        }
+                        alleles = newAlleles;
+                    }
+
+                    // for any deletion alleles, grap the previous base (per standards in VCF and the rest of the parsing)
+                    vector<Allele>::iterator p = alleles.begin();
+                    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                        if (a->isDeletion()) {
+                            if (p != a) {
+                                if (p->isReference()) {
+                                    string seq; vector<pair<int, string> > cig; vector<short> quals;
+                                    p->subtractFromEnd(1, seq, cig, quals);
+                                    a->addToStart(seq, cig, quals);
+                                }
+                                // they will be merged otherwise in the complex merge step below
+                            } else {
+                                // add the previous reference base
+                                vector<short> quals;
+                                quals.assign(1, 0);
+                                vector<pair<int, string> > cig;
+                                cig.push_back(make_pair(1, "M"));
+                                string seq = reference.getSubSequence(currentVariant->sequenceName, a->position - 1, 1);
+                                a->addToStart(seq, cig, quals);
+                            }
+                        }
+                        p = a;
+                    }
+
                     Allele& allele = alleles.front();
                     if (alleles.size() > 1) {
                         vector<Allele>::iterator a = alleles.begin(); ++a;
                         for (; a != alleles.end(); ++a) {
-                            allele.mergeAllele(*a, ALLELE_COMPLEX);
+                            if (a->referenceLength > 0) {
+                                allele.mergeAllele(*a, ALLELE_COMPLEX);
+                            }
                         }
                     }
+
                     inputVariantAlleles[allele.position].push_back(allele);
                     genotypeAlleles.push_back(allele);
 
@@ -1646,83 +1699,90 @@ void AlleleParser::updateInputVariants(void) {
                 if (currentVariant->samples.empty())
                     continue;
 
-                if (alternatePositions.size() > 1) {
+                if (alternatePositions.size() == 1) {
+
+                    // there can be only one alternate allele position, per immediately previous check
+                    long int alternatePosition = *alternatePositions.begin();
+
+                    map<int, vector<Genotype> > genotypesByPloidy;
+
+                    // XXX hard-coded to a specific set of ploidys
+                    for (int p = 1; p <= 2; ++p) {
+                        vector<Genotype> genotypes = allPossibleGenotypes(p, genotypeAlleles);
+                        genotypesByPloidy[p] = genotypes;
+                    }
+
+                    map<int, map<Genotype*, int> > vcfGenotypeOrder;
+                    for (map<int, vector<Genotype> >::iterator gtg = genotypesByPloidy.begin(); gtg != genotypesByPloidy.end(); ++gtg) {
+                        int groupPloidy = gtg->first;
+                        vector<Genotype>& genotypes = gtg->second;
+                        for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+                            Genotype* genotypePtr = &*g;
+                            Genotype& genotype = *g;
+                            vector<int> gtspec;
+                            genotype.relativeGenotype(gtspec, genotypeAlleles);
+                            // XXX TODO ... EVIL HACKS
+                            if (groupPloidy == 2) {
+                                int j = gtspec.front();
+                                int k = gtspec.back();
+                                vcfGenotypeOrder[groupPloidy][genotypePtr] = (k * (k + 1) / 2) + j;
+                            } else if (groupPloidy == 1) {
+                                vcfGenotypeOrder[groupPloidy][genotypePtr] = gtspec.front();
+                            } else {
+                                // XXX TODO ...
+                            }
+                        }
+                    }
+
+                    // get the GLs for each sample, and store for use in later computation
+                    for (map<string, map<string, vector<string> > >::iterator s = currentVariant->samples.begin();
+                            s != currentVariant->samples.end(); ++s) {
+
+                        string sampleName = s->first;
+                        map<string, vector<string> >& sample = s->second;
+                        string& gt = sample["GT"].front();
+                        map<int, int> genotype = vcf::decomposeGenotype(gt);
+
+                        // default case, give a fixed count for each observed allele
+                        int ploidy = 0;
+                        for (map<int, int>::iterator g = genotype.begin(); g != genotype.end(); ++g) {
+                            ploidy += g->second;
+                        }
+
+                        if (ploidy > 2) {
+                            cerr << "warning, cannot handle ploidy > 2 for in the input VCF due to limitations "
+                                 << "of the VCF specification's definition of Genotype ordering" << endl;
+                            continue;
+                        }
+
+                        // in the case that we have genotype likelihoods in the VCF
+                        if (sample.find("GL") != sample.end()) {
+                            vector<string>& gls = sample["GL"];
+                            vector<long double> genotypeLikelihoods;
+                            genotypeLikelihoods.resize(gls.size());
+                            transform(gls.begin(), gls.end(), genotypeLikelihoods.begin(), log10string2ln);
+
+                            // now map the gls into genotype space
+                            map<Genotype*, int>& genotypeOrder = vcfGenotypeOrder[ploidy];
+                            for (map<Genotype*, int>::iterator gto = genotypeOrder.begin(); gto != genotypeOrder.end(); ++gto) {
+                                Genotype& genotype = *gto->first;
+                                int order = gto->second;
+                                map<string, long double>& sampleGenotypeLikelihoods = inputGenotypeLikelihoods[alternatePosition][sampleName];
+                                //cerr << sampleName << ":" << convert(genotype) << ":" << genotypeLikelihoods[order] << endl;
+                                sampleGenotypeLikelihoods[convert(genotype)] = genotypeLikelihoods[order];
+                            }
+                        }
+                    }
+
+                } else {
+                    /*
                     cerr << "warning, ambiguous VCF record (multiple mixed variant classes), unable to use for genotype likelihood input:" << endl
-                         << currentVariant->sequenceName << ":" << currentVariant->position << endl;
-                    continue;
-                }
-
-                // there can be only one alternate allele position, per immediately previous check
-                long int alternatePosition = *alternatePositions.begin();
-
-                map<int, vector<Genotype> > genotypesByPloidy;
-
-                // XXX hard-coded to a specific set of ploidys
-                for (int p = 1; p <= 2; ++p) {
-                    vector<Genotype> genotypes = allPossibleGenotypes(p, genotypeAlleles);
-                    genotypesByPloidy[p] = genotypes;
-                }
-
-                map<int, map<Genotype*, int> > vcfGenotypeOrder;
-                for (map<int, vector<Genotype> >::iterator gtg = genotypesByPloidy.begin(); gtg != genotypesByPloidy.end(); ++gtg) {
-                    int groupPloidy = gtg->first;
-                    vector<Genotype>& genotypes = gtg->second;
-                    for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-                        Genotype* genotypePtr = &*g;
-                        Genotype& genotype = *g;
-                        vector<int> gtspec;
-                        genotype.relativeGenotype(gtspec, genotypeAlleles);
-                        // XXX TODO ... EVIL HACKS
-                        if (groupPloidy == 2) {
-                            int j = gtspec.front();
-                            int k = gtspec.back();
-                            vcfGenotypeOrder[groupPloidy][genotypePtr] = (k * (k + 1) / 2) + j;
-                        } else if (groupPloidy == 1) {
-                            vcfGenotypeOrder[groupPloidy][genotypePtr] = gtspec.front();
-                        } else {
-                            // XXX TODO ...
-                        }
+                        << *currentVariant << endl;
+                    for (set<long int>::iterator i = alternatePositions.begin(); i != alternatePositions.end(); ++i) {
+                        cerr << "has position: " << *i << endl;
                     }
-                }
-
-                // get the GLs for each sample, and store for use in later computation
-                for (map<string, map<string, vector<string> > >::iterator s = currentVariant->samples.begin();
-                        s != currentVariant->samples.end(); ++s) {
-
-                    string sampleName = s->first;
-                    map<string, vector<string> >& sample = s->second;
-                    string& gt = sample["GT"].front();
-                    map<int, int> genotype = vcf::decomposeGenotype(gt);
-
-                    // default case, give a fixed count for each observed allele
-                    int ploidy = 0;
-                    for (map<int, int>::iterator g = genotype.begin(); g != genotype.end(); ++g) {
-                        ploidy += g->second;
-                    }
-
-                    if (ploidy > 2) {
-                        cerr << "warning, cannot handle ploidy > 2 for in the input VCF due to limitations "
-                             << "of the VCF specification's definition of Genotype ordering" << endl;
-                        continue;
-                    }
-
-                    // in the case that we have genotype likelihoods in the VCF
-                    if (sample.find("GL") != sample.end()) {
-                        vector<string>& gls = sample["GL"];
-                        vector<long double> genotypeLikelihoods;
-                        genotypeLikelihoods.resize(gls.size());
-                        transform(gls.begin(), gls.end(), genotypeLikelihoods.begin(), log10string2ln);
-
-                        // now map the gls into genotype space
-                        map<Genotype*, int>& genotypeOrder = vcfGenotypeOrder[ploidy];
-                        for (map<Genotype*, int>::iterator gto = genotypeOrder.begin(); gto != genotypeOrder.end(); ++gto) {
-                            Genotype& genotype = *gto->first;
-                            int order = gto->second;
-                            map<string, long double>& sampleGenotypeLikelihoods = inputGenotypeLikelihoods[alternatePosition][sampleName];
-                            //cerr << sampleName << ":" << convert(genotype) << ":" << genotypeLikelihoods[order] << endl;
-                            sampleGenotypeLikelihoods[convert(genotype)] = genotypeLikelihoods[order];
-                        }
-                    }
+                         //<< currentVariant->sequenceName << ":" << currentVariant->position << endl;
+                    */
                 }
 
             } while ((hasMoreVariants = variantCallInputFile.getNextVariant(*currentVariant))
@@ -1759,7 +1819,6 @@ void AlleleParser::addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& ge
                 long double l = gl->second;
                 for (vector<Genotype*>::iterator g = genotypePtrs.begin(); g != genotypePtrs.end(); ++g) {
                     if (convert(**g) == genotype) {
-                        //cerr << sampleName << " likelihood of " << **g << " " << l << endl;
                         likelihoodsPtr[*g] = l;
                     }
                 }
@@ -1773,7 +1832,9 @@ void AlleleParser::addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& ge
                 sampleData.push_back(SampleDataLikelihood(sampleName, nullSample, p->first, p->second, 0));
             }
             sortSampleDataLikelihoods(sampleData);
-            sampleDataLikelihoods.push_back(sampleData);
+            if (!sampleData.empty()) {
+                sampleDataLikelihoods.push_back(sampleData);
+            }
         }
         
     }
