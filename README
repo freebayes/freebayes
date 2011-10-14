@@ -134,9 +134,9 @@ FreeBayes can read BAM from standard input (--stdin) instead of directly from
 files.  This allows the application of any number of streaming BAM filters and
 calibrators to its input.  Two filters are of particular interest:
 
-    1) base alignment quality (BAQ) adjustment, a quality smoothing filter
+    1) base alignment quality (BAQ) adjustment, a quality adjustment
     which applies a hidden markov model of read genesis to each alignment
-    independently.  This is currently implemented by samtools fillmd.  (See
+    independently.  This is currently implemented by samtools calmd.  (See
     Biological Sequence Analysis Probabilistic Models of Proteins and Nucleic
     Acids by Durbin et. al. for more details.)
 
@@ -150,7 +150,7 @@ For example, you can apply BAQ adjustment region 10:6000..7000 to a set of BAM
 files using this pattern:
 
     % bamtools filter -region 10:6000..7000 -in NA20504.bam -in NA20507.bam \
-       | samtools fillmd -Aru - reference.fasta \
+       | samtools calmd -EAru - reference.fasta \
        | freebayes --stdin -f reference.fasta
 
 Using this pattern, you can filter out reads with certain criteria using
