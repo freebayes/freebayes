@@ -184,6 +184,11 @@ public:
 
     void init(bool useObsExpectations);
 
+    // appends the other combo to this one,
+    // updates the counts, and multiplies the probabilites,
+    // assuming independence between the two combos
+    void appendIndependentCombo(GenotypeCombo& other);
+
     int numberOfAlleles(void);
     vector<long double> alleleProbs(void);  // scales the above by the total number of alleles
     int ploidy(void); // the number of copies of the locus in this combination
@@ -418,5 +423,6 @@ ostream& operator<<(ostream& out, GenotypeCombo& g);
 
 map<int, vector<Genotype> > getGenotypesByPloidy(vector<int>& ploidies, vector<Allele>& genotypeAlleles);
 
+void combinePopulationCombos(list<GenotypeCombo>& genotypeCombos, map<string, list<GenotypeCombo> >&                           genotypeCombosByPopulation);
 
 #endif

@@ -32,6 +32,10 @@ void Parameters::usage(char** argv) {
          << "                   Limit analysis to samples listed (one per line) in the FILE." << endl
          << "                   By default FreeBayes will analyze all samples in its input" << endl
          << "                   BAM files." << endl
+         << "   --populations FILE" << endl
+         << "                   Each line of FILE should list a sample and a population which" << endl
+         << "                   it is part of.  The population-based bayesian inference model" << endl
+         << "                   will then be partitioned on the basis of the populations." << endl
          << "   -A --cnv-map FILE" << endl
          << "                   Read a copy number map from the BED file FILE, which has" << endl
          << "                   the format:" << endl
@@ -247,6 +251,7 @@ Parameters::Parameters(int argc, char** argv) {
     targets = "";              // -t --targets
     region = "";               // -r --region
     samples = "";              // -s --samples
+    populationsFile = "";
     cnvFile = "";
     output = "vcf";               // -v --vcf
     outputFile = "";
@@ -327,6 +332,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"targets", required_argument, 0, 't'},
         {"region", required_argument, 0, 'r'},
         {"samples", required_argument, 0, 's'},
+        {"populations", required_argument, 0, '2'},
         {"cnv-map", required_argument, 0, 'A'},
         {"vcf", required_argument, 0, 'v'},
         {"trace", required_argument, 0, 'L'},
@@ -390,7 +396,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -428,6 +434,11 @@ Parameters::Parameters(int argc, char** argv) {
             // -s --samples
             case 's':
                 samples = optarg;
+                break;
+
+            // --populations
+            case '2':
+                populationsFile = optarg;
                 break;
 
             // -A --cnv-file

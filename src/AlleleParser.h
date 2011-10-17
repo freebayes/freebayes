@@ -114,6 +114,8 @@ public:
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
     vector<string> sampleListFromVCF; // sample names drawn from input VCF
+    map<string, string> samplePopulation; // population subdivisions of samples
+    map<string, vector<string> > populationSamples; // inversion of samplePopulation
     map<string, string> readGroupToSampleNames; // maps read groups to samples
     map<string, string> readGroupToTechnology; // maps read groups to technologies
     vector<string> sequencingTechnologies;  // a list of the present technologies
@@ -163,6 +165,7 @@ public:
     void openFailedFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
+    void getPopulations(void);
     void getSequencingTechnologies(void);
     void loadSampleCNVMap(void);
     int currentSamplePloidy(string const& sample);

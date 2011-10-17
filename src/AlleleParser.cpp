@@ -160,6 +160,44 @@ void AlleleParser::getSequencingTechnologies(void) {
 
 }
 
+void AlleleParser::getPopulations(void) {
+
+    if (!parameters.populationsFile.empty()) {
+        ifstream populationsFile(parameters.populationsFile.c_str(), ios::in);
+        if (!populationsFile) {
+            cerr << "unable to open population file: " << parameters.populationsFile << endl;
+            exit(1);
+        }
+        string line;
+        while (getline(populationsFile, line)) {
+            DEBUG2("found sample-population mapping: " << line);
+            vector<string> popsample = split(line, "\t ");
+            if (popsample.size() == 2) {
+                string& sample = popsample.front();
+                string& population = popsample.back();
+                samplePopulation[sample] = population;
+            } else {
+                cerr << "malformed population/sample pair, " << line << endl;
+                exit(1);
+            }
+        }
+    }
+
+    // XXX
+    // TODO now, assign a default population to all the rest of the samples...
+    // XXX
+    for (vector<string>::iterator s = sampleList.begin(); s != sampleList.end(); ++s) {
+        if (!samplePopulation.count(*s)) {
+            samplePopulation[*s] = "DEFAULT";
+        }
+    }
+
+    for (map<string, string>::iterator s = samplePopulation.begin(); s != samplePopulation.end(); ++s) {
+        populationSamples[s->second].push_back(s->first);
+    }
+
+}
+
 // read sample list file or get sample names from bam file header
 void AlleleParser::getSampleNames(void) {
 
@@ -757,6 +795,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     // check how many targets we have specified
     loadTargets();
     getSampleNames();
+    getPopulations();
     getSequencingTechnologies();
 
     // sample CNV

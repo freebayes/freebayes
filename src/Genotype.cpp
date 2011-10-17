@@ -1627,3 +1627,82 @@ vector<Genotype*> Genotype::nullMatchingGenotypes(vector<Genotype>& gts) {
 bool Genotype::hasNullAllele(void) {
     return alleleCount("N") != 0;
 }
+
+void GenotypeCombo::appendIndependentCombo(GenotypeCombo& other) {
+
+    for (map<string, AlleleCounter>::iterator c = other.alleleCounters.begin(); c != other.alleleCounters.end(); ++c) {
+        const string& allele = c->first;
+        AlleleCounter& otherCounter = c->second;
+        AlleleCounter& thisCounter = alleleCounters[allele];
+        thisCounter.frequency += otherCounter.frequency;
+        thisCounter.observations += otherCounter.observations;
+        thisCounter.forwardStrand += otherCounter.forwardStrand;
+        thisCounter.reverseStrand += otherCounter.reverseStrand;
+        thisCounter.placedLeft += otherCounter.placedLeft;
+        thisCounter.placedRight += otherCounter.placedRight;
+        thisCounter.placedStart += otherCounter.placedStart;
+        thisCounter.placedEnd += otherCounter.placedEnd;
+    }
+
+    for (GenotypeCombo::iterator s = begin(); s != end(); ++s) {
+        const SampleDataLikelihood& sdl = **s;
+        const Sample& sample = *sdl.sample;
+        ++genotypeCounts[sdl.genotype];
+    }
+
+    // permutations
+    permutationsln += other.permutationsln;
+
+    // combine probabilities assuming conditional independence between these two combinations
+
+    // data likelihood
+    probObsGivenGenotypes += other.probObsGivenGenotypes;
+
+    // posterior 
+    posteriorProb += other.posteriorProb;
+
+    // priors
+    priorProb += other.priorProb;
+    priorProbG_Af += other.priorProbG_Af;
+    priorProbAf += other.priorProbAf;
+    priorProbObservations += other.priorProbObservations;
+    priorProbGenotypesGivenHWE += other.priorProbGenotypesGivenHWE;
+
+    // add the other sample data likelihoods to this combo
+    reserve(size() + distance(other.begin(), other.end()));
+    insert(end(), other.begin(), other.end());
+
+}
+
+void combinePopulationCombos(list<GenotypeCombo>& genotypeCombos, map<string, list<GenotypeCombo> >& genotypeCombosByPopulation) {
+
+    for (map<string, list<GenotypeCombo> >::iterator p = genotypeCombosByPopulation.begin(); p != genotypeCombosByPopulation.end(); ++p) {
+
+        const string& population = p->first;
+        list<GenotypeCombo>& populationGenotypeCombos = p->second;
+
+        GenotypeCombo otherPopulationsBestCombo;
+
+        for (map<string, list<GenotypeCombo> >::iterator o = genotypeCombosByPopulation.begin(); o != genotypeCombosByPopulation.end(); ++o) {
+            if (o->first != p->first) {
+                if (otherPopulationsBestCombo.empty()) {
+                    otherPopulationsBestCombo = o->second.front();
+                } else {
+                    otherPopulationsBestCombo.appendIndependentCombo(o->second.front());
+                }
+            }
+        }
+
+        // now, append the best other population combo to all the combos in this set
+        for (list<GenotypeCombo>::iterator g = populationGenotypeCombos.begin(); g != populationGenotypeCombos.end(); ++g) {
+            genotypeCombos.push_back(*g);
+            genotypeCombos.back().appendIndependentCombo(otherPopulationsBestCombo);
+        }
+    }
+
+    // sort the combined combos
+    GenotypeComboResultSorter gcrSorter;
+    genotypeCombos.sort(gcrSorter);
+    genotypeCombos.unique();
+
+}

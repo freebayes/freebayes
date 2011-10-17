@@ -233,12 +233,13 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        Results results;
-        vector<vector<SampleDataLikelihood> > sampleDataLikelihoods;
-        vector<vector<SampleDataLikelihood> > variantSampleDataLikelihoods;
-        vector<vector<SampleDataLikelihood> > invariantSampleDataLikelihoods;
+        // TODO
+        // repeat for each population of samples
 
-        // TODO... segregate samples from the VCF from samples from BAMs
+        Results results;
+        map<string, vector<vector<SampleDataLikelihood> > > sampleDataLikelihoodsByPopulation;
+        map<string, vector<vector<SampleDataLikelihood> > > variantSampleDataLikelihoodsByPopulation;
+        map<string, vector<vector<SampleDataLikelihood> > > invariantSampleDataLikelihoodsByPopulation;
 
         DEBUG2("calculating data likelihoods");
         // calculate data likelihoods
@@ -273,6 +274,7 @@ int main (int argc, char *argv[]) {
                 continue;
             }
 
+            // get genotype likelihoods
             vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypesWithObs, parameters.RDF, parameters.useMappingQuality);
 
 #ifdef VERBOSE_DEBUG
@@ -292,6 +294,13 @@ int main (int argc, char *argv[]) {
             }
             sortSampleDataLikelihoods(sampleData);
 
+            // TODO
+            // if a sample isn't specified, then we get the "" empty population out of this map
+            string& population = parser->samplePopulation[sampleName];
+            vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods = sampleDataLikelihoodsByPopulation[population];
+            vector<vector<SampleDataLikelihood> >& variantSampleDataLikelihoods = variantSampleDataLikelihoodsByPopulation[population];
+            vector<vector<SampleDataLikelihood> >& invariantSampleDataLikelihoods = invariantSampleDataLikelihoodsByPopulation[population];
+
             if (parameters.genotypeVariantThreshold != 0) {
                 if (sampleData.size() > 1
                         && float2phred(1 - (exp(sampleData.front().prob) - exp(sampleData.at(1).prob)))
@@ -306,18 +315,14 @@ int main (int argc, char *argv[]) {
             }
             sampleDataLikelihoods.push_back(sampleData);
 
+            DEBUG2("obtaining genotype likelihoods input from VCF");
+            parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
+            // add these sample data likelihoods to 'invariant' likelihoods
+            parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, invariantSampleDataLikelihoods);
+
         }
         
         DEBUG2("finished calculating data likelihoods");
-
-        DEBUG2("obtaining genotype likelihoods input from VCF");
-
-        // TODO, question, do these need to change wrt. NULL genotypes?
-        parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
-        // add these sample data likelihoods to 'invariant' likelihoods
-        parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, invariantSampleDataLikelihoods);
-
-        DEBUG2("finished parsing VCF input genotype likelihoods");
 
 
         // this section is a hack to make output of trace identical to BamBayes trace
@@ -337,51 +342,76 @@ int main (int argc, char *argv[]) {
             parser->traceFile << endl;
         }
 
-        // if somehow we get here without any possible samples genotype likelihoods, bail out
-        if (sampleDataLikelihoods.empty()) {
+        // if somehow we get here without any possible sample genotype likelihoods, bail out
+        bool hasSampleLikelihoods = false;
+        for (map<string, vector<vector<SampleDataLikelihood> > >::iterator s = sampleDataLikelihoodsByPopulation.begin(); s != sampleDataLikelihoodsByPopulation.end(); ++s) {
+            if (!s->second.empty()) {
+                hasSampleLikelihoods = true;
+                break;
+            }
+        }
+        if (!hasSampleLikelihoods) {
             continue;
         }
 
-        // calculate genotype combo likelihoods, integral over nearby genotypes
-        // calculate marginals
-        // and determine best genotype combination
+        DEBUG2("calulating combo posteriors over " << parser->populationSamples.size() << " populations");
 
-        DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes");
-        list<GenotypeCombo> genotypeCombos;
+        map<string, list<GenotypeCombo> > genotypeCombosByPopulation;
 
-        GenotypeCombo nullCombo;
-        bool addHomozygousCombos = true;
-        // handles the case where all samples have highly differentiated GLs
-        if (variantSampleDataLikelihoods.empty()) {
-            variantSampleDataLikelihoods = invariantSampleDataLikelihoods;
-            invariantSampleDataLikelihoods.clear();
+        for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
+
+            const string& population = p->first;
+            DEBUG2("... for population " << population);
+            SampleDataLikelihoods& sampleDataLikelihoods = p->second;
+            SampleDataLikelihoods& variantSampleDataLikelihoods = variantSampleDataLikelihoodsByPopulation[population];
+            SampleDataLikelihoods& invariantSampleDataLikelihoods = invariantSampleDataLikelihoodsByPopulation[population];
+            list<GenotypeCombo>& populationGenotypeCombos = genotypeCombosByPopulation[population];
+
+            DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes in population " << population);
+
+            GenotypeCombo nullCombo;
+            bool addHomozygousCombos = true;
+            // handles the case where all samples have highly differentiated GLs
+            if (variantSampleDataLikelihoods.empty()) {
+                variantSampleDataLikelihoods = invariantSampleDataLikelihoods;
+                invariantSampleDataLikelihoods.clear();
+            }
+
+            convergentGenotypeComboSearch(
+                    populationGenotypeCombos,
+                    nullCombo,  // passing an empty combo triggers use of the data likelihood max combo
+                    sampleDataLikelihoods,
+                    variantSampleDataLikelihoods,
+                    invariantSampleDataLikelihoods,
+                    samples,
+                    genotypeAlleles,
+                    parameters.WB,
+                    parameters.TB,
+                    parameters.TH,
+                    parameters.pooled,
+                    parameters.ewensPriors,
+                    parameters.permute,
+                    parameters.hwePriors,
+                    parameters.obsBinomialPriors,
+                    parameters.alleleBalancePriors,
+                    parameters.diffusionPriorScalar,
+                    parameters.siteSelectionMaxIterations,
+                    addHomozygousCombos);
+
+            // sort by the normalized datalikelihood + prior
+            DEBUG2("sorting genotype combination likelihoods");
+            GenotypeComboResultSorter gcrSorter;
+            populationGenotypeCombos.sort(gcrSorter);
+            populationGenotypeCombos.unique();
+
         }
-        convergentGenotypeComboSearch(
-                genotypeCombos,
-                nullCombo,  // passing an empty combo triggers use of the data likelihood max combo
-                sampleDataLikelihoods,
-                variantSampleDataLikelihoods,
-                invariantSampleDataLikelihoods,
-                samples,
-                genotypeAlleles,
-                parameters.WB,
-                parameters.TB,
-                parameters.TH,
-                parameters.pooled,
-                parameters.ewensPriors,
-                parameters.permute,
-                parameters.hwePriors,
-                parameters.obsBinomialPriors,
-                parameters.alleleBalancePriors,
-                parameters.diffusionPriorScalar,
-                parameters.siteSelectionMaxIterations,
-                addHomozygousCombos);
 
-        // sort by the normalized datalikelihood + prior
-        DEBUG2("sorting genotype combination likelihoods");
-        GenotypeComboResultSorter gcrSorter;
-        genotypeCombos.sort(gcrSorter);
-        genotypeCombos.unique();
+        // XXX
+        // TODO skip these steps in the case that there is only one population?
+        list<GenotypeCombo> genotypeCombos; // build new combos into this list
+        // combine the per-pop genotype combos into a pooled system
+        // for each combo in each pop, take the best combos from the other pops and concatenate them together
+        combinePopulationCombos(genotypeCombos, genotypeCombosByPopulation);
 
         // get posterior normalizer
         vector<long double> comboProbs;
@@ -503,6 +533,7 @@ int main (int argc, char *argv[]) {
             DEBUG2("passed PVL threshold");
 
             GenotypeCombo bestGenotypeComboByMarginals;
+            vector<vector<SampleDataLikelihood> > allSampleDataLikelihoods;
 
             if (parameters.calculateMarginals) {
 
@@ -518,46 +549,56 @@ int main (int argc, char *argv[]) {
                 SampleDataLikelihoods nullSampleDataLikelihoods;
 
                 genotypeCombos.clear();
+                genotypeCombosByPopulation.clear();
 
-                // cap the number of iterations at 2 x the number of alternate alleles
-                // max it at parameters.genotypingMaxIterations iterations, min at 10
-                int itermax = min(max(10, 2 * bestCombo.hetCount()), parameters.genotypingMaxIterations);
-                //cerr << "itermax: " << itermax << endl;
-                // XXX HACK
-                // passing 0 for bandwidth and banddepth means "exhaustive local search"
-                // this produces properly normalized GQ's at polyallelic sites
-                int adjustedBandwidth = 0;
-                int adjustedBanddepth = 0;
-                // however, this can lead to huge performance problems at complex sites,
-                // so we implement this hack...
-                if (genotypeAlleles.size() > parameters.genotypingMaxBandDepth) {
-                    adjustedBandwidth = 1;
-                    adjustedBanddepth = parameters.genotypingMaxBandDepth;
+                for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
+
+                    const string& population = p->first;
+                    SampleDataLikelihoods& sampleDataLikelihoods = p->second;
+                    list<GenotypeCombo>& populationGenotypeCombos = genotypeCombosByPopulation[population];
+
+                    DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes in population " << population);
+
+                    // cap the number of iterations at 2 x the number of alternate alleles
+                    // max it at parameters.genotypingMaxIterations iterations, min at 10
+                    int itermax = min(max(10, 2 * bestCombo.hetCount()), parameters.genotypingMaxIterations);
+                    // XXX HACK
+                    // passing 0 for bandwidth and banddepth means "exhaustive local search"
+                    // this produces properly normalized GQ's at polyallelic sites
+                    int adjustedBandwidth = 0;
+                    int adjustedBanddepth = 0;
+                    // however, this can lead to huge performance problems at complex sites,
+                    // so we implement this hack...
+                    if (genotypeAlleles.size() > parameters.genotypingMaxBandDepth) {
+                        adjustedBandwidth = 1;
+                        adjustedBanddepth = parameters.genotypingMaxBandDepth;
+                    }
+
+                    // search much longer for convergence
+                    convergentGenotypeComboSearch(
+                            populationGenotypeCombos,
+                            nullCombo,
+                            sampleDataLikelihoods, // vary everything
+                            sampleDataLikelihoods,
+                            nullSampleDataLikelihoods,
+                            samples,
+                            genotypeAlleles,
+                            adjustedBandwidth,
+                            adjustedBanddepth,
+                            parameters.TH,
+                            parameters.pooled,
+                            parameters.ewensPriors,
+                            parameters.permute,
+                            parameters.hwePriors,
+                            parameters.obsBinomialPriors,
+                            parameters.alleleBalancePriors,
+                            parameters.diffusionPriorScalar,
+                            itermax,
+                            true); // add homozygous combos
+                        // ^^ combo results are sorted by default
                 }
 
-                // search much longer for convergence
-                convergentGenotypeComboSearch(
-                        genotypeCombos,
-                        nullCombo,
-                        sampleDataLikelihoods, // vary everything
-                        sampleDataLikelihoods,
-                        nullSampleDataLikelihoods,
-                        samples,
-                        genotypeAlleles,
-                        adjustedBandwidth,
-                        adjustedBanddepth,
-                        parameters.TH,
-                        parameters.pooled,
-                        parameters.ewensPriors,
-                        parameters.permute,
-                        parameters.hwePriors,
-                        parameters.obsBinomialPriors,
-                        parameters.alleleBalancePriors,
-                        parameters.diffusionPriorScalar,
-                        itermax,
-                        true); // add homozygous combos
-                    // ^^ combo results are sorted by default
-
+                combinePopulationCombos(genotypeCombos, genotypeCombosByPopulation);
                 // TODO factor out the following blocks as they are repeated from above
 
                 // re-get posterior normalizer
@@ -599,27 +640,17 @@ int main (int argc, char *argv[]) {
                     bestComboOddsRatio = genotypeCombos.front().posteriorProb - (++genotypeCombos.begin())->posteriorProb;
                 }
 
-                marginalGenotypeLikelihoods(genotypeCombos, sampleDataLikelihoods);
+                for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
+                    const string& population = p->first;
+                    SampleDataLikelihoods& sampleDataLikelihoods = p->second;
 
-                // generate the best marginal combo according to marginals, which we've sorted by
-                /*
-                bestCombo.clear();
-                dataLikelihoodMaxGenotypeCombo(
-                        bestCombo,
-                        sampleDataLikelihoods,
-                        parameters.TH,
-                        parameters.pooled,
-                        parameters.ewensPriors,
-                        parameters.permute,
-                        parameters.hwePriors,
-                        parameters.obsBinomialPriors,
-                        parameters.alleleBalancePriors,
-                        parameters.diffusionPriorScalar);
-                        */
+                    // calculate the marginal likelihoods for this population
+                    marginalGenotypeLikelihoods(genotypeCombos, sampleDataLikelihoods);
 
-                // store the marginal data likelihoods in the results, for easy parsing
-                // like a vector -> map conversion...
-                results.update(sampleDataLikelihoods);
+                    // store the marginal data likelihoods in the results, for easy parsing
+                    // like a vector -> map conversion...
+                    results.update(sampleDataLikelihoods);
+                }
 
             }
 
