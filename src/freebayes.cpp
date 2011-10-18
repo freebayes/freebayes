@@ -294,8 +294,6 @@ int main (int argc, char *argv[]) {
             }
             sortSampleDataLikelihoods(sampleData);
 
-            // TODO
-            // if a sample isn't specified, then we get the "" empty population out of this map
             string& population = parser->samplePopulation[sampleName];
             vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods = sampleDataLikelihoodsByPopulation[population];
             vector<vector<SampleDataLikelihood> >& variantSampleDataLikelihoods = variantSampleDataLikelihoodsByPopulation[population];
@@ -361,7 +359,6 @@ int main (int argc, char *argv[]) {
         for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
 
             const string& population = p->first;
-            DEBUG2("... for population " << population);
             SampleDataLikelihoods& sampleDataLikelihoods = p->second;
             SampleDataLikelihoods& variantSampleDataLikelihoods = variantSampleDataLikelihoodsByPopulation[population];
             SampleDataLikelihoods& invariantSampleDataLikelihoods = invariantSampleDataLikelihoodsByPopulation[population];
@@ -544,10 +541,6 @@ int main (int argc, char *argv[]) {
                 // all sample/genotype combinations
 
                 //SampleDataLikelihoods marginalLikelihoods = sampleDataLikelihoods;  // heavyweight copy...
-                GenotypeCombo nullCombo;
-
-                SampleDataLikelihoods nullSampleDataLikelihoods;
-
                 genotypeCombos.clear();
                 genotypeCombosByPopulation.clear();
 
@@ -573,6 +566,9 @@ int main (int argc, char *argv[]) {
                         adjustedBandwidth = 1;
                         adjustedBanddepth = parameters.genotypingMaxBandDepth;
                     }
+
+                    GenotypeCombo nullCombo;
+                    SampleDataLikelihoods nullSampleDataLikelihoods;
 
                     // search much longer for convergence
                     convergentGenotypeComboSearch(
@@ -640,17 +636,19 @@ int main (int argc, char *argv[]) {
                     bestComboOddsRatio = genotypeCombos.front().posteriorProb - (++genotypeCombos.begin())->posteriorProb;
                 }
 
+                // make a combined, all-populations sample data likelihoods vector to accumulate marginals
+                SampleDataLikelihoods allSampleDataLikelihoods;
                 for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
-                    const string& population = p->first;
-                    SampleDataLikelihoods& sampleDataLikelihoods = p->second;
-
-                    // calculate the marginal likelihoods for this population
-                    marginalGenotypeLikelihoods(genotypeCombos, sampleDataLikelihoods);
-
-                    // store the marginal data likelihoods in the results, for easy parsing
-                    // like a vector -> map conversion...
-                    results.update(sampleDataLikelihoods);
+                    SampleDataLikelihoods& sdls = p->second;
+                    allSampleDataLikelihoods.reserve(allSampleDataLikelihoods.size() + distance(sdls.begin(), sdls.end()));
+                    allSampleDataLikelihoods.insert(allSampleDataLikelihoods.end(), sdls.begin(), sdls.end());
                 }
+                // calculate the marginal likelihoods for this population
+                marginalGenotypeLikelihoods(genotypeCombos, allSampleDataLikelihoods);
+
+                // store the marginal data likelihoods in the results, for easy parsing
+                // like a vector -> map conversion...
+                results.update(allSampleDataLikelihoods);
 
             }
 

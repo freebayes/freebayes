@@ -162,6 +162,8 @@ void AlleleParser::getSequencingTechnologies(void) {
 
 void AlleleParser::getPopulations(void) {
 
+    map<string, string> allSamplePopulation;
+
     if (!parameters.populationsFile.empty()) {
         ifstream populationsFile(parameters.populationsFile.c_str(), ios::in);
         if (!populationsFile) {
@@ -175,7 +177,8 @@ void AlleleParser::getPopulations(void) {
             if (popsample.size() == 2) {
                 string& sample = popsample.front();
                 string& population = popsample.back();
-                samplePopulation[sample] = population;
+                DEBUG2("sample: " << sample << " population: " << population);
+                allSamplePopulation[sample] = population;
             } else {
                 cerr << "malformed population/sample pair, " << line << endl;
                 exit(1);
@@ -187,10 +190,15 @@ void AlleleParser::getPopulations(void) {
     // TODO now, assign a default population to all the rest of the samples...
     // XXX
     for (vector<string>::iterator s = sampleList.begin(); s != sampleList.end(); ++s) {
-        if (!samplePopulation.count(*s)) {
+        if (!allSamplePopulation.count(*s)) {
             samplePopulation[*s] = "DEFAULT";
+        } else {
+            samplePopulation[*s] = allSamplePopulation[*s];
         }
     }
+
+    // now, only keep the samples we are using for processing
+
 
     for (map<string, string>::iterator s = samplePopulation.begin(); s != samplePopulation.end(); ++s) {
         populationSamples[s->second].push_back(s->first);
