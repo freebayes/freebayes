@@ -562,7 +562,8 @@ int main (int argc, char *argv[]) {
                     int adjustedBanddepth = 0;
                     // however, this can lead to huge performance problems at complex sites,
                     // so we implement this hack...
-                    if (genotypeAlleles.size() > parameters.genotypingMaxBandDepth) {
+                    if (parameters.genotypingMaxBandDepth > 0 &&
+                            genotypeAlleles.size() > parameters.genotypingMaxBandDepth) {
                         adjustedBandwidth = 1;
                         adjustedBanddepth = parameters.genotypingMaxBandDepth;
                     }
