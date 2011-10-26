@@ -363,8 +363,8 @@ string AlleleParser::vcfHeader() {
         //<< "##INFO=<ID=HOMR,Number=1,Type=Integer,Description=\"Number of individuals homozygous for the reference\">" << endl
 
         // binomial balance metrics
-        << "##INFO=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
-        << "##INFO=<ID=AA,Number=A,Type=Integer,Description=\"Alternate allele observations\">" << endl
+        << "##INFO=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observations\">" << endl
+        << "##INFO=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observations\">" << endl
         //<< "##INFO=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
         //<< "##INFO=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
         //<< "##INFO=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
@@ -443,9 +443,9 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
         << "##FORMAT=<ID=GLE,Number=G,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype, e.g. 0=-75.22,1M-223.42,0/0=-323.03,1/0=-99.29,1/1M-802.53\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
-        << "##FORMAT=<ID=RA,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
+        << "##FORMAT=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
-        << "##FORMAT=<ID=AA,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
+        << "##FORMAT=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
         << "##FORMAT=<ID=QA,Number=A,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
         // TODO (?)
         //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
@@ -2382,7 +2382,7 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
     int haplotypeLength = 1;
     for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele& allele = *a;
-        if ((allele.isComplex() || allele.isDeletion()) && allele.referenceLength > haplotypeLength) {
+        if (!allele.isReference() && allele.referenceLength > haplotypeLength) {
             haplotypeLength = allele.referenceLength;
         }
     }
@@ -2399,7 +2399,7 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
             for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& allele = *a;
-                if (allele.referenceLength > 1 && allele.position + allele.referenceLength > currentPosition + haplotypeLength) {
+                if (!allele.isReference() && allele.position + allele.referenceLength > currentPosition + haplotypeLength) {
                     haplotypeLength = (allele.position + allele.referenceLength) - currentPosition;
                 }
             }

@@ -117,9 +117,9 @@ vcf::Variant& Results::vcf(
     if (parameters.calculateMarginals) var.format.push_back("GQ");
     // XXX
     var.format.push_back("DP");
-    var.format.push_back("RA");
+    var.format.push_back("RO");
     var.format.push_back("QR");
-    var.format.push_back("AA");
+    var.format.push_back("AO");
     var.format.push_back("QA");
     if (!parameters.excludeUnobservedGenotypes) {
         var.format.push_back("GL");
@@ -360,7 +360,7 @@ vcf::Variant& Results::vcf(
         var.info["AC"].push_back(convert(alternateCount));
         var.info["AN"].clear(); var.info["AN"].push_back(convert(alleleCount)); // XXX hack...
         var.info["AF"].push_back(convert((alleleCount == 0) ? 0 : (double) alternateCount / (double) alleleCount));
-        var.info["AA"].push_back(convert(altObsCount));
+        var.info["AO"].push_back(convert(altObsCount));
         if (homRefSamples > 0 && hetAltSamples + homAltSamples > 0) {
             double altSampleAverageDepth = (double) altSampleObsCount
                        / ( (double) hetAltSamples + (double) homAltSamples );
@@ -436,7 +436,7 @@ vcf::Variant& Results::vcf(
 
                 map<string, vector<string> >& sampleOutput = var.samples[sampleName];
 
-                sampleOutput["AA"].push_back(convert(altCountBySample[sampleName]));
+                sampleOutput["AO"].push_back(convert(altCountBySample[sampleName]));
                 sampleOutput["QA"].push_back(convert(altQualBySample[sampleName]));
 
             }
@@ -471,7 +471,7 @@ vcf::Variant& Results::vcf(
 
     var.info["NS"].push_back(convert(samplesWithData));
     var.info["DP"].push_back(convert(coverage));
-    var.info["RA"].push_back(convert(refAlleleObservations));
+    var.info["RO"].push_back(convert(refAlleleObservations));
 
     var.info["NUMALT"].push_back(convert(altAlleles.size()));
 
@@ -545,7 +545,7 @@ vcf::Variant& Results::vcf(
             }
 
             sampleOutput["DP"].push_back(convert(sample.observationCount()));
-            sampleOutput["RA"].push_back(convert(sample.observationCount(refbase)));
+            sampleOutput["RO"].push_back(convert(sample.observationCount(refbase)));
             sampleOutput["QR"].push_back(convert(sample.qualSum(refbase)));
 
 
