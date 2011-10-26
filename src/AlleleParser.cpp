@@ -2399,7 +2399,7 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
             for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& allele = *a;
-                if ((allele.isComplex() || allele.isDeletion()) && allele.position + allele.referenceLength > currentPosition + haplotypeLength) {
+                if (allele.referenceLength > 1 && allele.position + allele.referenceLength > currentPosition + haplotypeLength) {
                     haplotypeLength = (allele.position + allele.referenceLength) - currentPosition;
                 }
             }
