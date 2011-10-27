@@ -2445,15 +2445,40 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
 
         // now re-get the alleles
         getAlleles(samples, allowedAlleleTypes, haplotypeLength);
-        //getAlleles(samples, allowedAlleleTypes, 1);
 
         // re-group the alleles using groupAlleles()
         alleleGroups.clear();
         groupAlleles(samples, alleleGroups);
-        //
-        // re-run genotypeAlleles() to update the set of genotype alleles,
-        // which is passed by reference
-        alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
+
+        // are there two alleles with the same alt sequence?
+        // if so, homogenize them, and then re-sort the alleles
+        map<string, int> altseqCounts;
+        bool multipleAllelesWithIdenticalAlts = false;
+        for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
+            Allele& allele = *a->second.front();
+            if (allele.isReference()) {
+                continue;
+            }
+            if (altseqCounts[allele.alternateSequence] > 0) {
+                multipleAllelesWithIdenticalAlts = true;
+                break;
+            } else {
+                ++altseqCounts[allele.alternateSequence];
+            }
+        }
+
+        if (multipleAllelesWithIdenticalAlts) {
+            homogenizeAlleles(alleleGroups);
+            getAlleles(samples, allowedAlleleTypes, haplotypeLength);
+            alleleGroups.clear();
+            groupAlleles(samples, alleleGroups);
+            alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
+        } else {
+            // re-run genotypeAlleles() to update the set of genotype alleles,
+            // which is passed by reference
+            alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
+        }
+
     }
 
     lastHaplotypeLength = haplotypeLength;

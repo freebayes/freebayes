@@ -595,6 +595,58 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
     }
 }
 
+// in haplotype calling, if alleles have the same alternate sequence, the
+// should have the same cigar and position.  this function picks the most
+// common allele observation per alternate sequence and homogenizes the rest to
+// the same if they are not reference alleles
+void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups) {
+    map<string, map<string, int> > equivs;
+    map<string, Allele*> homogenizeTo;
+    for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
+        Allele& allele = *g->second.front();
+        if (allele.isReference()) {
+            continue;
+        }
+        equivs[allele.alternateSequence][g->first]++;
+    }
+    for (map<string, map<string, int> >::iterator e = equivs.begin(); e != equivs.end(); ++e) {
+        string altseq = e->first;
+        map<string, int>& group = e->second;
+        map<int, string> ordered;
+        for (map<string, int>::iterator f = group.begin(); f != group.end(); ++f) {
+            // pick the best by count
+            ordered[f->second] = f->first;
+        }
+        string& altbase = ordered.rend()->second;
+        homogenizeTo[altseq] = alleleGroups[altbase].front();
+    }
+    for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
+        vector<Allele*>& alleles = g->second;
+        if (alleles.front()->isReference()) {
+            continue;
+        }
+        string& altseq = alleles.front()->alternateSequence;
+        Allele* toallele = homogenizeTo[altseq];
+        string& cigar = toallele->cigar;
+        AlleleType type = toallele->type;
+        long int position = toallele->position;
+        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            (*a)->cigar = cigar;
+            (*a)->type = type;
+            (*a)->position = position;
+            (*a)->update();
+        }
+    }
+}
+
+void resetProcessedFlag(map<string, vector<Allele*> >& alleleGroups) {
+    for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
+        for (vector<Allele*>::iterator a = g->second.begin(); a != g->second.end(); ++a) {
+            (*a)->processed = false;
+        }
+    }
+}
+
 void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups) {
     for (map<string, vector<Allele*> >::iterator sample = sampleGroups.begin(); sample != sampleGroups.end(); ++sample) {
         for (vector<Allele*>::iterator allele = sample->second.begin(); allele != sample->second.end(); ++allele) {
