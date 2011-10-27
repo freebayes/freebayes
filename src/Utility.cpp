@@ -598,7 +598,9 @@ list<pair<int, string> > splitCigarList(const string& cigarStr) {
 string joinCigar(const vector<pair<int, string> >& cigar) {
     string cigarStr;
     for (vector<pair<int, string> >::const_iterator c = cigar.begin(); c != cigar.end(); ++c) {
-        cigarStr += convert(c->first) + c->second;
+        if (c->first) {
+            cigarStr += convert(c->first) + c->second;
+        }
     }
     return cigarStr;
 }

@@ -30,7 +30,6 @@ vcf::Variant& Results::vcf(
 
     // set up the reported reference allele
     long int referencePosition = (long int) parser->currentPosition; // 0-based
-    var.ref = refbase;
 
     // remove alt alleles
     vector<Allele> altAlleles;
@@ -40,8 +39,72 @@ vcf::Variant& Results::vcf(
         }
     }
 
-    // the reference sequence should be able to encompass all events at the site, +1bp on the left
+    // adjust reference position, reference sequence, and alt alleles by
+    // stripping invariant bases off the beginning and end of the alt alleles
+    // first we find the minimum start and end matches
+    vector<Allele> adjustedAltAlleles;
+    int minStartMatch = 0;
+    int minEndMatch = 0;
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
+        vector<pair<int, string> > cigar = splitCigar(aa->cigar);
+        int startmatch = 0;
+        int endmatch = 0;
+        if (cigar.front().second == "M") {
+            startmatch = cigar.front().first;
+        }
+        if (cigar.back().second == "M") {
+            endmatch = cigar.back().first;
+        }
+        if (cigar.size() > 1 && (cigar.at(1).second == "D" || cigar.at(1).second == "I")) {
+            if (startmatch == 1) { // require at least one base flanking deletions
+                startmatch = 0;
+            }
+        }
+        if (aa == altAlleles.begin()) {
+            minStartMatch = startmatch;
+            minEndMatch = endmatch;
+        } else {
+            minStartMatch = min(minStartMatch, startmatch);
+            minEndMatch = min(minEndMatch, endmatch);
+        }
+    }
+    // if either is non-zero, we have to adjust cigars and alternate sequences to be printed
+    // this is done solely for reporting, so the altAlleles structure is used
+    // for stats generation out of the ML genotype combination
+    map<string, string> adjustedCigar;
+    if (minStartMatch || minEndMatch) {
+        for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
+            // subtract the minStartMatch and minEndMatch bases from the allele start and end
+            adjustedAltAlleles.push_back(*aa);
+            Allele& allele = adjustedAltAlleles.back();
+            vector<pair<int, string> > cigar = splitCigar(allele.cigar);
+            // TODO clean this up by writing a wrapper for Allele::subtract() (?)
+            if (cigar.front().second == "M") {
+                cigar.front().first -= minStartMatch;
+                allele.alternateSequence = allele.alternateSequence.substr(minStartMatch);
+            }
+            if (cigar.back().second == "M") {
+                cigar.back().first -= minEndMatch;
+                allele.alternateSequence = allele.alternateSequence.substr(0, allele.alternateSequence.size() - 1 - minEndMatch);
+            }
+            allele.cigar = joinCigar(cigar);
+            allele.position += minStartMatch;
+            allele.referenceLength -= minStartMatch + minEndMatch;
+            adjustedCigar[aa->base()] = allele.cigar;
+        }
+        referencePosition += minStartMatch;
+    } else {
+        adjustedAltAlleles = altAlleles;
+        for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
+            adjustedCigar[aa->base()] = aa->cigar;
+        }
+    }
+
+    refbase = parser->referenceSubstr(referencePosition, 1);
+    var.ref = refbase;
+
+    // the reference sequence should be able to encompass all events at the site, +1bp on the left
+    for (vector<Allele>::iterator aa = adjustedAltAlleles.begin(); aa != adjustedAltAlleles.end(); ++aa) {
 
         Allele& altAllele = *aa;
         switch (altAllele.type) {
@@ -72,7 +135,7 @@ vcf::Variant& Results::vcf(
 
     }
 
-    for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
+    for (vector<Allele>::iterator aa = adjustedAltAlleles.begin(); aa != adjustedAltAlleles.end(); ++aa) {
         Allele& altAllele = *aa;
         string altseq;
         switch (altAllele.type) {
@@ -384,7 +447,7 @@ vcf::Variant& Results::vcf(
         var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5))));
         var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5))));
         var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : (double) altproperPairs / (double) altObsCount));
-        var.info["CIGAR"].push_back(altAllele.cigar);
+        var.info["CIGAR"].push_back(adjustedCigar[altAllele.base()]);
         var.info["MEANALT"].push_back(convert((hetAltSamples + homAltSamples == 0) ? 0 : (double) uniqueAllelesInAltSamples / (double) (hetAltSamples + homAltSamples)));
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
