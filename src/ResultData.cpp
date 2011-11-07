@@ -85,7 +85,7 @@ vcf::Variant& Results::vcf(
             }
             if (cigar.back().second == "M") {
                 cigar.back().first -= minEndMatch;
-                allele.alternateSequence = allele.alternateSequence.substr(0, allele.alternateSequence.size() - 1 - minEndMatch);
+                allele.alternateSequence = allele.alternateSequence.substr(0, allele.alternateSequence.size() - minEndMatch);
             }
             allele.cigar = joinCigar(cigar);
             allele.position += minStartMatch;
