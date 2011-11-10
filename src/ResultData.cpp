@@ -56,9 +56,7 @@ vcf::Variant& Results::vcf(
             endmatch = cigar.back().first;
         }
         if (cigar.size() > 1 && (cigar.at(1).second == "D" || cigar.at(1).second == "I")) {
-            if (startmatch == 1) { // require at least one base flanking deletions
-                startmatch = 0;
-            }
+            startmatch -= 1; // require at least one base flanking deletions
         }
         if (aa == altAlleles.begin()) {
             minStartMatch = startmatch;
