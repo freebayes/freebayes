@@ -1031,8 +1031,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                          << alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
                          << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl;
-                    //abort();
-                    goto bailout;
+                    abort();
                 }
 
                 // convert base quality value into short int
@@ -1047,17 +1046,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                          << alignment.AlignedBases << endl
                          << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
                          << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl;
-                    //abort();
-                    goto bailout;
+                    abort();
                 }
 
-                // this regex-generated nonsense comment maintained for laughs:
-                //
-                // THIS DEBUGIC IS ILDEBUGICAL!!!
-                //
-                //
                 // record mismatch if we have a mismatch here
-                if (b != sb) {
+                if (b != sb || sb == "N") {  // when the reference is N, we should always call a mismatch
                     if (firstMatch < csp) {
                         // TODO ; verify that the read and reference sequences *do* match
                         int length = csp - firstMatch;
