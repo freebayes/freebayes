@@ -98,8 +98,7 @@ vcf::Variant& Results::vcf(
         }
     }
 
-    refbase = parser->referenceSubstr(referencePosition, 1);
-    var.ref = refbase;
+    var.ref = parser->referenceSubstr(referencePosition, 1);
 
     // the reference sequence should be able to encompass all events at the site, +1bp on the left
     for (vector<Allele>::iterator aa = adjustedAltAlleles.begin(); aa != adjustedAltAlleles.end(); ++aa) {
