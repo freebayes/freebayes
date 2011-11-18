@@ -80,7 +80,7 @@ void Parameters::usage(char** argv) {
          << "                   This flag includes the reference allele in the analysis as" << endl
          << "                   if it is another sample from the same population." << endl
          << "   -H --diploid-reference" << endl
-         << "                   If using the reference sequence as a sample (default)," << endl
+         << "                   If using the reference sequence as a sample (-Z)," << endl
          << "                   treat it as diploid.  default: false (reference is haploid)" << endl
          << "   --reference-quality MQ,BQ" << endl
          << "                   Assign mapping quality of MQ to the reference allele at each" << endl
@@ -249,7 +249,6 @@ Parameters::Parameters(int argc, char** argv) {
     useStdin = false;               // -c --stdin
     fasta = "";                // -f --fasta-reference
     targets = "";              // -t --targets
-    region = "";               // -r --region
     samples = "";              // -s --samples
     populationsFile = "";
     cnvFile = "";
@@ -428,7 +427,7 @@ Parameters::Parameters(int argc, char** argv) {
 
             // -r --region
             case 'r':
-                region = optarg;
+                regions.push_back(optarg);
                 break;
 
             // -s --samples

@@ -28,7 +28,7 @@ public:
     bool useStdin;               // -c --stdin
     string fasta;                // -f --fasta-reference
     string targets;              // -t --targets
-    string region;               // -r --region
+    vector<string> regions;               // -r --region
     string samples;              // -s --samples
     string populationsFile;
     string cnvFile;

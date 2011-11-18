@@ -610,11 +610,37 @@ void AlleleParser::eraseReferenceSequence(int leftErasure) {
 
 void AlleleParser::loadTargets(void) {
 
+    // if we have a targets file, use it...
+    // if target file specified use targets from file
+    if (!parameters.targets.empty()) {
+
+        DEBUG("Making BedReader object for target file: " << parameters.targets << " ...");
+
+        bedReader.openFile(parameters.targets);
+
+        if (!bedReader.is_open()) {
+            ERROR("Unable to open target file: " << parameters.targets << "... terminating.");
+            exit(1);
+        }
+
+        targets = bedReader.targets;
+
+        if (targets.empty()) {
+            ERROR("Could not load any targets from " << parameters.targets);
+            exit(1);
+        }
+
+        bedReader.close();
+
+        DEBUG("done");
+
+    }
+
     // if we have a region specified, use it to generate a target
-    if (!parameters.region.empty()) {
+    for (vector<string>::iterator r = parameters.regions.begin(); r != parameters.regions.end(); ++r) {
         // drawn from bamtools_utilities.cpp, modified to suit 1-based context, no end sequence
 
-        string region = parameters.region;
+        string region = *r;
         string startSeq;
         int startPos;
         int stopPos;
@@ -651,53 +677,31 @@ void AlleleParser::loadTargets(void) {
         // REAL BED format is 0 based, half open (end base not included)
         BedTarget bd(startSeq,
                     (startPos == 0) ? 0 : startPos,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos);
+                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos - 1); // internally, we use 0-base inclusive end
         DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
         targets.push_back(bd);
-    }
-
-    // if we have a targets file, use it...
-    // if target file specified use targets from file
-    if (!parameters.targets.empty()) {
-
-        DEBUG("Making BedReader object for target file: " << parameters.targets << " ...");
-
-        BedReader bedReader(parameters.targets);
-
-        if (!bedReader.is_open()) {
-            ERROR("Unable to open target file: " << parameters.targets << "... terminating.");
-            exit(1);
-        }
-
-        targets = bedReader.entries();
-
-        // check validity of targets wrt. reference
-        for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
-            BedTarget& bd = *e;
-            if (bd.left < 0 || bd.right - 1 > reference.sequenceLength(bd.seq)) {
-                ERROR("Target region coordinates (" << bd.seq << " "
-                        << bd.left << " " << bd.right
-                        << ") outside of reference sequence bounds ("
-                        << bd.seq << " " << reference.sequenceLength(bd.seq) << ") terminating.");
-                exit(1);
-            }
-            if (bd.right < bd.left) {
-                ERROR("Invalid target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right << ")"
-                        << " right bound is lower than left bound!");
-                exit(1);
-            }
-        }
-
-        if (targets.empty()) {
-            ERROR("Could not load any targets from " << parameters.targets);
-            exit(1);
-        }
-
-        bedReader.close();
-
-        DEBUG("done");
+        bedReader.targets.push_back(bd);
 
     }
+
+    // check validity of targets wrt. reference
+    for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
+        BedTarget& bd = *e;
+        if (bd.left < 0 || bd.right - 1 > reference.sequenceLength(bd.seq)) {
+            ERROR("Target region coordinates (" << bd.seq << " "
+                    << bd.left << " " << bd.right
+                    << ") outside of reference sequence bounds ("
+                    << bd.seq << " " << reference.sequenceLength(bd.seq) << ") terminating.");
+            exit(1);
+        }
+        if (bd.right < bd.left) {
+            ERROR("Invalid target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right << ")"
+                    << " right bound is lower than left bound!");
+            exit(1);
+        }
+    }
+
+    bedReader.buildIntervals(); // set up interval tree in the bedreader
 
     DEBUG("Number of target regions: " << targets.size());
 
@@ -766,7 +770,7 @@ bool AlleleParser::inTarget(void) {
     if (targets.empty()) {
         return true;  // everything is in target if we don't have targets
     } else {
-        if (currentPosition >= currentTarget->left && currentPosition < currentTarget->right) {
+        if (bedReader.targetsOverlap(currentSequenceName, currentPosition, currentPosition + 1)) {
             return true;
         } else {
             return false;

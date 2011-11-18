@@ -136,6 +136,9 @@ public:
     // bamreader
     BamMultiReader bamMultiReader;
 
+    // bed reader
+    BedReader bedReader;
+
     // VCF
     vcf::VariantCallFile variantCallFile;
     vcf::VariantCallFile variantCallInputFile;

@@ -13,6 +13,7 @@
 #include "split.h"
 #include "Utility.h"
 #include "BedReader.h"
+#include "../intervaltree/IntervalTree.h"
 
 using namespace std;
 
@@ -30,13 +31,45 @@ vector<BedTarget> BedReader::entries(void) {
         vector<string> fields = split(line, " \t");
         BedTarget entry(strip(fields[0]),
                         atoi(strip(fields[1]).c_str()),
-                        atoi(strip(fields[2]).c_str()),
+                        atoi(strip(fields[2]).c_str()) - 1, // use inclusive format internally
                         (fields.size() >= 4) ? strip(fields[3]) : "");
         entries.push_back(entry);
     }
 
     return entries;
 
+}
+
+bool BedReader::targetsContained(string& seq, long left, long right) {
+    vector<Interval<BedTarget*> > results;
+    intervals[seq].findContained(left, right, results);
+    return !results.empty();
+}
+
+bool BedReader::targetsOverlap(string& seq, long left, long right) {
+    vector<Interval<BedTarget*> > results;
+    intervals[seq].findOverlapping(left, right, results);
+    return !results.empty();
+}
+
+vector<BedTarget*> BedReader::targetsContaining(BedTarget& target) {
+    vector<Interval<BedTarget*> > results;
+    intervals[target.seq].findContained(target.left, target.right, results);
+    vector<BedTarget*> contained;
+    for (vector<Interval<BedTarget*> >::iterator r = results.begin(); r != results.end(); ++r) {
+        contained.push_back(r->value);
+    }
+    return contained;
+}
+
+vector<BedTarget*> BedReader::targetsOverlapping(BedTarget& target) {
+    vector<Interval<BedTarget*> > results;
+    intervals[target.seq].findOverlapping(target.left, target.right, results);
+    vector<BedTarget*> overlapping;
+    for (vector<Interval<BedTarget*> >::iterator r = results.begin(); r != results.end(); ++r) {
+        overlapping.push_back(r->value);
+    }
+    return overlapping;
 }
 
 #endif
