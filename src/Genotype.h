@@ -183,6 +183,7 @@ public:
     { }
 
     void init(bool useObsExpectations);
+    void addPriorAlleleCounts(map<string, int>& priorACs);
 
     // appends the other combo to this one,
     // updates the counts, and multiplies the probabilites,
@@ -349,6 +350,7 @@ bandedGenotypeCombinations(
     SampleDataLikelihoods& variantDataLikelihoods,
     SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
+    map<string, int>& priorACs,
     int bandwidth, int banddepth,
     long double theta,
     bool pooled,
@@ -365,6 +367,7 @@ allLocalGenotypeCombinations(
     GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
+    map<string, int>& priorACs,
     long double theta,
     bool pooled,
     bool ewensPriors,
@@ -384,6 +387,7 @@ convergentGenotypeComboSearch(
     SampleDataLikelihoods& invariantDataLikelihoods,
     Samples& samples,
     vector<Allele>& genotypeAlleles,
+    map<string, int>& priorACs,
     int bandwidth, int banddepth,
     long double theta,
     bool pooled,

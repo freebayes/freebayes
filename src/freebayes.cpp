@@ -241,6 +241,9 @@ int main (int argc, char *argv[]) {
         map<string, vector<vector<SampleDataLikelihood> > > variantSampleDataLikelihoodsByPopulation;
         map<string, vector<vector<SampleDataLikelihood> > > invariantSampleDataLikelihoodsByPopulation;
 
+        map<string, int> inputAlleleCounts;
+        int inputLikelihoodCount = 0;
+
         DEBUG2("calculating data likelihoods");
         // calculate data likelihoods
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
@@ -314,12 +317,19 @@ int main (int argc, char *argv[]) {
             sampleDataLikelihoods.push_back(sampleData);
 
             DEBUG2("obtaining genotype likelihoods input from VCF");
+            int prevcount = sampleDataLikelihoods.size();
             parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
             // add these sample data likelihoods to 'invariant' likelihoods
+            inputLikelihoodCount += sampleDataLikelihoods.size() - prevcount;
             parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, invariantSampleDataLikelihoods);
 
         }
-        
+
+        // if there are not any input GLs, attempt to use the input ACs
+        if (inputLikelihoodCount == 0) {
+            parser->getInputAlleleCounts(genotypeAlleles, inputAlleleCounts);
+        }
+
         DEBUG2("finished calculating data likelihoods");
 
 
@@ -382,6 +392,7 @@ int main (int argc, char *argv[]) {
                     invariantSampleDataLikelihoods,
                     samples,
                     genotypeAlleles,
+                    inputAlleleCounts,
                     parameters.WB,
                     parameters.TB,
                     parameters.TH,
@@ -580,6 +591,7 @@ int main (int argc, char *argv[]) {
                             nullSampleDataLikelihoods,
                             samples,
                             genotypeAlleles,
+                            inputAlleleCounts,
                             adjustedBandwidth,
                             adjustedBanddepth,
                             parameters.TH,

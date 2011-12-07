@@ -1734,10 +1734,47 @@ void AlleleParser::updateInputVariants(void) {
                     inputVariantAlleles[allele.position].push_back(allele);
                     genotypeAlleles.push_back(allele);
 
+                    if (allele.position + 1 != currentVariant->position) {
+                        cerr << "parsed allele position is not the same as the variant position!" << endl;
+                        cerr << *currentVariant << endl;
+                        cerr << allele << endl;
+                        exit(1);
+                    }
+
                     if (allele.type != ALLELE_REFERENCE) {
                         alternatePositions.insert(allele.position);
                     }
 
+                }
+
+                // store the allele counts, if they are provided
+                //
+                if (currentVariant->info.find("AC") != currentVariant->info.end()
+                    && currentVariant->info.find("AN") != currentVariant->info.end()) {
+                    vector<string>& afstrs = currentVariant->info["AC"];
+                    // XXX is the reference allele included?
+                    vector<Allele>& altAlleles = inputVariantAlleles[currentVariant->position - 1];
+                    vector<Allele>::iterator al = altAlleles.begin();
+                    assert(altAlleles.size() == afstrs.size());
+                    // XXX TODO include the reference allele--- how???
+                    // do we add another tag to the VCF, use NS, or some other data?
+                    map<Allele, int>& afs = inputAlleleCounts[currentVariant->position - 1];
+                    int altcountsum = 0;
+                    for (vector<string>::iterator afstr = afstrs.begin(); afstr != afstrs.end(); ++afstr, ++al) {
+                        int c; convert(*afstr, c);
+                        altcountsum += c;
+                        afs[*al] = c;
+                    }
+                    int numalleles; convert(currentVariant->info["AN"].front(), numalleles);
+                    int refcount = numalleles - altcountsum;
+                    assert(refcount >= 0);
+                    if (refcount > 0) {
+                        // make ref allele
+                        string ref = currentVariant->ref.substr(0, 1);
+                        Allele refAllele = genotypeAllele(ALLELE_REFERENCE, ref, ref.size(), "1M", ref.size(), currentVariant->position - 1);
+                        // and also cache the observed count of the reference allele
+                        afs[refAllele] = refcount;
+                    }
                 }
 
                 if (currentVariant->samples.empty())
@@ -1880,9 +1917,23 @@ void AlleleParser::addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& ge
                 sampleDataLikelihoods.push_back(sampleData);
             }
         }
-        
     }
+}
 
+
+void AlleleParser::getInputAlleleCounts(vector<Allele>& genotypeAlleles, map<string, int>& inputACs) {
+    // are there input ACs?
+    //
+    // if so, match them to the genotype alleles
+    if (inputAlleleCounts.find(currentPosition) != inputAlleleCounts.end()) {
+        map<Allele, int>& inputCounts = inputAlleleCounts[currentPosition];
+        // XXX NB. We only use ACs for alleles in genotypeAlleles
+        for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
+            if (inputCounts.find(*a) != inputCounts.end()) {
+                inputACs[a->currentBase] = inputCounts[*a];
+            }
+        }
+    }
 }
 
 void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles, int haplotypeLength, bool getAllAllelesInHaplotype) {
@@ -2225,6 +2276,12 @@ bool AlleleParser::toNextPosition(void) {
     map<long int, map<string, map<string, long double> > >::iterator l = inputGenotypeLikelihoods.find(currentPosition - 3);
     if (l != inputGenotypeLikelihoods.end()) {
         inputGenotypeLikelihoods.erase(l);
+    }
+
+    DEBUG2("erasing old allele frequencies");
+    map<long int, map<Allele, int> >::iterator af = inputAlleleCounts.find(currentPosition - 3);
+    if (af != inputAlleleCounts.end()) {
+        inputAlleleCounts.erase(af);
     }
 
     // so we have to make sure it's still there (this matters in low-coverage)

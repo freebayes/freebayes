@@ -357,6 +357,16 @@ void GenotypeCombo::init(bool useObsExpectations) {
     }
 }
 
+void GenotypeCombo::addPriorAlleleCounts(map<string, int>& priorACs) {
+    for (map<string, int>::iterator p = priorACs.begin(); p != priorACs.end(); ++p) {
+        const string& alleleBase = p->first;
+        int count = p->second;
+        AlleleCounter& alleleCounter = alleleCounters[alleleBase];
+        //cerr <<"init "<< alleleCounter.frequency;
+        alleleCounter.frequency += count;
+    }
+}
+
 // frequency... should this just be "allele count"?
 int GenotypeCombo::alleleCount(Allele& allele) {
     map<string, AlleleCounter>::iterator f = alleleCounters.find(allele.currentBase);
@@ -727,6 +737,7 @@ makeComboByDatalLikelihoodRank(
     vector<int>& initialPosition,  // starting combo in terms of offsets from data likelihood maximum
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    map<string, int>& priorACs,
     long double theta,
     bool pooled,
     bool ewensPriors,
@@ -757,6 +768,8 @@ makeComboByDatalLikelihoodRank(
     }
 
     combo.init(binomialObsPriors);
+    // add the prior ACs into the comob allele counters
+    combo.addPriorAlleleCounts(priorACs);
     combo.calculatePosteriorProbability(theta,
                                         pooled,
                                         ewensPriors,
@@ -776,6 +789,7 @@ allLocalGenotypeCombinations(
     GenotypeCombo& comboKing,
     SampleDataLikelihoods& sampleDataLikelihoods,
     Samples& samples,
+    map<string, int>& priorACs,
     long double theta,
     bool pooled,
     bool ewensPriors,
@@ -795,6 +809,7 @@ allLocalGenotypeCombinations(
                 initialPosition,
                 sampleDataLikelihoods,
                 nullDataLikelihoods,
+                priorACs,
                 theta,
                 pooled,
                 ewensPriors,
@@ -873,6 +888,7 @@ bandedGenotypeCombinations(
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
+    map<string, int>& priorACs,
     int bandwidth, int banddepth,
     long double theta,
     bool pooled,
@@ -1017,6 +1033,7 @@ convergentGenotypeComboSearch(
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
     Samples& samples,
     vector<Allele>& genotypeAlleles,
+    map<string, int>& priorACs,
     int bandwidth, int banddepth,
     long double theta,
     bool pooled,
@@ -1037,6 +1054,7 @@ convergentGenotypeComboSearch(
                 initialPosition,
                 variantSampleDataLikelihoods,
                 invariantSampleDataLikelihoods,
+                priorACs,
                 theta,
                 pooled,
                 ewensPriors,
@@ -1061,6 +1079,7 @@ convergentGenotypeComboSearch(
                     bestCombo,
                     sampleDataLikelihoods,
                     samples,
+                    priorACs,
                     theta,
                     pooled,
                     ewensPriors,
@@ -1077,6 +1096,7 @@ convergentGenotypeComboSearch(
                     variantSampleDataLikelihoods,
                     invariantSampleDataLikelihoods,
                     samples,
+                    priorACs,
                     bandwidth,
                     banddepth,
                     theta,
@@ -1108,6 +1128,7 @@ convergentGenotypeComboSearch(
                         combos.front(),
                         sampleDataLikelihoods,
                         samples,
+                        priorACs,
                         theta,
                         pooled,
                         ewensPriors,
@@ -1124,6 +1145,7 @@ convergentGenotypeComboSearch(
                         variantSampleDataLikelihoods,
                         invariantSampleDataLikelihoods,
                         samples,
+                        priorACs,
                         bandwidth,
                         banddepth,
                         theta,

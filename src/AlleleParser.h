@@ -148,10 +148,13 @@ public:
     map<long int, vector<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     //  position         sample     genotype  likelihood
     map<long int, map<string, map<string, long double> > > inputGenotypeLikelihoods; // drawn from input VCF
+    map<long int, map<Allele, int> > inputAlleleCounts; // drawn from input VCF
     Sample* nullSample;
 
     void addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& genotypesByPloidy,
             vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods);
+
+    void getInputAlleleCounts(vector<Allele>& genotypeAlleles, map<string, int>& inputAFs);
 
     // reference names indexed by id
     vector<RefData> referenceSequences;
