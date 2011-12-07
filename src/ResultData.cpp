@@ -181,10 +181,7 @@ vcf::Variant& Results::vcf(
     var.format.push_back("QR");
     var.format.push_back("AO");
     var.format.push_back("QA");
-    if (!parameters.excludeUnobservedGenotypes) {
-        var.format.push_back("GL");
-    }
-    //var.format.push_back("GLE");
+    // add GL/GLE later, when we know if we need to use one or the other
 
     unsigned int refBasesLeft = 0;
     unsigned int refBasesRight = 0;
@@ -550,6 +547,9 @@ vcf::Variant& Results::vcf(
 
     // samples
 
+    bool outputExplicitGenotypeLikelihoods = false;
+    bool outputAnyGenotypeLikelihoods = true;
+
     // for ordering GLs
     // ordering is F(j/k) = (k*(k+1)/2)+j.
     map<int, map<string, int> > vcfGenotypeOrder;
@@ -573,7 +573,6 @@ vcf::Variant& Results::vcf(
                 }
             }
             if (fullySpecified) {
-                // XXX TODO ... EVIL HACKS
                 if (groupPloidy == 2) {
                     int j = gtspec.front();
                     int k = gtspec.back();
@@ -581,7 +580,8 @@ vcf::Variant& Results::vcf(
                 } else if (groupPloidy == 1) {
                     vcfGenotypeOrder[groupPloidy][genotypeStr] = gtspec.front();
                 } else {
-                    // XXX TODO ...
+                    outputAnyGenotypeLikelihoods = false; // XXX prevents output of GLs for polyploid data
+                    outputExplicitGenotypeLikelihoods = true;
                 }
             }
         }
@@ -608,52 +608,83 @@ vcf::Variant& Results::vcf(
             sampleOutput["RO"].push_back(convert(sample.observationCount(refbase)));
             sampleOutput["QR"].push_back(convert(sample.qualSum(refbase)));
 
+            if (outputAnyGenotypeLikelihoods && !parameters.excludeUnobservedGenotypes && !parameters.excludePartiallyObservedGenotypes) {
 
-            // get data likelihoods for present genotypes, none if we have excluded genotypes from data likelihood calculations
-            map<int, string> genotypeLikelihoods;
-            if (!parameters.excludeUnobservedGenotypes && !parameters.excludePartiallyObservedGenotypes) {
+                // get data likelihoods for present genotypes, none if we have excluded genotypes from data likelihood calculations
+                if (outputExplicitGenotypeLikelihoods) {
 
-                for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
-                    if (g->genotype->hasNullAllele()) {
-                        // if the genotype has null (unspecified) alleles, find
-                        // the fully specified genotypes it can match with.
-                        vector<Genotype*> nullmatchgts = g->genotype->nullMatchingGenotypes(genotypesByPloidy[g->genotype->ploidy]);
-                        // the gls for these will be the same, so the gl for
-                        // this genotype can be used for all of them.  these
-                        // are the genotypes which the sample does not have,
-                        // but for which one allele or no alleles match
-                        for (vector<Genotype*>::iterator n = nullmatchgts.begin(); n != nullmatchgts.end(); ++n) {
-                            map<string, int>::iterator o = vcfGenotypeOrder[(*n)->ploidy].find((*n)->str());
-                            if (o != vcfGenotypeOrder[(*n)->ploidy].end()) {
-                                genotypeLikelihoods[o->second] = convert(ln2log10(g->prob));
+                    if (var.format.back() != "GLE") {
+                        var.format.push_back("GLE");
+                    }
+
+                    map<string, string> genotypeLikelihoodsExplicit;
+
+                    for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
+                        if (g->genotype->hasNullAllele()) {
+                            // if the genotype has null (unspecified) alleles, find
+                            // the fully specified genotypes it can match with.
+                            vector<Genotype*> nullmatchgts = g->genotype->nullMatchingGenotypes(genotypesByPloidy[g->genotype->ploidy]);
+                            // the gls for these will be the same, so the gl for
+                            // this genotype can be used for all of them.  these
+                            // are the genotypes which the sample does not have,
+                            // but for which one allele or no alleles match
+                            for (vector<Genotype*>::iterator n = nullmatchgts.begin(); n != nullmatchgts.end(); ++n) {
+                                genotypeLikelihoodsExplicit[(*n)->relativeGenotype(refbase, altAlleles)] = convert(ln2log10(g->prob));
                             }
-                        }
-                    } else {
-                        // otherwise, we are well-specified, and only one
-                        // genotype should match
-                        map<string, int>::iterator o = vcfGenotypeOrder[g->genotype->ploidy].find(g->genotype->str());
-                        if (o != vcfGenotypeOrder[g->genotype->ploidy].end()) {
-                            genotypeLikelihoods[o->second] = convert(ln2log10(g->prob));
+                        } else {
+                            // otherwise, we are well-specified, and only one
+                            // genotype should match
+                            genotypeLikelihoodsExplicit[g->genotype->relativeGenotype(refbase, altAlleles)] = convert(ln2log10(g->prob));
                         }
                     }
 
+                    vector<string> datalikelihoods;
+                    for (map<string, string>::iterator gle = genotypeLikelihoodsExplicit.begin(); gle != genotypeLikelihoodsExplicit.end(); ++gle) {
+                        datalikelihoods.push_back(gle->first + "^" + gle->second);
+                    }
+                    sampleOutput["GLE"].push_back(join(datalikelihoods, "|"));
+
+                } else {
+
+                    if (var.format.back() != "GL") {
+                        var.format.push_back("GL");
+                    }
+
+                    map<int, string> genotypeLikelihoods;
+
+                    for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
+                        if (g->genotype->hasNullAllele()) {
+                            // if the genotype has null (unspecified) alleles, find
+                            // the fully specified genotypes it can match with.
+                            vector<Genotype*> nullmatchgts = g->genotype->nullMatchingGenotypes(genotypesByPloidy[g->genotype->ploidy]);
+                            // the gls for these will be the same, so the gl for
+                            // this genotype can be used for all of them.  these
+                            // are the genotypes which the sample does not have,
+                            // but for which one allele or no alleles match
+                            for (vector<Genotype*>::iterator n = nullmatchgts.begin(); n != nullmatchgts.end(); ++n) {
+                                map<string, int>::iterator o = vcfGenotypeOrder[(*n)->ploidy].find((*n)->str());
+                                if (o != vcfGenotypeOrder[(*n)->ploidy].end()) {
+                                    genotypeLikelihoods[o->second] = convert(ln2log10(g->prob));
+                                }
+                            }
+                        } else {
+                            // otherwise, we are well-specified, and only one
+                            // genotype should match
+                            map<string, int>::iterator o = vcfGenotypeOrder[g->genotype->ploidy].find(g->genotype->str());
+                            if (o != vcfGenotypeOrder[g->genotype->ploidy].end()) {
+                                genotypeLikelihoods[o->second] = convert(ln2log10(g->prob));
+                            }
+                        }
+                    }
+
+                    vector<string>& datalikelihoods = sampleOutput["GL"];
+                    // output is sorted by map
+                    for (map<int, string>::iterator gl = genotypeLikelihoods.begin(); gl != genotypeLikelihoods.end(); ++gl) {
+                        datalikelihoods.push_back(gl->second);
+                    }
+
                 }
-
-                //if (altAlleles.size() == 1) {
-                //    if (!genotypeLikelihoods.size() == 3) {
-                //        assert(false);
-                //    }
-                //}
-
-                vector<string>& datalikelihoods = sampleOutput["GL"];
-                // output is sorted by map
-                for (map<int, string>::iterator gl = genotypeLikelihoods.begin(); gl != genotypeLikelihoods.end(); ++gl) {
-                    datalikelihoods.push_back(gl->second);
-                }
-
-
             }
-
         }
     }
 
