@@ -892,7 +892,14 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 
     if (alleles.empty()) {
 
-        alleles.push_back(newAllele);
+        // presently, it's unclear how to handle insertions and deletions
+        // reported at the beginning of the read.  are these events actually
+        // indicative of longer alleles?
+        if (!newAllele.isInsertion() && !newAllele.isDeletion()) {
+            alleles.push_back(newAllele);
+        }
+        // the same goes for insertions and deletions at the end of reads,
+        // these must be dealt with elsewhere
 
     } else {
 
@@ -1460,6 +1467,12 @@ bailout:
                 }
             }
         }
+    }
+
+    // ignore insertions and deletions which occur at the end of the read with
+    // no reference-matching bases before the end of the read
+    if (ra.alleles.back().isInsertion() || ra.alleles.back().isDeletion()) {
+        ra.alleles.pop_back();
     }
 
     return ra;

@@ -155,6 +155,12 @@ vcf::Variant& Results::vcf(
         }
     }
 
+    assert(!var.ref.empty());
+    for (vector<string>::iterator a = var.alt.begin(); a != var.alt.end(); ++a) {
+        assert(!a->empty());
+        assert(*a != var.ref);
+    }
+
 
     // get the required size of the reference sequence
 

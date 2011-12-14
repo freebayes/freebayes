@@ -166,7 +166,8 @@ Usage, indels:
 FreeBayes has been tested as an indel caller as part of the 1000 Genomes
 Project.  In principle, any gapped aligner which is sensitive to indels will
 produce satisfactory results.  Indels are called by default, but they may be
-ignored by using the --no-indels flag.
+ignored by using the --no-indels flag.  Due to potential ambiguity, indels are
+not parsed when they overlap the beginning or end of alignment boundaries.
 
 When calling indels, it is important to homogenize the positional distribution
 of insertions and deletions in the input by using left realignment.  This can
