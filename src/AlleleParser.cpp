@@ -895,7 +895,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
         // presently, it's unclear how to handle insertions and deletions
         // reported at the beginning of the read.  are these events actually
         // indicative of longer alleles?
-        if (!newAllele.isInsertion() && !newAllele.isDeletion()) {
+        if (!newAllele.isInsertion() && !newAllele.isDeletion() && !newAllele.isNull()) {
             alleles.push_back(newAllele);
         }
         // the same goes for insertions and deletions at the end of reads,
@@ -1082,7 +1082,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                         convert(length) + "M",
                                         &ra.alleles),
                                     parameters.allowComplex, parameters.maxComplexGap);
-                            DEBUG2(ra.alleles.back());
                         }
                     }
                     // register mismatch
@@ -1123,7 +1122,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     convert(length) + "X",
                                     &ra.alleles),
                                 parameters.allowComplex, parameters.maxComplexGap);
-                        DEBUG2(ra.alleles.back());
                     } else {
                         ra.addAllele(Allele(ALLELE_NULL, currentSequenceName, sp - length, &currentPosition,
                                     &currentReferenceBase, length,
@@ -1138,7 +1136,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                     convert(length) + "N",
                                     &ra.alleles),
                                 parameters.allowComplex, parameters.maxComplexGap);
-                        DEBUG2(ra.alleles.back());
                     }
                 }
 
@@ -1170,7 +1167,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 convert(length) + "X",
                                 &ra.alleles),
                             parameters.allowComplex, parameters.maxComplexGap);
-                    DEBUG2(ra.alleles.back());
                 } else {
                     ra.addAllele(Allele(ALLELE_NULL, currentSequenceName, sp - length, &currentPosition,
                                 &currentReferenceBase, length,
@@ -1185,7 +1181,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                 convert(length) + "N",
                                 &ra.alleles),
                             parameters.allowComplex, parameters.maxComplexGap);
-                    DEBUG2(ra.alleles.back());
                 }
             // or, if we are not in a mismatch, construct the last reference allele of the match
             } else if (firstMatch < csp) {
@@ -1206,7 +1201,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                             convert(length) + "M",
                             &ra.alleles),
                         parameters.allowComplex, parameters.maxComplexGap);
-                    DEBUG2(ra.alleles.back());
                 }
             }
         } else if (t == 'D') { // deletion
@@ -1274,7 +1268,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         convert(l) + "D",
                         &ra.alleles),
                     parameters.allowComplex, parameters.maxComplexGap);
-                DEBUG2(ra.alleles.back());
             }
             ++ra.indelCount;
 
@@ -1341,7 +1334,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                         convert(l) + "I",
                         &ra.alleles),
                     parameters.allowComplex, parameters.maxComplexGap);
-                DEBUG2(ra.alleles.back());
             }
             ++ra.indelCount;
 
@@ -1365,8 +1357,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         //}
     } // end cigar iter loop
 
-bailout:
-
+    if (ra.alleles.empty()) {
+        DEBUG2("generated no alleles from read");
+        return ra;
+    }
 
     // this deals with the case in which we have embedded Ns in the read
     // often this happens at the start or end of reads, thus affecting our RegisteredAlignment::start and ::end
@@ -1469,11 +1463,17 @@ bailout:
         }
     }
 
-    // ignore insertions and deletions which occur at the end of the read with
+    // ignore insertions, deletions, and N's which occur at the end of the read with
     // no reference-matching bases before the end of the read
-    if (ra.alleles.back().isInsertion() || ra.alleles.back().isDeletion()) {
+    if (ra.alleles.back().isInsertion() || ra.alleles.back().isDeletion() || ra.alleles.back().isNull()) {
         ra.alleles.pop_back();
     }
+
+#ifdef VERBOSE_DEBUG
+    if (parameters.debug2) {
+        cerr << "alleles:\n" << join(ra.alleles, "\n");
+    }
+#endif
 
     return ra;
 
@@ -1563,7 +1563,9 @@ void AlleleParser::updateAlignmentQueue(void) {
                 RegisteredAlignment& ra = rq.front();
                 registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
                 // backtracking if we have too many mismatches
-                if (((float) ra.mismatches / (float) currentAlignment.QueryBases.size()) > parameters.readMaxMismatchFraction
+                // or if there are no recorded alleles
+                if (ra.alleles.empty()
+                        || ((float) ra.mismatches / (float) currentAlignment.QueryBases.size()) > parameters.readMaxMismatchFraction
                         || ra.mismatches > parameters.RMU
                         || ra.snpCount > parameters.readSnpLimit
                         || ra.indelCount > parameters.readIndelLimit) {
