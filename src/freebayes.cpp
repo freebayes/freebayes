@@ -656,6 +656,7 @@ int main (int argc, char *argv[]) {
                     allSampleDataLikelihoods.reserve(allSampleDataLikelihoods.size() + distance(sdls.begin(), sdls.end()));
                     allSampleDataLikelihoods.insert(allSampleDataLikelihoods.end(), sdls.begin(), sdls.end());
                 }
+
                 // calculate the marginal likelihoods for this population
                 marginalGenotypeLikelihoods(genotypeCombos, allSampleDataLikelihoods);
 

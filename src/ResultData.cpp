@@ -55,7 +55,8 @@ vcf::Variant& Results::vcf(
         if (cigar.back().second == "M") {
             endmatch = cigar.back().first;
         }
-        if (cigar.size() > 1 && (cigar.at(1).second == "D" || cigar.at(1).second == "I")) {
+	// check excludes complex alleles of the form, e.g. 1X3I
+        if (cigar.size() > 1 && cigar.front().second == "M" && (cigar.at(1).second == "D" || cigar.at(1).second == "I")) {
             startmatch -= 1; // require at least one base flanking deletions
         }
         if (aa == altAlleles.begin()) {
