@@ -1365,3 +1365,16 @@ vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2) {
 bool isEmptyAllele(const Allele& allele) {
     return allele.length == 0;
 }
+
+bool isDividedIndel(const Allele& allele) {
+    vector<pair<int, string> > cigarV = splitCigar(allele.cigar);
+    if (cigarV.front().second == "D" || cigarV.front().second == "I") {
+	return true;
+    } else {
+	return false;
+    }
+}
+
+bool isEmptyAlleleOrIsDividedIndel(const Allele& allele) {
+    return isEmptyAllele(allele) || isDividedIndel(allele);
+}

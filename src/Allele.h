@@ -354,7 +354,8 @@ Allele genotypeAllele(Allele& a);
 Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, string cigar = "", unsigned int reflen = 0, long int position = 0);
 
 bool isEmptyAllele(const Allele& allele);
-
+bool isDividedIndel(const Allele& allele);
+bool isEmptyAlleleOrIsDividedIndel(const Allele& allele);
 
 //AlleleFreeList Allele::_freeList;
 

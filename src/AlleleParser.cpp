@@ -2358,14 +2358,14 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         for (vector<Allele>::iterator p = alleles.begin(); p != alleles.end(); ++p) {
             if (p != alleles.begin()) {
                 if (p->position != (p - 1)->position + (p - 1)->referenceLength) {
-                    return false;
+                    return true;
                 }
             }
         }
 
         if (a == b && a->isReference()) {
             // no change needed when we just have a reference allele
-            return false;
+            return true;
         }
 
         string seq;
@@ -2429,7 +2429,11 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
             //cerr << *p << endl;
             if (p->position == haplotypeStart && p->position + p->referenceLength == haplotypeEnd) {
                 aptr = &*p;
-                hasHaplotypeAllele = true;
+		if (isDividedIndel(*p)) {
+		    hasHaplotypeAllele = false;
+		} else {
+		    hasHaplotypeAllele = true;
+		}
                 break;
             }
         }
@@ -2437,11 +2441,12 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         if (hasHaplotypeAllele) {
             return true;
         } else {
-            assert(hasHaplotypeAllele);
+	    return false;
+            //assert(hasHaplotypeAllele);
         }
 
     } else {
-        return false;
+        return true;
     }
 
 }
@@ -2474,9 +2479,6 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             }
         } while (haplotypeLength != oldHaplotypeLength);
 
-        // we need to construct all the overlapping haplotypes
-        // and... make it so the next position is after the haplotype ? ... that's big fish
-
         // for each non-reference allele within the haplotype length of this
         // position, adjust the length and reference sequences of the adjacent
         // alleles 
@@ -2498,14 +2500,16 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
                 //cerr << "before fitting haplotype, we have these alleles:" << endl << ra.alleles << endl;
                 if (ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
                     //registeredAlleles.insert(registeredAlleles.end(), generatedAlleles.begin(), generatedAlleles.end());
-                    assert(aptr->position == currentPosition);
-                    assert(aptr->referenceLength == haplotypeLength);
+		    // for debugging:
+		    //assert(aptr->position == currentPosition);
+                    //assert(aptr->referenceLength == haplotypeLength);
                     //cerr << "generated haplotype-matching allele: " << *aptr << endl;
                     //cerr << "and these alleles, " << ra.alleles << endl;
-                }
-                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                    a->processed = false; // re-trigger use of all alleles
-                    registeredAlleles.push_back(&*a);
+
+		    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+			a->processed = false; // re-trigger use of all alleles
+			registeredAlleles.push_back(&*a);
+		    }
                 }
             }
         }
