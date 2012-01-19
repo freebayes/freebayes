@@ -53,10 +53,9 @@ void AlleleParser::openBams(void) {
                 if (!targets.empty()) {
                     ERROR("Targets specified but no BAM index file provided.");
                     ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
-                    ERROR("Please generate a BAM index file either .bai (standard) or .bti (bamtools), e.g.:");
-                    ERROR("    \% bamtools index -bti -in <bam_file>   # for high-performance .bti index");
-                    ERROR("    \% bamtools index -in <bam_file>        # for standard .bai index");
-                    ERROR("    \% samtools index <bam_file>            # for standard .bai index");
+                    ERROR("Please generate a BAM index file eithe, e.g.:");
+                    ERROR("    \% bamtools index -in <bam_file>");
+                    ERROR("    \% samtools index <bam_file>");
                     exit(1);
                 }
             }
