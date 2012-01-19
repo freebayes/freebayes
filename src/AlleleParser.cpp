@@ -38,6 +38,11 @@ void AlleleParser::openBams(void) {
         }
     }
     
+    // set no index caching if we are only making one jump
+    if (targets.size() == 1) {
+        bamMultiReader.SetIndexCacheMode(BamIndex::NoIndexCaching);
+    }
+
     if (parameters.useStdin) {
         if (!bamMultiReader.Open(parameters.bams)) {
             ERROR("Could not read BAM data from stdin");
