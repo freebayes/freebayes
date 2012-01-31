@@ -129,6 +129,7 @@ void AlleleParser::getSequencingTechnologies(void) {
             vector<string> readGroupParts = split(headerLine, "\t ");
             string tech;
             string readGroupID;
+
             for (vector<string>::const_iterator r = readGroupParts.begin(); r != readGroupParts.end(); ++r) {
                 vector<string> nameParts = split(*r, ":");
                 if (nameParts.at(0) == "PL") {
@@ -137,19 +138,23 @@ void AlleleParser::getSequencingTechnologies(void) {
                    readGroupID = nameParts.at(1);
                 }
             }
+
             if (tech.empty()) {
-                cerr << " could not find PL: in @RG tag " << endl << headerLine << endl;
-                continue;
-            }
+		if (!sequencingTechnologies.empty()) {
+		    cerr << "no sequencing technology specified in @RG tag (no PL: in @RG tag) " << endl << headerLine << endl;
+		}
+            } else {
+		readGroupToTechnology[readGroupID] = tech;
+		technologies[tech] = true;
+	    }
+
             if (readGroupID.empty()) {
-                cerr << " could not find ID: in @RG tag " << endl << headerLine << endl;
+                cerr << "could not find ID: in @RG tag " << endl << headerLine << endl;
                 continue;
             }
             //string name = nameParts.back();
             //mergedHeader.append(1, '\n');
             //cerr << "found read group id " << readGroupID << " containing sample " << name << endl;
-            readGroupToTechnology[readGroupID] = tech;
-            technologies[tech] = true;
         }
     }
 
@@ -1553,7 +1558,11 @@ void AlleleParser::updateAlignmentQueue(void) {
                 }
                 // get sample name
                 string sampleName = readGroupToSampleNames[readGroup];
-                string sequencingTech = readGroupToTechnology[readGroup];
+		string sequencingTech;
+		map<string, string>::iterator t = readGroupToTechnology.find(readGroup);
+		if (t != readGroupToTechnology.end()) {
+		    sequencingTech = t->second;
+		}
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
                 deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
