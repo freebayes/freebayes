@@ -38,11 +38,6 @@ void AlleleParser::openBams(void) {
         }
     }
     
-    // set no index caching if we are only making one jump
-    if (targets.size() == 1) {
-        bamMultiReader.SetIndexCacheMode(BamIndex::NoIndexCaching);
-    }
-
     if (parameters.useStdin) {
         if (!bamMultiReader.Open(parameters.bams)) {
             ERROR("Could not read BAM data from stdin");
@@ -53,7 +48,7 @@ void AlleleParser::openBams(void) {
             ERROR("Could not open input BAM files");
             exit(1);
         } else {
-            if (!bamMultiReader.LocateIndexes(BamIndex::BAMTOOLS)) {
+            if (!bamMultiReader.LocateIndexes()) {
                 ERROR("Opened BAM reader without index file, jumping is disabled.");
                 if (!targets.empty()) {
                     ERROR("Targets specified but no BAM index file provided.");
