@@ -9,9 +9,11 @@ events (composite insertion and substitution events) smaller than the length of
 a short-read sequencing alignment.  It uses short-read alignments (BAM files
 with Phred+33 encoded quality scores) for any number of individuals from a
 population and a reference genome to determine the most-likely combination of
-genotypes for the population at each position in a reference genome (FASTA).
-It reports positions which it finds to be more likely polymorphic than
-monomorphic in a standard variant interchange format (VCF).
+genotypes for the population at each position in a reference genome (FASTA).  It
+reports positions which it finds to be more likely polymorphic than monomorphic
+in a standard variant interchange format (VCF).  It can also use an input set of
+variants (VCF) as a source of prior information, and a copy number variant map
+(BED) to define non-uniform ploidy variation across the samples under analysis.
 
 
 Obtaining:
@@ -128,7 +130,7 @@ of a putative indel allele.  (This behavior is incompatible with indel
 detection.)
 
 
-Usage, advanced:
+Stream processing:
 
 FreeBayes can read BAM from standard input (--stdin) instead of directly from
 files.  This allows the application of any number of streaming BAM filters and
@@ -161,7 +163,7 @@ technologies which have characteristic errors which may frustrate certain types
 of variant detection.
 
 
-Usage, indels:
+INDELs:
 
 FreeBayes has been tested as an indel caller as part of the 1000 Genomes
 Project.  In principle, any gapped aligner which is sensitive to indels will
@@ -196,7 +198,7 @@ handled.  However, this method computationally inexpensive and handles the most
 common classes of alignment inconsistency.
 
 
-Usage, pooled datasets:
+Pooled datasets:
 
 While FreeBayes always 'pools' sequence information from many individuals to
 improve the accuracy of small variant calls, it can also operate on 'pooled
@@ -211,20 +213,62 @@ diploid, you would set --ploidy 20.  Users should be aware that the current
 implementation may have poor performance with ploidy set very high (e.g. 40).
 
 
+Input variants:
+
+FreeBayes can use a BGZIP-compressed and tabix-indexed [7] VCF file as input,
+specified using the --variant-input parameter.  Alleles, their frequencies, and
+genotype likelihoods can all be used as out-of-band input to the algorithm.
+This allows the use of information from population-specific panels during the
+detection of variants within a single individual.
+
+Directed genotyping can be enabled with the addition of the
+--use-only-input-alleles flag.  When this flag is set, the model will only
+evaluate the input alleles, and the output VCF will contain exactly the same set
+of alleles that were input and genotypes for all the samples in the input
+alignments.
+
+The input data is handled differently depending on what information is included
+in the VCF.  There are three modes that are enabled on the basis of the data
+available in the input VCF:
+
+   1) Sites and alleles only: If the input file has only a set of sites and
+   alleles, the input variants serve as a set of hints which indicate that a
+   variant may be known or expected at a given loci.  An allele specified in the
+   input will be considered in the Bayesian model even if there is not enough
+   read evidence to pass the algorithm's input filters.  However, the output
+   will only contain those alleles which have enough support in the data to pass
+   the --pvar threshold
+
+   and,
+
+   2) Allele frequencies: If the input file has allele frequency information via
+   the AF INFO field tag, then the allele frequency of each allele will be
+   used as a prior in the Bayesian model.
+
+   or
+
+   3) Samples and genotype likelihoods: If samples are provided, then their
+   listed genotype likelihoods (GL) are used and the samples are incorporated
+   into the model.  This allows the imputation of a single, or small set of
+   samples against a much larger panel without requiring the use of the full
+   alignment data from that panel.
+
+Mode (1) is required for (2) or (3), but (3) supercedes (2).  To enable (1) or
+(2), remove all of the sample-specific columns from the VCF.
+
+
 Bugs:
 
-Please report bugs using the built-in bug reporting feature in github.
-
-I'm also very interested to learn about algorithmic issues, such as poor
-performance or missed variants.  I will be more than happy to discuss them with
-you and investigate any such issues.
+Please report bugs using the built-in bug reporting feature in github or by
+sending the author an email.
 
 
 Mailing list:
 
 A summary of each commit will be posted to freebayes@groups.google.com.  Please
 use this mailing list for public discussion of freebayes and variant detection
-work.  I will direct answers to questions about freebayes to this mailing list.
+issues.  If you have a general question, this is the best place to pose it, as
+it may be helpful to other users.
 
 
 Author: Erik Garrison <erik.garrison@bc.edu>
@@ -240,3 +284,4 @@ References:
 [4] http://bioinformatics.bc.edu/marthlab/Mosaik
 [5] https://github.com/ekg/bamaddrg
 [6] https://github.com/ekg/vcflib
+[7] http://samtools.sourceforge.net/tabix.shtml

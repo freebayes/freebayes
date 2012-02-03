@@ -48,7 +48,9 @@ void Parameters::usage(char** argv) {
          << "                   pass --pvar to FILE." << endl
          << "   -@ --variant-input VCF" << endl
          << "                   Use variants reported in VCF file as input to the algorithm." << endl
-         << "                   A report will be generated for every record in the VCF file." << endl
+	 << "                   Variants in this file will be treated as putative variants" << endl
+	 << "                   even if there is not enough support in the data to pass" << endl
+         << "                   input filters." << endl
          << "   -l --only-use-input-alleles" << endl
          << "                   Only provide variant calls and genotype likelihoods for sites" << endl
          << "                   and alleles which are provided in the VCF input, and provide" << endl
