@@ -2568,6 +2568,9 @@ bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
         if (!toNextPosition()) {
             return false;
         } else {
+	    if (justSwitchedTargets) {
+		nextPosition = 0;
+	    }
             getAlleles(samples, allowedAlleleTypes);
         }
     }
