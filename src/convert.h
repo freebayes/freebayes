@@ -9,7 +9,7 @@ template<typename T>
 bool convert(const std::string& s, T& r) {
     std::istringstream iss(s);
     iss >> r;
-    return (iss.fail() || ((std::size_t) iss.tellg()) != s.size()) ? false : true;
+    return ((std::size_t) iss.tellg()) != s.size() ? false : true;
 }
 
 template<typename T>
