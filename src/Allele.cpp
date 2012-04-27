@@ -1294,6 +1294,23 @@ void Allele::updateTypeAndLengthFromCigar(void) {
 
 }
 
+int referenceLengthFromCigar(string& cigar) {
+    int r = 0;
+    vector<pair<int, string> > cigarV = splitCigar(cigar);
+    for (vector<pair<int, string> >::iterator c = cigarV.begin(); c != cigarV.end(); ++c) {
+        switch (c->second[0]) {
+            case 'M':
+            case 'X':
+            case 'D':
+                r += c->first;
+                break;
+            case 'I':
+            default:
+                break;
+        }
+    }
+    return r;
+}
 
 int Allele::referenceLengthFromCigar(void) {
     int r = 0;

@@ -357,6 +357,8 @@ bool isEmptyAllele(const Allele& allele);
 bool isDividedIndel(const Allele& allele);
 bool isEmptyAlleleOrIsDividedIndel(const Allele& allele);
 
+int referenceLengthFromCigar(string& cigar);
+
 //AlleleFreeList Allele::_freeList;
 
 #endif

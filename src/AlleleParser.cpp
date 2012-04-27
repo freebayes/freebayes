@@ -469,6 +469,7 @@ void AlleleParser::setupVCFOutput(void) {
 }
 
 void AlleleParser::setupVCFInput(void) {
+    // variant input for analysis and targeting
     if (!parameters.variantPriorsFile.empty()) {
         variantCallInputFile.open(parameters.variantPriorsFile);
         currentVariant = new vcf::Variant(variantCallInputFile);
@@ -486,6 +487,12 @@ void AlleleParser::setupVCFInput(void) {
         //    sampleList.push_back(*s);
         //}
 
+    }
+
+    // haplotype alleles for constructing haplotype alleles
+    if (!parameters.haplotypeVariantFile.empty()) {
+	haplotypeVariantInputFile.open(parameters.haplotypeVariantFile);
+	usingHaplotypeBasisAlleles = true;
     }
 }
 
@@ -790,6 +797,8 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
     currentSequenceStart = 0;
     lastHaplotypeLength = 1;
+    usingHaplotypeBasisAlleles = false;
+    rightmostHaplotypeBasisAllelePosition = 0;
     nullSample = new Sample();
 
 
@@ -885,7 +894,10 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
     // 1) INDEL + (REF <= maxComplexGap) + MNP, INDEL + (REF <= maxComplexGap) + SNP -> complex
     // 2) MNP + SNP, SNP + SNP -> MNP
     // 2) reference + INDEL -> reference.substr(0, reference.size() - 1), reference.at(reference.size()) + INDEL
-    assert(newAllele.alternateSequence.size() == newAllele.baseQualities.size());
+    if (newAllele.alternateSequence.size() != newAllele.baseQualities.size()) {
+	cerr << newAllele << endl;
+	assert(false);
+    }
 
     alleleTypes |= newAllele.type;
 
@@ -904,8 +916,37 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 
         Allele& lastAllele = alleles.back();
 
-        if (newAllele.isReference() && ( newAllele.referenceLength > maxComplexGap || ( newAllele.referenceLength <= maxComplexGap && newAllele.basesRight <= maxComplexGap ))) {
-            alleles.push_back(newAllele);
+        if (newAllele.isReference()
+	    && (newAllele.referenceLength > maxComplexGap
+		|| ( newAllele.referenceLength <= maxComplexGap && newAllele.basesRight <= maxComplexGap )
+		|| newAllele.basesRight == 0)) {
+	    // if the last allele is reference too, we need to combine them!
+	    if (lastAllele.isReference()) {
+                lastAllele.mergeAllele(newAllele, ALLELE_REFERENCE);
+                assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
+            } else if (lastAllele.isComplex() || lastAllele.isMNP() || lastAllele.isSNP()) {
+                // split apart the last allele if it's 'complex' but followed by another reference allele
+		// that would cause the reference gap to be greater than the maxComplexGap
+                vector<pair<int, string> > cigar = splitCigar(lastAllele.cigar);
+                if (cigar.back().second == "M") {
+                    int matchlen = cigar.back().first;
+		    if (matchlen + newAllele.referenceLength > maxComplexGap) {
+			// break apart the complex allele
+			alleles.push_back(lastAllele);
+			Allele& pAllele = alleles.at(alleles.size() - 2);
+			string seq; vector<pair<int, string> > cig; vector<short> quals;
+			pAllele.subtractFromEnd(matchlen, seq, cig, quals);
+			alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
+			alleles.back().mergeAllele(newAllele, ALLELE_REFERENCE);
+		    } else { // expand the complex allele
+			lastAllele.mergeAllele(newAllele, ALLELE_COMPLEX);
+		    }
+                } else {
+		    alleles.push_back(newAllele);
+		}
+	    } else {
+		alleles.push_back(newAllele);
+	    }
         } else if (lastAllele.isReference()) {
             if (newAllele.isSNP() || newAllele.isMNP() || newAllele.isComplex()) {
                 alleles.push_back(newAllele);
@@ -936,9 +977,16 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
             }
             alleles.push_back(newAllele);
         } else {
-            // -> complex event, null allele
+            // -> complex event or MNP
             if (mergeComplex && lastAllele.position + lastAllele.referenceLength == newAllele.position && !lastAllele.isNull()) {
-                lastAllele.mergeAllele(newAllele, ALLELE_COMPLEX);
+		AlleleType atype = ALLELE_COMPLEX;
+		if (lastAllele.isSNP() || lastAllele.isMNP()) {
+		    vector<pair<int, string> > cigar = splitCigar(lastAllele.cigar);
+		    if (cigar.back().second == "X") {
+			atype = ALLELE_MNP;
+		    }
+		}
+                lastAllele.mergeAllele(newAllele, atype);
                 assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
             } else {
                 alleles.push_back(newAllele);
@@ -949,6 +997,131 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 
 }
 
+// TODO erase alleles which are beyond N bp before the current position on position step
+void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength) {
+    if (pos + referenceLength > rightmostHaplotypeBasisAllelePosition) {
+	//stringstream r;
+	//r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+	//cerr << "getting variants in " << r.str() << endl;
+	if (haplotypeVariantInputFile.setRegion(currentSequenceName,
+						rightmostHaplotypeBasisAllelePosition,
+						pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
+	    //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
+	    // get the variants in the target region
+	    vcf::Variant var(haplotypeVariantInputFile);
+	    while (haplotypeVariantInputFile.getNextVariant(var)) {
+		//cerr << "input variant: " << var << endl;
+		map<string, vector<vcf::VariantAllele> > variants = var.parsedAlternates();
+		for (map<string, vector<vcf::VariantAllele> >::iterator a = variants.begin(); a != variants.end(); ++a) {
+		    for (vector<vcf::VariantAllele>::iterator v = a->second.begin(); v != a->second.end(); ++v) {
+			haplotypeBasisAlleles[v->position].insert(AllelicPrimitive(v->ref.size(), v->alt));
+		    }
+		}
+	    }
+	}
+	// set the rightmost haplotype position to trigger the next update
+	rightmostHaplotypeBasisAllelePosition = pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+    }
+}
+
+
+bool AlleleParser::allowedAllele(long int pos, int referenceLength, string& seq) {
+    // check the haplotypeBasisAllele map for membership of the allele in question in the current sequence
+
+    if (!usingHaplotypeBasisAlleles) {
+	return true; // always true if we aren't using the haplotype basis allele system
+    } else {
+	map<long int, set<AllelicPrimitive> >::iterator p = haplotypeBasisAlleles.find(pos);
+	if (p != haplotypeBasisAlleles.end()) {
+	    set<AllelicPrimitive>& alleles = p->second;
+	    if (alleles.count(AllelicPrimitive(referenceLength, seq)) > 0) {
+		return true;
+	    } else {
+		return false;
+	    }
+	} else {
+	    return false;
+	}
+    }
+
+}
+
+Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
+				AlleleType type,
+				long int pos,
+				int length,
+				int basesLeft,
+				int basesRight,
+				string& readSequence,
+				string& sampleName,
+				BamAlignment& alignment,
+				string& sequencingTech,
+				long double qual,
+				string& qualstr
+    ) {
+
+
+    string cigar;
+
+    if (type == ALLELE_REFERENCE) {
+	cigar = convert(length) + "M";
+    } else if (type == ALLELE_SNP || type == ALLELE_MNP) {
+	cigar = convert(length) + "X";
+    } else if (type == ALLELE_INSERTION) {
+	cigar = convert(length) + "I";
+    } else if (type == ALLELE_DELETION) {
+	cigar = convert(length) + "D";
+    } else if (type == ALLELE_NULL) {
+	cigar = convert(length) + "N";
+    }
+
+    // check if it's allowed
+
+    // if it isn't allowed
+    // and referenceLength > 0, make a reference allele with reference quality
+    // if referenceLength == 0 (insertion), make a reference allele with 0 length (it will be filtered out in another context)
+
+    // if it is allowed, make a normal allele
+
+    // if not, adjust the allele so that it's a reference allele with preset BQ and length
+    // in effect, this means creating a reference allele of the reference length of the allele with 0 BQ
+
+    if (type != ALLELE_REFERENCE && !allowedAllele(pos + 1, length, readSequence)) { // XXX what to do about 0/1 basing?
+	type = ALLELE_REFERENCE;
+	length = referenceLengthFromCigar(cigar);
+	cigar = convert(length) + "M";
+	// by adjusting the cigar, we implicitly adjust
+	// allele.referenceLength, which is calculated when the allele is made
+
+	// TODO, why are we getting complex alleles like 1X15M ?  this shouldn't be possible, where is the second polymorphism?
+	qualstr = string(length, qualityInt2Char(0));
+	readSequence = currentSequence.substr(pos - currentSequenceStart, length);
+    }
+
+    return Allele(type,
+		  currentSequenceName,
+		  pos,
+		  &currentPosition,
+		  &currentReferenceBase,
+		  length, 
+		  basesLeft,
+		  basesRight,
+		  readSequence,
+		  sampleName,
+		  alignment.Name,
+		  sequencingTech,
+		  !alignment.IsReverseStrand(),
+		  qual,
+		  qualstr,
+		  alignment.MapQuality,
+		  alignment.IsPaired(),
+		  alignment.IsMateMapped(),
+		  alignment.IsProperPair(),
+		  cigar,
+		  &ra.alleles);
+
+}
+
 RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech) {
 
     string rDna = alignment.QueryBases;
@@ -956,6 +1129,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
     int rp = 0;  // read position, 0-based relative to read
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
     int sp = alignment.Position;  // sequence position
+
+    if (usingHaplotypeBasisAlleles) {
+	updateHaplotypeBasisAlleles(sp, alignment.AlignedBases.size());
+    }
 
 #ifdef VERBOSE_DEBUG
     if (parameters.debug2) {
@@ -1062,27 +1239,28 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 // record mismatch if we have a mismatch here
                 if (b != sb || sb == "N") {  // when the reference is N, we should always call a mismatch
                     if (firstMatch < csp) {
-                        // TODO ; verify that the read and reference sequences *do* match
                         int length = csp - firstMatch;
-                        //string matchingSequence = currentSequence.substr(csp - length, length);
-                        //cerr << "matchingSequence " << matchingSequence << endl;
                         string readSequence = rDna.substr(rp - length, length);
-                        //cerr << "readSequence " << readSequence << endl;
                         string qualstr = rQual.substr(rp - length, length);
                         // record 'reference' allele for last matching region
                         if (allATGC(readSequence)) {
-                            ra.addAllele(Allele(ALLELE_REFERENCE,
-                                        currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length, 
-                                        rp, // bases left (for first base in ref allele)
-                                        alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
-                                        readSequence, sampleName, alignment.Name, sequencingTech,
-                                        !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                                        alignment.MapQuality, alignment.IsPaired(), alignment.IsMateMapped(), alignment.IsProperPair(),
-                                        convert(length) + "M",
-                                        &ra.alleles),
-                                    parameters.allowComplex, parameters.maxComplexGap);
+                            ra.addAllele(
+				makeAllele(ra,
+					   ALLELE_REFERENCE,
+					   sp - length,
+					   length,
+					   rp, // bases left (for first base in ref allele)
+					   alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
+					   readSequence,
+					   sampleName,
+					   alignment,
+					   sequencingTech,
+					   alignment.MapQuality, // reference allele quality == mapquality
+					   qualstr),
+				parameters.allowComplex, parameters.maxComplexGap);
                         }
                     }
+
                     // register mismatch
                     if (qual >= parameters.BQL2) {
                         ++ra.mismatches;  // increment our mismatch counter if we're over BQL2
@@ -1092,6 +1270,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     // always emit a snp, if we have too many mismatches over
                     // BQL2 then we will discard the registered allele in the
                     // calling context
+
                     if (!inMismatch) {
                         mismatchStart = csp;
                         inMismatch = true;
@@ -1101,41 +1280,45 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 } else if (inMismatch) {
                     inMismatch = false;
                     int length = csp - mismatchStart;
-                    //string matchingSequence = currentSequence.substr(csp - length, length);
-                    string readSequence = rDna.substr(rp - length, length);
-                    string qualstr = rQual.substr(rp - length, length);
-                    AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
-                    long double lqual = minQuality(qualstr);
-                    if (allATGC(readSequence)) {
-                        ra.addAllele(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
-                                    &currentReferenceBase, length,
-                                    rp - length, // bases left
-                                    alignment.QueryBases.size() - rp, // bases right
-                                    readSequence,
-                                    sampleName, alignment.Name, sequencingTech,
-                                    !alignment.IsReverseStrand(), lqual,
-                                    qualstr, alignment.MapQuality,
-                                    alignment.IsPaired(),
-                                    alignment.IsMateMapped(),
-                                    alignment.IsProperPair(),
-                                    convert(length) + "X",
-                                    &ra.alleles),
-                                parameters.allowComplex, parameters.maxComplexGap);
-                    } else {
-                        ra.addAllele(Allele(ALLELE_NULL, currentSequenceName, sp - length, &currentPosition,
-                                    &currentReferenceBase, length,
-                                    rp - length, // bases left
-                                    alignment.QueryBases.size() - rp, // bases right
-                                    readSequence,
-                                    sampleName, alignment.Name, sequencingTech,
-                                    !alignment.IsReverseStrand(), lqual, qualstr,
-                                    alignment.MapQuality, alignment.IsPaired(),
-                                    alignment.IsMateMapped(),
-                                    alignment.IsProperPair(),
-                                    convert(length) + "N",
-                                    &ra.alleles),
-                                parameters.allowComplex, parameters.maxComplexGap);
-                    }
+		    string readSequence = rDna.substr(rp - length, length);
+		    string qualstr = rQual.substr(rp - length, length);
+		    for (int j = 0; j < length; ++j) {
+			long double lqual = qualityChar2LongDouble(qualstr.at(j));
+			string qualp = qualstr.substr(j, 1);
+			string rs = readSequence.substr(j, 1);
+			if (allATGC(rs)) {
+			    ra.addAllele(
+				makeAllele(ra,
+					   ALLELE_SNP,
+					   sp - length + j,
+					   1,
+					   rp - length - j, // bases left
+					   alignment.QueryBases.size() - rp + j, // bases right
+					   rs,
+					   sampleName,
+					   alignment,
+					   sequencingTech,
+					   lqual,
+					   qualp),
+				parameters.allowComplex, parameters.maxComplexGap);
+			    
+			} else {
+			    ra.addAllele(
+				makeAllele(ra,
+					   ALLELE_NULL,
+					   sp - length + j,
+					   1,
+					   rp - length - j, // bases left
+					   alignment.QueryBases.size() - rp + j, // bases right
+					   rs,
+					   sampleName,
+					   alignment,
+					   sequencingTech,
+					   lqual,
+					   qualp),
+				parameters.allowComplex, parameters.maxComplexGap);
+			}
+		    }
                 }
 
                 // update positions
@@ -1145,42 +1328,47 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             }
             // catch mismatches at the end of the match
             if (inMismatch) {
-                inMismatch = false;
-                int length = csp - mismatchStart;
-                //string matchingSequence = currentSequence.substr(csp - length, length);
-                string readSequence = rDna.substr(rp - length, length);
-                string qualstr = rQual.substr(rp - length, length);
-                AlleleType mismatchtype = (length == 1) ? ALLELE_SNP : ALLELE_MNP;
-                long double lqual = minQuality(qualstr);
-                if (allATGC(readSequence)) {
-                    ra.addAllele(Allele(mismatchtype, currentSequenceName, sp - length, &currentPosition,
-                                &currentReferenceBase, length,
-                                rp - length, // bases left
-                                alignment.QueryBases.size() - rp, // bases right
-                                readSequence,
-                                sampleName, alignment.Name, sequencingTech,
-                                !alignment.IsReverseStrand(), lqual, qualstr,
-                                alignment.MapQuality, alignment.IsPaired(),
-                                alignment.IsMateMapped(),
-                                alignment.IsProperPair(),
-                                convert(length) + "X",
-                                &ra.alleles),
-                            parameters.allowComplex, parameters.maxComplexGap);
-                } else {
-                    ra.addAllele(Allele(ALLELE_NULL, currentSequenceName, sp - length, &currentPosition,
-                                &currentReferenceBase, length,
-                                rp - length, // bases left
-                                alignment.QueryBases.size() - rp, // bases right
-                                readSequence,
-                                sampleName, alignment.Name, sequencingTech,
-                                !alignment.IsReverseStrand(), lqual, qualstr,
-                                alignment.MapQuality, alignment.IsPaired(),
-                                alignment.IsMateMapped(),
-                                alignment.IsProperPair(),
-                                convert(length) + "N",
-                                &ra.alleles),
-                            parameters.allowComplex, parameters.maxComplexGap);
-                }
+		inMismatch = false;
+		int length = csp - mismatchStart;
+		string readSequence = rDna.substr(rp - length, length);
+		string qualstr = rQual.substr(rp - length, length);
+		for (int j = 0; j < length; ++j) {
+		    long double lqual = qualityChar2LongDouble(qualstr.at(j));
+		    string qualp = qualstr.substr(j, 1);
+		    string rs = readSequence.substr(j, 1);
+		    if (allATGC(rs)) {
+			ra.addAllele(
+			    makeAllele(ra,
+				       ALLELE_SNP,
+				       sp - length + j,
+				       1,
+				       rp - length - j, // bases left
+				       alignment.QueryBases.size() - rp + j, // bases right
+				       rs,
+				       sampleName,
+				       alignment,
+				       sequencingTech,
+				       lqual,
+				       qualp),
+			    parameters.allowComplex, parameters.maxComplexGap);
+			
+		    } else {
+			ra.addAllele(
+			    makeAllele(ra,
+				       ALLELE_NULL,
+				       sp - length + j,
+				       1,
+				       rp - length - j, // bases left
+				       alignment.QueryBases.size() - rp + j, // bases right
+				       rs,
+				       sampleName,
+				       alignment,
+				       sequencingTech,
+				       lqual,
+				       qualp),
+			    parameters.allowComplex, parameters.maxComplexGap);
+		    }
+		}
             // or, if we are not in a mismatch, construct the last reference allele of the match
             } else if (firstMatch < csp) {
                 int length = csp - firstMatch;
@@ -1188,18 +1376,20 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 string readSequence = rDna.substr(rp - length, length);
                 string qualstr = rQual.substr(rp - length, length);
                 if (allATGC(readSequence)) {
-                    ra.addAllele(Allele(ALLELE_REFERENCE,
-                            currentSequenceName, sp - length, &currentPosition, &currentReferenceBase, length,
-                            rp, // bases left (for first base in ref allele)
-                            alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
-                            readSequence, sampleName, alignment.Name, sequencingTech,
-                            !alignment.IsReverseStrand(), alignment.MapQuality, qualstr,
-                            alignment.MapQuality, alignment.IsPaired(),
-                            alignment.IsMateMapped(),
-                            alignment.IsProperPair(),
-                            convert(length) + "M",
-                            &ra.alleles),
-                        parameters.allowComplex, parameters.maxComplexGap);
+		    ra.addAllele(
+			makeAllele(ra,
+				   ALLELE_REFERENCE,
+				   sp - length,
+				   length,
+				   rp, // bases left (for first base in ref allele)
+				   alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
+				   readSequence,
+				   sampleName,
+				   alignment,
+				   sequencingTech,
+				   alignment.MapQuality,
+				   qualstr),
+			parameters.allowComplex, parameters.maxComplexGap);
                 }
             }
         } else if (t == 'D') { // deletion
@@ -1256,17 +1446,21 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string refseq = currentSequence.substr(csp, l);
             if (allATGC(refseq)) {
-                ra.addAllele(Allele(ALLELE_DELETION,
-                        currentSequenceName, sp, &currentPosition, &currentReferenceBase, l,
-                        rp, // bases left
-                        alignment.QueryBases.size() - rp, // bases right
-                        "", sampleName, alignment.Name, sequencingTech,
-                        !alignment.IsReverseStrand(), qual, "",
-                        alignment.MapQuality, alignment.IsPaired(),
-                        alignment.IsMateMapped(), alignment.IsProperPair(),
-                        convert(l) + "D",
-                        &ra.alleles),
-                    parameters.allowComplex, parameters.maxComplexGap);
+		string nullstr;
+		ra.addAllele(
+		    makeAllele(ra,
+			       ALLELE_DELETION,
+			       sp,
+			       l,
+			       rp, // bases left (for first base in ref allele)
+			       alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
+			       nullstr, // no read sequence for deletions
+			       sampleName,
+			       alignment,
+			       sequencingTech,
+			       qual,
+			       nullstr), // no qualstr for deletions
+		    parameters.allowComplex, parameters.maxComplexGap);
             }
             ++ra.indelCount;
 
@@ -1321,18 +1515,21 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string readseq = rDna.substr(rp, l);
             if (allATGC(readseq)) {
-                ra.addAllele(Allele(ALLELE_INSERTION,
-                        currentSequenceName, sp, &currentPosition, &currentReferenceBase, l,
-                        rp - l, // bases left
-                        alignment.QueryBases.size() - rp, // bases right
-                        readseq,
-                        sampleName, alignment.Name, sequencingTech,
-                        !alignment.IsReverseStrand(), qual,
-                        rQual.substr(rp, l), alignment.MapQuality, alignment.IsPaired(),
-                        alignment.IsMateMapped(), alignment.IsProperPair(),
-                        convert(l) + "I",
-                        &ra.alleles),
-                    parameters.allowComplex, parameters.maxComplexGap);
+		string qualstr = rQual.substr(rp, l);
+		ra.addAllele(
+		    makeAllele(ra,
+			       ALLELE_INSERTION,
+			       sp,
+			       l,
+			       rp - l, // bases left (for first base in ref allele)
+			       alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
+			       readseq,
+			       sampleName,
+			       alignment,
+			       sequencingTech,
+			       qual,
+			       qualstr),
+		    parameters.allowComplex, parameters.maxComplexGap);
             }
             ++ra.indelCount;
 
@@ -1473,6 +1670,13 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         cerr << "alleles:\n" << join(ra.alleles, "\n");
     }
 #endif
+
+    /*
+    cerr << "ra.alleles.size() = " << ra.alleles.size() << endl;
+    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+	cerr << *a << endl;
+    }
+    */
 
     return ra;
 
@@ -2109,14 +2313,13 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     DEBUG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left;
 
-    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right - 1)) {
+    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right - 1)) {  // TODO is bamtools taking 0/1 basing?
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
         return false;
     }
 
     if (variantCallInputFile.is_open()) {
         stringstream r;
-        // TODO check that coordinates must be 1-bsaed
         r << currentTarget->seq << ":" << max(0, currentTarget->left - 1) << "-" << currentTarget->right - 1;
         if (!variantCallInputFile.setRegion(r.str())) {
             ERROR("Could not set the region of the variants input file to " <<
@@ -2288,6 +2491,12 @@ bool AlleleParser::toNextPosition(void) {
     map<long int, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition - 3);
     if (v != inputVariantAlleles.end()) {
         inputVariantAlleles.erase(v);
+    }
+
+    DEBUG2("erasing old input haplotype basis alleles");
+    map<long int, set<AllelicPrimitive> >::iterator z = haplotypeBasisAlleles.find(currentPosition - 3);
+    if (z != haplotypeBasisAlleles.end()) {
+        haplotypeBasisAlleles.erase(z);
     }
 
     DEBUG2("erasing old genotype likelihoods");
@@ -3001,4 +3210,8 @@ bool AlleleParser::hasInputVariantAllelesAtCurrentPosition(void) {
     } else {
         return false;
     }
+}
+
+bool operator<(const AllelicPrimitive& a, const AllelicPrimitive& b) {
+    return a.reflen < b.reflen && a.alt < b.alt;
 }

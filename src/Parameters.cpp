@@ -56,6 +56,10 @@ void Parameters::usage(char** argv) {
          << "                   and alleles which are provided in the VCF input, and provide" << endl
          << "                   output in the VCF for all input alleles, not just those which" << endl
          << "                   have support in the data." << endl
+	 << "   --haplotype-basis-alleles VCF" << endl
+	 << "                   When specified, only variant alleles provided in this input" << endl
+         << "                   VCF will be used for the construction of complex or haplotype" << endl
+	 << "                   alleles." << endl
          << endl
          << "reporting:" << endl
          << endl
@@ -388,6 +392,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"site-selection-max-iterations", required_argument, 0, 'M'},
         {"genotyping-max-iterations", required_argument, 0, 'B'},
         {"genotyping-max-banddepth", required_argument, 0, '7'},
+        {"haplotype-basis-alleles", required_argument, 0, '9'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -397,7 +402,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -787,6 +792,10 @@ Parameters::Parameters(int argc, char** argv) {
             case '@':
                 variantPriorsFile = optarg;
                 break;
+
+	    case '9':
+		haplotypeVariantFile = optarg;
+		break;
 
             case 'l':
                 onlyUseInputAlleles = true;

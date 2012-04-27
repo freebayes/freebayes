@@ -38,6 +38,7 @@ public:
     string traceFile;
     string failedFile;    // -l --failed-alleles
     string variantPriorsFile;
+    string haplotypeVariantFile;
     bool onlyUseInputAlleles;
 
     // operation parameters

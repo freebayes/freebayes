@@ -35,6 +35,10 @@
 // the size of the window of the reference which is always cached in memory
 #define CACHED_REFERENCE_WINDOW 100
 
+// the window of haplotype basis alleles which we ensure we keep
+// increasing this reduces disk access when using haplotype basis alleles, but increases memory usage
+#define CACHED_BASIS_HAPLOTYPE_WINDOW 1000
+
 using namespace std;
 using namespace BamTools;
 
@@ -101,6 +105,16 @@ public:
 
 };
 
+class AllelicPrimitive {
+public:
+    string alt;
+    int reflen;
+    AllelicPrimitive(int r, string& a)
+	: reflen(r)
+	, alt(a) { }
+};
+
+bool operator<(const AllelicPrimitive& a, const AllelicPrimitive& b);
 
 class AlleleParser {
 
@@ -141,7 +155,33 @@ public:
 
     // VCF
     vcf::VariantCallFile variantCallFile;
-    vcf::VariantCallFile variantCallInputFile;
+    vcf::VariantCallFile variantCallInputFile;   // input variant alleles, to target analysis
+    vcf::VariantCallFile haplotypeVariantInputFile;  // input alleles which will be used to construct haplotype alleles
+
+    // input haplotype alleles
+    // 
+    // as calling progresses, a window of haplotype basis alleles from the flanking sequence
+    // map from starting position to length->alle
+    map<long int, set<AllelicPrimitive> > haplotypeBasisAlleles;  // this is in the current reference sequence
+    bool usingHaplotypeBasisAlleles;
+    long int rightmostHaplotypeBasisAllelePosition;
+    void updateHaplotypeBasisAlleles(long int pos, int referenceLength);
+    bool allowedAllele(long int pos, int referenceLength, string& seq);
+
+    Allele makeAllele(RegisteredAlignment& ra,
+		      AlleleType type,
+		      long int pos,
+		      int length,
+		      int basesLeft,
+		      int basesRight,
+		      string& readSequence,
+		      string& sampleName,
+		      BamAlignment& alignment,
+		      string& sequencingTech,
+		      long double qual,
+		      string& qualstr);
+
+
 
     vector<Allele*> registeredAlleles;
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
@@ -194,6 +234,7 @@ public:
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(void);
     void updateInputVariants(void);
+    void updateHaplotypeBasisAlleles(void);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles, int haplotypeLength = 1, bool getAllAllelesInHaplotype = false);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void updateRegisteredAlleles(void);
