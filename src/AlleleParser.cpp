@@ -982,7 +982,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 		AlleleType atype = ALLELE_COMPLEX;
 		if (lastAllele.isSNP() || lastAllele.isMNP()) {
 		    vector<pair<int, string> > cigar = splitCigar(lastAllele.cigar);
-		    if (cigar.back().second == "X") {
+		    if (cigar.back().second == "X" && newAllele.isSNP() || newAllele.isMNP()) {
 			atype = ALLELE_MNP;
 		    }
 		}
