@@ -143,8 +143,8 @@ void Parameters::usage(char** argv) {
          << "   -e --read-indel-limit N" << endl
          << "                   Exclude reads with more than N separate gaps." << endl
          << "                   default: ~unbounded" << endl
-         << "   -0 --no-filters Do not use any input base and mapping quality filters" << endl
-         << "                   Equivalent to -m 0 -q 0 -R 0 -S 0" << endl
+         << "   -0 --standard-filters  Use stringent input base and mapping quality filters" << endl
+         << "                   Equivalent to -m 30 -q 20 -R 0 -S 0" << endl
          << "   -x --indel-exclusion-window" << endl
          << "                   Ignore portions of alignments this many bases from a" << endl
          << "                   putative insertion or deletion allele.  default: 0" << endl
@@ -297,8 +297,8 @@ Parameters::Parameters(int argc, char** argv) {
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
-    MQL0 = 30;                    // -m --min-mapping-quality
-    BQL0 = 20;                    // -q --min-base-quality
+    MQL0 = 0;                    // -m --min-mapping-quality
+    BQL0 = 0;                    // -q --min-base-quality
     MQL1 = 0;                    // -R --min-supporting-quality MQ,BQ
     BQL1 = 0;                    //
     BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
@@ -346,7 +346,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"use-reference-allele", no_argument, 0, 'Z'},
         {"diploid-reference", no_argument, 0, 'H'},
-        {"no-filters", no_argument, 0, '0'},
+        {"standard-filters", no_argument, 0, '0'},
         {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
         {"pooled", no_argument, 0, 'J'},
@@ -527,12 +527,12 @@ Parameters::Parameters(int argc, char** argv) {
                 diploidReference = true;
                 break;
 
-            // -0 --no-filters
+            // -0 --standard-filters
             case '0':
-                MQL0 = 0;
-                MQL1 = 0;
-                BQL0 = 0;
-                BQL1 = 0;
+		MQL0 = 30;
+		BQL0 = 20;
+		MQL1 = 0;
+		BQL1 = 0;
                 break;
 
             // -M --expectation-maximization
