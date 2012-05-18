@@ -961,7 +961,9 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                 assert(newAllele.position == p);
                 alleles.push_back(newAllele);
                 assert(newAllele.alternateSequence.size() == newAllele.baseQualities.size());
-            }
+            } else {
+		alleles.push_back(newAllele); // NULL case
+	    }
         } else if (newAllele.isNull()) {
             if (lastAllele.isComplex()) {
                 // split apart the last allele if it's 'complex' but followed by a null allele
@@ -2678,7 +2680,6 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
         int oldHaplotypeLength = haplotypeLength;
         do {
             oldHaplotypeLength = haplotypeLength;
-            //cerr << "haplotype length is " << haplotypeLength << endl;
             getAlleles(samples, allowedAlleleTypes, haplotypeLength, true);
             alleleGroups.clear();
             groupAlleles(samples, alleleGroups);
@@ -2709,15 +2710,8 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
                     oldptrs.push_back(&*a);
                 }
                 Allele* aptr;
-                //cerr << "before fitting haplotype, we have these alleles:" << endl << ra.alleles << endl;
                 if (ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
                     //registeredAlleles.insert(registeredAlleles.end(), generatedAlleles.begin(), generatedAlleles.end());
-		    // for debugging:
-		    //assert(aptr->position == currentPosition);
-                    //assert(aptr->referenceLength == haplotypeLength);
-                    //cerr << "generated haplotype-matching allele: " << *aptr << endl;
-                    //cerr << "and these alleles, " << ra.alleles << endl;
-
 		    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
 			a->processed = false; // re-trigger use of all alleles
 			registeredAlleles.push_back(&*a);
