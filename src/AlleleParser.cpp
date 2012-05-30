@@ -1743,6 +1743,11 @@ void AlleleParser::updateAlignmentQueue(void) {
             if (!currentAlignment.IsPrimaryAlignment()) // TODO add flag to optionally allow this
                 continue;
 
+	    if (currentAlignment.GetEndPosition() < currentPosition) {
+		cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!" << endl;
+		continue;
+	    }
+
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
             // we have to register the alignment to acquire some information required by filters
             // such as mismatches
