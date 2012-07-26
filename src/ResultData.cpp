@@ -163,7 +163,6 @@ vcf::Variant& Results::vcf(
 	    cerr << "variant at " << parser->currentSequenceName << ":" << referencePosition + 1 << endl;
 	    cerr << "alt is the same as the reference" << endl;
 	    cerr << *a << " == " << var.ref << endl;
-	    assert(*a != var.ref);
 	}
     }
 
