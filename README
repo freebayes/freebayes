@@ -16,6 +16,13 @@ variants (VCF) as a source of prior information, and a copy number variant map
 (BED) to define non-uniform ploidy variation across the samples under analysis.
 
 
+Documentation and citation:
+
+See http://arxiv.org/abs/1207.3907 for an overview of the statistical models
+used in FreeBayes.  We ask that you cite this paper if you use FreeBayes in
+work that leads to publication.
+
+
 Obtaining:
 
 To download FreeBayes, please use git to download the most recent development
