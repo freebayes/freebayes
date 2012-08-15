@@ -2471,6 +2471,9 @@ bool AlleleParser::toNextPosition(void) {
         }
     }
 
+    // so we have to make sure it's still there (this matters in low-coverage)
+    DEBUG2("updating reference sequence cache");
+    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
 
     currentReferenceBase = currentReferenceBaseChar();
 
@@ -2517,10 +2520,6 @@ bool AlleleParser::toNextPosition(void) {
     if (af != inputAlleleCounts.end()) {
         inputAlleleCounts.erase(af);
     }
-
-    // so we have to make sure it's still there (this matters in low-coverage)
-    DEBUG2("updating reference sequence cache");
-    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
 
     return true;
 
