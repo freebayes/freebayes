@@ -7,11 +7,11 @@
 
 using namespace std;
 
-class IndelAllele {
-    friend ostream& operator<<(ostream&, const IndelAllele&);
-    friend bool operator==(const IndelAllele&, const IndelAllele&);
-    friend bool operator!=(const IndelAllele&, const IndelAllele&);
-    friend bool operator<(const IndelAllele&, const IndelAllele&);
+class FBIndelAllele {
+    friend ostream& operator<<(ostream&, const FBIndelAllele&);
+    friend bool operator==(const FBIndelAllele&, const FBIndelAllele&);
+    friend bool operator!=(const FBIndelAllele&, const FBIndelAllele&);
+    friend bool operator<(const FBIndelAllele&, const FBIndelAllele&);
 public:
     bool insertion;
     int length;
@@ -21,15 +21,15 @@ public:
 
     bool homopolymer(void);
 
-    IndelAllele(bool i, int l, int p, int rp, string s)
+    FBIndelAllele(bool i, int l, int p, int rp, string s)
         : insertion(i), length(l), position(p), readPosition(rp), sequence(s)
     { }
 };
 
-bool homopolymer(string sequence);
-ostream& operator<<(ostream& out, const IndelAllele& indel);
-bool operator==(const IndelAllele& a, const IndelAllele& b);
-bool operator!=(const IndelAllele& a, const IndelAllele& b);
-bool operator<(const IndelAllele& a, const IndelAllele& b);
+bool FBhomopolymer(string sequence);
+ostream& operator<<(ostream& out, const FBIndelAllele& indel);
+bool operator==(const FBIndelAllele& a, const FBIndelAllele& b);
+bool operator!=(const FBIndelAllele& a, const FBIndelAllele& b);
+bool operator<(const FBIndelAllele& a, const FBIndelAllele& b);
 
 #endif

@@ -533,6 +533,7 @@ void AlleleParser::loadFastaReference(void) {
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     DEBUG2("loading reference sequence overlapping first alignment");
     currentPosition = alignment.Position;
+    rightmostHaplotypeBasisAllelePosition = currentPosition;
     currentSequenceStart = alignment.Position;
     currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
@@ -916,7 +917,9 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 
         Allele& lastAllele = alleles.back();
 
-        if (newAllele.isReference()
+	if (newAllele.isReference() && newAllele.referenceLength == 0) {
+	    // do nothing
+	} else if (newAllele.isReference()
 	    && (newAllele.referenceLength > maxComplexGap
 		|| ( newAllele.referenceLength <= maxComplexGap && newAllele.basesRight <= maxComplexGap )
 		|| newAllele.basesRight == 0)) {
@@ -958,7 +961,10 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                     alleles.pop_back(); // remove 0-length alleles
                 }
                 newAllele.addToStart(seq, cig, quals);
-                assert(newAllele.position == p);
+                if (newAllele.position != p) {
+		    cerr << "newAllele.position != p" << endl << newAllele << " != " << p << endl;
+		    exit(1);
+		}
                 alleles.push_back(newAllele);
                 assert(newAllele.alternateSequence.size() == newAllele.baseQualities.size());
             } else {
@@ -1002,7 +1008,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 // TODO erase alleles which are beyond N bp before the current position on position step
 void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength) {
     if (pos + referenceLength > rightmostHaplotypeBasisAllelePosition) {
-	//stringstream r;
+	stringstream r;
 	//r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
 	//cerr << "getting variants in " << r.str() << endl;
 	if (haplotypeVariantInputFile.setRegion(currentSequenceName,
@@ -1013,12 +1019,24 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
 	    vcf::Variant var(haplotypeVariantInputFile);
 	    while (haplotypeVariantInputFile.getNextVariant(var)) {
 		//cerr << "input variant: " << var << endl;
+		
+		// the following stanza is for parsed
+		// alternates. instead use whole haplotype calls, as
+		// alternates can be parsed prior to providing the
+		// file as input.
+		/*
+		for (vector<string>::iterator a = var.alt.begin(); a != var.alt.end(); ++a) {
+		    haplotypeBasisAlleles[var.position].insert(AllelicPrimitive(var.ref.size(), *a));
+		}
+		*/
+
 		map<string, vector<vcf::VariantAllele> > variants = var.parsedAlternates();
 		for (map<string, vector<vcf::VariantAllele> >::iterator a = variants.begin(); a != variants.end(); ++a) {
 		    for (vector<vcf::VariantAllele>::iterator v = a->second.begin(); v != a->second.end(); ++v) {
 			haplotypeBasisAlleles[v->position].insert(AllelicPrimitive(v->ref.size(), v->alt));
 		    }
 		}
+
 	    }
 	}
 	// set the rightmost haplotype position to trigger the next update
@@ -2270,6 +2288,7 @@ bool AlleleParser::toNextTarget(void) {
         currentRefID = currentAlignment.RefID;
         currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
         currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
+	rightmostHaplotypeBasisAllelePosition = currentPosition;
 
     // stdin, no targets cases
     } else if (!currentTarget && (parameters.useStdin || targets.empty())) {
@@ -2319,6 +2338,7 @@ bool AlleleParser::loadTarget(BedTarget* target) {
 
     DEBUG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left;
+    rightmostHaplotypeBasisAllelePosition = currentTarget->left;
 
     if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right - 1)) {  // TODO is bamtools taking 0/1 basing?
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);

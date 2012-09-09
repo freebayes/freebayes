@@ -3,7 +3,7 @@
 using namespace std;
 
 
-bool IndelAllele::homopolymer(void) {
+bool FBIndelAllele::homopolymer(void) {
     string::iterator s = sequence.begin();
     char c = *s++;
     while (s != sequence.end()) {
@@ -12,7 +12,7 @@ bool IndelAllele::homopolymer(void) {
     return true;
 }
 
-bool homopolymer(string sequence) {
+bool FBhomopolymer(string sequence) {
     string::iterator s = sequence.begin();
     char c = *s++;
     while (s != sequence.end()) {
@@ -21,24 +21,24 @@ bool homopolymer(string sequence) {
     return true;
 }
 
-ostream& operator<<(ostream& out, const IndelAllele& indel) {
+ostream& operator<<(ostream& out, const FBIndelAllele& indel) {
     string t = indel.insertion ? "i" : "d";
     out << t <<  ":" << indel.position << ":" << indel.readPosition << ":" << indel.sequence;
     return out;
 }
 
-bool operator==(const IndelAllele& a, const IndelAllele& b) {
+bool operator==(const FBIndelAllele& a, const FBIndelAllele& b) {
     return (a.insertion == b.insertion
             && a.length == b.length
             && a.position == b.position
             && a.sequence == b.sequence);
 }
 
-bool operator!=(const IndelAllele& a, const IndelAllele& b) {
+bool operator!=(const FBIndelAllele& a, const FBIndelAllele& b) {
     return !(a==b);
 }
 
-bool operator<(const IndelAllele& a, const IndelAllele& b) {
+bool operator<(const FBIndelAllele& a, const FBIndelAllele& b) {
     ostringstream as, bs;
     as << a;
     bs << b;

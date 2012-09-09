@@ -62,6 +62,10 @@ OBJECTS=BedReader.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
+		../vcflib/smithwaterman/disorder.c \
+		../vcflib/smithwaterman/LeftAlign.o \
+		../vcflib/smithwaterman/Repeats.o \
+		../vcflib/smithwaterman/IndelAllele.o \
 		Variant.o \
 		$(BAMTOOLS_ROOT)/lib/libbamtools.a
 

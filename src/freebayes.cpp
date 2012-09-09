@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
 
     // output VCF header
     if (parameters.output == "vcf") {
-        out << parser->variantCallFile.header;
+        out << parser->variantCallFile.header << endl;
     }
 
     Allele nullAllele = genotypeAllele(ALLELE_NULL, "N", 1, "1N");

@@ -30,7 +30,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     string alignmentAlignedBases = alignment.QueryBases;
 
     // store information about the indels
-    vector<IndelAllele> indels;
+    vector<FBIndelAllele> indels;
 
     int rp = 0;  // read position, 0-based relative to read
     int sp = 0;  // sequence position
@@ -48,12 +48,12 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             sp += l;
             rp += l;
         } else if (t == 'D') { // deletion
-            indels.push_back(IndelAllele(false, l, sp, rp, referenceSequence.substr(sp, l)));
+            indels.push_back(FBIndelAllele(false, l, sp, rp, referenceSequence.substr(sp, l)));
             alignmentAlignedBases.insert(rp + aabOffset, string(l, '-'));
             aabOffset += l;
             sp += l;  // update reference sequence position
         } else if (t == 'I') { // insertion
-            indels.push_back(IndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l)));
+            indels.push_back(FBIndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l)));
             alignedReferenceSequence.insert(sp + softBegin.size() + arsOffset, string(l, '-'));
             arsOffset += l;
             rp += l;
@@ -87,8 +87,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     //     while the indel sequence repeated to the left and we're not matched up with the left-previous indel
     //         move the indel left
 
-    vector<IndelAllele>::iterator previous = indels.begin();
-    for (vector<IndelAllele>::iterator id = indels.begin(); id != indels.end(); ++id) {
+    vector<FBIndelAllele>::iterator previous = indels.begin();
+    for (vector<FBIndelAllele>::iterator id = indels.begin(); id != indels.end(); ++id) {
 
         // left shift by repeats
         //
@@ -100,7 +100,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         // the repeat unit.
         //
         int steppos, readsteppos;
-        IndelAllele& indel = *id;
+        FBIndelAllele& indel = *id;
         int i = 1;
         while (i <= indel.length) {
 
@@ -172,8 +172,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     // if so, adjust so that we will merge in the next step
     if (indels.size() > 1) {
         previous = indels.begin();
-        for (vector<IndelAllele>::iterator id = (indels.begin() + 1); id != indels.end(); ++id) {
-            IndelAllele& indel = *id;
+        for (vector<FBIndelAllele>::iterator id = (indels.begin() + 1); id != indels.end(); ++id) {
+            FBIndelAllele& indel = *id;
             // parsimony: could we shift right and merge with the previous indel?
             // if so, do it
             int prev_end_ref = previous->insertion ? previous->position : previous->position + previous->length;
@@ -192,8 +192,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                     string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
                     LEFTALIGN_DEBUG("seq: " << seq << endl << "readseq: " << readseq << endl);
                     if (previous->sequence.at(0) == seq.at(0)
-                            && homopolymer(seq)
-                            && homopolymer(readseq)) {
+                            && FBhomopolymer(seq)
+                            && FBhomopolymer(readseq)) {
                         LEFTALIGN_DEBUG("moving " << *previous << " right to " 
                                 << (indel.insertion ? indel.position : indel.position - previous->length) << endl);
                         previous->position = indel.insertion ? indel.position : indel.position - previous->length;
@@ -236,8 +236,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         newCigar.push_back(CigarOp('S', softBegin.size()));
     }
 
-    vector<IndelAllele>::iterator id = indels.begin();
-    IndelAllele last = *id++;
+    vector<FBIndelAllele>::iterator id = indels.begin();
+    FBIndelAllele last = *id++;
     if (last.position > 0) {
         newCigar.push_back(CigarOp('M', last.position));
         newCigar.push_back(CigarOp((last.insertion ? 'I' : 'D'), last.length));
@@ -248,7 +248,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     LEFTALIGN_DEBUG(last << ",");
 
     for (; id != indels.end(); ++id) {
-        IndelAllele& indel = *id;
+        FBIndelAllele& indel = *id;
         LEFTALIGN_DEBUG(indel << ",");
         if (indel.position < lastend) {
             cerr << "impossibility?: indel realigned left of another indel" << endl << alignment.Name
