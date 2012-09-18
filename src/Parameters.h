@@ -39,6 +39,7 @@ public:
     string failedFile;    // -l --failed-alleles
     string variantPriorsFile;
     string haplotypeVariantFile;
+    bool reportAllHaplotypeAlleles;
     bool onlyUseInputAlleles;
 
     // operation parameters
@@ -63,6 +64,7 @@ public:
     bool obsBinomialPriors;
     bool alleleBalancePriors;
     bool hwePriors;
+    bool reportGenotypeLikelihoodMax;
     int genotypingMaxIterations;
     int genotypingMaxBandDepth;
     bool excludePartiallyObservedGenotypes;

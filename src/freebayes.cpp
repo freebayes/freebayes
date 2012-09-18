@@ -384,7 +384,27 @@ int main (int argc, char *argv[]) {
                 invariantSampleDataLikelihoods.clear();
             }
 
-            convergentGenotypeComboSearch(
+	    if (parameters.reportGenotypeLikelihoodMax) {
+		GenotypeCombo comboKing;
+		vector<int> initialPosition;
+		initialPosition.assign(sampleDataLikelihoods.size(), 0);
+		SampleDataLikelihoods nullDataLikelihoods; // dummy variable
+		makeComboByDatalLikelihoodRank(comboKing,
+					       initialPosition,
+					       sampleDataLikelihoods,
+					       nullDataLikelihoods,
+					       inputAlleleCounts,
+					       parameters.TH,
+					       parameters.pooled,
+					       parameters.ewensPriors,
+					       parameters.permute,
+					       parameters.hwePriors,
+					       parameters.obsBinomialPriors,
+					       parameters.alleleBalancePriors,
+					       parameters.diffusionPriorScalar);
+		populationGenotypeCombos.push_back(comboKing);
+	    } else {
+		convergentGenotypeComboSearch(
                     populationGenotypeCombos,
                     nullCombo,  // passing an empty combo triggers use of the data likelihood max combo
                     sampleDataLikelihoods,
@@ -405,6 +425,7 @@ int main (int argc, char *argv[]) {
                     parameters.diffusionPriorScalar,
                     parameters.siteSelectionMaxIterations,
                     addHomozygousCombos);
+	    }
 
             // sort by the normalized datalikelihood + prior
             DEBUG2("sorting genotype combination likelihoods");
@@ -582,8 +603,30 @@ int main (int argc, char *argv[]) {
                     GenotypeCombo nullCombo;
                     SampleDataLikelihoods nullSampleDataLikelihoods;
 
-                    // search much longer for convergence
-                    convergentGenotypeComboSearch(
+		    if (parameters.reportGenotypeLikelihoodMax) {
+			GenotypeCombo comboKing;
+			vector<int> initialPosition;
+			initialPosition.assign(sampleDataLikelihoods.size(), 0);
+			SampleDataLikelihoods nullDataLikelihoods; // dummy variable
+			makeComboByDatalLikelihoodRank(comboKing,
+						       initialPosition,
+						       sampleDataLikelihoods,
+						       nullDataLikelihoods,
+						       inputAlleleCounts,
+						       parameters.TH,
+						       parameters.pooled,
+						       parameters.ewensPriors,
+						       parameters.permute,
+						       parameters.hwePriors,
+						       parameters.obsBinomialPriors,
+						       parameters.alleleBalancePriors,
+						       parameters.diffusionPriorScalar);
+			populationGenotypeCombos.push_back(comboKing);
+
+		    } else {
+
+			// search much longer for convergence
+			convergentGenotypeComboSearch(
                             populationGenotypeCombos,
                             nullCombo,
                             sampleDataLikelihoods, // vary everything
@@ -605,7 +648,8 @@ int main (int argc, char *argv[]) {
                             itermax,
                             true); // add homozygous combos
                         // ^^ combo results are sorted by default
-                }
+		    }
+		}
 
                 combinePopulationCombos(genotypeCombos, genotypeCombosByPopulation);
                 // TODO factor out the following blocks as they are repeated from above
@@ -672,7 +716,7 @@ int main (int argc, char *argv[]) {
             }
 
             vector<Allele> alts;
-            if (parameters.onlyUseInputAlleles) {
+            if (parameters.onlyUseInputAlleles || parameters.reportAllHaplotypeAlleles) {
                 //alts = genotypeAlleles;
                 for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
                     if (!a->isReference()) {

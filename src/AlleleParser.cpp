@@ -986,7 +986,8 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
             alleles.push_back(newAllele);
         } else {
             // -> complex event or MNP
-            if (mergeComplex && lastAllele.position + lastAllele.referenceLength == newAllele.position && !lastAllele.isNull()) {
+            if (mergeComplex && lastAllele.position + lastAllele.referenceLength == newAllele.position
+		&& !lastAllele.isNull()) {
 		AlleleType atype = ALLELE_COMPLEX;
 		if (lastAllele.isSNP() || lastAllele.isMNP()) {
 		    vector<pair<int, string> > cigar = splitCigar(lastAllele.cigar);
@@ -1002,7 +1003,6 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
         }
 
     }
-
 }
 
 // TODO erase alleles which are beyond N bp before the current position on position step
@@ -1033,7 +1033,12 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
 		map<string, vector<vcf::VariantAllele> > variants = var.parsedAlternates();
 		for (map<string, vector<vcf::VariantAllele> >::iterator a = variants.begin(); a != variants.end(); ++a) {
 		    for (vector<vcf::VariantAllele>::iterator v = a->second.begin(); v != a->second.end(); ++v) {
-			haplotypeBasisAlleles[v->position].insert(AllelicPrimitive(v->ref.size(), v->alt));
+			//cerr << v->ref << "/" << v->alt << endl;
+			if (v->ref != v->alt) {
+			    //cerr << "basis allele " << v->position << " " << v->ref << "/" << v->alt << endl;
+			    haplotypeBasisAlleles[v->position].push_back(AllelicPrimitive(v->ref, v->alt));
+			    //cerr << "number of alleles at position " <<  haplotypeBasisAlleles[v->position].size() << endl;
+			}
 		    }
 		}
 
@@ -1045,23 +1050,24 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
 }
 
 
-bool AlleleParser::allowedAllele(long int pos, int referenceLength, string& seq) {
+bool AlleleParser::allowedAllele(long int pos, string& ref, string& alt) {
     // check the haplotypeBasisAllele map for membership of the allele in question in the current sequence
-
+    //cerr << "is allowed: " << pos << " " << ref << "/" << alt << " ?" << endl;
     if (!usingHaplotypeBasisAlleles) {
 	return true; // always true if we aren't using the haplotype basis allele system
     } else {
-	map<long int, set<AllelicPrimitive> >::iterator p = haplotypeBasisAlleles.find(pos);
+	map<long int, vector<AllelicPrimitive> >::iterator p = haplotypeBasisAlleles.find(pos);
 	if (p != haplotypeBasisAlleles.end()) {
-	    set<AllelicPrimitive>& alleles = p->second;
-	    if (alleles.count(AllelicPrimitive(referenceLength, seq)) > 0) {
-		return true;
-	    } else {
-		return false;
+	    vector<AllelicPrimitive>& alleles = p->second;
+	    for (vector<AllelicPrimitive>::iterator z = alleles.begin(); z != alleles.end(); ++z) {
+		//cerr << "overlapping allele " << z->ref << ":" << z->alt << endl;
+		if (z->ref == ref && z->alt == alt) {
+		    //cerr << "yess" << endl;
+		    return true;
+		}
 	    }
-	} else {
-	    return false;
 	}
+	return false;
     }
 
 }
@@ -1082,12 +1088,14 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 
 
     string cigar;
+    int reflen = length;
 
     if (type == ALLELE_REFERENCE) {
 	cigar = convert(length) + "M";
     } else if (type == ALLELE_SNP || type == ALLELE_MNP) {
 	cigar = convert(length) + "X";
     } else if (type == ALLELE_INSERTION) {
+	reflen = 0;
 	cigar = convert(length) + "I";
     } else if (type == ALLELE_DELETION) {
 	cigar = convert(length) + "D";
@@ -1106,8 +1114,15 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
     // if not, adjust the allele so that it's a reference allele with preset BQ and length
     // in effect, this means creating a reference allele of the reference length of the allele with 0 BQ
 
-    if (type != ALLELE_REFERENCE && !allowedAllele(pos + 1, length, readSequence)) { // XXX what to do about 0/1 basing?
+    string refSequence = currentSequence.substr(pos - currentSequenceStart, reflen);
+
+    if (type != ALLELE_REFERENCE
+	&& type != ALLELE_NULL 
+	&& !allowedAllele(pos + 1,
+			  refSequence,
+			  readSequence)) {
 	type = ALLELE_REFERENCE;
+	//type = ALLELE_NULL;
 	length = referenceLengthFromCigar(cigar);
 	cigar = convert(length) + "M";
 	// by adjusting the cigar, we implicitly adjust
@@ -1131,7 +1146,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 		  alignment.Name,
 		  sequencingTech,
 		  !alignment.IsReverseStrand(),
-		  qual,
+		  max(qual, (long double) 0), // ensure qual is at least 0
 		  qualstr,
 		  alignment.MapQuality,
 		  alignment.IsPaired(),
@@ -1557,7 +1572,23 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
         // handle other cigar element types
         } else if (t == 'S') { // soft clip, clipped sequence present in the read not matching the reference
+	    string qualstr = rQual.substr(rp, l);
+	    string readseq = alignment.QueryBases.substr(rp, l);
             // skip these bases in the read
+	    ra.addAllele(
+		makeAllele(ra,
+			   ALLELE_NULL,
+			   sp - l,
+			   l,
+			   rp - l, // bases left
+			   alignment.QueryBases.size() - rp, // bases right
+			   readseq,
+			   sampleName,
+			   alignment,
+			   sequencingTech,
+			   alignment.MapQuality,
+			   qualstr),
+		parameters.allowComplex, parameters.maxComplexGap);
             rp += l;// sp += l; csp += l;
         } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
             // the alignment position is the first non-clipped base.
@@ -2524,7 +2555,7 @@ bool AlleleParser::toNextPosition(void) {
     }
 
     DEBUG2("erasing old input haplotype basis alleles");
-    map<long int, set<AllelicPrimitive> >::iterator z = haplotypeBasisAlleles.find(currentPosition - 3);
+    map<long int, vector<AllelicPrimitive> >::iterator z = haplotypeBasisAlleles.find(currentPosition - 3);
     if (z != haplotypeBasisAlleles.end()) {
         haplotypeBasisAlleles.erase(z);
     }
@@ -3231,5 +3262,5 @@ bool AlleleParser::hasInputVariantAllelesAtCurrentPosition(void) {
 }
 
 bool operator<(const AllelicPrimitive& a, const AllelicPrimitive& b) {
-    return a.reflen < b.reflen && a.alt < b.alt;
+    return a.ref < b.ref && a.alt < b.alt;
 }

@@ -60,6 +60,10 @@ void Parameters::usage(char** argv) {
 	 << "                   When specified, only variant alleles provided in this input" << endl
          << "                   VCF will be used for the construction of complex or haplotype" << endl
 	 << "                   alleles." << endl
+	 << "   --report-all-haplotype-alleles" << endl
+	 << "                   At sites where genotypes are made over haplotype alleles," << endl
+	 << "                   provide information about all alleles in output, not only" << endl
+         << "                   those which are called." << endl
          << endl
          << "reporting:" << endl
          << endl
@@ -189,6 +193,9 @@ void Parameters::usage(char** argv) {
          << endl
          << "algorithmic features:" << endl
          << endl
+	 << "   --report-genotype-likelihood-max" << endl
+	 << "                   Report genotypes using the maximum-likelihood estimate provided" << endl
+	 << "                   from genotype likelihoods." << endl
          << "   -M --site-selection-max-iterations N" << endl
          << "                   Uses hill-climbing algorithm to search posterior space for N" << endl
          << "                   iterations to determine if the site should be evaluated.  Set to 0" << endl
@@ -289,10 +296,12 @@ Parameters::Parameters(int argc, char** argv) {
     excludePartiallyObservedGenotypes = false;
     genotypeVariantThreshold = 0;
     siteSelectionMaxIterations = 5;
+    reportGenotypeLikelihoodMax = false;
     genotypingMaxIterations = 25;
     genotypingMaxBandDepth = 7;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
+    reportAllHaplotypeAlleles = false;
     onlyUseInputAlleles = false;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
@@ -393,6 +402,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"genotyping-max-iterations", required_argument, 0, 'B'},
         {"genotyping-max-banddepth", required_argument, 0, '7'},
         {"haplotype-basis-alleles", required_argument, 0, '9'},
+        {"report-genotype-likelihood-max", no_argument, 0, '5'},
+	{"report-all-haplotype-alleles", no_argument, 0, '6'},
         {"debug", no_argument, 0, 'd'},
 
         {0, 0, 0, 0}
@@ -402,7 +413,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diNaI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diN5aI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -640,6 +651,10 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
+	    case '5':
+		reportGenotypeLikelihoodMax = true;
+		break;
+
             // -Q --mismatch-base-quality-threshold
             case 'Q':
                 if (!convert(optarg, BQL2)) {
@@ -800,6 +815,10 @@ Parameters::Parameters(int argc, char** argv) {
             case 'l':
                 onlyUseInputAlleles = true;
                 break;
+
+	    case '6':
+		reportAllHaplotypeAlleles = true;
+		break;
 
             case '_':
                 showReferenceRepeats = true;

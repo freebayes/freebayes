@@ -1046,7 +1046,7 @@ void Allele::subtract(
     if (subtractFromRefEnd) {
         int refbpend = subtractFromRefEnd;
         pair<int, string> c;
-        while (!cigarL.empty()) {
+        while (!cigarL.empty() && refbpend > 0) {
             c = cigarL.back();
             cigarL.pop_back();
             char op = c.second[0];
@@ -1087,7 +1087,6 @@ void Allele::subtract(
             }
         }
     }
-
 
     // adjust the alternateSequence
     substart = alternateSequence.substr(0, subtractFromAltStart);

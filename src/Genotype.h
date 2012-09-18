@@ -321,6 +321,7 @@ makeComboByDatalLikelihoodRank(
     vector<int>& initialPosition,
     SampleDataLikelihoods& variantSampleDataLikelihoods,
     SampleDataLikelihoods& invariantSampleDataLikelihoods,
+    map<string, int>& priorACs,
     long double theta,
     bool pooled,
     bool ewensPriors,

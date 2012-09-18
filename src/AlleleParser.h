@@ -7,7 +7,6 @@
 #include <vector>
 #include <map>
 #include <deque>
-#include <set>
 #include <utility>
 #include <algorithm>
 #include <time.h>
@@ -108,9 +107,9 @@ public:
 class AllelicPrimitive {
 public:
     string alt;
-    int reflen;
-    AllelicPrimitive(int r, string& a)
-	: reflen(r)
+    string ref;
+    AllelicPrimitive(string& r, string& a)
+	: ref(r)
 	, alt(a) { }
 };
 
@@ -162,11 +161,11 @@ public:
     // 
     // as calling progresses, a window of haplotype basis alleles from the flanking sequence
     // map from starting position to length->alle
-    map<long int, set<AllelicPrimitive> > haplotypeBasisAlleles;  // this is in the current reference sequence
+    map<long int, vector<AllelicPrimitive> > haplotypeBasisAlleles;  // this is in the current reference sequence
     bool usingHaplotypeBasisAlleles;
     long int rightmostHaplotypeBasisAllelePosition;
     void updateHaplotypeBasisAlleles(long int pos, int referenceLength);
-    bool allowedAllele(long int pos, int referenceLength, string& seq);
+    bool allowedAllele(long int pos, string& ref, string& alt);
 
     Allele makeAllele(RegisteredAlignment& ra,
 		      AlleleType type,
