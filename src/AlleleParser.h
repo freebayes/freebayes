@@ -32,7 +32,7 @@
 #include "Version.h"
 
 // the size of the window of the reference which is always cached in memory
-#define CACHED_REFERENCE_WINDOW 100
+#define CACHED_REFERENCE_WINDOW 300
 
 // the window of haplotype basis alleles which we ensure we keep
 // increasing this reduces disk access when using haplotype basis alleles, but increases memory usage
@@ -247,6 +247,7 @@ public:
     bool toNextTarget(void);
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
+    int currentSequencePosition();
     bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
     // builds up haplotype (longer, e.g. ref+snp+ref) alleles to match the longest allele in genotypeAlleles
     // updates vector<Allele>& alleles with the new alleles
@@ -256,7 +257,9 @@ public:
     Allele* alternateAllele(int mapQ, int baseQ);
     int homopolymerRunLeft(string altbase);
     int homopolymerRunRight(string altbase);
-    map<string, int> repeatCounts(int maxsize);
+    map<string, int> repeatCounts(long int position, const string& sequence, int maxsize);
+    map<long int, map<string, int> > cachedRepeatCounts; // cached version of previous
+    bool isRepeatUnit(const string& seq, const string& unit);
     void setupVCFOutput(void);
     void setupVCFInput(void);
     string vcfHeader(void);

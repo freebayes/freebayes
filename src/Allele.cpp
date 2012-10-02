@@ -417,6 +417,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence
             //<< ":" << allele.referenceSequence
+	    << ":" << allele.repeatRightBoundary
             << ":" << allele.cigar
             << ":" << allele.quality;
     } else {
@@ -871,11 +872,11 @@ vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles) {
 }
 
 Allele genotypeAllele(Allele &a) {
-    return Allele(a.type, a.alternateSequence, a.length, a.referenceLength, a.cigar, a.position);
+    return Allele(a.type, a.alternateSequence, a.length, a.referenceLength, a.cigar, a.position, a.repeatRightBoundary);
 }
 
-Allele genotypeAllele(AlleleType type, string alt, unsigned int len, string cigar, unsigned int reflen, long int pos) {
-    return Allele(type, alt, len, reflen, cigar, pos);
+Allele genotypeAllele(AlleleType type, string alt, unsigned int len, string cigar, unsigned int reflen, long int pos, long int rrbound) {
+    return Allele(type, alt, len, reflen, cigar, pos, rrbound);
 }
 
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes) {
@@ -1347,6 +1348,9 @@ void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
     } else {
         basesRight += newAllele.referenceLength;
         bpRight += newAllele.referenceLength;
+    }
+    if (newAllele.type != ALLELE_REFERENCE) {
+	repeatRightBoundary = newAllele.repeatRightBoundary;
     }
     cigar = mergeCigar(cigar, newAllele.cigar);
     referenceLength = referenceLengthFromCigar();

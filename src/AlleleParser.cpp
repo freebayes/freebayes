@@ -849,6 +849,12 @@ int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
     return alignment.Position - currentSequenceStart;
 }
 
+// currentPosition within the cached currentSequence
+int AlleleParser::currentSequencePosition() {
+    return currentPosition - currentSequenceStart;
+}
+
+
 // TODO clean up this.... just use a string
 char AlleleParser::currentReferenceBaseChar(void) {
     return toupper(*currentReferenceBaseIterator());
@@ -1103,6 +1109,10 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	cigar = convert(length) + "N";
     }
 
+    string refSequence = currentSequence.substr(pos - currentSequenceStart, reflen);
+
+    long int repeatRightBoundary = pos;
+
     // check if it's allowed
 
     // if it isn't allowed
@@ -1113,8 +1123,6 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 
     // if not, adjust the allele so that it's a reference allele with preset BQ and length
     // in effect, this means creating a reference allele of the reference length of the allele with 0 BQ
-
-    string refSequence = currentSequence.substr(pos - currentSequenceStart, reflen);
 
     if (type != ALLELE_REFERENCE
 	&& type != ALLELE_NULL 
@@ -1133,12 +1141,50 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	readSequence = currentSequence.substr(pos - currentSequenceStart, length);
     }
 
+    // cache information about repeat structure in the alleles, to
+    // allow haplotype construction to be forced to extend across
+    // tandem repeats and homopolymers when indels are present
+    if (type == ALLELE_INSERTION || type == ALLELE_DELETION) {
+	string alleleseq;
+	if (type == ALLELE_INSERTION) {
+	    alleleseq = readSequence;
+	} else if (type == ALLELE_DELETION) {
+	    alleleseq = refSequence;
+	}
+	map<long int, map<string, int> >::iterator rc = cachedRepeatCounts.find(pos);
+	if (rc == cachedRepeatCounts.end()) {
+	    cachedRepeatCounts[pos] = repeatCounts(pos - currentSequenceStart, currentSequence, 12);
+	    rc = cachedRepeatCounts.find(pos);
+	}
+	map<string, int>& matchedRepeatCounts = rc->second;
+	for (map<string, int>::iterator r = matchedRepeatCounts.begin(); r != matchedRepeatCounts.end(); ++r) {
+	    const string& repeatunit = r->first;
+	    int rptcount = r->second;
+	    string repeatstr = repeatunit * rptcount;
+	    // assumption of left-alignment may be problematic... so this should be updated
+	    if (isRepeatUnit(alleleseq, repeatunit)) {
+		// determine the boundaries of the repeat
+		long int p = pos - currentSequenceStart;
+		size_t startpos = currentSequence.find(repeatstr, p);
+		long int leftbound = startpos + currentSequenceStart;
+		if (startpos == string::npos || leftbound < pos) {
+		    cerr << "could not find repeat sequence?" << endl;
+		    cerr << repeatstr << endl;
+		    cerr << currentSequence << endl;
+		    exit(1);
+		}
+	        repeatRightBoundary = leftbound + repeatstr.size() + 1; // 1 past edge of repeat
+	    }
+	}
+    }
+    
     return Allele(type,
 		  currentSequenceName,
 		  pos,
 		  &currentPosition,
 		  &currentReferenceBase,
-		  length, 
+		  length,
+		  repeatRightBoundary,
 		  basesLeft,
 		  basesRight,
 		  readSequence,
@@ -2572,6 +2618,12 @@ bool AlleleParser::toNextPosition(void) {
         inputAlleleCounts.erase(af);
     }
 
+    DEBUG2("erasing old cached repeat counts");
+    map<long int, map<string, int> >::iterator rc = cachedRepeatCounts.find(currentPosition - 3);
+    if (rc != cachedRepeatCounts.end()) {
+	cachedRepeatCounts.erase(rc);
+    }
+
     return true;
 
 }
@@ -2732,6 +2784,15 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
 
     if (haplotypeLength > 1) {
 
+	// NB: for indels in tandem repeats, if the indel sequence is
+	// derived from the repeat structure, build the haplotype
+	// across the entire repeat pattern.  This ensures we actually
+	// can discriminate between reference and indel/complex
+	// alleles in the most common misalignment case.  For indels
+	// that match the repeat structure, we have cached the right
+	// boundary of the repeat.  We build the haplotype to the
+	// maximal boundary indicated by the present alleles.
+
         int oldHaplotypeLength = haplotypeLength;
         do {
             oldHaplotypeLength = haplotypeLength;
@@ -2741,9 +2802,15 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
             for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& allele = *a;
-                if (!allele.isReference() && allele.position + allele.referenceLength > currentPosition + haplotypeLength) {
-                    haplotypeLength = (allele.position + allele.referenceLength) - currentPosition;
-                }
+		if (!allele.isReference()) {
+		    long int hapend = max(allele.position + allele.referenceLength,
+					  allele.repeatRightBoundary);
+		    cerr << "hapend " << hapend << endl;
+		    cerr << allele.repeatRightBoundary << endl;
+		    if (hapend > currentPosition + haplotypeLength) {
+			haplotypeLength = hapend - currentPosition;
+		    }
+		}
             }
         } while (haplotypeLength != oldHaplotypeLength);
 
@@ -2970,15 +3037,27 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string baseQstr = "";
     //baseQstr += qualityInt2Char(baseQ);
     Allele* allele = new Allele(ALLELE_REFERENCE, 
-            currentSequenceName,
-            currentPosition,
-            &currentPosition, 
-            &currentReferenceBase,
-            1, 0, 0, base, name, name, sequencingTech,
-            true, baseQ,
-            baseQstr,
-            mapQ,
-            false, false, false, "1M", NULL); // pair information
+				currentSequenceName,
+				currentPosition,
+				&currentPosition, 
+				&currentReferenceBase,
+				1,
+				currentPosition + 1,
+				0,
+				0,
+				base,
+				name,
+				name,
+				sequencingTech,
+				true,
+				baseQ,
+				baseQstr,
+				mapQ,
+				false,
+				false,
+				false,
+				"1M",
+				NULL); // pair information
     allele->genotypeAllele = true;
     allele->baseQualities.push_back(baseQ);
     allele->update();
@@ -3024,7 +3103,13 @@ vector<Allele> AlleleParser::genotypeAlleles(
                 reflength = 1;
                 altseq = currentReferenceBase;
             }
-            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type, altseq, length, allele.cigar, reflength, allele.position), qSum));
+            unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type,
+								 altseq,
+								 length,
+								 allele.cigar,
+								 reflength,
+								 allele.position,
+								 allele.repeatRightBoundary), qSum));
         }
     }
     DEBUG2("found genotype alleles");
@@ -3198,33 +3283,31 @@ int AlleleParser::homopolymerRunRight(string altbase) {
 
 }
 
-// returns the number of repeats for each subsequence at the current position
-// of size up to maxsize.  filters out repeat sequences which are redundant
-// (e.g. TATA -> TA)
-map<string, int> AlleleParser::repeatCounts(int maxsize) {
+map<string, int> AlleleParser::repeatCounts(long int position, const string& sequence, int maxsize) {
     map<string, int> counts;
-    int position = currentPosition;
-    int sequenceposition = position - currentSequenceStart;
     for (int i = 1; i <= maxsize; ++i) {
         // subseq here i bases
-        string seq = currentSequence.substr(sequenceposition, i);
+        string seq = sequence.substr(position, i);
         // go left.
-        int j = sequenceposition - i;
-        int left = 0;
-        while (j - i >= 0 && seq == currentSequence.substr(j, i)) {
+
+        int j = position - i;
+        int leftsteps = 0;
+        while (j >= 0 && seq == sequence.substr(j, i)) {
             j -= i;
-            ++left;
+            ++leftsteps;
         }
+
         // go right.
-        j = sequenceposition + i;
-        int right = 0;
-        while (j + i < currentSequence.size() && seq == currentSequence.substr(j, i)) {
+        j = position;
+
+        int rightsteps = 0;
+        while (j + i <= sequence.size() && seq == sequence.substr(j, i)) {
             j += i;
-            ++right;
+            ++rightsteps;
         }
         // if we went left and right a non-zero number of times, 
-        if (right > 0 || left > 0) {
-            counts[seq] = right + left + 1;
+        if (leftsteps + rightsteps > 1) {
+            counts[seq] = leftsteps + rightsteps;
         }
     }
 
@@ -3251,6 +3334,23 @@ map<string, int> AlleleParser::repeatCounts(int maxsize) {
         return counts;
     }
 }
+
+bool AlleleParser::isRepeatUnit(const string& seq, const string& unit) {
+
+    if (seq.size() % unit.size() != 0) {
+	return false;
+    } else {
+	int maxrepeats = seq.size() / unit.size();
+	for (int i = 0; i < maxrepeats; ++i) {
+	    if (seq.substr(i * unit.size(), unit.size()) != unit) {
+		return false;
+	    }
+	}
+	return true;
+    }
+
+}
+
 
 bool AlleleParser::hasInputVariantAllelesAtCurrentPosition(void) {
     map<long int, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);

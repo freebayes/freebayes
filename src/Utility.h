@@ -131,4 +131,6 @@ string joinCigar(const vector<pair<int, string> >& cigar);
 string joinCigarList(const list<pair<int, string> >& cigar);
 bool isEmptyCigarElement(const pair<int, string>& elem);
 
+std::string operator*(std::string const &s, size_t n);
+
 #endif

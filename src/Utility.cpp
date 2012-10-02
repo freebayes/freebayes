@@ -616,3 +616,15 @@ string joinCigarList(const list<pair<int, string> >& cigar) {
 bool isEmptyCigarElement(const pair<int, string>& elem) {
     return elem.first == 0;
 }
+
+
+// string * overload
+// from http://stackoverflow.com/a/5145880
+std::string operator*(std::string const &s, size_t n)
+{
+    std::string r;  // empty string
+    r.reserve(n * s.size());
+    for (size_t i=0; i<n; i++)
+        r += s;
+    return r;
+}

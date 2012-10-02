@@ -108,6 +108,7 @@ public:
     char* currentReferenceBase;  // pointer to current reference base
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     unsigned int referenceLength; // length of the event relative to the reference
+    long int repeatRightBoundary;  // if this allele is an indel, and if it is embedded in a tandem repeat 
     int bpLeft; // how many bases are in the read to the left of the allele
     int bpRight; // how many bases are in the read to the left of the allele
     // TODO cleanup
@@ -137,32 +138,34 @@ public:
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
-                string& refname,
-                long int pos, 
-                long int* crefpos,
-                char* crefbase,
-                unsigned int len, 
-                int bleft,
-                int bright,
-                string alt, 
-                string& sampleid,
-                string& readid,
-                string& sqtech,
-                bool strnd, 
-                long double qual,
-                string qstr, 
-                short mapqual,
-                bool ispair,
-                bool ismm,
-                bool isproppair,
-                string cigarstr,
-                vector<Allele>* ra)
+	   string& refname,
+	   long int pos, 
+	   long int* crefpos,
+	   char* crefbase,
+	   unsigned int len,
+	   long int rrbound,
+	   int bleft,
+	   int bright,
+	   string alt,
+	   string& sampleid,
+	   string& readid,
+	   string& sqtech,
+	   bool strnd, 
+	   long double qual,
+	   string qstr, 
+	   short mapqual,
+	   bool ispair,
+	   bool ismm,
+	   bool isproppair,
+	   string cigarstr,
+	   vector<Allele>* ra)
         : type(t)
         , referenceName(refname)
         , position(pos)
         , currentReferencePosition(crefpos)
         , currentReferenceBase(crefbase)
         , length(len)
+	, repeatRightBoundary(rrbound)
         , bpLeft(bleft)
         , basesLeft(bleft)
         , bpRight(bright)
@@ -197,16 +200,18 @@ public:
 
     // for constructing genotype alleles
     Allele(AlleleType t,
-            string alt,
-            unsigned int len,
-            unsigned int reflen,
-            string cigarStr,
-            long int pos=0,
-            bool gallele=true) 
+	   string alt,
+	   unsigned int len,
+	   unsigned int reflen,
+	   string cigarStr,
+	   long int pos=0,
+	   long int rrbound=0,
+	   bool gallele=true) 
         : type(t)
         , alternateSequence(alt)
         , length(len)
         , referenceLength(reflen)
+	, repeatRightBoundary(rrbound)
         , quality(0)
         , lnquality(1)
         , position(pos)
@@ -351,7 +356,7 @@ vector<Allele> genotypeAllelesFromAlleleGroups(vector<vector<Allele*> > &groups)
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele> &alleles);
 vector<Allele> genotypeAllelesFromAlleles(vector<Allele*> &alleles);
 Allele genotypeAllele(Allele& a);
-Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, string cigar = "", unsigned int reflen = 0, long int position = 0);
+Allele genotypeAllele(AlleleType type, string alt = "", unsigned int length = 0, string cigar = "", unsigned int reflen = 0, long int position = 0, long int rrbound = 0);
 
 bool isEmptyAllele(const Allele& allele);
 bool isDividedIndel(const Allele& allele);

@@ -712,7 +712,7 @@ int main (int argc, char *argv[]) {
 
             map<string, int> repeats;
             if (parameters.showReferenceRepeats) {
-                repeats = parser->repeatCounts(12);
+                repeats = parser->repeatCounts(parser->currentSequencePosition(), parser->currentSequence, 12);
             }
 
             vector<Allele> alts;
