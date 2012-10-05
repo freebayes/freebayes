@@ -1169,9 +1169,16 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 		long int leftbound = startpos + currentSequenceStart;
 		if (startpos == string::npos || leftbound < pos) {
 		    cerr << "could not find repeat sequence?" << endl;
-		    cerr << repeatstr << endl;
+		    cerr << "repeat sequence: " << repeatstr << endl;
+		    cerr << "currentsequence start: " << currentSequenceStart << endl;
 		    cerr << currentSequence << endl;
-		    exit(1);
+		    cerr << "matched repeats:" << endl;
+		    for (map<string, int>::iterator q = matchedRepeatCounts.begin(); q != matchedRepeatCounts.end(); ++q) {
+			cerr << q->first  << " : " << q->second << endl;
+			cerr << "... at position " << pos << endl;
+		    }
+		    //exit(1);
+		    break; // ignore right-repeat boundary in this case
 		}
 	        repeatRightBoundary = leftbound + repeatstr.size() + 1; // 1 past edge of repeat
 	    }
@@ -2805,8 +2812,6 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
 		if (!allele.isReference()) {
 		    long int hapend = max(allele.position + allele.referenceLength,
 					  allele.repeatRightBoundary);
-		    cerr << "hapend " << hapend << endl;
-		    cerr << allele.repeatRightBoundary << endl;
 		    if (hapend > currentPosition + haplotypeLength) {
 			haplotypeLength = hapend - currentPosition;
 		    }
