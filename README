@@ -33,6 +33,10 @@ tree.  Currently, the tree is hosted on github, and can be obtained via:
 Note the use of --recursive.  This is required, as the project contains some
 nested git submodules for external repositories.
 
+If you encounter issues with the development HEAD, or simply wish to obtain the
+most recent stable revision (0.9.6) then use:
+
+    % git checkout 03cb231762034007a8e77d3be147fb5a51d6e846
 
 Compilation:
 
