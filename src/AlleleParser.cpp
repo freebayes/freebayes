@@ -1165,9 +1165,9 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	    if (isRepeatUnit(alleleseq, repeatunit)) {
 		// determine the boundaries of the repeat
 		long int p = pos - currentSequenceStart;
-		size_t startpos = currentSequence.find(repeatstr, p);
+		size_t startpos = currentSequence.find(repeatstr, p - repeatstr.size() - 1); // adjust to ensure we hit the first of the repeatstr
 		long int leftbound = startpos + currentSequenceStart;
-		if (startpos == string::npos || leftbound < pos) {
+		if (startpos == string::npos) {
 		    cerr << "could not find repeat sequence?" << endl;
 		    cerr << "repeat sequence: " << repeatstr << endl;
 		    cerr << "currentsequence start: " << currentSequenceStart << endl;
@@ -1177,7 +1177,6 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 			cerr << q->first  << " : " << q->second << endl;
 			cerr << "... at position " << pos << endl;
 		    }
-		    //exit(1);
 		    break; // ignore right-repeat boundary in this case
 		}
 	        repeatRightBoundary = leftbound + repeatstr.size() + 1; // 1 past edge of repeat
@@ -1924,9 +1923,11 @@ void AlleleParser::updateRegisteredAlleles(void) {
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 
     if (lowestPosition <= currentPosition) {
-        int diff = lowestPosition - currentSequenceStart;
-        if (diff > 0 && currentSequenceStart + diff < currentPosition - CACHED_REFERENCE_WINDOW) {
-            eraseReferenceSequence(diff);
+	int diff = lowestPosition - currentSequenceStart;
+	// do we have excess bases beyond the current lowest position - cached_reference_window?
+	// if so, erase them
+        if (diff > CACHED_REFERENCE_WINDOW) {
+            eraseReferenceSequence(diff - CACHED_REFERENCE_WINDOW);
         }
     }
 }
