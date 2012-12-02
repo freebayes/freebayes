@@ -1109,7 +1109,10 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	cigar = convert(length) + "N";
     }
 
-    string refSequence = currentSequence.substr(pos - currentSequenceStart, reflen);
+    string refSequence;
+    if (type != ALLELE_NULL) { // only used for non null allele, avoid soft clipping edge cases
+	refSequence = currentSequence.substr(pos - currentSequenceStart, reflen);
+    }
 
     long int repeatRightBoundary = pos;
 
@@ -1136,7 +1139,6 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	// by adjusting the cigar, we implicitly adjust
 	// allele.referenceLength, which is calculated when the allele is made
 
-	// TODO, why are we getting complex alleles like 1X15M ?  this shouldn't be possible, where is the second polymorphism?
 	qualstr = string(length, qualityInt2Char(0));
 	readSequence = currentSequence.substr(pos - currentSequenceStart, length);
     }
@@ -1183,7 +1185,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	    }
 	}
     }
-    
+
     return Allele(type,
 		  currentSequenceName,
 		  pos,
