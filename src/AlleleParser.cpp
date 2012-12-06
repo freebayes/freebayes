@@ -2813,7 +2813,7 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& allele = *a;
 		if (!allele.isReference()) {
-		    long int hapend = max(allele.position + allele.referenceLength,
+		    long int hapend = max((long int) (allele.position + allele.referenceLength),
 					  allele.repeatRightBoundary);
 		    if (hapend > currentPosition + haplotypeLength) {
 			haplotypeLength = hapend - currentPosition;
