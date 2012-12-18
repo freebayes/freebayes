@@ -15,6 +15,7 @@
 #include "Utility.h"
 #include "Multinomial.h"
 #include "Dirichlet.h"
+#include "Bias.h"
 
 using namespace std;
 
@@ -23,13 +24,15 @@ probObservedAllelesGivenGenotype(
         Sample& sample,
         Genotype& genotype,
         long double dependenceFactor,
-        bool useMapQ);
+        bool useMapQ,
+        Bias& observationBias);
 
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
         vector<Genotype*>& genotypes,
         long double dependenceFactor,
-        bool useMapQ);
+        bool useMapQ,
+        Bias& observationBias);
 
 #endif

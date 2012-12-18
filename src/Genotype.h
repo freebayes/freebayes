@@ -19,6 +19,7 @@
 #include "Multinomial.h"
 #include "CNV.h"
 #include "Ewens.h"
+#include "Bias.h"
 #include "join.h"
 #include "convert.h"
 
@@ -80,6 +81,7 @@ public:
     vector<int> counts(void);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
+    vector<long double> alleleProbabilities(Bias& observationBias);
     string str(void) const;
     string relativeGenotype(string& refbase, vector<Allele>& altbases);
     void relativeGenotype(vector<int>& spec, string& refbase, vector<Allele>& altbases);

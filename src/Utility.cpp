@@ -628,3 +628,14 @@ std::string operator*(std::string const &s, size_t n)
         r += s;
     return r;
 }
+
+// normalize vector sum to 1
+void normalizeSumToOne(vector<long double>& v) {
+    long double sum = 0;
+    for (vector<long double>::iterator i = v.begin(); i != v.end(); ++i) {
+	sum += *i;
+    }
+    for (vector<long double>::iterator i = v.begin(); i != v.end(); ++i) {
+	*i /= sum;
+    }
+}

@@ -8,10 +8,12 @@ probObservedAllelesGivenGenotype(
         Sample& sample,
         Genotype& genotype,
         long double dependenceFactor,
-        bool useMapQ) {
+        bool useMapQ,
+	Bias& observationBias
+    ) {
 
     int observationCount = sample.observationCount();
-    vector<long double> alleleProbs = genotype.alleleProbabilities();
+    vector<long double> alleleProbs = genotype.alleleProbabilities(observationBias);
     vector<int> observationCounts = genotype.alleleObservationCounts(sample);
     int countOut = 0;
     long double prodQout = 0;  // the probability that the reads not in the genotype are all wrong
@@ -53,10 +55,17 @@ probObservedAllelesGivenGenotypes(
         Sample& sample,
         vector<Genotype*>& genotypes,
         long double dependenceFactor,
-        bool useMapQ) {
+        bool useMapQ,
+	Bias& observationBias) {
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype*>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
-        results.push_back(make_pair(*g, probObservedAllelesGivenGenotype(sample, **g, dependenceFactor, useMapQ)));
+        results.push_back(
+	    make_pair(*g,
+		      probObservedAllelesGivenGenotype(sample,
+						       **g,
+						       dependenceFactor,
+						       useMapQ,
+						       observationBias)));
     }
     return results;
 }

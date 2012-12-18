@@ -188,6 +188,21 @@ vector<long double> Genotype::alleleProbabilities(void) {
     return probs;
 }
 
+// the probability of drawing each allele out of the genotype, ordered by allele, adjusted for reference bias
+vector<long double> Genotype::alleleProbabilities(Bias& observationBias) {
+    vector<long double> probs;
+    for (vector<GenotypeElement>::const_iterator a = this->begin(); a != this->end(); ++a) {
+	long double bias = 1;
+	if (!a->allele.isReference()) {
+	    int alleleLengthDifference = a->allele.alternateSequence.size() - a->allele.referenceLength;
+	    bias = observationBias.bias(alleleLengthDifference);
+	}
+        probs.push_back(((long double) a->count / (long double) ploidy) * bias);
+    }
+    normalizeSumToOne(probs);
+    return probs;
+}
+
 string Genotype::str(void) const {
     string s;
     for (Genotype::const_iterator ge = this->begin(); ge != this->end(); ++ge) {

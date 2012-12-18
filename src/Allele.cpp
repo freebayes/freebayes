@@ -198,31 +198,31 @@ string Allele::typeStr(void) const {
 
 }
 
-bool Allele::isReference(void) {
+bool Allele::isReference(void) const {
     return type == ALLELE_REFERENCE;
 }
 
-bool Allele::isSNP(void) {
+bool Allele::isSNP(void) const {
     return type == ALLELE_SNP;
 }
 
-bool Allele::isInsertion(void) {
+bool Allele::isInsertion(void) const {
     return type == ALLELE_INSERTION;
 }
 
-bool Allele::isDeletion(void) {
+bool Allele::isDeletion(void) const {
     return type == ALLELE_DELETION;
 }
 
-bool Allele::isMNP(void) {
+bool Allele::isMNP(void) const {
     return type == ALLELE_MNP;
 }
 
-bool Allele::isComplex(void) {
+bool Allele::isComplex(void) const {
     return type == ALLELE_COMPLEX;
 }
 
-bool Allele::isNull(void) {
+bool Allele::isNull(void) const {
     return type == ALLELE_NULL;
 }
 

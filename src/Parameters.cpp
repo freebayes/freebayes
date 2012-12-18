@@ -191,6 +191,12 @@ void Parameters::usage(char** argv) {
          << "                   as a component of the priors.  Best for observations with minimal" << endl
          << "                   inherent reference bias." << endl
          << endl
+	 << "genotype likelihoods:" << endl
+	 << "   --observation-bias FILE" << endl
+	 << "                   Read length-dependent allele observation biases from FILE." << endl
+	 << "                   The format is [length] [alignment efficiency relative to reference]" << endl
+	 << "                   where the efficiency is 1 if there is no relative observation bias." << endl
+	 << endl
          << "algorithmic features:" << endl
          << endl
 	 << "   --report-genotype-likelihood-max" << endl
@@ -269,6 +275,7 @@ Parameters::Parameters(int argc, char** argv) {
     outputFile = "";
     traceFile = "";
     failedFile = "";
+    alleleObservationBiasFile = "";
 
     // operation parameters
     outputAlleles = false;          //
@@ -387,6 +394,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
         //{"min-paired-alternate-count", required_argument, 0, 'Y'},
+	{"observation-bias", required_argument, 0, '%'},
         {"min-alternate-total", required_argument, 0, 'G'},
         //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
         {"min-alternate-qsum", required_argument, 0, '3'},
@@ -413,7 +421,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diN5aI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diN5aI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -741,6 +749,11 @@ Parameters::Parameters(int argc, char** argv) {
                     exit(1);
                 }
                 break;
+
+	    // -% --observation-bias
+	    case '%':
+		alleleObservationBiasFile = optarg;
+		break;
 
             // observation priors
             case 'V':

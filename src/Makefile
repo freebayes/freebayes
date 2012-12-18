@@ -59,6 +59,7 @@ OBJECTS=BedReader.o \
 		split.o \
 		LeftAlign.o \
 		IndelAllele.o \
+		Bias.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
@@ -150,6 +151,9 @@ BedReader.o: BedReader.cpp BedReader.h
 
 CNV.o: CNV.cpp CNV.h
 	$(CC) $(CFLAGS) $(INCLUDE) -c CNV.cpp
+
+Bias.o: Bias.cpp Bias.h
+	$(CC) $(CFLAGS) $(INCLUDE) -c Bias.cpp
 
 split.o: split.h split.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) -c split.cpp

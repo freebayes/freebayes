@@ -41,6 +41,7 @@ public:
     string haplotypeVariantFile;
     bool reportAllHaplotypeAlleles;
     bool onlyUseInputAlleles;
+    string alleleObservationBiasFile;
 
     // operation parameters
     bool outputAlleles;          //  unused...

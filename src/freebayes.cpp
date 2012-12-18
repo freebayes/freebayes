@@ -67,6 +67,11 @@ int main (int argc, char *argv[]) {
 
     ostream& out = *(parser->output);
 
+    Bias observationBias;
+    if (!parameters.alleleObservationBiasFile.empty()) {
+	observationBias.open(parameters.alleleObservationBiasFile);
+    }
+
     // this can be uncommented to force operation on a specific set of genotypes
     vector<Allele> allGenotypeAlleles;
     allGenotypeAlleles.push_back(genotypeAllele(ALLELE_GENOTYPE, "A", 1));
@@ -278,7 +283,10 @@ int main (int argc, char *argv[]) {
             }
 
             // get genotype likelihoods
-            vector<pair<Genotype*, long double> > probs = probObservedAllelesGivenGenotypes(sample, genotypesWithObs, parameters.RDF, parameters.useMappingQuality);
+            vector<pair<Genotype*, long double> > probs
+		= probObservedAllelesGivenGenotypes(sample, genotypesWithObs,
+						    parameters.RDF, parameters.useMappingQuality,
+						    observationBias);
 
 #ifdef VERBOSE_DEBUG
             if (parameters.debug2) {

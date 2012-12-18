@@ -229,13 +229,13 @@ public:
 
     bool equivalent(Allele &a);  // heuristic 'equivalency' between two alleles, which depends on their type
     string typeStr(void) const; // return a string representation of the allele type, for output
-    bool isReference(void); // true if type == ALLELE_REFERENCE
-    bool isSNP(void); // true if type == ALLELE_SNP
-    bool isInsertion(void); // true if type == ALLELE_INSERTION
-    bool isDeletion(void); // true if type == ALLELE_DELETION
-    bool isMNP(void); // true if type == ALLELE_MNP
-    bool isComplex(void); // true if type == ALLELE_COMPLEX
-    bool isNull(void); // true if type == ALLELE_NULL
+    bool isReference(void) const; // true if type == ALLELE_REFERENCE
+    bool isSNP(void) const; // true if type == ALLELE_SNP
+    bool isInsertion(void) const; // true if type == ALLELE_INSERTION
+    bool isDeletion(void) const; // true if type == ALLELE_DELETION
+    bool isMNP(void) const; // true if type == ALLELE_MNP
+    bool isComplex(void) const; // true if type == ALLELE_COMPLEX
+    bool isNull(void) const; // true if type == ALLELE_NULL
     int referenceOffset(void) const;
     const short currentQuality(void) const;  // for getting the quality of a given position in multi-bp alleles
     const long double lncurrentQuality(void) const;

@@ -133,4 +133,6 @@ bool isEmptyCigarElement(const pair<int, string>& elem);
 
 std::string operator*(std::string const &s, size_t n);
 
+void normalizeSumToOne(vector<long double>&);
+
 #endif
