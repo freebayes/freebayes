@@ -3,11 +3,81 @@
 
 using namespace std;
 
+void Parameters::simpleUsage(char ** argv) {
+   cout
+         << "usage: " << argv[0] << " -f [REFERENCE] [OPTIONS] [BAM FILES] >[OUTPUT]" << endl
+         << endl
+         << "Bayesian haplotype-based polymorphism discovery." << endl
+         << endl
+         << "citation: Erik Garrison, Gabor Marth" << endl
+         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
+         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
+         << endl
+         << "overview:" << endl
+         << endl
+         << "    To call variants from aligned short-read sequencing data, supply BAM files and" << endl
+         << "    a reference.  FreeBayes will provide VCF output on standard out describing SNPs," << endl
+         << "    indels, and complex variants in samples in the input alignments." << endl
+         << endl
+         << "    By default, FreeBayes will consider variants supported by at least 2" << endl
+         << "    observations in a single sample (-C) and also by at least 20% of the reads from" << endl
+         << "    a single sample (-F).  These settings are suitable to low to high depth" << endl
+         << "    sequencing in haploid and diploid samples, but users working with polyploid or" << endl
+         << "    pooled samples may wish to adjust them depending on the characteristics of" << endl
+         << "    their sequencing data." << endl
+         << endl
+         << "    FreeBayes is capable of calling variant haplotypes shorter than a read length" << endl
+         << "    where multiple polymorphisms segregate on the same read.  The maximum distance" << endl
+         << "    between polymorphisms phased in this way is determined by the" << endl
+         << "    --max-complex-gap, which defaults to 3bp.  In practice, this can comfortably be" << endl
+         << "    set to half the read length." << endl
+         << endl
+         << "    Ploidy may be set to any level (-p), but by default all samples are assumed to" << endl
+         << "    be diploid.  FreeBayes can model per-sample and per-region variation in" << endl
+         << "    copy-number (-A) using a copy-number variation map." << endl
+         << endl
+         << "parameters:" << endl
+         << endl
+         << "   -h --help       Complete description of options." << endl
+         << endl
+         << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2012" << endl
+         << "date:     " << FREEBAYES_COMPILE_DATE << endl
+         << "version:  " << FREEBAYES_VERSION << endl;
+
+}
+
 void Parameters::usage(char** argv) {
     cout 
          << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
          << endl
-         << "Bayesian small polymorphism discovery." << endl
+         << "Bayesian haplotype-based polymorphism discovery." << endl
+         << endl
+         << "citation: Erik Garrison, Gabor Marth" << endl
+         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
+         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
+         << endl
+         << "overview:" << endl
+         << endl
+         << "    To call variants from aligned short-read sequencing data, supply BAM files and" << endl
+         << "    a reference.  FreeBayes will provide VCF output on standard out describing SNPs," << endl
+         << "    indels, and complex variants in samples in the input alignments." << endl
+         << endl
+         << "    By default, FreeBayes will consider variants supported by at least 2" << endl
+         << "    observations in a single sample (-C) and also by at least 20% of the reads from" << endl
+         << "    a single sample (-F).  These settings are suitable to low to high depth" << endl
+         << "    sequencing in haploid and diploid samples, but users working with polyploid or" << endl
+         << "    pooled samples may wish to adjust them depending on the characteristics of" << endl
+         << "    their sequencing data." << endl
+         << endl
+         << "    FreeBayes is capable of calling variant haplotypes shorter than a read length" << endl
+         << "    where multiple polymorphisms segregate on the same read.  The maximum distance" << endl
+         << "    between polymorphisms phased in this way is determined by the" << endl
+         << "    --max-complex-gap, which defaults to 3bp.  In practice, this can comfortably be" << endl
+         << "    set to half the read length." << endl
+         << endl
+         << "    Ploidy may be set to any level (-p), but by default all samples are assumed to" << endl
+         << "    be diploid.  FreeBayes can model per-sample and per-region variation in" << endl
+         << "    copy-number (-A) using a copy-number variation map." << endl
          << endl
          << "parameters:" << endl
          << endl
@@ -155,11 +225,11 @@ void Parameters::usage(char** argv) {
          << "   -F --min-alternate-fraction N" << endl
          << "                   Require at least this fraction of observations supporting" << endl
          << "                   an alternate allele within a single individual in the" << endl
-         << "                   in order to evaluate the position.  default: 0.0" << endl
+         << "                   in order to evaluate the position.  default: 0.2" << endl
          << "   -C --min-alternate-count N" << endl
          << "                   Require at least this count of observations supporting" << endl
          << "                   an alternate allele within a single individual in order" << endl
-         << "                   to evaluate the position.  default: 1" << endl
+         << "                   to evaluate the position.  default: 2" << endl
          << "   -3 --min-alternate-qsum N" << endl
          << "                   Require at least this sum of quality of observations supporting" << endl
          << "                   an alternate allele within a single individual in order" << endl
@@ -242,16 +312,17 @@ void Parameters::usage(char** argv) {
          << "   -dd             Print more verbose debugging output (requires \"make DEBUG\")" << endl
          << endl
          << endl
-         << "author:  Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010, 2011" << endl
-         << "date:    " << FREEBAYES_COMPILE_DATE << endl
-         << "version: " <<  FREEBAYES_VERSION << endl;
+         << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2012" << endl
+         << "date:     " << FREEBAYES_COMPILE_DATE << endl
+         << "version:  " << FREEBAYES_VERSION << endl;
+
 }
 
 
 Parameters::Parameters(int argc, char** argv) {
 
     if (argc == 1) {
-        usage(argv);
+        simpleUsage(argv);
         exit(1);
     }
 

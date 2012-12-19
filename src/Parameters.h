@@ -117,6 +117,7 @@ public:
     // functions
     Parameters(int argc, char** argv);
     void usage(char **argv);
+    void simpleUsage(char **argv);
 
     // reporting
     string commandline;
