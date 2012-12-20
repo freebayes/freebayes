@@ -402,8 +402,8 @@ Parameters::Parameters(int argc, char** argv) {
     TB = 3;
     posteriorIntegrationDepth = 0;
     calculateMarginals = true;
-    minAltFraction = 0.0;
-    minAltCount = 1;
+    minAltFraction = 0.2;  // require 20% of reads from sample to be supporting the same alternate to consider
+    minAltCount = 2; // require 2 reads in same sample call
     minAltTotal = 1;
     minAltQSum = 0;
     minCoverage = 0;
