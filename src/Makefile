@@ -24,7 +24,7 @@ static:
 	$(MAKE) CFLAGS="$(CFLAGS) -static" all
 
 debug:
-	$(MAKE) CFLAGS="$(CFLAGS) -D VERBOSE_DEBUG" all
+	$(MAKE) CFLAGS="$(CFLAGS) -D VERBOSE_DEBUG -g -rdynamic" all
 
 profiling:
 	$(MAKE) CFLAGS="$(CFLAGS) -g" all
@@ -60,6 +60,7 @@ OBJECTS=BedReader.o \
 		LeftAlign.o \
 		IndelAllele.o \
 		Bias.o \
+		SegfaultHandler.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
@@ -127,6 +128,9 @@ AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(BAM
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h
 	$(CC) $(CFLAGS) $(INCLUDE) -c Utility.cpp
+
+SegfaultHandler.o: SegfaultHandler.cpp SegfaultHandler.h
+	$(CC) $(CFLAGS) $(INCLUDE) -c SegfaultHandler.cpp
 
 Dirichlet.o: Dirichlet.h Dirichlet.cpp Sum.h Product.h
 	$(CC) $(CFLAGS) $(INCLUDE) -c Dirichlet.cpp

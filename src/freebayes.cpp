@@ -26,6 +26,7 @@
 #include "Sample.h"
 #include "AlleleParser.h"
 #include "Utility.h"
+#include "SegfaultHandler.h"
 
 #include "multichoose.h"
 #include "multipermute.h"
@@ -58,6 +59,9 @@ using namespace std;
 
 // freebayes main
 int main (int argc, char *argv[]) {
+
+    // install segfault handler
+    signal(SIGSEGV, segfaultHandler);
 
     AlleleParser* parser = new AlleleParser(argc, argv);
     Parameters& parameters = parser->parameters;

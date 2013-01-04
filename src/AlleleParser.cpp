@@ -2029,6 +2029,7 @@ void AlleleParser::updateInputVariants(void) {
                             p = a;
                         }
                         alleles = newAlleles;
+                        DEBUG2("alleles, post addition of reference sequences: " << alleles);
                     }
 
                     // for any deletion alleles, grap the previous base (per standards in VCF and the rest of the parsing)
@@ -2053,6 +2054,19 @@ void AlleleParser::updateInputVariants(void) {
                             }
                         }
                         p = a;
+                    }
+		    DEBUG2("alleles, post processing of deletions: " << alleles);
+
+		    // remove 0-length alleles resulting from edge cases in previous processing (e.g. beginning of read)
+                    if (alleles.size() > 1) {
+                        vector<Allele> newAlleles;
+                        for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+			    if (a->referenceLength > 0) {
+				newAlleles.push_back(*a);
+                            }
+                        }
+                        alleles = newAlleles;
+                        DEBUG2("alleles, post removal of 0-length alleles: " << alleles);
                     }
 
                     Allele& allele = alleles.front();

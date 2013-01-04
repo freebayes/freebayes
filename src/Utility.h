@@ -1,7 +1,7 @@
 // utility functions
 //
-#ifndef _UTILITY_H
-#define _UTILITY_H
+#ifndef UTILITY_H
+#define UTILITY_H
 
 #include <cmath>
 #include <vector>
