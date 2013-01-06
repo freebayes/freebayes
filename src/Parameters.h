@@ -62,6 +62,7 @@ public:
     bool ewensPriors;
     bool permute;                //    --permute
     bool useMappingQuality;      //
+    bool useMinIndelQuality;
     bool obsBinomialPriors;
     bool alleleBalancePriors;
     bool hwePriors;

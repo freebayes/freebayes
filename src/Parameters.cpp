@@ -159,9 +159,6 @@ void Parameters::usage(char** argv) {
          << "   -Z --use-reference-allele" << endl
          << "                   This flag includes the reference allele in the analysis as" << endl
          << "                   if it is another sample from the same population." << endl
-         << "   -H --diploid-reference" << endl
-         << "                   If using the reference sequence as a sample (-Z)," << endl
-         << "                   treat it as diploid.  default: false (reference is haploid)" << endl
          << "   --reference-quality MQ,BQ" << endl
          << "                   Assign mapping quality of MQ to the reference allele at each" << endl
          << "                   site and base quality of BQ.  default: 100,60" << endl
@@ -191,10 +188,10 @@ void Parameters::usage(char** argv) {
          << "                   default: exclude duplicates" << endl
          << "   -m --min-mapping-quality Q" << endl
          << "                   Exclude alignments from analysis if they have a mapping" << endl
-         << "                   quality less than Q.  default: 30" << endl
+         << "                   quality less than Q.  default: 0" << endl
          << "   -q --min-base-quality Q" << endl
          << "                   Exclude alleles from analysis if their supporting base" << endl
-         << "                   quality is less than Q.  default: 20" << endl
+         << "                   quality is less than Q.  default: 0" << endl
          << "   -R --min-supporting-quality MQ,BQ" << endl
          << "                   In order to consider an alternate allele, at least one supporting" << endl
          << "                   alignment must have mapping quality MQ, and one supporting " << endl
@@ -298,6 +295,9 @@ void Parameters::usage(char** argv) {
          << "                   genotype likelihood for the sample.  default: ~unbounded" << endl
          << "   -j --use-mapping-quality" << endl
          << "                   Use mapping quality of alleles when calculating data likelihoods." << endl
+	 << "   -H --harmonic-indel-quality" << endl
+	 << "                   Use a weighted sum of base qualities around an indel, scaled by the" << endl
+	 << "                   distance from the indel.  By default use a minimum BQ in flanking sequence." << endl
          << "   -D --read-dependence-factor N" << endl
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
@@ -367,6 +367,7 @@ Parameters::Parameters(int argc, char** argv) {
     ewensPriors = true;
     permute = true;                // -K --permute
     useMappingQuality = false;
+    useMinIndelQuality = true;
     obsBinomialPriors = false; // TODO
     hwePriors = false;
     alleleBalancePriors = false;
@@ -432,7 +433,7 @@ Parameters::Parameters(int argc, char** argv) {
         {"use-duplicate-reads", no_argument, 0, '4'},
         {"use-best-n-alleles", required_argument, 0, 'n'},
         {"use-reference-allele", no_argument, 0, 'Z'},
-        {"diploid-reference", no_argument, 0, 'H'},
+        {"harmonic-indel-quality", no_argument, 0, 'H'},
         {"standard-filters", no_argument, 0, '0'},
         {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
@@ -612,9 +613,9 @@ Parameters::Parameters(int argc, char** argv) {
                 useRefAllele = true;
                 break;
 
-            // -H --diploid-reference
+            // -H --harmonic-indel-quality
             case 'H':
-                diploidReference = true;
+                useMinIndelQuality = false;
                 break;
 
             // -0 --standard-filters

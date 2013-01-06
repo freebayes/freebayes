@@ -180,6 +180,10 @@ long double __binomialProbln(int k, int n, long double p) {
     return factorialln(n) - (factorialln(k) + factorialln(n - k)) + powln(log(p), k) + powln(log(1 - p), n - k);
 }
 
+long double binomialCoefficientLn(int k, int n) {
+    return factorialln(n) - (factorialln(k) + factorialln(n - k));
+}
+
 BinomialCache binomialCache;
 
 long double binomialProbln(int k, int n, long double p) {

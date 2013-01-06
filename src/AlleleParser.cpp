@@ -1476,7 +1476,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 				   sampleName,
 				   alignment,
 				   sequencingTech,
-				   alignment.MapQuality,
+				   alignment.MapQuality, // ... hmm
 				   qualstr),
 			parameters.allowComplex, parameters.maxComplexGap);
                 }
@@ -1513,18 +1513,22 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string qualstr = rQual.substr(spanstart, L);
 
-            // quality, scaled inversely by the ratio between the quality
-            // string length and the length of the event
-            long double qual = sumQuality(qualstr);
-
-            // quality adjustment:
-            // scale the quality by the inverse harmonic sum of the length of
-            // the quality string X a scaling constant derived from the ratio
-            // between the length of the quality string and the length of the
-            // allele
-            //qual += ln2phred(log((long double) l / (long double) L));
-            qual += ln2phred(log((long double) L / (long double) l));
-            qual /= harmonicSum(l);
+            long double qual;
+	    if (parameters.useMinIndelQuality) {
+		qual = minQuality(qualstr);
+	    } else {
+		// quality, scaled inversely by the ratio between the quality
+		// string length and the length of the event
+		qual = sumQuality(qualstr);
+		// quality adjustment:
+		// scale the quality by the inverse harmonic sum of the length of
+		// the quality string X a scaling constant derived from the ratio
+		// between the length of the quality string and the length of the
+		// allele
+		//qual += ln2phred(log((long double) l / (long double) L));
+		qual += ln2phred(log((long double) L / (long double) l));
+		qual /= harmonicSum(l);
+	    }
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -1584,18 +1588,22 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             string qualstr = rQual.substr(spanstart, L);
 
-            // quality, scaled inversely by the ratio between the quality
-            // string length and the length of the event
-            long double qual = sumQuality(qualstr);
-
-            // quality adjustment:
-            // scale the quality by the inverse harmonic sum of the length of
-            // the quality string X a scaling constant derived from the ratio
-            // between the length of the quality string and the length of the
-            // allele
-            //qual += ln2phred(log((long double) l / (long double) L));
-            qual += ln2phred(log((long double) L / (long double) l));
-            qual /= harmonicSum(l);
+            long double qual;
+	    if (parameters.useMinIndelQuality) {
+		qual = minQuality(qualstr);
+	    } else {
+		// quality, scaled inversely by the ratio between the quality
+		// string length and the length of the event
+		qual = sumQuality(qualstr);
+		// quality adjustment:
+		// scale the quality by the inverse harmonic sum of the length of
+		// the quality string X a scaling constant derived from the ratio
+		// between the length of the quality string and the length of the
+		// allele
+		//qual += ln2phred(log((long double) l / (long double) L));
+		qual += ln2phred(log((long double) L / (long double) l));
+		qual /= harmonicSum(l);
+	    }
 
             if (qual >= parameters.BQL2) {
                 ra.mismatches += l;
@@ -1626,23 +1634,27 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
         // handle other cigar element types
         } else if (t == 'S') { // soft clip, clipped sequence present in the read not matching the reference
-	    string qualstr = rQual.substr(rp, l);
-	    string readseq = alignment.QueryBases.substr(rp, l);
-            // skip these bases in the read
-	    ra.addAllele(
-		makeAllele(ra,
-			   ALLELE_NULL,
-			   sp - l,
-			   l,
-			   rp - l, // bases left
-			   alignment.QueryBases.size() - rp, // bases right
-			   readseq,
-			   sampleName,
-			   alignment,
-			   sequencingTech,
-			   alignment.MapQuality,
-			   qualstr),
-		parameters.allowComplex, parameters.maxComplexGap);
+	    if (sp - l < 0) {
+		// nothing to do, soft clip is beyond the beginning of the reference
+	    } else {
+		string qualstr = rQual.substr(rp, l);
+		string readseq = alignment.QueryBases.substr(rp, l);
+		// skip these bases in the read
+		ra.addAllele(
+		    makeAllele(ra,
+			       ALLELE_NULL,
+			       sp - l,
+			       l,
+			       rp - l, // bases left
+			       alignment.QueryBases.size() - rp, // bases right
+			       readseq,
+			       sampleName,
+			       alignment,
+			       sequencingTech,
+			       alignment.MapQuality,
+			       qualstr),
+		    parameters.allowComplex, parameters.maxComplexGap);
+	    }
             rp += l;// sp += l; csp += l;
         } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
             // the alignment position is the first non-clipped base.

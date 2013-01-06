@@ -1466,16 +1466,20 @@ GenotypeCombo::calculatePosteriorProbability(
                 */
 
             priorProbObservations
-                += binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
-                +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
-                +  binomialProbln(alleleCounter.placedStart, obs, 0.5);
+                += (binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
+		    +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
+		    +  binomialProbln(alleleCounter.placedStart, obs, 0.5))
+		- ( binomialCoefficientLn(alleleCounter.forwardStrand, obs)
+		    + binomialCoefficientLn(alleleCounter.placedLeft, obs)
+		    + binomialCoefficientLn(alleleCounter.placedStart, obs));
         }
     }
 
     // ok... now do the same move for the observation counts
     // --- this should capture "Allele Balance"
     if (alleleBalancePriors) {
-        priorProbObservations += multinomialSamplingProbLn(alleleProbs(), observationCounts());
+        priorProbObservations += multinomialSamplingProbLn(alleleProbs(), observationCounts())
+	    - multinomialCoefficientLn(numberOfAlleles(), observationCounts());
     }
 
     // with larger population samples, the effect of

@@ -46,6 +46,7 @@ bool allATGC(string& s);
 string strip(string const& str, char const* separators = " \t");
 
 int binomialCoefficient(int n, int k);
+long double binomialCoefficientLn(int k, int n);
 long double binomialProb(int k, int n, long double p);
 long double __binomialProbln(int k, int n, long double p);
 long double binomialProbln(int k, int n, long double p);
