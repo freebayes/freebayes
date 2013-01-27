@@ -82,8 +82,8 @@ public:
     int ploidy;                  // -p --ploidy
     int MQL0;                    // -m --min-mapping-quality
     int BQL0;                    // -q --min-base-quality
-    int MQL1;                    // -R --min-supporting-mapping-quality
-    int BQL1;                    // -S --min-supporting-base-quality
+    int minSupportingMappingQualitySum;                    // -R --min-supporting-mapping-quality
+    int minSupportingAlleleQualitySum;                    // -S --min-supporting-base-quality
     int BQL2;                    // -Q --mismatch-base-quality-threshold
     int RMU;                     // -U --read-mismatch-limit
     float readMaxMismatchFraction;  // -z --read-max-mismatch-fraction

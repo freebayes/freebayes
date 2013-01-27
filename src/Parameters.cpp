@@ -138,7 +138,8 @@ void Parameters::usage(char** argv) {
          << "reporting:" << endl
          << endl
          << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
-         << "                   at the site is greater than N.  default: 0.0001" << endl
+         << "                   at the site is greater than N.  default: 0.0.  Note that post-" << endl
+	 << "                   filtering is generally recommended over the use of this parameter." << endl
          << "   -_ --show-reference-repeats" << endl
          << "                   Calculate and show information about reference repeats in" << endl
          << "                   the VCF output." << endl
@@ -178,24 +179,26 @@ void Parameters::usage(char** argv) {
          << endl
          << "indel realignment:" << endl
          << endl
-         << "   -O --left-align-indels" << endl
-         << "                   Left-realign and merge gaps embedded in reads. default: false" << endl
+         << "   -O --dont-left-align-indels" << endl
+         << "                   Turn off left-alignment of indels, which is enabled by default." << endl
          << endl
          << "input filters:" << endl
          << endl
          << "   -4 --use-duplicate-reads" << endl
          << "                   Include duplicate-marked alignments in the analysis." << endl
-         << "                   default: exclude duplicates" << endl
+         << "                   default: exclude duplicates marked as such in alignments" << endl
          << "   -m --min-mapping-quality Q" << endl
          << "                   Exclude alignments from analysis if they have a mapping" << endl
          << "                   quality less than Q.  default: 0" << endl
          << "   -q --min-base-quality Q" << endl
          << "                   Exclude alleles from analysis if their supporting base" << endl
          << "                   quality is less than Q.  default: 0" << endl
-         << "   -R --min-supporting-quality MQ,BQ" << endl
-         << "                   In order to consider an alternate allele, at least one supporting" << endl
-         << "                   alignment must have mapping quality MQ, and one supporting " << endl
-         << "                   allele must have base quality BQ. default: 0,0, unset" << endl
+         << "   -R --min-supporting-allele-qsum Q" << endl
+         << "                   Consider any allele in which the sum of qualities of supporting" << endl
+	 << "                   observations is at least Q.  default: 0" << endl
+	 << "   -Y --min-supporting-mapping-qsum Q" << endl
+	 << "                   Consider any allele in which and the sum of mapping qualities of" << endl
+         << "                   supporting reads is at least Q.  default: 0" << endl
          << "   -Q --mismatch-base-quality-threshold Q" << endl
          << "                   Count mismatches toward --read-mismatch-limit if the base" << endl
          << "                   quality of the mismatch is >= Q.  default: 10" << endl
@@ -238,12 +241,10 @@ void Parameters::usage(char** argv) {
          << "   -! --min-coverage N" << endl
          << "                   Require at least this coverage to process a site.  default: 0" << endl
          << endl
-         << "bayesian priors:" << endl
+         << "population priors:" << endl
          << endl
-         << "   -Y --no-ewens-priors" << endl
-         << "                   Turns off the Ewens' Sampling Formula component of the priors." << endl
          << "   -k --no-population-priors" << endl
-         << "                   Equivalent to --pooled --no-ewens-priors" << endl
+         << "                   Equivalent to --pooled and removal of Ewens Sampling Formula priors" << endl
          << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
          << "                   the allele frequency as estimated by observation frequency." << endl
          << endl
@@ -276,7 +277,7 @@ void Parameters::usage(char** argv) {
          << "                   to a low integer for improvide site selection at a slight" << endl
          << "                   performance penalty. default: 5." << endl
          << "   -B --genotyping-max-iterations N" << endl
-         << "                   Iterate no more than N times during genotyping step. default: 25." << endl
+         << "                   Iterate no more than N times during genotyping step. default: 1000." << endl
          << "   --genotyping-max-banddepth N" << endl
          << "                   Integrate no deeper than the Nth best genotype by likelihood when" << endl
          << "                   genotyping. default: 6." << endl
@@ -358,7 +359,7 @@ Parameters::Parameters(int argc, char** argv) {
     useRefAllele = false;           // .....
     diploidReference = false;      // -H --diploid-reference
     allowIndels = true;            // -i --no-indels
-    leftAlignIndels = false;       // -O --left-align-indels
+    leftAlignIndels = true;       // -O --dont-left-align-indels
     allowMNPs = true;            // -X --no-mnps
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
@@ -376,7 +377,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypeVariantThreshold = 0;
     siteSelectionMaxIterations = 5;
     reportGenotypeLikelihoodMax = false;
-    genotypingMaxIterations = 25;
+    genotypingMaxIterations = 1000;
     genotypingMaxBandDepth = 7;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
@@ -387,8 +388,8 @@ Parameters::Parameters(int argc, char** argv) {
     ploidy = 2;                  // -p --ploidy
     MQL0 = 0;                    // -m --min-mapping-quality
     BQL0 = 0;                    // -q --min-base-quality
-    MQL1 = 0;                    // -R --min-supporting-quality MQ,BQ
-    BQL1 = 0;                    //
+    minSupportingAlleleQualitySum = 0;
+    minSupportingMappingQualitySum = 0;
     BQL2 = 10;                    // -Q --mismatch-base-quality-threshold
     RMU = 10000000;                     // -U --read-mismatch-limit
     readMaxMismatchFraction = 1.0;    //  -z --read-max-mismatch-fraction
@@ -396,7 +397,7 @@ Parameters::Parameters(int argc, char** argv) {
     readIndelLimit = 10000000;     // -e --read-indel-limit
     IDW = -1;                     // -x --indel-exclusion-window
     TH = 10e-3;              // -T --theta
-    PVL = 0.0001;             // -P --pvar
+    PVL = 0.0;             // -P --pvar
     RDF = 0.9;             // -D --read-dependence-factor
     diffusionPriorScalar = 1.0;     // -V --diffusion-prior-scalar
     WB = 1;                      // -W --posterior-integration-limits
@@ -407,6 +408,7 @@ Parameters::Parameters(int argc, char** argv) {
     minAltCount = 2; // require 2 reads in same sample call
     minAltTotal = 1;
     minAltQSum = 0;
+    //minAltQSumTotal = 0;
     minCoverage = 0;
     debuglevel = 0;
     debug = false;
@@ -438,19 +440,20 @@ Parameters::Parameters(int argc, char** argv) {
         {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
         {"pooled", no_argument, 0, 'J'},
-        {"no-ewens-priors", no_argument, 0, 'Y'}, // TODO
+        //{"no-ewens-priors", no_argument, 0, 'Y'}, // TODO
         {"no-population-priors", no_argument, 0, 'k'},
         {"use-mapping-quality", no_argument, 0, 'j'},
         {"min-mapping-quality", required_argument, 0, 'm'},
         {"min-base-quality", required_argument, 0, 'q'},
-        {"min-supporting-quality", required_argument, 0, 'R'},
+        {"min-supporting-allele-qsum", required_argument, 0, 'R'},
+        {"min-supporting-mapping-qsum", required_argument, 0, 'Y'},
         {"mismatch-base-quality-threshold", required_argument, 0, 'Q'},
         {"read-mismatch-limit", required_argument, 0, 'U'},
         {"read-max-mismatch-fraction", required_argument, 0, 'z'},
         {"read-snp-limit", required_argument, 0, '$'},
         {"read-indel-limit", required_argument, 0, 'e'},
         {"no-indels", no_argument, 0, 'i'},
-        {"left-align-indels", no_argument, 0, 'O'},
+        {"dont-left-align-indels", no_argument, 0, 'O'},
         {"no-mnps", no_argument, 0, 'X'},
         {"no-complex", no_argument, 0, 'u'},
         {"max-complex-gap", required_argument, 0, 'E'},
@@ -493,7 +496,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diN5aI_Yk=wluVXJb:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diN5aI_k=wluVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -554,9 +557,9 @@ Parameters::Parameters(int argc, char** argv) {
                 outputFile = optarg;
                 break;
 
-            // -O --left-align-indels
+            // -O --dont-left-align-indels
             case 'O':
-                leftAlignIndels = true;
+                leftAlignIndels = false;
                 break;
 
             // -L --trace
@@ -622,8 +625,6 @@ Parameters::Parameters(int argc, char** argv) {
             case '0':
 		MQL0 = 30;
 		BQL0 = 20;
-		MQL1 = 0;
-		BQL1 = 0;
                 break;
 
             // -M --expectation-maximization
@@ -706,16 +707,20 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -R --min-supporting-quality
+            // -R --min-supporting-allele-qsum
             case 'R':
-                if (!convert(split(optarg, ",").front(), MQL1)) {
-                    cerr << "could not parse min-supporting-quality MQ" << endl;
+                if (!convert(optarg, minSupportingAlleleQualitySum)) {
+                    cerr << "could not parse min-supporting-allele-qsum" << endl;
                     exit(1);
                 }
-                if (!convert(split(optarg, ",").back(), BQL1)) {
-                    cerr << "could not parse min-supporting-quality MQ" << endl;
+                break;
+
+            // -Y --min-supporting-mapping-quality
+            case 'Y':
+		if (!convert(optarg, minSupportingMappingQualitySum)) {
+                    cerr << "could not parse min-supporting-mapping-qsum" << endl;
                     exit(1);
-                }
+		}
                 break;
 
             // -N --exclude-unobserved-genotypes
@@ -867,11 +872,6 @@ Parameters::Parameters(int argc, char** argv) {
                     cerr << "could not parse min-alternate-count" << endl;
                     exit(1);
                 }
-                break;
-
-            // -Y --no-ewens-priors
-            case 'Y':
-                ewensPriors = false;
                 break;
 
             // -k --no-population-priors

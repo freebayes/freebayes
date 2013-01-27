@@ -406,6 +406,7 @@ string AlleleParser::vcfHeader() {
         // supplementary information about the site
         << "##INFO=<ID=ODDS,Number=1,Type=Float,Description=\"The log odds ratio of the best genotype combination to the second-best.\">" << endl
         << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
+        << "##INFO=<ID=GTI,Number=1,Type=Integer,Description=\"Number of genotyping iterations required to reach convergence or bailout.\">" << endl
         //<< "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"site has transition SNP\">" << endl
         //<< "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"site has transversion SNP\">" << endl
         << "##INFO=<ID=CpG,Number=0,Type=Flag,Description=\"CpG site (either CpG, TpG or CpA)\">" << endl
@@ -440,7 +441,7 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=GQ,Number=1,Type=Float,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         // this can be regenerated with RA, AA, QR, QA
         << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
-        << "##FORMAT=<ID=GLE,Number=1,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype.  For instance, 0^-75.22|1^-223.42|0/0^-323.03|1/0^-99.29|1/1^-802.53 represents both haploid and diploid genotype likilehoods in a biallelic context\">" << endl
+	//<< "##FORMAT=<ID=GLE,Number=1,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype.  For instance, 0^-75.22|1^-223.42|0/0^-323.03|1/0^-99.29|1/1^-802.53 represents both haploid and diploid genotype likilehoods in a biallelic context\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
@@ -1167,7 +1168,8 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
 	    if (isRepeatUnit(alleleseq, repeatunit)) {
 		// determine the boundaries of the repeat
 		long int p = pos - currentSequenceStart;
-		size_t startpos = currentSequence.find(repeatstr, p - repeatstr.size() - 1); // adjust to ensure we hit the first of the repeatstr
+		// adjust to ensure we hit the first of the repeatstr
+		size_t startpos = currentSequence.find(repeatstr, max((long int) 0, p - (long int) repeatstr.size() - 1));
 		long int leftbound = startpos + currentSequenceStart;
 		if (startpos == string::npos) {
 		    cerr << "could not find repeat sequence?" << endl;
@@ -3119,15 +3121,14 @@ vector<Allele> AlleleParser::genotypeAlleles(
         }
         bool passesFilters = false;
         int qSum = 0;
+	int mqSum = 0;
         for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
             DEBUG2("allele " << **a);
             Allele& allele = **a;
             qSum += allele.quality;
-            if (!passesFilters && allele.quality >= parameters.BQL1 && allele.mapQuality >= parameters.MQL1) {
-                passesFilters = true;
-            }
+	    mqSum += allele.mapQuality;
         }
-        if (passesFilters) {
+        if (qSum >= parameters.minSupportingAlleleQualitySum && mqSum >= parameters.minSupportingMappingQualitySum) {
             Allele& allele = *(alleles.front());
             int length = allele.length;
             int reflength = allele.referenceLength;

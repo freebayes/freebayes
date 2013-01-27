@@ -49,6 +49,7 @@ public:
         string refbase,
         vector<Allele>& altAlleles,
         map<string, int> repeats,
+	int genotypingIterations,
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,

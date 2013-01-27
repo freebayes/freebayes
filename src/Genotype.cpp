@@ -602,6 +602,15 @@ vector<int> GenotypeCombo::observationCounts(void) {
     return counts;
 }
 
+int GenotypeCombo::observationTotal(void) {
+    int total = 0;
+    for (map<string, AlleleCounter>::iterator a = alleleCounters.begin(); a != alleleCounters.end(); ++a) {
+        const AlleleCounter& allele = a->second;
+        total += allele.observations;
+    }
+    return total;
+}
+
 // how many copies of the locus are in the whole genotype combination?
 int GenotypeCombo::ploidy(void) {
     int copies = 0;
@@ -880,12 +889,12 @@ allLocalGenotypeCombinations(
             // memory-saving intervention, improve this
             // difficult if we want to calculate marginals...
             if (!keepCombos) {
-                // we should only have two combos in the list now...
-                if (combos.front().posteriorProb < combos.back().posteriorProb) {
-                    combos.pop_front();
-                } else {
-                    combos.pop_back();
-                }
+		// we should only have two combos in the list now...
+		if (combos.front().posteriorProb < combos.back().posteriorProb) {
+		    combos.pop_front();
+		} else {
+		    combos.pop_back();
+		}
             }
         }
     }
@@ -1059,6 +1068,7 @@ convergentGenotypeComboSearch(
     bool alleleBalancePriors,
     long double diffusionPriorScalar,
     int maxiterations,
+    int& totaliterations,
     bool addHomozygousCombos) {
 
     if (comboKing.empty()) {
@@ -1135,52 +1145,55 @@ convergentGenotypeComboSearch(
         // row as our best
         if (combos.front().isHomozygous() || bestCombo == combos.front()) {
             // we've converged
-            if (bandwidth == 0 && banddepth == 0) {
-                // XXX temporary hack
-                // get the rest of the combos in memory so we can do computation with them...
-                allLocalGenotypeCombinations(
-                        combos,
-                        combos.front(),
-                        sampleDataLikelihoods,
-                        samples,
-                        priorACs,
-                        theta,
-                        pooled,
-                        ewensPriors,
-                        permute,
-                        hwePriors,
-                        binomialObsPriors,
-                        alleleBalancePriors,
-                        diffusionPriorScalar,
-                        true); // keep combos
-            } else {
-                bandedGenotypeCombinations(
-                        combos,
-                        bestCombo,
-                        variantSampleDataLikelihoods,
-                        invariantSampleDataLikelihoods,
-                        samples,
-                        priorACs,
-                        bandwidth,
-                        banddepth,
-                        theta,
-                        pooled,
-                        ewensPriors,
-                        permute,
-                        hwePriors,
-                        binomialObsPriors,
-                        alleleBalancePriors,
-                        diffusionPriorScalar,
-                        true); // keep combos
-            }
-            break;
+	    if (bandwidth == 0 && banddepth == 0) {
+		// XXX temporary hack
+		// get the rest of the combos in memory so we can do computation with them...
+		allLocalGenotypeCombinations(
+		    combos,
+		    combos.front(),
+		    sampleDataLikelihoods,
+		    samples,
+		    priorACs,
+		    theta,
+		    pooled,
+		    ewensPriors,
+		    permute,
+		    hwePriors,
+		    binomialObsPriors,
+		    alleleBalancePriors,
+		    diffusionPriorScalar,
+		    true); // keep combos
+	    } else {
+		bandedGenotypeCombinations(
+		    combos,
+		    bestCombo,
+		    variantSampleDataLikelihoods,
+		    invariantSampleDataLikelihoods,
+		    samples,
+		    priorACs,
+		    bandwidth,
+		    banddepth,
+		    theta,
+		    pooled,
+		    ewensPriors,
+		    permute,
+		    hwePriors,
+		    binomialObsPriors,
+		    alleleBalancePriors,
+		    diffusionPriorScalar,
+		    true); // keep combos
+	    }
+	    break;
         } else {
             bestCombo = combos.front();
         }
 
     }
 
-    //cout << i << " iterations" << "\t" << variantSampleDataLikelihoods.size() << " varying samples" << endl;
+    //cout << i << " iterations" << "\t" << variantSampleDataLikelihoods.size() << " varying samples"
+    //     << " and " << invariantSampleDataLikelihoods.size() << " invariant samples" << endl;
+
+    totaliterations = i;
 
     // add the homozygous cases
 
@@ -1466,20 +1479,16 @@ GenotypeCombo::calculatePosteriorProbability(
                 */
 
             priorProbObservations
-                += (binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
+                += binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
 		    +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
-		    +  binomialProbln(alleleCounter.placedStart, obs, 0.5))
-		- ( binomialCoefficientLn(alleleCounter.forwardStrand, obs)
-		    + binomialCoefficientLn(alleleCounter.placedLeft, obs)
-		    + binomialCoefficientLn(alleleCounter.placedStart, obs));
+		    +  binomialProbln(alleleCounter.placedStart, obs, 0.5);
         }
     }
 
     // ok... now do the same move for the observation counts
     // --- this should capture "Allele Balance"
     if (alleleBalancePriors) {
-        priorProbObservations += multinomialSamplingProbLn(alleleProbs(), observationCounts())
-	    - multinomialCoefficientLn(numberOfAlleles(), observationCounts());
+        priorProbObservations += multinomialSamplingProbLn(alleleProbs(), observationCounts());
     }
 
     // with larger population samples, the effect of
@@ -1496,6 +1505,13 @@ GenotypeCombo::calculatePosteriorProbability(
     }
 
     // posterior probability
+    /*
+    cerr << "priorProbG_Af " << priorProbG_Af << endl
+	 << "priorProbAf " << priorProbAf << endl
+	 << "priorProbObservations " << priorProbObservations << endl
+	 << "priorProbGenotypesGivenHWE " << priorProbGenotypesGivenHWE << endl
+	 << "probObsGivenGenotypes " << probObsGivenGenotypes << endl;
+    */
     priorProb = priorProbG_Af + priorProbAf + priorProbObservations + priorProbGenotypesGivenHWE;
     posteriorProb = priorProb + probObsGivenGenotypes;
 
@@ -1772,7 +1788,7 @@ void combinePopulationCombos(list<GenotypeCombo>& genotypeCombos, map<string, li
     // and add them to the result set
     for (map<Allele, GenotypeCombo>::iterator h = otherPopulationsHomozygousCombos.begin(); h!= otherPopulationsHomozygousCombos.end(); ++h) {
         GenotypeCombo& combo = h->second;
-        assert(genotypeCombos.back().size() == combo.size());
+        //assert(genotypeCombos.back().size() == combo.size());
         genotypeCombos.push_back(combo);
     }
 

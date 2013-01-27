@@ -206,6 +206,7 @@ public:
     int hetCount(void);
     vector<int> counts(void); // the counts of frequencies of the alleles in the genotype combo
     vector<int> observationCounts(void); // the counts of observations of the alleles (in sorted order)
+    int observationTotal(void);
     vector<string> alleles(void);  // the string representations of alleles in the genotype combo
     bool isHomozygous(void); // returns true if the combination is 100% homozygous across all individuals
                              // e.g. if there is no variation
@@ -248,6 +249,13 @@ struct GenotypeComboResultSorter {
         } else {
             return gc1.posteriorProb > gc2.posteriorProb;
         }
+    }
+};
+
+// for comparing GenotypeCombos which are empty
+struct GenotypeComboResultEqual {
+    bool operator()(const GenotypeCombo& gc1, const GenotypeCombo& gc2) {
+	return gc1.posteriorProb == gc2.posteriorProb;
     }
 };
 
@@ -401,6 +409,7 @@ convergentGenotypeComboSearch(
     bool alleleBalancePriors,
     long double diffusionPriorScalar,
     int maxiterations,
+    int& totaliterations,
     bool addHomozygousCombos);
 
 void

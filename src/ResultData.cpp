@@ -14,6 +14,7 @@ vcf::Variant& Results::vcf(
         string refbase,
         vector<Allele>& altAllelesIncludingNulls,
         map<string, int> repeats,
+	int genotypingIterations,
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
@@ -258,6 +259,7 @@ vcf::Variant& Results::vcf(
     var.info["PAIREDR"].push_back(convert((refObsCount == 0) ? 0 : (double) refProperPairs / (double) refObsCount));
 
     var.info["HWE"].push_back(convert(ln2phred(genotypeCombo.hweComboProb())));
+    var.info["GTI"].push_back(convert(genotypingIterations));
 
     // loop over all alternate alleles
     for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
