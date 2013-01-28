@@ -28,13 +28,17 @@ void Parameters::simpleUsage(char ** argv) {
          << endl
          << "    FreeBayes is capable of calling variant haplotypes shorter than a read length" << endl
          << "    where multiple polymorphisms segregate on the same read.  The maximum distance" << endl
-         << "    between polymorphisms phased in this way is determined by the" << endl
-         << "    --max-complex-gap, which defaults to 3bp.  In practice, this can comfortably be" << endl
-         << "    set to half the read length." << endl
+         << "    between polymorphisms phased in this way is determined by the --max-complex-gap," << endl
+         << "    which defaults to 3bp." << endl
          << endl
          << "    Ploidy may be set to any level (-p), but by default all samples are assumed to" << endl
          << "    be diploid.  FreeBayes can model per-sample and per-region variation in" << endl
          << "    copy-number (-A) using a copy-number variation map." << endl
+         << endl
+         << "    FreeBayes can act as a frequency-based pooled caller and describe variants" << endl
+         << "    and haplotypes in terms of observation frequency rather than called genotypes." << endl
+         << "    To do so, use --pooled-continuous and set input filters to a suitable level." << endl
+         << "    Allele observation counts will be described by AO and RO fields in the VCF output." << endl
          << endl
          << "parameters:" << endl
          << endl
@@ -251,21 +255,23 @@ void Parameters::usage(char** argv) {
          << "   -k --no-population-priors" << endl
          << "                   Equivalent to --pooled-discrete and removal of Ewens Sampling" << endl
 	 << "                   Formula priors" << endl
-         << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
-         << "                   the allele frequency as estimated by observation frequency." << endl
          << endl
-         << "observation prior expectations:" << endl
+         << "mappability priors:" << endl
          << endl
-         << "   -V --binomial-obs-priors" << endl
-         << "                   Incorporate expectations about osbervations into the priors," << endl
+         << "   -w --hwe-priors-off" << endl
+	 << "                   Disable estimation of the probability of the combination" << endl
+	 << "                   arising under HWE given the allele frequency as estimated" << endl
+         << "                   by observation frequency." << endl
+         << "   -V --binomial-obs-priors-off" << endl
+         << "                   Disable incorporation of prior expectations about observations." << endl
          << "                   Uses read placement probability, strand balance probability," << endl
          << "                   and read position (5'-3') probability." << endl
-         << "   -a --allele-balance-priors" << endl
-         << "                   Use aggregate probability of observation balance between alleles" << endl
-         << "                   as a component of the priors.  Best for observations with minimal" << endl
-         << "                   inherent reference bias." << endl
+         << "   -a --allele-balance-priors-off" << endl
+         << "                   Disable use of aggregate probability of observation balance between alleles" << endl
+         << "                   as a component of the priors." << endl
          << endl
 	 << "genotype likelihoods:" << endl
+	 << endl
 	 << "   --observation-bias FILE" << endl
 	 << "                   Read length-dependent allele observation biases from FILE." << endl
 	 << "                   The format is [length] [alignment efficiency relative to reference]" << endl
@@ -373,9 +379,9 @@ Parameters::Parameters(int argc, char** argv) {
     permute = true;                // -K --permute
     useMappingQuality = false;
     useMinIndelQuality = true;
-    obsBinomialPriors = false; // TODO
-    hwePriors = false;
-    alleleBalancePriors = false;
+    obsBinomialPriors = true;
+    hwePriors = true;
+    alleleBalancePriors = true;
     excludeUnobservedGenotypes = false;
     excludePartiallyObservedGenotypes = false;
     genotypeVariantThreshold = 0;
@@ -466,9 +472,9 @@ Parameters::Parameters(int argc, char** argv) {
         {"theta", required_argument, 0, 'T'},
         {"pvar", required_argument, 0, 'P'},
         {"read-dependence-factor", required_argument, 0, 'D'},
-        {"binomial-obs-priors", no_argument, 0, 'V'},
-        {"allele-balance-priors", no_argument, 0, 'a'},
-        {"hwe-priors", no_argument, 0, 'w'},
+        {"binomial-obs-priors-off", no_argument, 0, 'V'},
+        {"allele-balance-priors-off", no_argument, 0, 'a'},
+        {"hwe-priors-off", no_argument, 0, 'w'},
         {"posterior-integration-limits", required_argument, 0, 'W'},
         {"min-alternate-fraction", required_argument, 0, 'F'},
         {"min-alternate-count", required_argument, 0, 'C'},
@@ -836,16 +842,17 @@ Parameters::Parameters(int argc, char** argv) {
 
             // observation priors
             case 'V':
-                obsBinomialPriors = true;
+                obsBinomialPriors = false;
                 break;
 
             // allele balance
             case 'a':
-                alleleBalancePriors = true;
+                alleleBalancePriors = false;
                 break;
 
+	    // hwe expectations
             case 'w':
-                hwePriors = true;
+                hwePriors = false;
                 break;
 
             // -W --posterior-integration-limits
