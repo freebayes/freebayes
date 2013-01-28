@@ -15,8 +15,7 @@ CFLAGS=-O3 -D_FILE_OFFSET_BITS=64
 BAMTOOLS_ROOT=../bamtools
 
 LIBS = -lz -lm -L./ -L../vcflib/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix
-INCLUDE = -I$(BAMTOOLS_ROOT)/src
-
+INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath
 
 all: ../bin/freebayes ../bin/bamleftalign
 

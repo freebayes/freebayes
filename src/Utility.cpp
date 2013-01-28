@@ -54,6 +54,10 @@ long double float2phred(long double prob) {
         return p;
 }
 
+long double big2phred(const BigFloat& prob) {
+    return -10 * (long double) (ttmath::Log(prob, (BigFloat)10)).ToDouble();
+}
+
 long double powln(long double m, int n) {
     return m * n;
 }
@@ -317,6 +321,13 @@ long double safe_exp(long double ln) {
     }
 }
 
+BigFloat big_exp(long double ln) {
+    BigFloat x, result;
+    x.FromDouble(ln);
+    result = ttmath::Exp(x);
+    return result;
+}
+
 // 'safe' log summation for probabilities
 long double logsumexp_probs(const vector<long double>& lnv) {
     vector<long double>::const_iterator i = lnv.begin();
@@ -326,11 +337,14 @@ long double logsumexp_probs(const vector<long double>& lnv) {
         if (*i > maxN)
             maxN = *i;
     }
-    long double sum = 0;
+    BigFloat sum = 0;
     for (vector<long double>::const_iterator i = lnv.begin(); i != lnv.end(); ++i) {
-        sum += safe_exp(*i - maxN);
+        sum += big_exp(*i - maxN);
     }
-    return maxN + log(sum);
+    BigFloat maxNb; maxNb.FromDouble(maxN);
+    BigFloat bigResult = maxNb + ttmath::Ln(sum);
+    long double result;
+    return bigResult.ToDouble();
 }
 
 // unsafe, kept for potential future use

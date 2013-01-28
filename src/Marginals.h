@@ -4,6 +4,7 @@
 #include <map>
 #include "Genotype.h"
 #include "ResultData.h"
+#include "Utility.h"
 
 using namespace std;
 

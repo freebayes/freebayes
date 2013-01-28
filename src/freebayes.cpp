@@ -481,8 +481,8 @@ int main (int argc, char *argv[]) {
         // the approach is go through all the homozygous combos
         // and then subtract this from 1... resolving p(var|d)
 
-        long double pVar = 1.0;
-        long double pHom = 0.0;
+        BigFloat pVar = 1.0;
+        BigFloat pHom = 0.0;
 
         long double bestComboOddsRatio = 0;
 
@@ -497,8 +497,8 @@ int main (int argc, char *argv[]) {
             if (gc->isHomozygous()
                     && (parameters.useRefAllele
                         || !parameters.useRefAllele && gc->alleles().front() == referenceBase)) {
-                pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
-                pHom += safe_exp(gc->posteriorProb - posteriorNormalizer);
+                pVar -= big_exp(gc->posteriorProb - posteriorNormalizer);
+                pHom += big_exp(gc->posteriorProb - posteriorNormalizer);
             } else if (!hasHetCombo) { // get the first het combo
                 bestCombo = *gc;
                 hasHetCombo = true;
@@ -567,14 +567,13 @@ int main (int argc, char *argv[]) {
         }
 
         DEBUG2("got bestAlleleSamplingProb");
-        DEBUG("pVar = " << pVar << " " << parameters.PVL
-              << " pHom = " << pHom
-              << " 1 - pHom = " << 1 - pHom);
+        DEBUG("pVar = " << pVar.ToString() << " " << parameters.PVL
+              << " pHom = " << pHom.ToString());
 
-        DEBUG2("1 - " << pHom << " >= " << parameters.PVL);
+        DEBUG2("1 - " << pHom.ToString() << " >= " << parameters.PVL);
         // the second clause guards against float underflow causing us not to output a position
         // practically, parameters.PVL == 0 means "report all genotypes which pass our input filters"
-        if ((1 - pHom) >= parameters.PVL || parameters.PVL == 0) {
+        if ((1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
             DEBUG2("passed PVL threshold");
 
             GenotypeCombo bestGenotypeComboByMarginals;
@@ -688,8 +687,8 @@ int main (int argc, char *argv[]) {
                     if (gc->isHomozygous()
                             && (parameters.useRefAllele
                                 || !parameters.useRefAllele && gc->alleles().front() == referenceBase)) {
-                        pVar -= safe_exp(gc->posteriorProb - posteriorNormalizer);
-                        pHom += safe_exp(gc->posteriorProb - posteriorNormalizer);
+                        pVar -= big_exp(gc->posteriorProb - posteriorNormalizer);
+                        pHom += big_exp(gc->posteriorProb - posteriorNormalizer);
                     } else if (!hasHetCombo) { // get the first het combo
                         bestCombo = *gc;
                         hasHetCombo = true;

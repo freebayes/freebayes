@@ -7,7 +7,7 @@ using namespace std;
 
 vcf::Variant& Results::vcf(
         vcf::Variant& var, // variant to update
-        long double pHom,
+        BigFloat pHom,
         long double bestComboOddsRatio,
         //long double alleleSamplingProb,
         Samples& samples,
@@ -179,7 +179,7 @@ vcf::Variant& Results::vcf(
     var.id = ".";
     var.filter = ".";
     // XXX this should be the size of the maximum deletion + 1bp on the left end
-    var.quality = float2phred(pHom);
+    var.quality = big2phred(pHom);
 
 
     // set up format string
@@ -614,7 +614,7 @@ vcf::Variant& Results::vcf(
             sampleOutput["GT"].push_back(genotype->relativeGenotype(refbase, altAlleles));
 
             if (parameters.calculateMarginals) {
-                sampleOutput["GQ"].push_back(convert(float2phred(1 - safe_exp(sampleLikelihoods.front().marginal))));
+                sampleOutput["GQ"].push_back(convert(big2phred((BigFloat)1 - big_exp(sampleLikelihoods.front().marginal))));
             }
 
             sampleOutput["DP"].push_back(convert(sample.observationCount()));

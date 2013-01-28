@@ -56,7 +56,10 @@ long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Sam
             if (rmgsItr == rmgs.end()) {
                 rmgs[sdl.genotype] = gc->posteriorProb;
             } else {
-                rmgs[sdl.genotype] = log(safe_exp(rmgsItr->second) + safe_exp(gc->posteriorProb));
+		//vector<long double> x;
+		//x.push_back(rmgsItr->second); x.push_back(gc->posteriorProb);
+                //rmgs[sdl.genotype] = logsumexp_probs(x);
+		rmgs[sdl.genotype] = log(safe_exp(rmgsItr->second) + safe_exp(gc->posteriorProb));
             }
         }
     }

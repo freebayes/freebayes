@@ -42,7 +42,7 @@ public:
 
     vcf::Variant& vcf(
         vcf::Variant& var, // variant to update
-        long double pHom,
+        BigFloat pHom,
         long double bestComboOddsRatio,
         //long double alleleSamplingProb,
         Samples& samples,
