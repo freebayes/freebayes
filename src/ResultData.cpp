@@ -179,7 +179,7 @@ vcf::Variant& Results::vcf(
     var.id = ".";
     var.filter = ".";
     // XXX this should be the size of the maximum deletion + 1bp on the left end
-    var.quality = big2phred(pHom);
+    var.quality = nan2zero(big2phred(pHom));
 
 
     // set up format string
@@ -254,11 +254,11 @@ vcf::Variant& Results::vcf(
     var.info["XRI"].push_back(convert(refReadIndelRate));
 
     var.info["MQMR"].push_back(convert((refObsCount == 0) ? 0 : (double) refmqsum / (double) refObsCount));
-    var.info["RPPR"].push_back(convert((refObsCount == 0) ? 0 : ln2phred(hoeffdingln(refReadsLeft, refReadsRight + refReadsLeft, 0.5))));
-    var.info["EPPR"].push_back(convert((refBasesLeft + refBasesRight == 0) ? 0 : ln2phred(hoeffdingln(refEndLeft, refEndLeft + refEndRight, 0.5))));
+    var.info["RPPR"].push_back(convert((refObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(refReadsLeft, refReadsRight + refReadsLeft, 0.5)))));
+    var.info["EPPR"].push_back(convert((refBasesLeft + refBasesRight == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(refEndLeft, refEndLeft + refEndRight, 0.5)))));
     var.info["PAIREDR"].push_back(convert((refObsCount == 0) ? 0 : (double) refProperPairs / (double) refObsCount));
 
-    var.info["HWE"].push_back(convert(ln2phred(genotypeCombo.hweComboProb())));
+    var.info["HWE"].push_back(convert(nan2zero(ln2phred(genotypeCombo.hweComboProb()))));
     var.info["GTI"].push_back(convert(genotypingIterations));
 
     // loop over all alternate alleles
@@ -443,24 +443,24 @@ vcf::Variant& Results::vcf(
             //<< "HOMA=" << homAltSamples << ";"
             //<< "HOMR=" << homRefSamples << ";"
         var.info["SRP"].clear(); // XXX hack
-        var.info["SRP"].push_back(convert((refObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.first, refObsCount, 0.5))));
-        var.info["SAP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(baseCountsForwardTotal.second, altObsCount, 0.5))));
+        var.info["SRP"].push_back(convert((refObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(baseCountsForwardTotal.first, refObsCount, 0.5)))));
+        var.info["SAP"].push_back(convert((altObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(baseCountsForwardTotal.second, altObsCount, 0.5)))));
             //<< "ABR=" << hetReferenceObsCount <<  ";"
             //<< "ABA=" << hetAlternateObsCount <<  ";"
-        var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : (double) hetAlternateObsCount / (double) hetAllObsCount ));
-        var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : ln2phred(hoeffdingln(hetAlternateObsCount, hetAllObsCount, 0.5))));
+        var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : nan2zero((double) hetAlternateObsCount / (double) hetAllObsCount )));
+        var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(hetAlternateObsCount, hetAllObsCount, 0.5)))));
         var.info["RUN"].push_back(convert(parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)));
-        var.info["MQM"].push_back(convert((altObsCount == 0) ? 0 : (double) altmqsum / (double) altObsCount));
-        var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5))));
-        var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5))));
-        var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : (double) altproperPairs / (double) altObsCount));
+        var.info["MQM"].push_back(convert((altObsCount == 0) ? 0 : nan2zero((double) altmqsum / (double) altObsCount)));
+        var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5)))));
+        var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5)))));
+        var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : nan2zero((double) altproperPairs / (double) altObsCount)));
         var.info["CIGAR"].push_back(adjustedCigar[altAllele.base()]);
-        var.info["MEANALT"].push_back(convert((hetAltSamples + homAltSamples == 0) ? 0 : (double) uniqueAllelesInAltSamples / (double) (hetAltSamples + homAltSamples)));
+        var.info["MEANALT"].push_back(convert((hetAltSamples + homAltSamples == 0) ? 0 : nan2zero((double) uniqueAllelesInAltSamples / (double) (hetAltSamples + homAltSamples))));
 
         for (vector<string>::iterator st = sequencingTechnologies.begin();
                 st != sequencingTechnologies.end(); ++st) { string& tech = *st;
             var.info["technology." + tech].push_back(convert((altObsCount == 0) ? 0
-                        : (double) altObsBySequencingTechnology[tech] / (double) altObsCount ));
+							     : nan2zero((double) altObsBySequencingTechnology[tech] / (double) altObsCount )));
         }
 
         if (bestOverallComboIsHet) {
@@ -614,7 +614,7 @@ vcf::Variant& Results::vcf(
             sampleOutput["GT"].push_back(genotype->relativeGenotype(refbase, altAlleles));
 
             if (parameters.calculateMarginals) {
-                sampleOutput["GQ"].push_back(convert(big2phred((BigFloat)1 - big_exp(sampleLikelihoods.front().marginal))));
+                sampleOutput["GQ"].push_back(convert(nan2zero(big2phred((BigFloat)1 - big_exp(sampleLikelihoods.front().marginal)))));
             }
 
             sampleOutput["DP"].push_back(convert(sample.observationCount()));

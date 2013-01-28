@@ -151,9 +151,14 @@ void Parameters::usage(char** argv) {
          << "                   single parameter to the Ewens Sampling Formula prior model" << endl
          << "                   default: 0.001" << endl
          << "   -p --ploidy N   Sets the default ploidy for the analysis to N.  default: 2" << endl
-         << "   -J --pooled     Assume that samples result from pooled sequencing." << endl
+         << "   -J --pooled-discrete" << endl
+	 << "                   Assume that samples result from pooled sequencing." << endl
+	 << "                   Model pooled samples using discrete genotypes across pools." << endl
          << "                   When using this flag, set --ploidy to the number of" << endl
-         << "                   alleles in each sample." << endl
+         << "                   alleles in each sample or use the --cnv-map to define" << endl
+	 << "                   per-sample ploidy." << endl
+         << "   -K --pooled-continuous" << endl
+	 << "                   Assume that samples result from pooled sequencing." << endl
          << endl
          << "reference allele:" << endl
          << endl
@@ -244,7 +249,8 @@ void Parameters::usage(char** argv) {
          << "population priors:" << endl
          << endl
          << "   -k --no-population-priors" << endl
-         << "                   Equivalent to --pooled and removal of Ewens Sampling Formula priors" << endl
+         << "                   Equivalent to --pooled-discrete and removal of Ewens Sampling" << endl
+	 << "                   Formula priors" << endl
          << "   -w --hwe-priors Use the probability of the combination arising under HWE given" << endl
          << "                   the allele frequency as estimated by observation frequency." << endl
          << endl
@@ -285,9 +291,6 @@ void Parameters::usage(char** argv) {
          << "                   Integrate all genotype combinations in our posterior space" << endl
          << "                   which include no more than N samples with their Mth best" << endl
          << "                   data likelihood. default: 1,3." << endl
-         << "   -K --no-permute" << endl
-         << "                   Do not scale prior probability of genotype combination given allele" << endl
-         << "                   frequency by the number of permutations of included genotypes." << endl
          << "   -N --exclude-unobserved-genotypes" << endl
          << "                   Skip sample genotypings for which the sample has no supporting reads." << endl
          << "   -S --genotype-variant-threshold N" << endl
@@ -364,7 +367,8 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
     maxComplexGap = 3;
-    pooled = false;                 // -J --pooled
+    pooledDiscrete = false;                 // -J --pooled
+    pooledContinuous = false;
     ewensPriors = true;
     permute = true;                // -K --permute
     useMappingQuality = false;
@@ -439,8 +443,8 @@ Parameters::Parameters(int argc, char** argv) {
         {"standard-filters", no_argument, 0, '0'},
         {"reference-quality", required_argument, 0, '1'},
         {"ploidy", required_argument, 0, 'p'},
-        {"pooled", no_argument, 0, 'J'},
-        //{"no-ewens-priors", no_argument, 0, 'Y'}, // TODO
+        {"pooled-discrete", no_argument, 0, 'J'},
+        {"pooled-continuous", no_argument, 0, 'K'},
         {"no-population-priors", no_argument, 0, 'k'},
         {"use-mapping-quality", no_argument, 0, 'j'},
         {"min-mapping-quality", required_argument, 0, 'm'},
@@ -474,7 +478,6 @@ Parameters::Parameters(int argc, char** argv) {
         //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
         {"min-alternate-qsum", required_argument, 0, '3'},
         {"min-coverage", required_argument, 0, '!'},
-        {"no-permute", no_argument, 0, 'K'},
         {"no-marginals", no_argument, 0, '='},
         {"variant-input", required_argument, 0, '@'},
         {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -686,9 +689,8 @@ Parameters::Parameters(int argc, char** argv) {
                 }
                 break;
 
-            // -J --pooled
             case 'J':
-                pooled = true;
+                pooledDiscrete = true;
                 break;
 
             // -m --min-mapping-quality
@@ -876,13 +878,12 @@ Parameters::Parameters(int argc, char** argv) {
 
             // -k --no-population-priors
             case 'k':
-                pooled = true;
+                pooledDiscrete = true;
                 ewensPriors = false;
                 break;
 
-            // -K --no-permute
             case 'K':
-                permute = false;
+                pooledContinuous = true;
                 break;
 
             case '=':

@@ -58,6 +58,14 @@ long double big2phred(const BigFloat& prob) {
     return -10 * (long double) (ttmath::Log(prob, (BigFloat)10)).ToDouble();
 }
 
+long double nan2zero(long double x) {
+    if (x != x) {
+	return 0;
+    } else {
+	return x;
+    }
+}
+
 long double powln(long double m, int n) {
     return m * n;
 }

@@ -410,7 +410,7 @@ int main (int argc, char *argv[]) {
 					       nullDataLikelihoods,
 					       inputAlleleCounts,
 					       theta,
-					       parameters.pooled,
+					       parameters.pooledDiscrete,
 					       parameters.ewensPriors,
 					       parameters.permute,
 					       parameters.hwePriors,
@@ -431,7 +431,7 @@ int main (int argc, char *argv[]) {
                     parameters.WB,
                     parameters.TB,
 		    theta,
-                    parameters.pooled,
+                    parameters.pooledDiscrete,
                     parameters.ewensPriors,
                     parameters.permute,
                     parameters.hwePriors,
@@ -630,7 +630,7 @@ int main (int argc, char *argv[]) {
 						       nullDataLikelihoods,
 						       inputAlleleCounts,
 						       theta,
-						       parameters.pooled,
+						       parameters.pooledDiscrete,
 						       parameters.ewensPriors,
 						       parameters.permute,
 						       parameters.hwePriors,
@@ -654,7 +654,7 @@ int main (int argc, char *argv[]) {
                             adjustedBandwidth,
                             adjustedBanddepth,
 			    theta,
-                            parameters.pooled,
+                            parameters.pooledDiscrete,
                             parameters.ewensPriors,
                             parameters.permute,
                             parameters.hwePriors,
@@ -732,7 +732,9 @@ int main (int argc, char *argv[]) {
             }
 
             vector<Allele> alts;
-            if (parameters.onlyUseInputAlleles || parameters.reportAllHaplotypeAlleles) {
+            if (parameters.onlyUseInputAlleles
+		|| parameters.reportAllHaplotypeAlleles
+		|| parameters.pooledContinuous) {
                 //alts = genotypeAlleles;
                 for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
                     if (!a->isReference()) {

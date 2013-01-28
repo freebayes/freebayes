@@ -58,7 +58,8 @@ public:
     bool allowComplex;           // -X --allow-complex
     int maxComplexGap;
     bool allowSNPs;              // -I --no-snps
-    bool pooled;                 // -J --pooled
+    bool pooledDiscrete;
+    bool pooledContinuous;
     bool ewensPriors;
     bool permute;                //    --permute
     bool useMappingQuality;      //

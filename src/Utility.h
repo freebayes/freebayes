@@ -33,6 +33,7 @@ long double log102ln(long double prob);
 long double phred2float(int qual);
 long double float2phred(long double prob);
 long double big2phred(const BigFloat& prob);
+long double nan2zero(long double x);
 long double powln(long double m, int n);
 // here 'joint' means 'probability that we have a vector entirely composed of true bases'
 long double jointQuality(const std::vector<short>& quals);
