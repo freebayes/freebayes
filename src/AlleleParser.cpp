@@ -2577,7 +2577,7 @@ bool AlleleParser::toNextPosition(void) {
 
     if (!targets.empty() && (
                 (!parameters.allowIndels && currentPosition >= currentTarget->right)
-                || currentPosition > currentTarget->right - 1)) { // time to move to a new target
+                || currentPosition > currentTarget->right)) { // time to move to a new target
         DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right + 1);
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
