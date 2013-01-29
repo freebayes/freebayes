@@ -162,7 +162,8 @@ void Parameters::usage(char** argv) {
          << "                   alleles in each sample or use the --cnv-map to define" << endl
 	 << "                   per-sample ploidy." << endl
          << "   -K --pooled-continuous" << endl
-	 << "                   Assume that samples result from pooled sequencing." << endl
+	 << "                   Output all alleles which pass input filters, regardles of" << endl
+	 << "                   genotyping outcome or model." << endl
          << endl
          << "reference allele:" << endl
          << endl

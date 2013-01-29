@@ -580,7 +580,8 @@ int main (int argc, char *argv[]) {
             vector<vector<SampleDataLikelihood> > allSampleDataLikelihoods;
 
 
-	    if (parameters.calculateMarginals) {
+	    //if (parameters.calculateMarginals) {
+	    {
 
                 DEBUG("searching genotype space");
 
@@ -710,19 +711,20 @@ int main (int argc, char *argv[]) {
                     bestComboOddsRatio = genotypeCombos.front().posteriorProb - (++genotypeCombos.begin())->posteriorProb;
                 }
 
-		// make a combined, all-populations sample data likelihoods vector to accumulate marginals
-		SampleDataLikelihoods allSampleDataLikelihoods;
-		for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
-		    SampleDataLikelihoods& sdls = p->second;
-		    allSampleDataLikelihoods.reserve(allSampleDataLikelihoods.size() + distance(sdls.begin(), sdls.end()));
-		    allSampleDataLikelihoods.insert(allSampleDataLikelihoods.end(), sdls.begin(), sdls.end());
+		if (parameters.calculateMarginals) {
+		    // make a combined, all-populations sample data likelihoods vector to accumulate marginals
+		    SampleDataLikelihoods allSampleDataLikelihoods;
+		    for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
+			SampleDataLikelihoods& sdls = p->second;
+			allSampleDataLikelihoods.reserve(allSampleDataLikelihoods.size() + distance(sdls.begin(), sdls.end()));
+			allSampleDataLikelihoods.insert(allSampleDataLikelihoods.end(), sdls.begin(), sdls.end());
+		    }
+		    // calculate the marginal likelihoods for this population
+		    marginalGenotypeLikelihoods(genotypeCombos, allSampleDataLikelihoods);
+		    // store the marginal data likelihoods in the results, for easy parsing
+		    // like a vector -> map conversion...
+		    results.update(allSampleDataLikelihoods);
 		}
-
-		// calculate the marginal likelihoods for this population
-		marginalGenotypeLikelihoods(genotypeCombos, allSampleDataLikelihoods);
-		// store the marginal data likelihoods in the results, for easy parsing
-		// like a vector -> map conversion...
-		results.update(allSampleDataLikelihoods);
 
 	    }
 
