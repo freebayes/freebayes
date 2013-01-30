@@ -313,9 +313,9 @@ void Parameters::usage(char** argv) {
          << "                   Incorporate non-independence of reads by scaling successive" << endl
          << "                   observations by this factor during data likelihood" << endl
          << "                   calculations.  default: 0.9" << endl
-         << "   -= --no-marginals" << endl
-         << "                   Do not calculate the marginal probability of genotypes.  Saves" << endl
-         << "                   time and improves scaling performance in large populations." << endl
+         << "   -= --genotype-qualities" << endl
+         << "                   Calculate the marginal probability of genotypes and report as GQ in" << endl
+         << "                   each sample field in the VCF output." << endl
          << endl
          << "debugging:" << endl
          << endl
@@ -414,7 +414,7 @@ Parameters::Parameters(int argc, char** argv) {
     WB = 1;                      // -W --posterior-integration-limits
     TB = 3;
     posteriorIntegrationDepth = 0;
-    calculateMarginals = true;
+    calculateMarginals = false;
     minAltFraction = 0.2;  // require 20% of reads from sample to be supporting the same alternate to consider
     minAltCount = 2; // require 2 reads in same sample call
     minAltTotal = 1;
@@ -485,7 +485,7 @@ Parameters::Parameters(int argc, char** argv) {
         //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
         {"min-alternate-qsum", required_argument, 0, '3'},
         {"min-coverage", required_argument, 0, '!'},
-        {"no-marginals", no_argument, 0, '='},
+        {"genotype-qualities", no_argument, 0, '='},
         {"variant-input", required_argument, 0, '@'},
         {"only-use-input-alleles", no_argument, 0, 'l'},
         {"show-reference-repeats", no_argument, 0, '_'},
@@ -895,7 +895,7 @@ Parameters::Parameters(int argc, char** argv) {
                 break;
 
             case '=':
-                calculateMarginals = false;
+                calculateMarginals = true;
                 break;
 
             case '@':
