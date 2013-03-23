@@ -70,7 +70,8 @@ public:
         , alleleTypes(0)
     { }
 
-    void addAllele(Allele allele, bool mergeComplex = true, int maxComplexGap = 0);
+    void addAllele(Allele allele, bool mergeComplex = true,
+                   int maxComplexGap = 0, bool boundIndels = false);
     bool fitHaplotype(int pos, int haplotypeLength, Allele*& aptr);
 
 };
