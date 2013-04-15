@@ -184,7 +184,8 @@ void Parameters::usage(char** argv) {
         << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
         << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
         << "   -E --max-complex-gap N" << endl
-        << "                   Allow complex alleles with contiguous embedded matches of up" << endl
+        << "      --haplotype-length N" << endl
+        << "                   Allow haplotype calls with contiguous embedded matches of up" << endl
         << "                   to this length." << endl
         << endl
         << "indel realignment:" << endl
@@ -469,6 +470,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"no-mnps", no_argument, 0, 'X'},
             {"no-complex", no_argument, 0, 'u'},
             {"max-complex-gap", required_argument, 0, 'E'},
+            {"haplotype-length", required_argument, 0, 'E'},
             {"no-snps", no_argument, 0, 'I'},
             {"indel-exclusion-window", required_argument, 0, 'x'},
             {"theta", required_argument, 0, 'T'},
