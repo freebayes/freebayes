@@ -9,7 +9,7 @@ probObservedAllelesGivenGenotype(
         Genotype& genotype,
         long double dependenceFactor,
         bool useMapQ,
-	Bias& observationBias
+        Bias& observationBias
     ) {
 
     int observationCount = sample.observationCount();
@@ -56,7 +56,7 @@ probObservedAllelesGivenGenotypes(
         vector<Genotype*>& genotypes,
         long double dependenceFactor,
         bool useMapQ,
-	Bias& observationBias) {
+        Bias& observationBias) {
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype*>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         results.push_back(

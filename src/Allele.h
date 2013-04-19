@@ -165,7 +165,7 @@ public:
         , currentReferencePosition(crefpos)
         , currentReferenceBase(crefbase)
         , length(len)
-	, repeatRightBoundary(rrbound)
+        , repeatRightBoundary(rrbound)
         , bpLeft(bleft)
         , basesLeft(bleft)
         , bpRight(bright)
@@ -211,7 +211,7 @@ public:
         , alternateSequence(alt)
         , length(len)
         , referenceLength(reflen)
-	, repeatRightBoundary(rrbound)
+        , repeatRightBoundary(rrbound)
         , quality(0)
         , lnquality(1)
         , position(pos)
@@ -221,6 +221,7 @@ public:
         , readSNPRate(0)
         , cigar(cigarStr)
         , alignmentAlleles(NULL)
+        , processed(false)
     {
         currentBase = base();
         baseQualities.assign(alternateSequence.size(), 0);

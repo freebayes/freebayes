@@ -119,21 +119,21 @@ void updateAllelesCachedData(vector<Allele*>& alleles) {
 }
 
 /*
-const int Allele::basesLeft(void) const {
-    if (type == ALLELE_REFERENCE) {
-        return bpLeft + referenceOffset();
-    } else {
-        return bpLeft;
-    }
-}
+  const int Allele::basesLeft(void) const {
+  if (type == ALLELE_REFERENCE) {
+  return bpLeft + referenceOffset();
+  } else {
+  return bpLeft;
+  }
+  }
 
-const int Allele::basesRight(void) const {
-    if (type == ALLELE_REFERENCE) {
-        return bpRight - referenceOffset();
-    } else {
-        return bpRight;
-    }
-}
+  const int Allele::basesRight(void) const {
+  if (type == ALLELE_REFERENCE) {
+  return bpRight - referenceOffset();
+  } else {
+  return bpRight;
+  }
+  }
 */
 
 // quality at a given reference position
@@ -143,7 +143,7 @@ const short Allele::currentQuality(void) const {
             assert(alternateSequence.size() == baseQualities.size());
             assert(referenceOffset() >= 0);
             TRY {
-            return baseQualities.at(referenceOffset());
+                return baseQualities.at(referenceOffset());
             } CATCH;
             break;
         case ALLELE_INSERTION:
@@ -1242,6 +1242,9 @@ void Allele::updateTypeAndLengthFromCigar(void) {
                     type = ALLELE_SNP;
                 }
                 break;
+            case 'N':
+                type = ALLELE_NULL;
+                break;
             default:
                 break;
         }
@@ -1299,14 +1302,15 @@ int referenceLengthFromCigar(string& cigar) {
     vector<pair<int, string> > cigarV = splitCigar(cigar);
     for (vector<pair<int, string> >::iterator c = cigarV.begin(); c != cigarV.end(); ++c) {
         switch (c->second[0]) {
-            case 'M':
-            case 'X':
-            case 'D':
-                r += c->first;
-                break;
-            case 'I':
-            default:
-                break;
+        case 'M':
+        case 'X':
+        case 'D':
+        case 'N':
+            r += c->first;
+            break;
+        case 'I':
+        default:
+            break;
         }
     }
     return r;
@@ -1317,14 +1321,15 @@ int Allele::referenceLengthFromCigar(void) {
     vector<pair<int, string> > cigarV = splitCigar(cigar);
     for (vector<pair<int, string> >::iterator c = cigarV.begin(); c != cigarV.end(); ++c) {
         switch (c->second[0]) {
-            case 'M':
-            case 'X':
-            case 'D':
-                r += c->first;
-                break;
-            case 'I':
-            default:
-                break;
+        case 'M':
+        case 'X':
+        case 'D':
+        case 'N':
+            r += c->first;
+            break;
+        case 'I':
+        default:
+            break;
         }
     }
     return r;
@@ -1389,9 +1394,9 @@ bool isEmptyAllele(const Allele& allele) {
 bool isDividedIndel(const Allele& allele) {
     vector<pair<int, string> > cigarV = splitCigar(allele.cigar);
     if (cigarV.front().second == "D" || cigarV.front().second == "I") {
-	return true;
+        return true;
     } else {
-	return false;
+        return false;
     }
 }
 

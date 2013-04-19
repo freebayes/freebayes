@@ -283,7 +283,7 @@ void AlleleParser::getSampleNames(void) {
         }
     }
     //cout << sampleListFromBam.size() << endl;
-     // no samples file given, read from BAM file header for sample names
+    // no samples file given, read from BAM file header for sample names
     if (sampleList.empty()) {
         DEBUG("no sample list file given, reading sample names from bam file");
         for (vector<string>::const_iterator s = sampleListFromBam.begin(); s != sampleListFromBam.end(); ++s) {
@@ -793,6 +793,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 
     oneSampleAnalysis = false;
     currentRefID = 0; // will get set properly via toNextRefID
+    currentPosition = 0;
     currentTarget = NULL; // to be initialized on first call to getNextAlleles
     currentReferenceAllele = NULL; // same, NULL is brazenly used as an initialization flag
     justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
@@ -1258,6 +1259,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
         DEBUG2("read:          " << rDna);
         DEBUG2("aligned bases: " << alignment.AlignedBases);
+        DEBUG2("qualities:     " << alignment.Qualities);
         DEBUG2("reference seq: " << currentSequence.substr(csp, alignment.AlignedBases.size()));
     }
 #endif
@@ -1286,7 +1288,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
     vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
     vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
-        unsigned int l = cigarIter->Length;
+        int l = cigarIter->Length;
         char t = cigarIter->Type;
         DEBUG2("cigar item: " << t << l);
 
@@ -1913,7 +1915,8 @@ void AlleleParser::updateAlignmentQueue(void) {
                     }
                 }
             }
-        } while ((hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment)) && currentAlignment.Position <= currentPosition
+        } while ((hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment))
+                 && currentAlignment.Position <= currentPosition
                  && currentAlignment.RefID == currentRefID);
     }
 
@@ -1932,6 +1935,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         long unsigned int position = (*allele)->position;
+        //cerr << *allele << " position " << position << endl;
         if (currentPosition >= position + (*allele)->referenceLength) {
             *allele = NULL;
         }
@@ -2074,14 +2078,14 @@ void AlleleParser::updateInputVariants(void) {
                         }
                         p = a;
                     }
-		    DEBUG2("alleles, post processing of deletions: " << alleles);
+                    DEBUG2("alleles, post processing of deletions: " << alleles);
 
-		    // remove 0-length alleles resulting from edge cases in previous processing (e.g. beginning of read)
+                    // remove 0-length alleles resulting from edge cases in previous processing (e.g. beginning of read)
                     if (alleles.size() > 1) {
                         vector<Allele> newAlleles;
                         for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-			    if (a->referenceLength > 0) {
-				newAlleles.push_back(*a);
+                            if (a->referenceLength > 0) {
+                                newAlleles.push_back(*a);
                             }
                         }
                         alleles = newAlleles;
@@ -2664,7 +2668,7 @@ bool AlleleParser::toNextPosition(void) {
     DEBUG2("erasing old cached repeat counts");
     map<long int, map<string, int> >::iterator rc = cachedRepeatCounts.find(currentPosition - 3);
     if (rc != cachedRepeatCounts.end()) {
-	cachedRepeatCounts.erase(rc);
+        cachedRepeatCounts.erase(rc);
     }
 
     return true;
@@ -2793,11 +2797,11 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
             //cerr << *p << endl;
             if (p->position == haplotypeStart && p->position + p->referenceLength == haplotypeEnd) {
                 aptr = &*p;
-		if (isDividedIndel(*p)) {
-		    hasHaplotypeAllele = false;
-		} else {
-		    hasHaplotypeAllele = true;
-		}
+                if (isDividedIndel(*p)) {
+                    hasHaplotypeAllele = false;
+                } else {
+                    hasHaplotypeAllele = true;
+                }
                 break;
             }
         }
@@ -2805,7 +2809,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         if (hasHaplotypeAllele) {
             return true;
         } else {
-	    return false;
+            return false;
             //assert(hasHaplotypeAllele);
         }
 
@@ -2845,13 +2849,13 @@ void AlleleParser::buildHaplotypeAlleles(vector<Allele>& alleles, Samples& sampl
             alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
             for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& allele = *a;
-		if (!allele.isReference()) {
-		    long int hapend = max((long int) (allele.position + allele.referenceLength),
-					  allele.repeatRightBoundary);
-		    if (hapend > currentPosition + haplotypeLength) {
-			haplotypeLength = hapend - currentPosition;
-		    }
-		}
+                if (!allele.isReference()) {
+                    long int hapend = max((long int) (allele.position + allele.referenceLength),
+                                          allele.repeatRightBoundary);
+                    if (hapend > currentPosition + haplotypeLength) {
+                        haplotypeLength = hapend - currentPosition;
+                    }
+                }
             }
         } while (haplotypeLength != oldHaplotypeLength);
 
@@ -2934,9 +2938,9 @@ bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
         if (!toNextPosition()) {
             return false;
         } else {
-	    if (justSwitchedTargets) {
-		nextPosition = 0;
-	    }
+            if (justSwitchedTargets) {
+                nextPosition = 0;
+            }
             getAlleles(samples, allowedAlleleTypes);
         }
     }

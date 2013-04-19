@@ -1,2 +1,6 @@
 test/
 bugs/
+*.bak
+*.patch
+*~
+.Rhistory
