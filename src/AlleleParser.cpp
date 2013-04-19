@@ -60,6 +60,10 @@ void AlleleParser::openBams(void) {
                 }
             }
         }
+        if (!bamMultiReader.SetExplicitMergeOrder(bamMultiReader.MergeByCoordinate)) {
+            ERROR("could not set sort order to coordinate");
+            exit(1);
+        }
     }
 
 
