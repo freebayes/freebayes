@@ -243,12 +243,15 @@ void AlleleParser::getSampleNames(void) {
             string name = "";
             string readGroupID = "";
             for (vector<string>::const_iterator r = readGroupParts.begin(); r != readGroupParts.end(); ++r) {
-                vector<string> nameParts = split(*r, ":");
-                if (nameParts.at(0) == "SM") {
-                   name = nameParts.at(1);
-                } else if (nameParts.at(0) == "ID") {
-                   readGroupID = nameParts.at(1);
-                }
+		size_t colpos = r->find(":");
+		if (colpos != string::npos) {
+		    string fieldname = r->substr(0, colpos);
+		    if (fieldname == "SM") {
+			name = r->substr(colpos+1);
+		    } else if (fieldname == "ID") {
+			readGroupID = r->substr(colpos+1);
+		    }
+		}
             }
             if (name == "") {
                 ERROR(" could not find SM: in @RG tag " << endl << headerLine);
@@ -1856,8 +1859,10 @@ void AlleleParser::updateAlignmentQueue(void) {
             }
 
             // skip this alignment if we are not analyzing the sample it is drawn from
-            if (readGroupToSampleNames.find(readGroup) == readGroupToSampleNames.end())
+            if (readGroupToSampleNames.find(readGroup) == readGroupToSampleNames.end()) {
+		ERROR("could not find sample matching read group id " << readGroup);
                 continue;
+	    }
 
             // skip this alignment if we are not using duplicate reads (we remove them by default)
             if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads)
@@ -1868,8 +1873,12 @@ void AlleleParser::updateAlignmentQueue(void) {
                 continue;
 
             // skip alignments which are non-primary
-            if (!currentAlignment.IsPrimaryAlignment()) // TODO add flag to optionally allow this
+            if (!currentAlignment.IsPrimaryAlignment())
                 continue;
+
+	    // skip alignments which have no aligned bases
+	    if (currentAlignment.AlignedBases.size() == 0)
+		continue;
 
             if (currentAlignment.GetEndPosition() < currentPosition) {
                 cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!" << endl;
