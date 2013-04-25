@@ -116,6 +116,9 @@ public:
 
 bool operator<(const AllelicPrimitive& a, const AllelicPrimitive& b);
 
+void capBaseQuality(BamAlignment& alignment, int baseQualityCap);
+
+
 class AlleleParser {
 
 public:

@@ -23,16 +23,22 @@ long double
 probObservedAllelesGivenGenotype(
         Sample& sample,
         Genotype& genotype,
-        long double dependenceFactor,
+        double dependenceFactor,
         bool useMapQ,
-        Bias& observationBias);
+        Bias& observationBias,
+        bool standardGLs,
+        vector<Allele>& genotypeAlleles,
+        double probContamination);
 
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
         vector<Genotype*>& genotypes,
-        long double dependenceFactor,
+        double dependenceFactor,
         bool useMapQ,
-        Bias& observationBias);
+        Bias& observationBias,
+        bool standardGLs,
+        vector<Allele>& genotypeAlleles,
+        double probContamination);
 
 #endif

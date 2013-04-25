@@ -144,9 +144,6 @@ void Parameters::usage(char** argv) {
         << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
         << "                   at the site is greater than N.  default: 0.0.  Note that post-" << endl
         << "                   filtering is generally recommended over the use of this parameter." << endl
-        << "   -_ --show-reference-repeats" << endl
-        << "                   Calculate and show information about reference repeats in" << endl
-        << "                   the VCF output." << endl
         << endl
         << "population model:" << endl
         << endl
@@ -278,6 +275,12 @@ void Parameters::usage(char** argv) {
         << "                   Read length-dependent allele observation biases from FILE." << endl
         << "                   The format is [length] [alignment efficiency relative to reference]" << endl
         << "                   where the efficiency is 1 if there is no relative observation bias." << endl
+        << "   --non-standard-gls" << endl
+        << "                   Use alternative (slower) model to generate genotype likelihoods." << endl
+        << "   --base-quality-cap Q" << endl
+        << "                   Limit estimated observation quality by capping base quality at Q." << endl
+        << "   --prob-contamination F" << endl
+        << "                   An estimate of p(read=ref|genotype=AA) or p(read=alt|genotype=RR)" << endl
         << endl
         << "algorithmic features:" << endl
         << endl
@@ -396,6 +399,7 @@ Parameters::Parameters(int argc, char** argv) {
     reportAllHaplotypeAlleles = false;
     boundIndels = true; // ignore indels at ends of reads
     onlyUseInputAlleles = false;
+    standardGLs = true;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -421,6 +425,8 @@ Parameters::Parameters(int argc, char** argv) {
     minAltCount = 2; // require 2 reads in same sample call
     minAltTotal = 1;
     minAltQSum = 0;
+    baseQualityCap = 0;
+    probContamination = 0;
     //minAltQSumTotal = 0;
     minCoverage = 0;
     debuglevel = 0;
@@ -491,7 +497,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
-            {"show-reference-repeats", no_argument, 0, '_'},
+            //{"show-reference-repeats", no_argument, 0, '_'},
             {"exclude-unobserved-genotypes", no_argument, 0, 'N'},
             {"genotype-variant-threshold", required_argument, 0, 'S'},
             {"site-selection-max-iterations", required_argument, 0, 'M'},
@@ -500,8 +506,10 @@ Parameters::Parameters(int argc, char** argv) {
             {"haplotype-basis-alleles", required_argument, 0, '9'},
             {"report-genotype-likelihood-max", no_argument, 0, '5'},
             {"report-all-haplotype-alleles", no_argument, 0, '6'},
+            {"non-standard-gls", no_argument, 0, ')'},
+            {"base-quality-cap", required_argument, 0, '('},
+            {"prob-contamination", required_argument, 0, '_'},
             {"debug", no_argument, 0, 'd'},
-
             {0, 0, 0, 0}
 
         };
@@ -509,7 +517,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diN5aI_k=wluVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:",
+        c = getopt_long(argc, argv, "hcO4ZKjH0diN5a)Ik=wluVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:(:_:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -919,7 +927,22 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
         case '_':
-            showReferenceRepeats = true;
+            if (!convert(optarg, probContamination)) {
+                cerr << "could not parse prob-contamination" << endl;
+                exit(1);
+            }
+            standardGLs = false;
+            break;
+
+        case ')':
+            standardGLs = false;
+            break;
+
+        case '(':
+            if (!convert(optarg, baseQualityCap)) {
+                cerr << "could not parse base-quality-cap" << endl;
+                exit(1);
+            }
             break;
 
             // -d --debug

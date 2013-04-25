@@ -43,6 +43,9 @@ public:
     bool boundIndels;
     bool onlyUseInputAlleles;
     string alleleObservationBiasFile;
+    bool standardGLs;
+    int baseQualityCap;
+    double probContamination;
 
     // operation parameters
     bool outputAlleles;          //  unused...
@@ -98,7 +101,7 @@ public:
     int posteriorIntegrationDepth;
     bool calculateMarginals;
     string algorithm;
-    long double RDF;             // -D --read-dependence-factor
+    double RDF;             // -D --read-dependence-factor
     long double diffusionPriorScalar; // -V --diffusion-prior-scalar
     int WB;                      // -W --posterior-integration-bandwidth
     // XXX adjusting this to anything other than 1 may have bad consequences

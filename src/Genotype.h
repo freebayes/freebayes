@@ -82,6 +82,8 @@ public:
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
     vector<long double> alleleProbabilities(Bias& observationBias);
+    double alleleSamplingProb(const string& base);
+    double alleleSamplingProb(Allele& allele);
     string str(void) const;
     string relativeGenotype(string& refbase, vector<Allele>& altbases);
     void relativeGenotype(vector<int>& spec, string& refbase, vector<Allele>& altbases);

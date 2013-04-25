@@ -54,6 +54,24 @@ int Genotype::alleleCount(Allele& allele) {
     }
 }
 
+double Genotype::alleleSamplingProb(const string& base) {
+    map<string, int>::iterator ge = alleleCounts.find(base);
+    if (ge == alleleCounts.end()) {
+        return 0;
+    } else {
+        return (double) ge->second / (double) ploidy;
+    }
+}
+
+double Genotype::alleleSamplingProb(Allele& allele) {
+    map<string, int>::iterator ge = alleleCounts.find(allele.currentBase);
+    if (ge == alleleCounts.end()) {
+        return 0;
+    } else {
+        return (double) ge->second / (double) ploidy;
+    }
+}
+
 string Genotype::relativeGenotype(string& refbase, vector<Allele>& alts) {
     vector<string> rg;
     for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
