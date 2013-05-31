@@ -12,7 +12,8 @@ probObservedAllelesGivenGenotype(
         Bias& observationBias,
         bool standardGLs,
         vector<Allele>& genotypeAlleles,
-        double probContamination
+        Contamination& contaminations,
+        map<string, double>& freqs
     ) {
 
     int observationCount = sample.observationCount();
@@ -21,7 +22,7 @@ probObservedAllelesGivenGenotype(
     int countOut = 0;
     long double prodQout = 0;  // the probability that the reads not in the genotype are all wrong
     long double probObsGivenGt = 0;
-
+    
     if (standardGLs) {
         for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) {
             const string& base = s->first;
@@ -42,27 +43,48 @@ probObservedAllelesGivenGenotype(
         }
     } else {
         for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) { // for each read
+            //if (!genotype.containsAllele(s->first)) {
+            //    countOut += s->second.size();
+            //}
             vector<Allele*>& alleles = s->second;
             for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& obs = **a;
                 long double probi = 0;
+                ContaminationEstimate& contamination = contaminations.of(obs.readGroupID);
+                long double qual = (1 - exp(obs.lnquality)) * (1 - exp(obs.lnmapQuality));
                 for (vector<Allele>::iterator b = genotypeAlleles.begin(); b != genotypeAlleles.end(); ++b) {
+                    Allele& allele = *b;
                     const string& base = b->currentBase;
-                    double asampl = max(probContamination, min(genotype.alleleSamplingProb(base), 1-probContamination));
-                    if (asampl == 0.5) {   // diploid-specific
-                        if (b->isReference()) {
-                            asampl += probContamination;
-                        } else {
-                            asampl -= probContamination;
-                        }
-                    }
+                    long double q;
                     if (obs.currentBase == base) {
-                        probi += asampl * (1 - exp(obs.lnquality));
+                        q = qual;
                     } else {
-                        probi += asampl * exp(obs.lnquality);
+                        q = 1 - qual;
                     }
+                    double asampl = genotype.alleleSamplingProb(base);
+                    double freq = freqs[base];
+                    if (asampl == 0.5) {
+                        if (allele.isReference()) {
+                            asampl = (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (1+freq));
+                        } else {
+                            asampl = 1 - (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (1+freq));
+                        }
+                    } else if (asampl == 0) {
+                        asampl = contamination.probRefGivenHomAlt * (1+freq); // scale by frequency of (this) possibly contaminating allele
+                    } else if (asampl == 1) {
+                        asampl = 1 - (contamination.probRefGivenHomAlt * (1+freq)); // scale by frequency of possibly contaminating alleles
+                    }
+
+                    probi += asampl * q;
+
                 }
-                probObsGivenGt += log(min(probi, (long double) 1.0)); // bound at 1
+
+                // bound at 1
+                long double lnprobi = log(min(probi, (long double) 1.0));
+                //if (countOut > 1) {
+                //    lnprobi *= ((1 + (countOut - 1) * dependenceFactor) / countOut);
+                //}
+                probObsGivenGt += lnprobi;
             }
         }
     }
@@ -80,7 +102,8 @@ probObservedAllelesGivenGenotype(
             return prodQout + multinomialSamplingProbLn(alleleProbs, observationCounts);
         }
     } else {
-        return probObsGivenGt;
+        return isinf(probObsGivenGt) ? 0 : probObsGivenGt;// + multinomialCoefficientLn(observationCount, genotype.counts());
+        //return probObsGivenGt;
     }
 
 }
@@ -95,7 +118,8 @@ probObservedAllelesGivenGenotypes(
         Bias& observationBias,
         bool standardGLs,
         vector<Allele>& genotypeAlleles,
-        double probContamination
+        Contamination& contaminations,
+        map<string, double>& freqs
     ) {
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype*>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
@@ -109,7 +133,8 @@ probObservedAllelesGivenGenotypes(
                       observationBias,
                       standardGLs,
                       genotypeAlleles,
-                      probContamination)));
+                      contaminations,
+                      freqs)));
     }
     return results;
 }

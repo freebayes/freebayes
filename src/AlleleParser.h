@@ -52,6 +52,7 @@ public:
     long unsigned int end;
     int refid;
     string name;
+    string readgroup;
     vector<Allele> alleles;
     int mismatches;
     int snpCount;
@@ -68,7 +69,9 @@ public:
         , snpCount(0)
         , indelCount(0)
         , alleleTypes(0)
-    { }
+    {
+        alignment.GetTag("RG", readgroup);
+    }
 
     void addAllele(Allele allele, bool mergeComplex = true,
                    int maxComplexGap = 0, bool boundIndels = false);

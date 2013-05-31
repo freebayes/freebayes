@@ -36,6 +36,9 @@
 #include "Marginals.h"
 #include "ResultData.h"
 
+#include "Bias.h"
+#include "Contamination.h"
+
 
 // local helper debugging macros to improve code readability
 #define DEBUG(msg) \
@@ -73,7 +76,12 @@ int main (int argc, char *argv[]) {
 
     Bias observationBias;
     if (!parameters.alleleObservationBiasFile.empty()) {
-	observationBias.open(parameters.alleleObservationBiasFile);
+        observationBias.open(parameters.alleleObservationBiasFile);
+    }
+
+    Contamination contaminationEstimates(0.5+parameters.probContamination, parameters.probContamination);
+    if (!parameters.contaminationEstimateFile.empty()) {
+        contaminationEstimates.open(parameters.contaminationEstimateFile);
     }
 
     // this can be uncommented to force operation on a specific set of genotypes
@@ -243,8 +251,8 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        // TODO
-        // repeat for each population of samples
+        // get estimated allele frequencies using sum of estimated qualities
+        map<string, double> estimatedAlleleFrequencies = samples.estimatedAlleleFrequencies();
 
         Results results;
         map<string, vector<vector<SampleDataLikelihood> > > sampleDataLikelihoodsByPopulation;
@@ -291,7 +299,9 @@ int main (int argc, char *argv[]) {
                 = probObservedAllelesGivenGenotypes(sample, genotypesWithObs,
                                                     parameters.RDF, parameters.useMappingQuality,
                                                     observationBias, parameters.standardGLs,
-                                                    genotypeAlleles, parameters.probContamination);
+                                                    genotypeAlleles,
+                                                    contaminationEstimates,
+                                                    estimatedAlleleFrequencies);
             
 #ifdef VERBOSE_DEBUG
             if (parameters.debug2) {

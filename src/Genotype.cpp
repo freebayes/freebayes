@@ -36,6 +36,16 @@ vector<Allele> Genotype::alternateAlleles(string& base) {
     return alleles;
 }
 
+vector<string> Genotype::alternateBases(string& base) {
+    vector<string> alleles;
+    for (Genotype::iterator i = this->begin(); i != this->end(); ++i) {
+        Allele& b = i->allele;
+        if (base != b.currentBase)
+            alleles.push_back(b.currentBase);
+    }
+    return alleles;
+}
+
 int Genotype::alleleCount(const string& base) {
     map<string, int>::iterator ge = alleleCounts.find(base);
     if (ge == alleleCounts.end()) {
@@ -194,7 +204,22 @@ bool Genotype::containsAllele(Allele& allele) {
 }
 
 bool Genotype::isHomozygous(void) {
-    return this->size() == 1;
+    return size() == 1;
+}
+
+// if heterozgyous
+bool Genotype::isHeterozygous(void) {
+    return size() > 1;
+}
+
+// if homozygous alternate
+bool Genotype::isHomozygousAlternate(void) {
+    return isHomozygous() && !front().allele.isReference();
+}
+
+// if homozygous reference
+bool Genotype::isHomozygousReference(void) {
+    return isHomozygous() && front().allele.isReference();
 }
 
 // the probability of drawing each allele out of the genotype, ordered by allele

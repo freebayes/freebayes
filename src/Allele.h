@@ -116,6 +116,7 @@ public:
     int basesRight;
     AlleleStrand strand;          // strand, true = +, false = -
     string sampleID;        // representative sample ID
+    string readGroupID;     // read group membership
     string readID;          // id of the read which the allele is drawn from
     vector<short> baseQualities;
     long double quality;          // base quality score associated with this allele, updated every position in the case of reference alleles
@@ -149,6 +150,7 @@ public:
 	   string alt,
 	   string& sampleid,
 	   string& readid,
+       string& readgroupid,
 	   string& sqtech,
 	   bool strnd, 
 	   long double qual,
@@ -174,6 +176,7 @@ public:
         , alternateSequence(alt)
         , sampleID(sampleid)
         , readID(readid)
+        , readGroupID(readgroupid)
         , sequencingTechnology(sqtech)
         , strand(strnd ? STRAND_FORWARD : STRAND_REVERSE)
         , quality((qual == -1) ? averageQuality(qstr) : qual) // passing -1 as quality triggers this calculation

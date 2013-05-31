@@ -46,6 +46,7 @@ public:
     bool standardGLs;
     int baseQualityCap;
     double probContamination;
+    string contaminationEstimateFile;
 
     // operation parameters
     bool outputAlleles;          //  unused...

@@ -16,6 +16,7 @@
 #include "Multinomial.h"
 #include "Dirichlet.h"
 #include "Bias.h"
+#include "Contamination.h"
 
 using namespace std;
 
@@ -28,7 +29,8 @@ probObservedAllelesGivenGenotype(
         Bias& observationBias,
         bool standardGLs,
         vector<Allele>& genotypeAlleles,
-        double probContamination);
+        Contamination& contaminations,
+        map<string, double>& freqs);
 
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
@@ -39,6 +41,7 @@ probObservedAllelesGivenGenotypes(
         Bias& observationBias,
         bool standardGLs,
         vector<Allele>& genotypeAlleles,
-        double probContamination);
+        Contamination& contaminations,
+        map<string, double>& freqs);
 
 #endif

@@ -59,6 +59,7 @@ OBJECTS=BedReader.o \
 		LeftAlign.o \
 		IndelAllele.o \
 		Bias.o \
+		Contamination.o \
 		SegfaultHandler.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \

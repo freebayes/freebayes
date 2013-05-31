@@ -41,6 +41,27 @@ int Sample::qualSum(const string& base) {
     return qsum;
 }
 
+map<string, double> Samples::estimatedAlleleFrequencies(void) {
+    map<string, long double> qualsums;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        Sample& sample = s->second;
+        for (Sample::iterator o = sample.begin(); o != sample.end(); ++o) {
+            const string& base = o->first;
+            vector<Allele*> obs = o->second;
+            qualsums[base] += sample.qualSum(base);
+        }
+    }
+    long double total = 0;
+    for (map<string, long double>::iterator q = qualsums.begin(); q != qualsums.end(); ++q) {
+        total += q->second;
+    }
+    map<string, double> freqs;
+    for (map<string, long double>::iterator q = qualsums.begin(); q != qualsums.end(); ++q) {
+        freqs[q->first] = q->second / total;
+    }
+    return freqs;
+}
+
 // puts alleles into the right bins if they have changed their base (as
 // occurs in the case of reference alleles)
 void Sample::sortReferenceAlleles(void) {

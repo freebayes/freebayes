@@ -17,11 +17,6 @@ class Sample : public map<string, vector<Allele*> > {
 
 public:
 
-    // estimates of contamination
-    double probRefGivenHomAlt;
-    // and reference bias/contamination
-    double probRefGivenHet;
-
     // the number of observations for this allele
     int observationCount(Allele& allele);
 
@@ -48,7 +43,10 @@ public:
 
 };
 
-class Samples : public map<string, Sample> { };
+class Samples : public map<string, Sample> {
+public:
+    map<string, double> estimatedAlleleFrequencies(void);
+};
 
 
 

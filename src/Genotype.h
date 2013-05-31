@@ -78,6 +78,7 @@ public:
     bool containsAllele(Allele& allele);
     bool containsAllele(const string& base);
     vector<Allele> alternateAlleles(string& refbase);
+    vector<string> alternateBases(string& refbase);
     vector<int> counts(void);
     // the probability of drawing each allele out of the genotype, ordered by allele
     vector<long double> alleleProbabilities(void);
@@ -89,7 +90,10 @@ public:
     void relativeGenotype(vector<int>& spec, string& refbase, vector<Allele>& altbases);
     string relativeGenotype(string& refbase, string& altbase);
     void relativeGenotype(vector<int>& rg, vector<Allele>& alleles);
+    bool isHeterozygous(void);
     bool isHomozygous(void);
+    bool isHomozygousAlternate(void);
+    bool isHomozygousReference(void);
     int containedAlleleTypes(void);
     vector<int> alleleObservationCounts(Sample& sample);
     int alleleObservationCount(Sample& sample);
@@ -195,7 +199,7 @@ public:
     void appendIndependentCombo(GenotypeCombo& other);
 
     int numberOfAlleles(void);
-    vector<long double> alleleProbs(void);  // scales the above by the total number of alleles
+    vector<long double> alleleProbs(void);  // scales counts() by the total number of alleles
     int ploidy(void); // the number of copies of the locus in this combination
     int alleleCount(Allele& allele);
     int alleleCount(const string& allele);
