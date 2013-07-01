@@ -4,49 +4,49 @@
 using namespace std;
 
 void Parameters::simpleUsage(char ** argv) {
-   cout
-         << "usage: " << argv[0] << " -f [REFERENCE] [OPTIONS] [BAM FILES] >[OUTPUT]" << endl
-         << endl
-         << "Bayesian haplotype-based polymorphism discovery." << endl
-         << endl
-         << "citation: Erik Garrison, Gabor Marth" << endl
-         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
-         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
-         << endl
-         << "overview:" << endl
-         << endl
-         << "    To call variants from aligned short-read sequencing data, supply BAM files and" << endl
-         << "    a reference.  FreeBayes will provide VCF output on standard out describing SNPs," << endl
-         << "    indels, and complex variants in samples in the input alignments." << endl
-         << endl
-         << "    By default, FreeBayes will consider variants supported by at least 2" << endl
-         << "    observations in a single sample (-C) and also by at least 20% of the reads from" << endl
-         << "    a single sample (-F).  These settings are suitable to low to high depth" << endl
-         << "    sequencing in haploid and diploid samples, but users working with polyploid or" << endl
-         << "    pooled samples may wish to adjust them depending on the characteristics of" << endl
-         << "    their sequencing data." << endl
-         << endl
-         << "    FreeBayes is capable of calling variant haplotypes shorter than a read length" << endl
-         << "    where multiple polymorphisms segregate on the same read.  The maximum distance" << endl
-         << "    between polymorphisms phased in this way is determined by the --max-complex-gap," << endl
-         << "    which defaults to 3bp." << endl
-         << endl
-         << "    Ploidy may be set to any level (-p), but by default all samples are assumed to" << endl
-         << "    be diploid.  FreeBayes can model per-sample and per-region variation in" << endl
-         << "    copy-number (-A) using a copy-number variation map." << endl
-         << endl
-         << "    FreeBayes can act as a frequency-based pooled caller and describe variants" << endl
-         << "    and haplotypes in terms of observation frequency rather than called genotypes." << endl
-         << "    To do so, use --pooled-continuous and set input filters to a suitable level." << endl
-         << "    Allele observation counts will be described by AO and RO fields in the VCF output." << endl
-         << endl
-         << "parameters:" << endl
-         << endl
-         << "   -h --help       Complete description of options." << endl
-         << endl
-         << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2012" << endl
-         << "date:     " << FREEBAYES_COMPILE_DATE << endl
-         << "version:  " << FREEBAYES_VERSION << endl;
+    cout
+        << "usage: " << argv[0] << " -f [REFERENCE] [OPTIONS] [BAM FILES] >[OUTPUT]" << endl
+        << endl
+        << "Bayesian haplotype-based polymorphism discovery." << endl
+        << endl
+        << "citation: Erik Garrison, Gabor Marth" << endl
+        << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
+        << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
+        << endl
+        << "overview:" << endl
+        << endl
+        << "    To call variants from aligned short-read sequencing data, supply BAM files and" << endl
+        << "    a reference.  FreeBayes will provide VCF output on standard out describing SNPs," << endl
+        << "    indels, and complex variants in samples in the input alignments." << endl
+        << endl
+        << "    By default, FreeBayes will consider variants supported by at least 2" << endl
+        << "    observations in a single sample (-C) and also by at least 20% of the reads from" << endl
+        << "    a single sample (-F).  These settings are suitable to low to high depth" << endl
+        << "    sequencing in haploid and diploid samples, but users working with polyploid or" << endl
+        << "    pooled samples may wish to adjust them depending on the characteristics of" << endl
+        << "    their sequencing data." << endl
+        << endl
+        << "    FreeBayes is capable of calling variant haplotypes shorter than a read length" << endl
+        << "    where multiple polymorphisms segregate on the same read.  The maximum distance" << endl
+        << "    between polymorphisms phased in this way is determined by the --max-complex-gap," << endl
+        << "    which defaults to 3bp." << endl
+        << endl
+        << "    Ploidy may be set to any level (-p), but by default all samples are assumed to" << endl
+        << "    be diploid.  FreeBayes can model per-sample and per-region variation in" << endl
+        << "    copy-number (-A) using a copy-number variation map." << endl
+        << endl
+        << "    FreeBayes can act as a frequency-based pooled caller and describe variants" << endl
+        << "    and haplotypes in terms of observation frequency rather than called genotypes." << endl
+        << "    To do so, use --pooled-continuous and set input filters to a suitable level." << endl
+        << "    Allele observation counts will be described by AO and RO fields in the VCF output." << endl
+        << endl
+        << "parameters:" << endl
+        << endl
+        << "   -h --help       Complete description of options." << endl
+        << endl
+        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2012" << endl
+        << "date:     " << FREEBAYES_COMPILE_DATE << endl
+        << "version:  " << FREEBAYES_VERSION << endl;
 
 }
 
@@ -184,6 +184,10 @@ void Parameters::usage(char** argv) {
         << "      --haplotype-length N" << endl
         << "                   Allow haplotype calls with contiguous embedded matches of up" << endl
         << "                   to this length." << endl
+        << "   --no-partial-observations" << endl
+        << "                   Exclude observations which do not fully span the dynamically-determined" << endl
+        << "                   detection window.  (default, use all observations, dividing partial" << endl
+        << "                   support across matching haplotypes when generating haplotypes.)" << endl
         << endl
         << "indel realignment:" << endl
         << endl
@@ -383,6 +387,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
     maxComplexGap = 3;
+    usePartialObservations = true;
     pooledDiscrete = false;                 // -J --pooled
     pooledContinuous = false;
     ewensPriors = true;
@@ -457,6 +462,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"trace", required_argument, 0, 'L'},
             {"failed-alleles", required_argument, 0, '8'},
             {"use-duplicate-reads", no_argument, 0, '4'},
+            {"no-partial-observations", no_argument, 0, '['},
             {"use-best-n-alleles", required_argument, 0, 'n'},
             {"use-reference-allele", no_argument, 0, 'Z'},
             {"harmonic-indel-quality", no_argument, 0, 'H'},
@@ -523,7 +529,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH0diN5a)Ik=wluVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:(:_:,:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:(:_:,:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -930,6 +936,10 @@ Parameters::Parameters(int argc, char** argv) {
 
 	    case '6':
             reportAllHaplotypeAlleles = true;
+            break;
+
+        case '[':
+            usePartialObservations = false;
             break;
 
         case '_':

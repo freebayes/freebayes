@@ -181,8 +181,9 @@ int main (int argc, char *argv[]) {
         for (vector<string>::iterator s = parser->sampleList.begin(); s != parser->sampleList.end(); ++s) {
             sampleListPlusRef.push_back(*s);
         }
-        if (parameters.useRefAllele)
+        if (parameters.useRefAllele) {
             sampleListPlusRef.push_back(parser->currentSequenceName);
+        }
 
         // establish genotype alleles using input filters
         map<string, vector<Allele*> > alleleGroups;
@@ -198,20 +199,29 @@ int main (int argc, char *argv[]) {
             genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
         }
 
+        map<string, vector<Allele*> > partialObservationGroups;
+        map<Allele*, set<Allele*> > partialObservationSupport;
+
         // build haplotype alleles matching the current longest allele (often will do nothing)
         // this will adjust genotypeAlleles if changes are made
         DEBUG("building haplotype alleles, currently there are " << genotypeAlleles.size() << " genotype alleles");
         DEBUG(genotypeAlleles);
-        parser->buildHaplotypeAlleles(genotypeAlleles, samples, alleleGroups, allowedAlleleTypes);
+        parser->buildHaplotypeAlleles(genotypeAlleles,
+                                      samples,
+                                      alleleGroups,
+                                      partialObservationGroups,
+                                      partialObservationSupport,
+                                      allowedAlleleTypes);
         DEBUG("built haplotype alleles, now there are " << genotypeAlleles.size() << " genotype alleles");
         DEBUG(genotypeAlleles);
-        // always include the reference allele as a possible genotype, even when we don't include it by default
-        if (!parameters.useRefAllele) {
-            vector<Allele> refAlleleVector;
-            refAlleleVector.push_back(genotypeAllele(ALLELE_REFERENCE, string(1, parser->currentReferenceBase), 1, "1M"));
-            genotypeAlleles = alleleUnion(genotypeAlleles, refAlleleVector);
+
+        /* for debugging
+        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+            string sampleName = s->first;
+            Sample& sample = s->second;
+            cerr << sampleName << ": " << sample << endl;
         }
-        DEBUG(genotypeAlleles);
+        */
 
         // re-calculate coverage, as this could change now that we've built haplotype alleles
         coverage = countAlleles(samples);
@@ -500,7 +510,8 @@ int main (int argc, char *argv[]) {
         bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
 
-        string referenceBase = parser->currentReferenceBaseString();
+        // what a hack...
+        string referenceBase = parser->currentReferenceHaplotype();
 
         // calculates pvar and gets the best het combo
         for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
@@ -609,7 +620,7 @@ int main (int argc, char *argv[]) {
                     SampleDataLikelihoods& sampleDataLikelihoods = p->second;
                     list<GenotypeCombo>& populationGenotypeCombos = genotypeCombosByPopulation[population];
 
-                    DEBUG2("generating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes in population " << population);
+                    DEBUG2("genqerating banded genotype combinations from " << sampleDataLikelihoods.size() << " sample genotypes in population " << population);
 
                     // cap the number of iterations at 2 x the number of alternate alleles
                     // max it at parameters.genotypingMaxIterations iterations, min at 10
@@ -788,6 +799,8 @@ int main (int argc, char *argv[]) {
                 bestCombo,
                 bestOverallComboIsHet,
                 alleleGroups,
+                partialObservationGroups,
+                partialObservationSupport,
                 genotypesByPloidy,
                 parser->sequencingTechnologies,
                 parser)

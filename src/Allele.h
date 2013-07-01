@@ -250,7 +250,8 @@ public:
     //const int basesLeft(void) const; // returns the bases left within the read of the current position within the allele
     //const int basesRight(void) const; // returns the bases right within the read of the current position within the allele
     bool sameSample(Allele &other);  // if the other allele has the same sample as this one
-    void update(void); // for reference alleles, updates currentBase and quality
+    void update(int haplotypeLength = 1); // for reference alleles, updates currentBase and quality
+    void setQuality(void); // sets 'current quality' for alleles
     // TODO update this to reflect different insertions (e.g. IATGC instead of I4)
     const string base(void) const;  // the 'current' base of the allele or a string describing the allele, e.g. I10 or D2
                                     //  this is used to update cached data in the allele prior to presenting the allele for analysis
@@ -340,7 +341,7 @@ bool allelesSameSample(Allele &a, Allele &b);
 bool allelesEqual(Allele &a, Allele &b);
 
 void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups);
-void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups);
+void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refseq);
 void resetProcessedFlag(map<string, vector<Allele*> >& alleleGroups);
 
 vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2);

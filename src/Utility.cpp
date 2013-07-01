@@ -1,141 +1,150 @@
-// utility functions
-//
-#include "Utility.h"
-#include "Sum.h"
-#include "Product.h"
+ // utility functions
+ //
+ #include "Utility.h"
+ #include "Sum.h"
+ #include "Product.h"
 
-#define PHRED_MAX 50000.0 // max Phred seems to be about 43015 (?), could be an underflow bug...
+ #define PHRED_MAX 50000.0 // max Phred seems to be about 43015 (?), could be an underflow bug...
 
-using namespace std;
+ using namespace std;
 
-short qualityChar2ShortInt(char c) {
-    return static_cast<short>(c) - 33;
-}
+ short qualityChar2ShortInt(char c) {
+     return static_cast<short>(c) - 33;
+ }
 
-long double qualityChar2LongDouble(char c) {
-    return static_cast<long double>(c) - 33;
-}
+ long double qualityChar2LongDouble(char c) {
+     return static_cast<long double>(c) - 33;
+ }
 
-long double lnqualityChar2ShortInt(char c) {
-    return log(static_cast<short>(c) - 33);
-}
+ long double lnqualityChar2ShortInt(char c) {
+     return log(static_cast<short>(c) - 33);
+ }
 
-char qualityInt2Char(short i) {
-    return static_cast<char>(i + 33);
-}
+ char qualityInt2Char(short i) {
+     return static_cast<char>(i + 33);
+ }
 
-long double ln2log10(long double prob) {
-    return M_LOG10E * prob;
-}
+ long double ln2log10(long double prob) {
+     return M_LOG10E * prob;
+ }
 
-long double log102ln(long double prob) {
-    return M_LN10 * prob;
-}
+ long double log102ln(long double prob) {
+     return M_LN10 * prob;
+ }
 
-long double phred2ln(int qual) {
-    return M_LN10 * qual * -.1;
-}
+ long double phred2ln(int qual) {
+     return M_LN10 * qual * -.1;
+ }
 
-long double ln2phred(long double prob) {
-    return -10 * M_LOG10E * prob;
-}
+ long double ln2phred(long double prob) {
+     return -10 * M_LOG10E * prob;
+ }
 
-long double phred2float(int qual) {
-    return pow(10, qual * -.1);
-}
+ long double phred2float(int qual) {
+     return pow(10, qual * -.1);
+ }
 
-long double float2phred(long double prob) {
-    if (prob == 1)
-        return PHRED_MAX;  // guards against "-0"
-    long double p = -10 * (long double) log10(prob);
-    if (p < 0 || p > PHRED_MAX) // int overflow guard
-        return PHRED_MAX;
-    else
-        return p;
-}
+ long double float2phred(long double prob) {
+     if (prob == 1)
+         return PHRED_MAX;  // guards against "-0"
+     long double p = -10 * (long double) log10(prob);
+     if (p < 0 || p > PHRED_MAX) // int overflow guard
+         return PHRED_MAX;
+     else
+         return p;
+ }
 
-long double big2phred(const BigFloat& prob) {
-    return -10 * (long double) (ttmath::Log(prob, (BigFloat)10)).ToDouble();
-}
+ long double big2phred(const BigFloat& prob) {
+     return -10 * (long double) (ttmath::Log(prob, (BigFloat)10)).ToDouble();
+ }
 
-long double nan2zero(long double x) {
-    if (x != x) {
-	return 0;
-    } else {
-	return x;
-    }
-}
+ long double nan2zero(long double x) {
+     if (x != x) {
+     return 0;
+     } else {
+     return x;
+     }
+ }
 
-long double powln(long double m, int n) {
-    return m * n;
-}
+ long double powln(long double m, int n) {
+     return m * n;
+ }
 
-// the probability that we have a completely true vector of qualities
-long double jointQuality(const std::vector<short>& quals) {
-    std::vector<long double> probs;
-    for (int i = 0; i<quals.size(); ++i) {
-        probs.push_back(phred2float(quals[i]));
-    }
-    // product of probability we don't have a true event for each element
-    long double prod = 1 - probs.front();
-    for (int i = 1; i<probs.size(); ++i) {
-        prod *= 1 - probs.at(i);
-    }
-    // and then invert it again to get probability of an event
-    return 1 - prod;
-}
+ // the probability that we have a completely true vector of qualities
+ long double jointQuality(const std::vector<short>& quals) {
+     std::vector<long double> probs;
+     for (int i = 0; i<quals.size(); ++i) {
+         probs.push_back(phred2float(quals[i]));
+     }
+     // product of probability we don't have a true event for each element
+     long double prod = 1 - probs.front();
+     for (int i = 1; i<probs.size(); ++i) {
+         prod *= 1 - probs.at(i);
+     }
+     // and then invert it again to get probability of an event
+     return 1 - prod;
+ }
 
-long double jointQuality(const std::string& qualstr) {
+ long double jointQuality(const std::string& qualstr) {
 
-    long double jq = 1;
-    // product of probability we don't have a true event for each element
-    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q) {
-        jq *= 1 - phred2float(qualityChar2ShortInt(*q));
-    }
+     long double jq = 1;
+     // product of probability we don't have a true event for each element
+     for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q) {
+         jq *= 1 - phred2float(qualityChar2ShortInt(*q));
+     }
 
-    // and then invert it again to get probability of an event
-    return 1 - jq;
+     // and then invert it again to get probability of an event
+     return 1 - jq;
 
-}
+ }
 
-std::vector<short> qualities(const std::string& qualstr) {
+ std::vector<short> qualities(const std::string& qualstr) {
 
-    std::vector<short> quals;
-    for (int i=0; i<qualstr.size(); i++)
-        quals.push_back(qualityChar2ShortInt(qualstr.at(i)));
+     std::vector<short> quals;
+     for (int i=0; i<qualstr.size(); i++)
+         quals.push_back(qualityChar2ShortInt(qualstr.at(i)));
 
-    return quals;
+     return quals;
 
-}
+ }
 
-long double sumQuality(const std::string& qualstr) {
-    long double qual = 0;
-    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
-        qual += qualityChar2LongDouble(*q);
-    return qual;
-}
+ long double sumQuality(const std::string& qualstr) {
+     long double qual = 0;
+     for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
+         qual += qualityChar2LongDouble(*q);
+     return qual;
+ }
 
-long double minQuality(const std::string& qualstr) {
-    long double qual = 0;
-    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q) {
-        long double nq = qualityChar2LongDouble(*q);
-        if (qual == 0) {
-            qual = nq;
-        } else if (nq < qual) {
-            qual = nq;
-        }
-    }
-    return qual;
-}
+ long double minQuality(const std::string& qualstr) {
+     long double qual = 0;
+     for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q) {
+         long double nq = qualityChar2LongDouble(*q);
+         if (qual == 0) {
+             qual = nq;
+         } else if (nq < qual) {
+             qual = nq;
+         }
+     }
+     return qual;
+ }
 
-// crudely averages quality scores in phred space
-long double averageQuality(const std::string& qualstr) {
+ // crudely averages quality scores in phred space
+ long double averageQuality(const std::string& qualstr) {
 
-    long double qual = 0; //(long double) *max_element(quals.begin(), quals.end());
-    for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
-            qual += qualityChar2LongDouble(*q);
-    return qual /= qualstr.size();
+     long double qual = 0; //(long double) *max_element(quals.begin(), quals.end());
+     for (string::const_iterator q = qualstr.begin(); q != qualstr.end(); ++q)
+             qual += qualityChar2LongDouble(*q);
+     return qual / qualstr.size();
 
+ }
+
+ long double averageQuality(const vector<short>& qualities) {
+
+     long double qual = 0;
+     for (vector<short>::const_iterator q = qualities.begin(); q != qualities.end(); ++q) {
+         qual += *q;
+     }
+     return qual / qualities.size();
 }
 
 bool stringInVector(string item, vector<string> items) {

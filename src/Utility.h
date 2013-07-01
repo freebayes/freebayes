@@ -43,6 +43,7 @@ std::vector<short> qualities(const std::string& qualstr);
 long double sumQuality(const std::string& qualstr);
 long double minQuality(const std::string& qualstr);
 long double averageQuality(const std::string& qualstr);
+long double averageQuality(const std::vector<short>& qualities);
 //unsigned int factorial(int n);
 bool stringInVector(string item, vector<string> items);
 int upper(int c); // helper to below, wraps toupper

@@ -7,6 +7,18 @@ int Sample::observationCount(Allele& allele) {
     return observationCount(allele.currentBase);
 }
 
+int Sample::observationCountInclPartials(void) {
+    return observationCount() + partialObservationCount();
+}
+
+double Sample::observationCountInclPartials(Allele& allele) {
+    return observationCountInclPartials(allele.currentBase);
+}
+
+double Sample::partialObservationCount(Allele& allele) {
+    return partialObservationCount(allele.currentBase);
+}
+
 // the number of observations for this base
 int Sample::observationCount(const string& base) {
     Sample::iterator g = find(base);
@@ -14,6 +26,26 @@ int Sample::observationCount(const string& base) {
         return g->second.size();
     else
         return 0;
+}
+
+int Sample::partialObservationCount(void) {
+    return reversePartials.size();
+}
+
+double Sample::partialObservationCount(const string& base) {
+    double scaledPartialCount = 0;
+    map<string, vector<Allele*> >::iterator g = partials.find(base);
+    if (g != partials.end()) {
+        vector<Allele*>& supportingObs = g->second;
+        for (vector<Allele*>::iterator a = supportingObs.begin(); a != supportingObs.end(); ++a) {
+            scaledPartialCount += (double) 1 / (double) reversePartials[*a].size();
+        }
+    }
+    return scaledPartialCount;
+}
+
+double Sample::observationCountInclPartials(const string& base) {
+    return observationCount(base) + partialObservationCount(base);
 }
 
 // the total number of observations
@@ -39,6 +71,98 @@ int Sample::qualSum(const string& base) {
         }
     }
     return qsum;
+}
+
+double Sample::partialQualSum(Allele& allele) {
+    return partialQualSum(allele.currentBase);
+}
+
+double Sample::partialQualSum(const string& base) {
+    Sample::iterator g = partials.find(base);
+    double qsum = 0;
+    if (g != partials.end()) {
+        vector<Allele*>& alleles = g->second;
+        for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            qsum += (double) (*a)->quality / (double) reversePartials[*a].size();
+        }
+    }
+    return qsum;
+}
+
+// sample tracking and allele sorting
+// the number of observations for this allele
+int Samples::observationCount(Allele& allele) {
+    return observationCount(allele.currentBase);
+}
+
+double Samples::observationCountInclPartials(Allele& allele) {
+    return observationCountInclPartials(allele.currentBase);
+}
+
+double Samples::partialObservationCount(Allele& allele) {
+    return partialObservationCount(allele.currentBase);
+}
+
+// the number of observations for this base
+int Samples::observationCount(const string& base) {
+    int c = 0;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        c += s->second.observationCount(base);
+    }
+    return c;
+}
+
+double Samples::partialObservationCount(const string& base) {
+    double c;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        c += s->second.partialObservationCount(base);
+    }
+    return c;
+}
+
+double Samples::observationCountInclPartials(const string& base) {
+    return observationCount(base) + partialObservationCount(base);
+}
+
+// the total number of observations
+int Samples::observationCount(void) {
+    int c = 0;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        c += s->second.observationCount();
+    }
+    return c;
+}
+
+double Samples::observationCountInclPartials(void) {
+    double c = 0;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        c += s->second.observationCountInclPartials();
+    }
+    return c;
+}
+
+int Samples::qualSum(Allele& allele) {
+    qualSum(allele.currentBase);
+}
+
+int Samples::qualSum(const string& base) {
+    int q = 0;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        q += s->second.qualSum(base);
+    }
+    return q;
+}
+
+double Samples::partialQualSum(Allele& allele) {
+    partialQualSum(allele.currentBase);
+}
+
+double Samples::partialQualSum(const string& base) {
+    double q = 0;
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        q += s->second.partialQualSum(base);
+    }
+    return q;
 }
 
 map<string, double> Samples::estimatedAlleleFrequencies(void) {
@@ -160,7 +284,6 @@ void groupAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups)
     }
 }
 
-
 bool sufficientAlternateObservations(Samples& samples, int mincount, float minfraction) {
 
     int totalAlternateCount = 0;
@@ -224,4 +347,76 @@ ostream& operator<<(ostream& out, Sample& sample) {
         out << s->first << ":" << s->second.size() << " ";
     }
     return out;
+}
+
+
+void Samples::assignPartialSupport(vector<Allele>& alleles,
+                                   vector<Allele*>& partialObservations,
+                                   map<string, vector<Allele*> >& partialObservationGroups,
+                                   map<Allele*, set<Allele*> >& partialObservationSupport) {
+
+    //map<string, vector<Allele*> >& partials,
+    //map<Allele*, vector<string*> >& reversePartials);
+
+    // the canonical alleles as supported by partials
+    //map<string, vector<Allele*> > supportingObs;
+    // the partials as they support canonical alleles
+    //map<Allele*, set<Allele*> > supportedAlleles;
+
+    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele& allele = *a;
+        //string& base = allele.currentBase;
+        // hacks here
+        string& aseq = allele.alternateSequence;
+        // construct pseudo-sequence
+        for (vector<Allele*>::iterator p = partialObservations.begin(); p != partialObservations.end(); ++p) {
+            Allele& partial = **p;
+            string& pseq = partial.alternateSequence;
+            bool same = false;
+            if (aseq.size() >= pseq.size()
+                && (aseq.substr(0, pseq.size()) == pseq
+                    || aseq.substr(aseq.size()-pseq.size()) == pseq)) {
+                // dAY's du saem
+                partialObservationGroups[allele.currentBase].push_back(*p);
+                partialObservationSupport[*p].insert(&*a);
+                //cerr << "partial support ... " << *p << " for " << &*a << endl;
+                same = true;
+            }
+            //cerr << "pseudos\t" << allele << endl 
+            //     << "pseudos\t" << partial << endl;
+            //cerr << "pseudo_alt\t" << string(max(0, (int) (allele.position - partial.position)), ' ') << allele.alternateSequence << "\t" << (same ? "==" : "!=" ) << endl;
+            //cerr << "pseudo_obs\t" << string(max(0, (int) (partial.position - allele.position)), ' ') << partial.alternateSequence << endl;
+        }
+    }
+
+    for (vector<Allele*>::iterator p = partialObservations.begin(); p != partialObservations.end(); ++p) {
+        // get the sample
+        Allele& partial = **p;
+        Samples::iterator siter = find(partial.sampleID);
+        if (siter == end()) {
+            continue;
+        }
+        Sample& sample = siter->second;
+        set<Allele*>& supported = partialObservationSupport[*p];
+        for (set<Allele*>::iterator s = supported.begin(); s != supported.end(); ++s) {
+            sample.partials[(*s)->currentBase].push_back(*p);
+        }
+        sample.reversePartials[*p] = supported;
+    }
+
+}
+
+bool Sample::observationSupports(Allele* obs, Allele* allele) {
+    if (obs->currentBase == allele->currentBase) {
+        return true;
+    } else {
+        map<Allele*, set<Allele*> >::iterator p = reversePartials.find(obs);
+        if (p != reversePartials.end()) {
+            set<Allele*>& supports = p->second;
+            if (supports.find(allele) != supports.end()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

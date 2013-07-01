@@ -75,7 +75,7 @@ public:
 
     void addAllele(Allele allele, bool mergeComplex = true,
                    int maxComplexGap = 0, bool boundIndels = false);
-    bool fitHaplotype(int pos, int haplotypeLength, Allele*& aptr);
+    bool fitHaplotype(int pos, int haplotypeLength, Allele*& aptr, bool allowPartials = false);
 
 };
 
@@ -238,27 +238,39 @@ public:
     void initializeOutputFiles(void);
     RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
-    void updateAlignmentQueue(void);
+    void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles);
     void updateInputVariants(void);
     void updateHaplotypeBasisAlleles(void);
-    void removeNonOverlappingAlleles(vector<Allele*>& alleles, int haplotypeLength = 1, bool getAllAllelesInHaplotype = false);
+    void removeNonOverlappingAlleles(vector<Allele*>& alleles,
+                                     int haplotypeLength = 1,
+                                     bool getAllAllelesInHaplotype = false);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void updateRegisteredAlleles(void);
+    void addToRegisteredAlleles(vector<Allele*>& alleles);
     void updatePriorAlleles(void);
     vector<BedTarget>* targetsInCurrentRefSeq(void);
     bool toNextRefID(void);
     bool loadTarget(BedTarget*);
     bool toFirstTargetPosition(void);
     bool toNextPosition(void);
+    bool getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations);
+    bool getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials);
     bool dummyProcessNextTarget(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
     int currentSequencePosition();
     bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
+
     // builds up haplotype (longer, e.g. ref+snp+ref) alleles to match the longest allele in genotypeAlleles
     // updates vector<Allele>& alleles with the new alleles
-    void buildHaplotypeAlleles(vector<Allele>& alleles, Samples& allelesBySample, map<string, vector<Allele*> >& alleleGroups, int allowedAlleleTypes);
+    void buildHaplotypeAlleles(vector<Allele>& alleles,
+                               Samples& allelesBySample,
+                               map<string, vector<Allele*> >& alleleGroups,
+                               // provides observation group counts, counts of partial observations
+                               map<string, vector<Allele*> >& partialObservationGroups,
+                               map<Allele*, set<Allele*> >& partialObservationSupport,
+                               int allowedAlleleTypes);
     void getAlleles(Samples& allelesBySample, int allowedAlleleTypes, int haplotypeLength = 1, bool getAllAllelesInHaplotype = false);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
@@ -275,8 +287,9 @@ public:
     // gets the genotype alleles we should evaluate among the allele groups and
     // sample groups at the current position, according to our filters
     vector<Allele> genotypeAlleles(map<string, vector<Allele*> >& alleleGroups,
-            Samples& samples,
-            bool useOnlyInputAlleles);
+                                   Samples& samples,
+                                   bool useOnlyInputAlleles,
+                                   int haplotypeLength = 1);
 
     // pointer to current position in targets
     int fastaReferenceSequenceCount; // number of reference sequences
@@ -289,6 +302,7 @@ public:
     char currentReferenceBaseChar();
     string currentReferenceBaseString();
     string::iterator currentReferenceBaseIterator();
+    string currentReferenceHaplotype();
 
     // output files
     ofstream logFile, outputFile, traceFile, failedFile;

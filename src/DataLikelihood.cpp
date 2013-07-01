@@ -46,33 +46,73 @@ probObservedAllelesGivenGenotype(
             //if (!genotype.containsAllele(s->first)) {
             //    countOut += s->second.size();
             //}
+
             vector<Allele*>& alleles = s->second;
-            for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            vector<Allele*>& partials = sample.partials[s->first];  // mm.. cleanup
+            /*
+            if (!partials.empty()) {
+                cerr << "partials " << partials << endl;
+            }
+            */
+            bool onPartials = false;
+            vector<Allele*>::iterator a = alleles.begin();
+            for ( ; (partials.empty() && a != alleles.end()) || a != partials.end(); ++a) {
+                if (a == alleles.end()) {
+                    if (!partials.empty()) {
+                        a = partials.begin();
+                        onPartials = true;
+                    } else {
+                        break;
+                    }
+                }
                 Allele& obs = **a;
                 long double probi = 0;
                 ContaminationEstimate& contamination = contaminations.of(obs.readGroupID);
+                double scale = 1;
                 long double qual = (1 - exp(obs.lnquality)) * (1 - exp(obs.lnmapQuality));
+                if (onPartials) {
+                    map<Allele*, set<Allele*> >::iterator r = sample.reversePartials.find(*a);
+                    if (r != sample.reversePartials.end()) {
+                        assert(!sample.reversePartials[*a].empty());
+                        scale = (double)1/(double)sample.reversePartials[*a].size();
+                    }
+                }
+
+                // TODO add partial obs, now that we have them recorded
+                // how does this work?
+                // each partial obs is recorded as supporting, but with observation probability scaled by the number of possible haplotypes it supports
+
                 for (vector<Allele>::iterator b = genotypeAlleles.begin(); b != genotypeAlleles.end(); ++b) {
                     Allele& allele = *b;
                     const string& base = b->currentBase;
+
                     long double q;
-                    if (obs.currentBase == base) {
+                    if (obs.currentBase == base
+                        || (onPartials && sample.observationSupports(*a, &*b))) {
                         q = qual;
                     } else {
                         q = 1 - qual;
                     }
+
+                    if (onPartials) {
+                        q *= scale; // distribute partial support evenly across supported haplotypes
+                    }
+
                     double asampl = genotype.alleleSamplingProb(base);
                     double freq = freqs[base];
+
                     if (asampl == 0.5) {
                         if (allele.isReference()) {
-                            asampl = (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (1+freq));
+                            asampl = (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (0.5+freq));
                         } else {
-                            asampl = 1 - (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (1+freq));
+                            asampl = 1 - (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (0.5+(1-freq)));
                         }
                     } else if (asampl == 0) {
-                        asampl = contamination.probRefGivenHomAlt * (1+freq); // scale by frequency of (this) possibly contaminating allele
+                        // scale by frequency of (this) possibly contaminating allele
+                        asampl = contamination.probRefGivenHomAlt * (0.5+freq);
                     } else if (asampl == 1) {
-                        asampl = 1 - (contamination.probRefGivenHomAlt * (1+freq)); // scale by frequency of possibly contaminating alleles
+                        // scale by frequency of (other) possibly contaminating alleles
+                        asampl = 1 - (contamination.probRefGivenHomAlt * (0.5+(1-freq)));
                     }
 
                     probi += asampl * q;
@@ -88,7 +128,7 @@ probObservedAllelesGivenGenotype(
             }
         }
     }
-
+    
     // read dependence factor, asymptotically downgrade quality values of
     // successive reads to dependenceFactor * quality
     if (standardGLs) {

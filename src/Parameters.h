@@ -62,6 +62,7 @@ public:
     bool allowMNPs;              // -X --allow-mnps
     bool allowComplex;           // -X --allow-complex
     int maxComplexGap;
+    bool usePartialObservations;
     bool allowSNPs;              // -I --no-snps
     bool pooledDiscrete;
     bool pooledContinuous;

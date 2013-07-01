@@ -10,15 +10,27 @@ int Allele::referenceOffset(void) const {
     return *currentReferencePosition - position;
 }
 
-// called prior to using the allele in analysis
-void Allele::update(void) {
+void Allele::setQuality(void) {
     quality = currentQuality();
     lnquality = phred2ln(quality);
-    if (type == ALLELE_REFERENCE) {
-        currentBase = string(1, *currentReferenceBase);
-        basesLeft = bpLeft + referenceOffset();
-        basesRight = bpRight - referenceOffset();
+}
+
+// called prior to using the allele in analysis
+// called again when haplotype alleles are built, in which case the "currentBase" is set to the alternate sequence of the allele
+void Allele::update(int haplotypeLength) {
+    if (haplotypeLength == 1) {
+        setQuality();
+        if (type == ALLELE_REFERENCE) {
+            currentBase = string(1, *currentReferenceBase);
+            basesLeft = bpLeft + referenceOffset();
+            basesRight = bpRight - referenceOffset();
+        } else {
+            currentBase = base();
+        }
     } else {
+        // if we have a >1bp haplotype, we have a set of alleles for which the haplotype sequences are directly comparable
+        // so we set the "current base" to the alternate sequence
+        //currentBase = alternateSequence;
         currentBase = base();
     }
 }
@@ -138,13 +150,18 @@ void updateAllelesCachedData(vector<Allele*>& alleles) {
 
 // quality at a given reference position
 const short Allele::currentQuality(void) const {
+    //cerr << readID << " " << position << "-" << position + length << " " << alternateSequence.size() << " vs " << baseQualities.size() << endl;
     switch (this->type) {
         case ALLELE_REFERENCE:
             assert(alternateSequence.size() == baseQualities.size());
             assert(referenceOffset() >= 0);
-            TRY {
-                return baseQualities.at(referenceOffset());
-            } CATCH;
+            if (alternateSequence.size() > 1) { // implies haplotype allele
+                return averageQuality(baseQualities);
+            } else {
+                TRY {
+                    return baseQualities.at(referenceOffset());
+                } CATCH;
+            }
             break;
         case ALLELE_INSERTION:
         case ALLELE_DELETION:
@@ -229,34 +246,42 @@ bool Allele::isNull(void) const {
 const string Allele::base(void) const { // the base of this allele
 
     switch (this->type) {
-        case ALLELE_REFERENCE:
-            if (genotypeAllele)
-                return alternateSequence;
-            else
-                return currentBase;
-            break;
-        case ALLELE_GENOTYPE:
+    case ALLELE_REFERENCE:
+        if (genotypeAllele)
             return alternateSequence;
-            break;
-        case ALLELE_SNP:
-            return "S:" + convert(position) + ":" + cigar + ":" + alternateSequence;
-            break;
-        case ALLELE_MNP:
-            return "M:" + convert(position) + ":" + cigar + ":" + alternateSequence;
-            break;
-        case ALLELE_INSERTION:
-            return "I:" + convert(position) + ":" + cigar + ":" + alternateSequence;
-            break;
-        case ALLELE_DELETION:
-            return "D:" + convert(position) + ":" + cigar;
-            break;
-        case ALLELE_COMPLEX:
-            return "C:" + convert(position) + ":" + cigar + ":" + alternateSequence;
-            break;
-        case ALLELE_NULL:
-            return "N:" + convert(position) + ":" + alternateSequence;
-        default:
-            break;
+        else
+            return currentBase;
+        break;
+    case ALLELE_GENOTYPE:
+        return alternateSequence;
+        break;
+        /*
+    case ALLELE_GENOTYPE:
+        return alternateSequence; // todo fix
+        break;
+    case ALLELE_REFERENCE:
+        return "R:" + convert(position) + ":" + cigar + ":" + alternateSequence;
+        break;
+        */
+    case ALLELE_SNP:
+        return "S:" + convert(position) + ":" + cigar + ":" + alternateSequence;
+        break;
+    case ALLELE_MNP:
+        return "M:" + convert(position) + ":" + cigar + ":" + alternateSequence;
+        break;
+    case ALLELE_INSERTION:
+        return "I:" + convert(position) + ":" + cigar + ":" + alternateSequence;
+        break;
+    case ALLELE_DELETION:
+        return "D:" + convert(position) + ":" + cigar;
+        break;
+    case ALLELE_COMPLEX:
+        return "C:" + convert(position) + ":" + cigar + ":" + alternateSequence;
+        break;
+    case ALLELE_NULL:
+        return "N:" + convert(position) + ":" + alternateSequence;
+    default:
+        break;
     }
 
 }
@@ -417,7 +442,7 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence
             //<< ":" << allele.referenceSequence
-	    << ":" << allele.repeatRightBoundary
+            << ":" << allele.repeatRightBoundary
             << ":" << allele.cigar
             << ":" << allele.quality;
     } else {
@@ -600,7 +625,7 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 // should have the same cigar and position.  this function picks the most
 // common allele observation per alternate sequence and homogenizes the rest to
 // the same if they are not reference alleles
-void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups) {
+void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refseq) {
     map<string, map<string, int> > equivs;
     map<string, Allele*> homogenizeTo;
     for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
@@ -1006,6 +1031,7 @@ void Allele::subtract(
             switch (op) {
                 case 'M':
                 case 'X':
+                case 'N':
                     refbpstart -= c.first;
                     subtractFromAltStart += c.first;
                     break;
@@ -1029,6 +1055,7 @@ void Allele::subtract(
                 switch (op) {
                     case 'M':
                     case 'X':
+                    case 'N':
                     case 'I':
                         subtractFromAltStart += refbpstart;
                         break;
@@ -1054,6 +1081,7 @@ void Allele::subtract(
             switch (op) {
                 case 'M':
                 case 'X':
+                case 'N':
                     subtractFromAltEnd += c.first;
                     refbpend -= c.first;
                     break;
@@ -1078,6 +1106,7 @@ void Allele::subtract(
                     case 'M':
                     case 'X':
                     case 'I':
+                    case 'N':
                         subtractFromAltEnd += refbpend;
                         break;
                     case 'D':
@@ -1164,6 +1193,7 @@ void Allele::add(
             case 'M':
             case 'X':
             case 'D':
+            case 'N':
                 position -= c->first;
                 break;
             case 'I':

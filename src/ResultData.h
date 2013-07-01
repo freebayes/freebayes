@@ -55,6 +55,8 @@ public:
         GenotypeCombo& genotypeCombo,
         bool bestOverallComboIsHet,
         map<string, vector<Allele*> >& alleleGroups,
+        map<string, vector<Allele*> >& partialObservationGroups,
+        map<Allele*, set<Allele*> >& partialSupport,
         map<int, vector<Genotype> >& genotypesByPloidy,
         vector<string>& sequencingTechnologies,
         AlleleParser* parser);
