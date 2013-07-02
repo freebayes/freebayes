@@ -89,6 +89,8 @@ void Parameters::usage(char** argv) {
         << "input and output:" << endl
         << endl
         << "   -b --bam FILE   Add FILE to the set of BAM files to be analyzed." << endl
+        << "   -L --bam-list FILE" << endl
+        << "                   A file containing a list of BAM files to be analyzed." << endl
         << "   -c --stdin      Read BAM input on stdin." << endl
         << "   -v --vcf FILE   Output VCF-format results to FILE." << endl
         << "   -f --fasta-reference FILE" << endl
@@ -98,9 +100,9 @@ void Parameters::usage(char** argv) {
         << "                   will analyze every position in this reference." << endl
         << "   -t --targets FILE" << endl
         << "                   Limit analysis to targets listed in the BED-format FILE." << endl
-        << "   -r --region <chrom>:<start_position>..<end_position>" << endl
+        << "   -r --region <chrom>:<start_position>-<end_position>" << endl
         << "                   Limit analysis to the specified region, 0-base coordinates," << endl
-        << "                   end_position included." << endl
+        << "                   end_position included.  Either '-' or '..' maybe used as a separator." << endl
         << "   -s --samples FILE" << endl
         << "                   Limit analysis to samples listed (one per line) in the FILE." << endl
         << "                   By default FreeBayes will analyze all samples in its input" << endl
@@ -115,7 +117,7 @@ void Parameters::usage(char** argv) {
         << "                      reference sequence, start, end, sample name, copy number" << endl
         << "                   ... for each region in each sample which does not have the" << endl
         << "                   default copy number as set by --ploidy." << endl
-        << "   -L --trace FILE  Output an algorithmic trace to FILE." << endl
+        << "   --trace FILE    Output an algorithmic trace to FILE." << endl
         << "   --failed-alleles FILE" << endl
         << "                   Write a BED file of the analyzed positions which do not" << endl
         << "                   pass --pvar to FILE." << endl
@@ -449,6 +451,7 @@ Parameters::Parameters(int argc, char** argv) {
         {
             {"help", no_argument, 0, 'h'},
             {"bam", required_argument, 0, 'b'},
+            {"bam-list", required_argument, 0, 'L'},
             {"stdin", no_argument, 0, 'c'},
             {"fasta-reference", required_argument, 0, 'f'},
             {"targets", required_argument, 0, 't'},
@@ -457,7 +460,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"populations", required_argument, 0, '2'},
             {"cnv-map", required_argument, 0, 'A'},
             {"vcf", required_argument, 0, 'v'},
-            {"trace", required_argument, 0, 'L'},
+            {"trace", required_argument, 0, '&'},
             {"failed-alleles", required_argument, 0, '8'},
             {"use-duplicate-reads", no_argument, 0, '4'},
             {"no-partial-observations", no_argument, 0, '['},
@@ -527,7 +530,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:L:8:z:1:3:E:7:2:9:%:(:_:,:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8:z:1:3:E:7:2:9:%:(:_:,:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -594,9 +597,14 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
             // -L --trace
-        case 'L':
+        case '&':
             traceFile = optarg;
             trace = true;
+            break;
+
+            // --bam-list
+        case 'L':
+            addLinesFromFile(bams, string(optarg));
             break;
 
             // -8 --failed-alleles

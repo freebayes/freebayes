@@ -674,3 +674,17 @@ void normalizeSumToOne(vector<long double>& v) {
 	*i /= sum;
     }
 }
+
+// splits the file on '\n', adds the resulting values to v
+void addLinesFromFile(vector<string>& v, const string& f) {
+    ifstream ifs;
+    ifs.open(f.c_str(), ifstream::in);
+    if (!ifs.is_open()) {
+        cerr << "could not open " << f << endl;
+        exit(1);
+    }
+    string line;
+    while (std::getline(ifs, line)) {
+        v.push_back(line);
+    }
+}

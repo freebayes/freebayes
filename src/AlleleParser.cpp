@@ -681,17 +681,22 @@ void AlleleParser::loadTargets(void) {
             stopPos = -1;
         } else {
             startSeq = region.substr(0, foundFirstColon);
-            size_t foundRangeDots = region.find("..", foundFirstColon);
-            if (foundRangeDots == string::npos) {
+            string sep = "..";
+            size_t foundRangeSep = region.find(sep, foundFirstColon);
+            if (foundRangeSep == string::npos) {
+                sep = "-";
+                foundRangeSep = region.find("-", foundFirstColon);
+            }
+            if (foundRangeSep == string::npos) {
                 startPos = atoi(region.substr(foundFirstColon + 1).c_str());
                 // differ from bamtools in this regard, in that we process only
                 // the specified position if a range isn't given
                 stopPos = startPos + 1;
             } else {
-                startPos = atoi(region.substr(foundFirstColon + 1, foundRangeDots - foundRangeDots - 1).c_str());
-                // if we have range dots specified, but no second number, read to the end of sequence
-                if (foundRangeDots + 2 != region.size()) {
-                    stopPos = atoi(region.substr(foundRangeDots + 2).c_str()); // end-exclusive, bed-format
+                startPos = atoi(region.substr(foundFirstColon + 1, foundRangeSep - foundFirstColon).c_str());
+                // if we have range sep specified, but no second number, read to the end of sequence
+                if (foundRangeSep + sep.size() != region.size()) {
+                    stopPos = atoi(region.substr(foundRangeSep + sep.size()).c_str()); // end-exclusive, bed-format
                 } else {
                     stopPos = reference.sequenceLength(startSeq);
                 }

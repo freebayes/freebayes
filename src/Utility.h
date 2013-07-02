@@ -11,6 +11,7 @@
 #include <string>
 #include <float.h>
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <time.h>
 #include "convert.h"
@@ -144,5 +145,7 @@ bool isEmptyCigarElement(const pair<int, string>& elem);
 std::string operator*(std::string const &s, size_t n);
 
 void normalizeSumToOne(vector<long double>&);
+
+void addLinesFromFile(vector<string>& v, const string& f);
 
 #endif
