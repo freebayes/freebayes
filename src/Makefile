@@ -71,7 +71,7 @@ OBJECTS=BedReader.o \
 		Variant.o \
 		$(BAMTOOLS_ROOT)/lib/libbamtools.a
 
-HEADERS=multichoose.h
+HEADERS=multichoose.h version_git.h
 
 # executables
 
