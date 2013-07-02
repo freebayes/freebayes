@@ -29,7 +29,7 @@
 #include "Result.h"
 #include "LeftAlign.h"
 #include "../vcflib/Variant.h"
-#include "Version.h"
+#include "version_git.h"
 
 // the size of the window of the reference which is always cached in memory
 #define CACHED_REFERENCE_WINDOW 300
@@ -241,6 +241,7 @@ public:
     void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles);
     void updateInputVariants(void);
     void updateHaplotypeBasisAlleles(void);
+    void removeAllelesWithoutReadSpan(vector<Allele*>& alleles, int probeLength, int haplotypeLength);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles,
                                      int haplotypeLength = 1,
                                      bool getAllAllelesInHaplotype = false);

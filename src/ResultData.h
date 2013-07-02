@@ -9,7 +9,7 @@
 #include "Utility.h"
 #include "AlleleParser.h"
 #include "../vcflib/Variant.h"
-#include "Version.h"
+#include "version_git.h"
 #include "Result.h"
 
 using namespace std;

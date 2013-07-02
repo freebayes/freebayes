@@ -99,20 +99,20 @@ probObservedAllelesGivenGenotype(
                     }
 
                     double asampl = genotype.alleleSamplingProb(base);
-                    double freq = freqs[base];
+                    //double freq = freqs[base];
 
                     if (asampl == 0.5) {
                         if (allele.isReference()) {
-                            asampl = (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (0.5+freq));
+                            asampl = contamination.probRefGivenHet;
                         } else {
-                            asampl = 1 - (contamination.probRefGivenHet + contamination.probRefGivenHomAlt * (0.5+(1-freq)));
+                            asampl = 1 - contamination.probRefGivenHet;
                         }
                     } else if (asampl == 0) {
                         // scale by frequency of (this) possibly contaminating allele
-                        asampl = contamination.probRefGivenHomAlt * (0.5+freq);
+                        asampl = contamination.probRefGivenHomAlt;
                     } else if (asampl == 1) {
                         // scale by frequency of (other) possibly contaminating alleles
-                        asampl = 1 - (contamination.probRefGivenHomAlt * (0.5+(1-freq)));
+                        asampl = 1 - contamination.probRefGivenHomAlt;
                     }
 
                     probi += asampl * q;

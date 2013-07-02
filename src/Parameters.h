@@ -10,7 +10,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include "split.h"
-#include "Version.h"
+#include "version_git.h"
 #include "Utility.h"
 
 using namespace std;

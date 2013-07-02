@@ -13,8 +13,10 @@
 #include <assert.h>
 #include "Utility.h"
 #include "convert.h"
+#include "api/BamAlignment.h"
 
 using namespace std;
+using namespace BamTools;
 
 class Allele;
 
@@ -109,8 +111,6 @@ public:
     unsigned int length;    // and event length (deletion implies 0, snp implies 1, insertion >1)
     unsigned int referenceLength; // length of the event relative to the reference
     long int repeatRightBoundary;  // if this allele is an indel, and if it is embedded in a tandem repeat 
-    int bpLeft; // how many bases are in the read to the left of the allele
-    int bpRight; // how many bases are in the read to the left of the allele
     // TODO cleanup
     int basesLeft;  // these are the "updated" versions of the above
     int basesRight;
@@ -136,31 +136,35 @@ public:
     bool processed; // flag to mark if we've presented this allele for analysis
     string cigar; // a cigar representation of the allele
     vector<Allele>* alignmentAlleles;
+    long int alignmentStart;
+    long int alignmentEnd;
 
     // default constructor, for converting alignments into allele observations
     Allele(AlleleType t, 
-	   string& refname,
-	   long int pos, 
-	   long int* crefpos,
-	   char* crefbase,
-	   unsigned int len,
-	   long int rrbound,
-	   int bleft,
-	   int bright,
-	   string alt,
-	   string& sampleid,
-	   string& readid,
-       string& readgroupid,
-	   string& sqtech,
-	   bool strnd, 
-	   long double qual,
-	   string qstr, 
-	   short mapqual,
-	   bool ispair,
-	   bool ismm,
-	   bool isproppair,
-	   string cigarstr,
-	   vector<Allele>* ra)
+           string& refname,
+           long int pos, 
+           long int* crefpos,
+           char* crefbase,
+           unsigned int len,
+           long int rrbound,
+           int bleft,
+           int bright,
+           string alt,
+           string& sampleid,
+           string& readid,
+           string& readgroupid,
+           string& sqtech,
+           bool strnd, 
+           long double qual,
+           string qstr, 
+           short mapqual,
+           bool ispair,
+           bool ismm,
+           bool isproppair,
+           string cigarstr,
+           vector<Allele>* ra,
+           long int bas,
+           long int bae)
         : type(t)
         , referenceName(refname)
         , position(pos)
@@ -168,9 +172,7 @@ public:
         , currentReferenceBase(crefbase)
         , length(len)
         , repeatRightBoundary(rrbound)
-        , bpLeft(bleft)
         , basesLeft(bleft)
-        , bpRight(bright)
         , basesRight(bright)
         , currentBase(alt)
         , alternateSequence(alt)
@@ -193,6 +195,8 @@ public:
         , readSNPRate(0)
         , cigar(cigarstr)
         , alignmentAlleles(ra)
+        , alignmentStart(bas)
+        , alignmentEnd(bae)
     {
 
         baseQualities.resize(qstr.size()); // cache qualities
@@ -288,6 +292,8 @@ public:
     void mergeAllele(const Allele& allele, AlleleType newType);
 
     void updateTypeAndLengthFromCigar(void);
+    int bpLeft(void); // how many bases are in the read to the left of the allele
+    int bpRight(void); // how many bases are in the read to the left of the allele
 
 
 };

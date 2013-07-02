@@ -15,22 +15,27 @@ void Allele::setQuality(void) {
     lnquality = phred2ln(quality);
 }
 
+int Allele::bpLeft(void) {
+    return position - alignmentStart;
+}
+
+int Allele::bpRight(void) {
+    return alignmentEnd - position + referenceLength;
+}
+
 // called prior to using the allele in analysis
 // called again when haplotype alleles are built, in which case the "currentBase" is set to the alternate sequence of the allele
 void Allele::update(int haplotypeLength) {
+    setQuality();
+    basesLeft = bpLeft();
+    basesRight = bpRight();
     if (haplotypeLength == 1) {
-        setQuality();
         if (type == ALLELE_REFERENCE) {
             currentBase = string(1, *currentReferenceBase);
-            basesLeft = bpLeft + referenceOffset();
-            basesRight = bpRight - referenceOffset();
         } else {
             currentBase = base();
         }
     } else {
-        // if we have a >1bp haplotype, we have a set of alleles for which the haplotype sequences are directly comparable
-        // so we set the "current base" to the alternate sequence
-        //currentBase = alternateSequence;
         currentBase = base();
     }
 }
@@ -1373,7 +1378,6 @@ void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
     alternateSequence += newAllele.alternateSequence;
     length += newAllele.length; // hmmm
     basesRight = newAllele.basesRight;
-    bpRight = newAllele.bpRight;
     baseQualities.insert(baseQualities.end(), newAllele.baseQualities.begin(), newAllele.baseQualities.end());
     currentBase = base();
     // XXX note that we don't add Q values for intermingled gaps in combined alleles
@@ -1382,7 +1386,6 @@ void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
         lnquality = max(newAllele.lnquality, lnquality);
     } else {
         basesRight += newAllele.referenceLength;
-        bpRight += newAllele.referenceLength;
     }
     if (newAllele.type != ALLELE_REFERENCE) {
 	repeatRightBoundary = newAllele.repeatRightBoundary;

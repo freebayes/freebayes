@@ -45,8 +45,7 @@ void Parameters::simpleUsage(char ** argv) {
         << "   -h --help       Complete description of options." << endl
         << endl
         << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2012" << endl
-        << "date:     " << FREEBAYES_COMPILE_DATE << endl
-        << "version:  " << FREEBAYES_VERSION << endl;
+        << "version:  " << VERSION_GIT << endl;
 
 }
 
@@ -337,8 +336,7 @@ void Parameters::usage(char** argv) {
         << endl
         << endl
         << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2012" << endl
-        << "date:     " << FREEBAYES_COMPILE_DATE << endl
-        << "version:  " << FREEBAYES_VERSION << endl;
+        << "version:  " << VERSION_GIT << endl;
 
 }
 
