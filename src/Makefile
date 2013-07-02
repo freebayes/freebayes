@@ -17,7 +17,7 @@ BAMTOOLS_ROOT=../bamtools
 LIBS = -lz -lm -L./ -L../vcflib/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix
 INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath
 
-all: ../bin/freebayes ../bin/bamleftalign
+all: autoversion ../bin/freebayes ../bin/bamleftalign
 
 static:
 	$(MAKE) CFLAGS="$(CFLAGS) -static" all
