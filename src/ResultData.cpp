@@ -527,7 +527,7 @@ vcf::Variant& Results::vcf(
 
     // site-wide coverage
     int samplesWithData = 0;
-    double refAlleleObservations = 0;
+    int refAlleleObservations = 0;
     for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
         GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
         //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
@@ -536,7 +536,7 @@ vcf::Variant& Results::vcf(
 
             Sample& sample = *gc->second->sample;
             //refAlleleObservations += sample.observationCount(refbase);
-            refAlleleObservations += sample.observationCountInclPartials(refbase);
+            refAlleleObservations += sample.observationCount(refbase);
 
             ++samplesWithData;
         }
