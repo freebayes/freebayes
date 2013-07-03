@@ -2839,7 +2839,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         for (vector<Allele>::iterator p = alleles.begin(); p != alleles.end(); ++p) {
             if (p != alleles.begin()) {
                 if (p->position != (p - 1)->position + (p - 1)->referenceLength) {
-                    cerr << "non-contiguous reads, cannot construct haplotype allele" << endl;
+                    //cerr << "non-contiguous reads, cannot construct haplotype allele" << endl;
                     return true;
                 }
             }
@@ -3196,9 +3196,15 @@ bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int hapl
             // this guard prevents trashing allele pointers when getting partial observations
             if (ra.start <= currentPosition && ra.end > currentPosition + haplotypeLength
                 && ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
+                bool hasNull = false;
                 for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                    a->processed = false; // re-trigger use of all alleles
-                    haplotypeObservations.push_back(&*a);
+                    if (a->isNull()) hasNull = true;
+                }
+                if (!hasNull) {
+                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                        a->processed = false; // re-trigger use of all alleles
+                        haplotypeObservations.push_back(&*a);
+                    }
                 }
             }
         }
@@ -3449,6 +3455,10 @@ vector<Allele> AlleleParser::genotypeAlleles(
         // map quality >= MQL1 and the specific quality of the allele has to be >= BQL1
         DEBUG("allele group " << group->first);
         vector<Allele*>& alleles = group->second;
+        if (!allATGC(group->second.front()->alternateSequence)) {
+            DEBUG("allele group contains partially-null observations, skipping");
+            continue;
+        }
         if (alleles.size() < parameters.minAltTotal) {
             DEBUG("allele group lacks sufficient observations in the whole population (min-alternate-total)");
             continue;
