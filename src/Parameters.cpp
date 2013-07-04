@@ -232,9 +232,6 @@ void Parameters::usage(char** argv) {
         << "                   default: ~unbounded" << endl
         << "   -0 --standard-filters  Use stringent input base and mapping quality filters" << endl
         << "                   Equivalent to -m 30 -q 20 -R 0 -S 0" << endl
-        << "   -x --indel-exclusion-window" << endl
-        << "                   Ignore portions of alignments this many bases from a" << endl
-        << "                   putative insertion or deletion allele.  default: 0" << endl
         << "   -F --min-alternate-fraction N" << endl
         << "                   Require at least this fraction of observations supporting" << endl
         << "                   an alternate allele within a single individual in the" << endl

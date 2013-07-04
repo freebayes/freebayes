@@ -291,38 +291,6 @@ const string Allele::base(void) const { // the base of this allele
 
 }
 
-const bool Allele::masked(void) const {
-
-    // guard against uninitialized indelMask
-    if (indelMask.size() == 0)
-        return false;
-
-    if (genotypeAllele)
-        return false;
-
-    switch (this->type) {
-        case ALLELE_GENOTYPE:
-            return false;
-            break;
-        case ALLELE_REFERENCE:
-            return indelMask.at(referenceOffset());
-            break;
-        case ALLELE_SNP:
-            return indelMask.at(0);
-            break;
-        case ALLELE_INSERTION: // XXX presently these are masked by default...
-        case ALLELE_DELETION:
-        case ALLELE_MNP:
-        case ALLELE_COMPLEX:
-        case ALLELE_NULL:
-            return true;
-            break;
-        default:
-            break;
-    }
-
-}
-
 string stringForAllele(const Allele &allele) {
 
     stringstream out;
@@ -923,19 +891,6 @@ void filterAlleles(list<Allele*>& alleles, int allowedTypes) {
         bool allowed = false;
         if (!(allowedTypes & (*allele)->type))
             *allele = NULL;
-    }
-    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-
-}
-
-// removes alleles which are indelmasked at position
-void removeIndelMaskedAlleles(list<Allele*>& alleles, long int position) {
-
-    for (list<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        //cerr << *allele << " " << (*allele)->indelMask.size() << " " << (*allele)->referenceOffset() << endl;
-        if ((*allele)->masked()) {
-            *allele = NULL;
-        }
     }
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 

@@ -19,7 +19,7 @@
 
 using namespace std;
 
-typedef ttmath::Big<TTMATH_BITS(256), TTMATH_BITS(512)> BigFloat;
+typedef ttmath::Big<TTMATH_BITS(256), TTMATH_BITS(64)> BigFloat;
 
 long double factorial(int);
 short qualityChar2ShortInt(char c);

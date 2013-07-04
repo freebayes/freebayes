@@ -1792,37 +1792,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         }
     }
 
-    // mark positions in each alignment which are within IDW bases of an indel
-    // these are then filtered at each call to getAlleles()
-    if (parameters.IDW > -1) { // -1 is the default value and means 'no indel exclusion'
-        for (vector<bool>::iterator m = indelMask.begin(); m < indelMask.end(); ++m) {
-            if (*m) {
-                vector<bool>::iterator q = m - parameters.IDW;
-                if (q < indelMask.begin()) q = indelMask.begin();
-                for (; q <= m + parameters.IDW && q != indelMask.end(); ++q) {
-                    *q = true;
-                }
-                m += parameters.IDW + 1;
-            }
-        }
-        for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-            Allele& allele = *a;
-            int startpos = (allele.position - alignment.Position);
-            int endpos = startpos + allele.length;
-            vector<bool>::iterator im = indelMask.begin();
-            // if there is anything masked, store it, otherwise just leave the
-            // indelMask on this alignment empty, which means, "no masking" in
-            // Allele::masked()
-            for (vector<bool>::iterator q = im + startpos; q != im + endpos; ++q) {
-                if (*q) { // there is a masked element
-                    allele.indelMask.resize(allele.length);
-                    copy(im + startpos, im + endpos, allele.indelMask.begin());
-                    break;
-                }
-            }
-        }
-    }
-
     // ignore insertions, deletions, and N's which occur at the end of the read with
     // no reference-matching bases before the end of the read
     if (parameters.boundIndels &&
@@ -2468,7 +2437,7 @@ void AlleleParser::removeNonOverlappingAlleles(vector<Allele*>& alleles, int hap
 // removes alleles which are filtered at the current position, and unsets their 'processed' flag so they are later evaluated
 void AlleleParser::removeFilteredAlleles(vector<Allele*>& alleles) {
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
-        if ((*allele)->quality < parameters.BQL0 || (*allele)->masked() || (*allele)->currentBase == "N") {
+        if ((*allele)->quality < parameters.BQL0 || (*allele)->currentBase == "N") {
             (*allele)->processed = false; // force re-processing later
             *allele = NULL;
         }
@@ -3339,7 +3308,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes, int hapl
                   (allele.position == currentPosition)))
                 ) ) {
             allele.update(haplotypeLength);
-            if (allele.quality >= parameters.BQL0 && !allele.masked() && allele.currentBase != "N"
+            if (allele.quality >= parameters.BQL0 && allele.currentBase != "N"
                 && (allele.isReference() || !allele.alternateSequence.empty())) { // filters haplotype construction chaff
                 samples[allele.sampleID][allele.currentBase].push_back(*a);
                 // XXX testing

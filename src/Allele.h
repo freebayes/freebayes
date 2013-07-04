@@ -131,8 +131,6 @@ public:
     bool isPaired;  // if the allele is supported by a read that is part of a pair
     bool isMateMapped;  // if the mate in the pair is mapped
     bool genotypeAllele;    // if this is an abstract 'genotype' allele
-    vector<bool> indelMask; // indel mask structure, masks sites within the IDW from indels
-    const bool masked(void) const;      // if the allele is masked at the *currentReferencePosition
     bool processed; // flag to mark if we've presented this allele for analysis
     string cigar; // a cigar representation of the allele
     vector<Allele>* alignmentAlleles;
@@ -321,7 +319,6 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 
 int allowedAlleleTypes(vector<AlleleType>& allowedEnumeratedTypes);
 void filterAlleles(list<Allele*>& alleles, int allowedTypes);
-void removeIndelMaskedAlleles(list<Allele*>& alleles, long int position);
 int countAlleles(map<string, vector<Allele*> >& sampleGroups);
 int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand);
 pair<pair<int, int>, pair<int, int> >
