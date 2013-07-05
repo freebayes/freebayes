@@ -267,12 +267,14 @@ int main (int argc, char *argv[]) {
 
         // get estimated allele frequencies using sum of estimated qualities
         map<string, double> estimatedAlleleFrequencies = samples.estimatedAlleleFrequencies();
+        /*
         double estimatedMaxAlleleFrequency = 0;
         double estimatedMaxAlleleCount = 0;
         double estimatedMajorFrequency = estimatedAlleleFrequencies[referenceBase];
         if (estimatedMajorFrequency < 0.5) estimatedMajorFrequency = 1-estimatedMajorFrequency;
         double estimatedMinorFrequency = 1-estimatedMajorFrequency;
         int estimatedMinorAllelesAtLocus = numCopiesOfLocus * estimatedMinorFrequency;
+        */
         
 
         Results results;
@@ -499,7 +501,9 @@ int main (int argc, char *argv[]) {
 
             // cap the number of iterations at 2 x the number of alternate alleles
             // max it at parameters.genotypingMaxIterations iterations, min at 10
-            int itermax = min(max(10, 2 * estimatedMinorAllelesAtLocus), parameters.genotypingMaxIterations);
+            //int itermax = min(max(10, 2 * estimatedMinorAllelesAtLocus), parameters.genotypingMaxIterations);
+            int itermax = parameters.genotypingMaxIterations;
+
             // XXX HACK
             // passing 0 for bandwidth and banddepth means "exhaustive local search"
             // this produces properly normalized GQ's at polyallelic sites
