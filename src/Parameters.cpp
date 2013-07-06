@@ -294,12 +294,6 @@ void Parameters::usage(char** argv) {
         << "   --report-genotype-likelihood-max" << endl
         << "                   Report genotypes using the maximum-likelihood estimate provided" << endl
         << "                   from genotype likelihoods." << endl
-        << "   -M --site-selection-max-iterations N" << endl
-        << "                   Uses hill-climbing algorithm to search posterior space for N" << endl
-        << "                   iterations to determine if the site should be evaluated.  Set to 0" << endl
-        << "                   to prevent use of this algorithm for site selection, and" << endl
-        << "                   to a low integer for improvide site selection at a slight" << endl
-        << "                   performance penalty. default: 5." << endl
         << "   -B --genotyping-max-iterations N" << endl
         << "                   Iterate no more than N times during genotyping step. default: 1000." << endl
         << "   --genotyping-max-banddepth N" << endl
