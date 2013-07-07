@@ -171,7 +171,6 @@ map<string, double> Samples::estimatedAlleleFrequencies(void) {
         Sample& sample = s->second;
         for (Sample::iterator o = sample.begin(); o != sample.end(); ++o) {
             const string& base = o->first;
-            vector<Allele*> obs = o->second;
             qualsums[base] += sample.qualSum(base);
         }
     }
@@ -182,6 +181,7 @@ map<string, double> Samples::estimatedAlleleFrequencies(void) {
     map<string, double> freqs;
     for (map<string, long double>::iterator q = qualsums.begin(); q != qualsums.end(); ++q) {
         freqs[q->first] = q->second / total;
+        //cerr << "estimated frequency " << q->first << " " << freqs[q->first] << endl;
     }
     return freqs;
 }

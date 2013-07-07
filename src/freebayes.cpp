@@ -251,8 +251,8 @@ int main (int argc, char *argv[]) {
 
         // for each possible ploidy in the dataset, generate all possible genotypes
         vector<int> ploidies = parser->currentPloidies(samples);
-        int numCopiesOfLocus = accumulate(ploidies.begin(), ploidies.end(), 0);
         map<int, vector<Genotype> > genotypesByPloidy = getGenotypesByPloidy(ploidies, genotypeAlleles);
+        int numCopiesOfLocus = parser->copiesOfLocus(samples);
 
 
         DEBUG2("generated all possible genotypes:");
@@ -267,14 +267,15 @@ int main (int argc, char *argv[]) {
 
         // get estimated allele frequencies using sum of estimated qualities
         map<string, double> estimatedAlleleFrequencies = samples.estimatedAlleleFrequencies();
-        /*
         double estimatedMaxAlleleFrequency = 0;
         double estimatedMaxAlleleCount = 0;
         double estimatedMajorFrequency = estimatedAlleleFrequencies[referenceBase];
         if (estimatedMajorFrequency < 0.5) estimatedMajorFrequency = 1-estimatedMajorFrequency;
         double estimatedMinorFrequency = 1-estimatedMajorFrequency;
-        int estimatedMinorAllelesAtLocus = numCopiesOfLocus * estimatedMinorFrequency;
-        */
+        //cerr << "num copies of locus " << numCopiesOfLocus << endl;
+        int estimatedMinorAllelesAtLocus = max(1, (int) ceil((double) numCopiesOfLocus * estimatedMinorFrequency));
+        //cerr << "estimated minor frequency " << estimatedMinorFrequency << endl;
+        //cerr << "estimated minor count " << estimatedMinorAllelesAtLocus << endl;
         
 
         Results results;
@@ -501,8 +502,8 @@ int main (int argc, char *argv[]) {
 
             // cap the number of iterations at 2 x the number of alternate alleles
             // max it at parameters.genotypingMaxIterations iterations, min at 10
-            //int itermax = min(max(10, 2 * estimatedMinorAllelesAtLocus), parameters.genotypingMaxIterations);
-            int itermax = parameters.genotypingMaxIterations;
+            int itermax = min(max(10, 2 * estimatedMinorAllelesAtLocus), parameters.genotypingMaxIterations);
+            //int itermax = parameters.genotypingMaxIterations;
 
             // XXX HACK
             // passing 0 for bandwidth and banddepth means "exhaustive local search"

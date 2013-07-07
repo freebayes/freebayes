@@ -221,6 +221,7 @@ public:
     void getSequencingTechnologies(void);
     void loadSampleCNVMap(void);
     int currentSamplePloidy(string const& sample);
+    int copiesOfLocus(Samples& samples);
     vector<int> currentPloidies(Samples& samples);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);

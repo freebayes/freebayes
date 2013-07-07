@@ -782,6 +782,15 @@ int AlleleParser::currentSamplePloidy(string const& sample) {
     return sampleCNV.ploidy(sample, currentSequenceName, currentPosition);
 }
 
+int AlleleParser::copiesOfLocus(Samples& samples) {
+    int copies = 0;
+    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        string const& name = s->first;
+        copies += currentSamplePloidy(name);
+    }
+    return copies;
+}
+
 vector<int> AlleleParser::currentPloidies(Samples& samples) {
     map<int, bool> ploidiesMap;
     vector<int> ploidies;
