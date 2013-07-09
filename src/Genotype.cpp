@@ -1778,66 +1778,73 @@ void GenotypeCombo::appendIndependentCombo(GenotypeCombo& other) {
 // combines all like homozygous combos
 void combinePopulationCombos(list<GenotypeCombo>& genotypeCombos, map<string, list<GenotypeCombo> >& genotypeCombosByPopulation) {
 
-    // for each sub-pop
-    for (map<string, list<GenotypeCombo> >::iterator p = genotypeCombosByPopulation.begin(); p != genotypeCombosByPopulation.end(); ++p) {
+    if (genotypeCombosByPopulation.size() == 1) {
+        // one pop, default case is to just pass forward the current set of combos
+        genotypeCombos = genotypeCombosByPopulation.begin()->second;
+    } else {
 
-        const string& population = p->first;
-        list<GenotypeCombo>& populationGenotypeCombos = p->second;
+        // for each sub-pop
+        for (map<string, list<GenotypeCombo> >::iterator p = genotypeCombosByPopulation.begin(); p != genotypeCombosByPopulation.end(); ++p) {
 
-        GenotypeCombo otherPopulationsBestCombo;
+            const string& population = p->first;
+            list<GenotypeCombo>& populationGenotypeCombos = p->second;
 
-        // run through all the other combos to generate a best combo for the
-        // other populations, and accumulate homozygous combos, keyed by allele
+            GenotypeCombo otherPopulationsBestCombo;
+
+            // run through all the other combos to generate a best combo for the
+            // other populations, and accumulate homozygous combos, keyed by allele
+            for (map<string, list<GenotypeCombo> >::iterator o = genotypeCombosByPopulation.begin(); o != genotypeCombosByPopulation.end(); ++o) {
+                if (o->first != p->first) { // if the genotype list is for a different population
+                    GenotypeCombo& bestCombo = o->second.front(); // this is the "best" combo from the other population
+                    // add the best combo from this population to the best combos from the other populations
+                    if (otherPopulationsBestCombo.empty()) {
+                        otherPopulationsBestCombo = bestCombo;
+                    } else {
+                        otherPopulationsBestCombo.appendIndependentCombo(bestCombo);
+                    }
+                }
+            }
+
+            // append the best "other population" combo to all the combos in this set
+            for (list<GenotypeCombo>::iterator g = populationGenotypeCombos.begin(); g != populationGenotypeCombos.end(); ++g) {
+                genotypeCombos.push_back(*g);
+                genotypeCombos.back().appendIndependentCombo(otherPopulationsBestCombo);
+            }
+
+        }
+
+        map<Allele, GenotypeCombo> otherPopulationsHomozygousCombos;
+
+        // generate the homozygous combos for all the populations
         for (map<string, list<GenotypeCombo> >::iterator o = genotypeCombosByPopulation.begin(); o != genotypeCombosByPopulation.end(); ++o) {
-            if (o->first != p->first) { // if the genotype list is for a different population
-                GenotypeCombo& bestCombo = o->second.front(); // this is the "best" combo from the other population
-                // add the best combo from this population to the best combos from the other populations
-                if (otherPopulationsBestCombo.empty()) {
-                    otherPopulationsBestCombo = bestCombo;
-                } else {
-                    otherPopulationsBestCombo.appendIndependentCombo(bestCombo);
+            // accumulate all the homozygous combos into the otherPopulationsHomozygousCombos
+            for (list<GenotypeCombo>::iterator c = o->second.begin(); c != o->second.end(); ++c) {
+                GenotypeCombo& combo = *c;
+                if (combo.isHomozygous()) {
+                    Allele& allele = combo.front()->genotype->alleles.front();
+                    map<Allele, GenotypeCombo>::iterator g = otherPopulationsHomozygousCombos.find(allele);
+                    if (g == otherPopulationsHomozygousCombos.end()) {
+                        otherPopulationsHomozygousCombos[allele] = combo;
+                    } else {
+                        GenotypeCombo& homozygousCombo = g->second;
+                        homozygousCombo.appendIndependentCombo(combo);
+                    }
                 }
             }
         }
 
-        // append the best "other population" combo to all the combos in this set
-        for (list<GenotypeCombo>::iterator g = populationGenotypeCombos.begin(); g != populationGenotypeCombos.end(); ++g) {
-            genotypeCombos.push_back(*g);
-            genotypeCombos.back().appendIndependentCombo(otherPopulationsBestCombo);
+        // and add them to the result set
+        for (map<Allele, GenotypeCombo>::iterator h = otherPopulationsHomozygousCombos.begin(); h!= otherPopulationsHomozygousCombos.end(); ++h) {
+            GenotypeCombo& combo = h->second;
+            //assert(genotypeCombos.back().size() == combo.size());
+            genotypeCombos.push_back(combo);
         }
 
+        // sort the combined combos
+        GenotypeComboResultSorter gcrSorter;
+        genotypeCombos.sort(gcrSorter);
+        genotypeCombos.unique();
+
     }
-
-    map<Allele, GenotypeCombo> otherPopulationsHomozygousCombos;
-
-    // generate the homozygous combos for all the populations
-    for (map<string, list<GenotypeCombo> >::iterator o = genotypeCombosByPopulation.begin(); o != genotypeCombosByPopulation.end(); ++o) {
-        // accumulate all the homozygous combos into the otherPopulationsHomozygousCombos
-        for (list<GenotypeCombo>::iterator c = o->second.begin(); c != o->second.end(); ++c) {
-            GenotypeCombo& combo = *c;
-            if (combo.isHomozygous()) {
-                Allele& allele = combo.front()->genotype->alleles.front();
-                map<Allele, GenotypeCombo>::iterator g = otherPopulationsHomozygousCombos.find(allele);
-                if (g == otherPopulationsHomozygousCombos.end()) {
-                    otherPopulationsHomozygousCombos[allele] = combo;
-                } else {
-                    GenotypeCombo& homozygousCombo = g->second;
-                    homozygousCombo.appendIndependentCombo(combo);
-                }
-            }
-        }
-    }
-
-    // and add them to the result set
-    for (map<Allele, GenotypeCombo>::iterator h = otherPopulationsHomozygousCombos.begin(); h!= otherPopulationsHomozygousCombos.end(); ++h) {
-        GenotypeCombo& combo = h->second;
-        //assert(genotypeCombos.back().size() == combo.size());
-        genotypeCombos.push_back(combo);
-    }
-
-    // sort the combined combos
-    GenotypeComboResultSorter gcrSorter;
-    genotypeCombos.sort(gcrSorter);
-    genotypeCombos.unique();
 
 }

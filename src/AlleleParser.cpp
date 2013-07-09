@@ -2936,7 +2936,7 @@ void AlleleParser::buildHaplotypeAlleles(
         }
     }
 
-    if (haplotypeLength > 0) {
+    if (haplotypeLength > 1) {
 
 	// NB: for indels in tandem repeats, if the indel sequence is
 	// derived from the repeat structure, build the haplotype
@@ -3016,7 +3016,11 @@ void AlleleParser::buildHaplotypeAlleles(
             }
         }
         for (vector<Allele*>::iterator p = partialHaplotypeObservations.begin(); p != partialHaplotypeObservations.end(); ++p) {
+            if ((*p)->isReference()) {
+                (*p)->currentBase = (*p)->alternateSequence;
+            }
             (*p)->processed = false;
+            (*p)->setQuality();
         }
 
         // debugging

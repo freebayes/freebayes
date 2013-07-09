@@ -490,7 +490,6 @@ int main (int argc, char *argv[]) {
         //SampleDataLikelihoods marginalLikelihoods = sampleDataLikelihoods;  // heavyweight copy...
         map<string, list<GenotypeCombo> > genotypeCombosByPopulation;
         int genotypingTotalIterations = 0; // tally total iterations required to reach convergence
-        list<GenotypeCombo> genotypeCombos; // build new combos into this list
 
         for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
 
@@ -570,6 +569,8 @@ int main (int argc, char *argv[]) {
             }
         }
 
+        // accumulate combos from independently-calculated populations into the list of combos
+        list<GenotypeCombo> genotypeCombos; // build new combos into this list
         combinePopulationCombos(genotypeCombos, genotypeCombosByPopulation);
         // TODO factor out the following blocks as they are repeated from above
 

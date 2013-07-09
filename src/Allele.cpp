@@ -158,14 +158,17 @@ const short Allele::currentQuality(void) const {
     //cerr << readID << " " << position << "-" << position + length << " " << alternateSequence.size() << " vs " << baseQualities.size() << endl;
     switch (this->type) {
         case ALLELE_REFERENCE:
-            assert(alternateSequence.size() == baseQualities.size());
-            assert(referenceOffset() >= 0);
-            if (alternateSequence.size() > 1) { // implies haplotype allele
+            // should check a different way... this is wrong
+            // it will catch it all the time,
+            if (currentBase.size() > 1) {
                 return averageQuality(baseQualities);
             } else {
-                TRY {
-                    return baseQualities.at(referenceOffset());
-                } CATCH;
+                int off = referenceOffset();
+                if (off < 0 || off > baseQualities.size()) {
+                    return 0;
+                } else {
+                    return baseQualities.at(off);
+                }
             }
             break;
         case ALLELE_INSERTION:

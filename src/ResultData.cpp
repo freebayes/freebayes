@@ -181,7 +181,7 @@ vcf::Variant& Results::vcf(
     var.id = ".";
     var.filter = ".";
     // XXX this should be the size of the maximum deletion + 1bp on the left end
-    var.quality = nan2zero(big2phred(pHom));
+    var.quality = max(0, nan2zero(big2phred(pHom)));
 
 
     // set up format string

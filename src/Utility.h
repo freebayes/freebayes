@@ -43,6 +43,7 @@ std::vector<short> qualities(const std::string& qualstr);
 // 
 long double sumQuality(const std::string& qualstr);
 long double minQuality(const std::string& qualstr);
+short minQuality(const std::vector<short>& qualities);
 long double averageQuality(const std::string& qualstr);
 long double averageQuality(const std::vector<short>& qualities);
 //unsigned int factorial(int n);
@@ -64,7 +65,7 @@ long double poissonPvalLn(int a, int b);
 
 long double gammaln( long double x);
 long double factorial( int n);
-long double factorialln( int n);
+double factorialln( int n);
 long double __factorialln( int n);
 
 #define MAX_FACTORIAL_CACHE_SIZE 100000
