@@ -2077,7 +2077,7 @@ void AlleleParser::updateInputVariants(void) {
                                 if (p->position + p->referenceLength < a->position) {
                                     // insert a reference allele
                                     long int pend = p->position + p->referenceLength;
-                                    string refsequence = reference.getSubSequence(currentVariant->sequenceName, pend, a->position - pend);
+                                    string refsequence = uppercase(reference.getSubSequence(currentVariant->sequenceName, pend, a->position - pend));
                                     string cigar = convert(refsequence.size()) + "M";
                                     Allele refAllele = genotypeAllele(ALLELE_REFERENCE, refsequence, refsequence.size(), cigar, refsequence.size(), pend);
                                     newAlleles.push_back(refAllele);
@@ -2107,7 +2107,7 @@ void AlleleParser::updateInputVariants(void) {
                                 quals.assign(1, 0);
                                 vector<pair<int, string> > cig;
                                 cig.push_back(make_pair(1, "M"));
-                                string seq = reference.getSubSequence(currentVariant->sequenceName, a->position - 1, 1);
+                                string seq = uppercase(reference.getSubSequence(currentVariant->sequenceName, a->position - 1, 1));
                                 a->addToStart(seq, cig, quals);
                             }
                         }
@@ -3065,7 +3065,7 @@ void AlleleParser::buildHaplotypeAlleles(
         */
 
         Allele refAllele = genotypeAllele(ALLELE_REFERENCE,
-                                          reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength),
+                                          uppercase(reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength)),
                                           haplotypeLength,
                                           convert(haplotypeLength)+"M",
                                           haplotypeLength,
@@ -3465,7 +3465,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
                 if (haplotypeLength == 1) {
                     altseq = currentReferenceBase;
                 } else {
-                    altseq = reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength);
+                    altseq = uppercase(reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength));
                 }
             }
             unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type,
@@ -3560,13 +3560,15 @@ vector<Allele> AlleleParser::genotypeAlleles(
             if (allele.currentBase == refBase) {
                 hasRefAllele = true;
             }
-            if (allele.type & (ALLELE_DELETION | ALLELE_INSERTION | ALLELE_MNP | ALLELE_COMPLEX)) {
+            /*            if (allele.type & (ALLELE_DELETION | ALLELE_INSERTION | ALLELE_MNP | ALLELE_COMPLEX)) {
                 DEBUG("adding allele to result alleles " << allele.currentBase);
                 resultIndelAndMNPAlleles.push_back(allele);
             } else {
                 DEBUG("adding allele to SNP alleles " << allele.currentBase);
-                resultAlleles.push_back(allele);
             }
+            */
+            DEBUG("adding allele to result alleles " << allele.currentBase);
+            resultAlleles.push_back(allele);
             DEBUG("allele quality sum " << a->second);
         }
         DEBUG("found " << sortedAlleles.size() << " SNP/ref alleles of which we now have " << resultAlleles.size() << endl

@@ -277,7 +277,7 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     FastaIndexEntry entry = index->entry(seqname);
     if (start < 0 || length < 1) {
         cerr << "Error: cannot construct subsequence with negative offset or length < 1"
-           << "(attempting start = " << start << " and length = " << length << ")" << endl;
+             << "(attempting start = " << seqname << ":" << start << " and length = " << length << ")" << endl;
         exit(1);
     }
     // we have to handle newlines

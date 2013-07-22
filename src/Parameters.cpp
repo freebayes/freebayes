@@ -718,6 +718,7 @@ Parameters::Parameters(int argc, char** argv) {
 
         case 'J':
             pooledDiscrete = true;
+            hwePriors = false;  // disable hwe sampling prob when using discrete pooling
             break;
 
             // -m --min-mapping-quality
