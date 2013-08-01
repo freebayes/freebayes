@@ -40,6 +40,7 @@ public:
     string variantPriorsFile;
     string haplotypeVariantFile;
     bool reportAllHaplotypeAlleles;
+    bool reportMonomorphic;
     bool boundIndels;
     bool onlyUseInputAlleles;
     string alleleObservationBiasFile;

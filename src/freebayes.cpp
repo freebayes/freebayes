@@ -169,9 +169,13 @@ int main (int argc, char *argv[]) {
 
             // establish a set of possible alternate alleles to evaluate at this location
 
-            if (!sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
+            if (!parameters.reportMonomorphic
+                && !sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
                 DEBUG("insufficient alternate observations");
                 continue;
+            }
+            if (parameters.reportMonomorphic) {
+                DEBUG("calling at site even though there are no alternate observations");
             }
         }
 
@@ -232,7 +236,8 @@ int main (int argc, char *argv[]) {
         // estimate theta using the haplotype length
         long double theta = parameters.TH * parser->lastHaplotypeLength;
 
-        if (genotypeAlleles.size() <= 1) { // if we have only one viable allele, we don't have evidence for variation at this site
+        // if we have only one viable allele, we don't have evidence for variation at this site
+        if (!parameters.reportMonomorphic && genotypeAlleles.size() <= 1 && !genotypeAlleles.front().isReference()) {
             DEBUG2("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;
         }

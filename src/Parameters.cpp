@@ -139,6 +139,9 @@ void Parameters::usage(char** argv) {
         << "                   At sites where genotypes are made over haplotype alleles," << endl
         << "                   provide information about all alleles in output, not only" << endl
         << "                   those which are called." << endl
+        << "   --report-monomorphic" << endl
+        << "                   Report even loci which appear to be monomorphic, and report all" << endl
+        << "                   considered alleles, even those which are not in called genotypes." << endl
         << endl
         << "reporting:" << endl
         << endl
@@ -398,6 +401,7 @@ Parameters::Parameters(int argc, char** argv) {
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
     reportAllHaplotypeAlleles = false;
+    reportMonomorphic = false;
     boundIndels = true; // ignore indels at ends of reads
     onlyUseInputAlleles = false;
     standardGLs = true;
@@ -513,6 +517,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"base-quality-cap", required_argument, 0, '('},
             {"prob-contamination", required_argument, 0, '_'},
             {"contamination-estimates", required_argument, 0, ','},
+            {"report-monomorphic", no_argument, 0, '6'},
             {"debug", no_argument, 0, 'd'},
             {0, 0, 0, 0}
 
@@ -933,7 +938,13 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
 	    case '6':
+        {
+            string arg(argv[optind - 1]);
+            if (arg == "--report-monomorphic") {
+                reportMonomorphic = true;
+            }
             reportAllHaplotypeAlleles = true;
+        }
             break;
 
         case '[':
@@ -974,6 +985,7 @@ Parameters::Parameters(int argc, char** argv) {
             exit(0);
             break;
  
+            // either catch "long options" or
         case '?': // print a suggestion about the most-likely long option which the argument matches
         {
             string bad_arg(argv[optind - 1]);

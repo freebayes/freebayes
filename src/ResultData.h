@@ -60,7 +60,6 @@ public:
         map<int, vector<Genotype> >& genotypesByPloidy,
         vector<string>& sequencingTechnologies,
         AlleleParser* parser);
-
 };
 
 

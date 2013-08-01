@@ -1813,6 +1813,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 #ifdef VERBOSE_DEBUG
     if (parameters.debug2) {
         cerr << "alleles:\n" << join(ra.alleles, "\n");
+        cerr << endl;
     }
 #endif
 
@@ -1850,6 +1851,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
         );
     if (hasMoreAlignments && currentAlignment.Position <= position && currentAlignment.RefID == currentRefID) {
         do {
+            DEBUG2("top of alignment parsing loop");
             DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
             // get read group, and map back to a sample name
             string readGroup;
@@ -1894,7 +1896,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 continue;
 
             if (currentAlignment.GetEndPosition() < position) {
-                cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!" << endl;
+                cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!"
+                     << " expected after " << position << endl;
                 continue;
             }
 
