@@ -3095,7 +3095,6 @@ void AlleleParser::buildHaplotypeAlleles(
             getAlleles(samples, allowedAlleleTypes, haplotypeLength);
             alleleGroups.clear();
             groupAlleles(samples, alleleGroups);  // groups by alternate sequence
-
             /*
             for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
                 cerr << a->first << " " << a->second.front() << endl;
@@ -3133,6 +3132,9 @@ void AlleleParser::buildHaplotypeAlleles(
             // get max allele length
             if (a->alternateSequence.size() > maxAlleleLength) maxAlleleLength = a->alternateSequence.size();
         }
+
+        // bound this to 50bp so as to not drop out reference obs when we have long insertions directly encoded in the reads
+        maxAlleleLength = min(50, maxAlleleLength);
         //cerr << "max allele length is " << maxAlleleLength << " but haplotype length = " << haplotypeLength << endl;
 
         // XXX make work for deletions as well
@@ -3183,11 +3185,12 @@ bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int hapl
                 && ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
                 bool hasNull = false;
                 for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                    a->processed = false; // re-trigger use of all alleles
                     if (a->isNull()) hasNull = true;
                 }
                 if (!hasNull) {
                     for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                        a->processed = false; // re-trigger use of all alleles
+                        //a->processed = false; // re-trigger use of all alleles
                         haplotypeObservations.push_back(&*a);
                     }
                 }
@@ -3223,17 +3226,21 @@ bool AlleleParser::getPartialObservationsOfHaplotype(Samples& samples, int haplo
                         && !a->isNull()) {
                         a->processed = false; // re-trigger use of all alleles
                         partials.push_back(&*a);
+                    } else {
+                        a->processed = false;
+                        otherObs.push_back(&*a);
                     }
                 }
             } else {
                 for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                    a->processed = false;
                     otherObs.push_back(&*a);
                 }
             }
         }
     }
     //addToRegisteredAlleles(partialObs);
-    //addToRegisteredAlleles(otherObs);
+    addToRegisteredAlleles(otherObs);
 }
 
 bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
