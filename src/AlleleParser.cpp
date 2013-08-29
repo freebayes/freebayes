@@ -1830,7 +1830,8 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
 
 void AlleleParser::updateAlignmentQueue(long int position,
-                                        vector<Allele*>& newAlleles) {
+                                        vector<Allele*>& newAlleles,
+                                        bool gettingPartials) {
 
     DEBUG2("updating alignment queue");
     DEBUG2("currentPosition = " << position 
@@ -1849,7 +1850,10 @@ void AlleleParser::updateAlignmentQueue(long int position,
            << ", currentSequenceStart == " << currentSequenceStart
            << " .. + currentSequence.size() == " << currentSequenceStart + currentSequence.size()
         );
-    if (hasMoreAlignments && currentAlignment.Position <= position && currentAlignment.RefID == currentRefID) {
+
+    if (hasMoreAlignments
+        && currentAlignment.Position <= position
+        && currentAlignment.RefID == currentRefID) {
         do {
             DEBUG2("top of alignment parsing loop");
             DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
@@ -1895,7 +1899,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
             if (!currentAlignment.IsPrimaryAlignment())
                 continue;
 
-            if (currentAlignment.GetEndPosition() < position) {
+            if (!gettingPartials && currentAlignment.GetEndPosition() < position) {
                 cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!"
                      << " expected after " << position << endl;
                 continue;
@@ -1986,9 +1990,9 @@ void AlleleParser::updateRegisteredAlleles(void) {
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 
     if (lowestPosition <= currentPosition) {
-	int diff = lowestPosition - currentSequenceStart;
-	// do we have excess bases beyond the current lowest position - cached_reference_window?
-	// if so, erase them
+        int diff = lowestPosition - currentSequenceStart;
+        // do we have excess bases beyond the current lowest position - cached_reference_window?
+        // if so, erase them
         if (diff > CACHED_REFERENCE_WINDOW) {
             eraseReferenceSequence(diff - CACHED_REFERENCE_WINDOW);
         }
@@ -3204,7 +3208,9 @@ bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int hapl
 bool AlleleParser::getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials) {
     //cerr << "getting partial observations of haplotype from " << currentPosition << " to " << currentPosition + haplotypeLength << endl;
     vector<Allele*> newAlleles;
-    updateAlignmentQueue(currentPosition + haplotypeLength, newAlleles);
+
+    bool gettingPartials = true;
+    updateAlignmentQueue(currentPosition + haplotypeLength, newAlleles, gettingPartials);
 
     vector<Allele*> otherObs;
     vector<Allele*> partialObs;

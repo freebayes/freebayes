@@ -239,7 +239,7 @@ public:
     void initializeOutputFiles(void);
     RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
-    void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles);
+    void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles, bool gettingPartials = false);
     void updateInputVariants(void);
     void updateHaplotypeBasisAlleles(void);
     void removeAllelesWithoutReadSpan(vector<Allele*>& alleles, int probeLength, int haplotypeLength);
