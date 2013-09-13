@@ -597,8 +597,10 @@ void AlleleParser::preserveReferenceSequenceWindow(int bp) {
 
     if (leftdiff > 0) {
         //cerr << currentSequenceStart << endl;
-        currentSequence.insert(0, uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
-        currentSequenceStart -= leftdiff;
+        string left = reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff);
+        currentSequence.insert(0, uppercase(left));
+        currentSequenceStart -= left.size();
+
     }
     if (rightdiff > 0) {
         currentSequence += uppercase(reference.getSubSequence(
@@ -614,19 +616,23 @@ void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
     int leftdiff = currentSequenceStart - alignment.Position;
     leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
     if (leftdiff > 0) {
-        currentSequenceStart -= leftdiff;
+        string left = reference.getSubSequence(currentSequenceName,
+                                               currentSequenceStart,
+                                               leftdiff);
+        currentSequenceStart -= left.size();
         if (currentSequenceStart < 0) currentSequenceStart = 0;
-        currentSequence.insert(0, uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff)));
+        currentSequence.insert(0, uppercase(left));
     }
 
-    int rightdiff = (alignment.Position + alignment.AlignedBases.size()) - (currentSequenceStart + currentSequence.size());
+    int rightdiff =
+        (alignment.Position + alignment.AlignedBases.size())
+        - (currentSequenceStart + currentSequence.size());
     if (rightdiff > 0) {
         currentSequence += uppercase(reference.getSubSequence(
-                currentSequenceName,
-                (currentSequenceStart + currentSequence.size()),
-                rightdiff));
+                                         currentSequenceName,
+                                         (currentSequenceStart + currentSequence.size()),
+                                         rightdiff));
     }
-
 }
 
 void AlleleParser::eraseReferenceSequence(int leftErasure) {
@@ -884,19 +890,16 @@ int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
     return alignment.Position - currentSequenceStart;
 }
 
-// currentPosition within the cached currentSequence
+// relative current position within the cached currentSequence
 int AlleleParser::currentSequencePosition() {
     return currentPosition - currentSequenceStart;
 }
 
-
-// TODO clean up this.... just use a string
 char AlleleParser::currentReferenceBaseChar(void) {
     return toupper(*currentReferenceBaseIterator());
 }
 
 string AlleleParser::currentReferenceBaseString(void) {
-    //cerr << currentPosition << " >= " << currentSequenceStart << endl;
     return currentSequence.substr(floor(currentPosition) - currentSequenceStart, 1);
 }
 
@@ -2681,7 +2684,7 @@ bool AlleleParser::toNextPosition(void) {
 
     if (!targets.empty() && (
                 (!parameters.allowIndels && currentPosition >= currentTarget->right)
-                || currentPosition > currentTarget->right)) { // time to move to a new target
+                || currentPosition > currentTarget->right - 1)) { // time to move to a new target
         DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right + 1);
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
@@ -2697,23 +2700,28 @@ bool AlleleParser::toNextPosition(void) {
         while (hasMoreAlignments && !currentAlignment.IsMapped()) {
             hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment);
         }
-        if (hasMoreAlignments && registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
-            clearRegisteredAlignments();
-            loadReferenceSequence(currentAlignment);
-            justSwitchedTargets = true;
-        } else if (!hasMoreAlignments && registeredAlignments.empty()) {
-            DEBUG("no more alignments in input");
-            return false;
-        } else if (!hasMoreAlignments && currentPosition > currentSequence.size() + currentSequenceStart) {
-            DEBUG("at end of sequence");
-            return false;
+        if (hasMoreAlignments) {
+            if (currentPosition > reference.sequenceLength(currentSequenceName)
+                || registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
+                DEBUG("at end of sequence");
+                clearRegisteredAlignments();
+                loadReferenceSequence(currentAlignment);
+                justSwitchedTargets = true;
+            }
+        } else if (!hasMoreAlignments) {
+            if (registeredAlignments.empty()) {
+                DEBUG("no more alignments in input");
+                return false;
+            } else if (currentPosition > currentSequence.size() + currentSequenceStart) {
+                DEBUG("at end of sequence");
+                return false;
+            }
         }
     }
 
     // so we have to make sure it's still there (this matters in low-coverage)
     DEBUG2("updating reference sequence cache");
     preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
-
     currentReferenceBase = currentReferenceBaseChar();
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
