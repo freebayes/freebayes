@@ -210,8 +210,8 @@ void Sample::sortReferenceAlleles(void) {
     }
 }
 
-pair<pair<int, int>, pair<int, int> >
-Sample::baseCount(string refbase, string altbase) {
+StrandBaseCounts
+Sample::strandBaseCount(string refbase, string altbase) {
 
     int forwardRef = 0;
     int reverseRef = 0;
@@ -237,7 +237,7 @@ Sample::baseCount(string refbase, string altbase) {
         }
     }
 
-    return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
+    return StrandBaseCounts(forwardRef, forwardAlt, reverseRef, reverseAlt);
 
 }
 

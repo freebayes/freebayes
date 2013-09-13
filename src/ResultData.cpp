@@ -251,16 +251,16 @@ vcf::Variant& Results::vcf(
     long double refReadSNPRate = (refObsCount == 0 ? 0 : refReadSNPSum / (long double) refObsCount);
     long double refReadIndelRate = (refObsCount == 0 ? 0 : refReadIndelSum / (long double) refObsCount);
 
-    var.info["XRM"].push_back(convert(refReadMismatchRate));
-    var.info["XRS"].push_back(convert(refReadSNPRate));
-    var.info["XRI"].push_back(convert(refReadIndelRate));
+    //var.info["XRM"].push_back(convert(refReadMismatchRate));
+    //var.info["XRS"].push_back(convert(refReadSNPRate));
+    //var.info["XRI"].push_back(convert(refReadIndelRate));
 
     var.info["MQMR"].push_back(convert((refObsCount == 0) ? 0 : (double) refmqsum / (double) refObsCount));
     var.info["RPPR"].push_back(convert((refObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(refReadsLeft, refReadsRight + refReadsLeft, 0.5)))));
     var.info["EPPR"].push_back(convert((refBasesLeft + refBasesRight == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(refEndLeft, refEndLeft + refEndRight, 0.5)))));
     var.info["PAIREDR"].push_back(convert((refObsCount == 0) ? 0 : (double) refProperPairs / (double) refObsCount));
 
-    var.info["HWE"].push_back(convert(nan2zero(ln2phred(genotypeCombo.hweComboProb()))));
+    //var.info["HWE"].push_back(convert(nan2zero(ln2phred(genotypeCombo.hweComboProb()))));
     var.info["GTI"].push_back(convert(genotypingIterations));
 
     // loop over all alternate alleles
@@ -292,10 +292,8 @@ vcf::Variant& Results::vcf(
         //unsigned int hetAllObsCount = hetOtherObsCount + hetAlternateObsCount + hetReferenceObsCount;
         unsigned int hetAllObsCount = 0;
 
-        pair<int, int> baseCountsForwardTotal = make_pair(0, 0);
-        pair<int, int> baseCountsReverseTotal = make_pair(0, 0);
-        map<string, pair<int, int> > baseCountsForwardBySample;
-        map<string, pair<int, int> > baseCountsReverseBySample;
+        StrandBaseCounts baseCountsTotal;
+        map<string, StrandBaseCounts> baseCountsBySample;
         for (vector<string>::iterator sampleName = sampleNames.begin(); sampleName != sampleNames.end(); ++sampleName) {
             GenotypeComboMap::iterator gc = comboMap.find(*sampleName);
             //cerr << "alternate count for " << altbase << " and " << *genotype << " is " << genotype->alleleCount(altbase) << endl;
@@ -347,13 +345,12 @@ vcf::Variant& Results::vcf(
 
                 //altQualBySample[*sampleName] = sample.qualSum(altbase);
 
-                pair<pair<int,int>, pair<int,int> > baseCounts = sample.baseCount(refbase, altbase);
-                baseCountsForwardBySample[*sampleName] = baseCounts.first;
-                baseCountsReverseBySample[*sampleName] = baseCounts.second;
-                baseCountsForwardTotal.first += baseCounts.first.first;
-                baseCountsForwardTotal.second += baseCounts.first.second;
-                baseCountsReverseTotal.first += baseCounts.second.first;
-                baseCountsReverseTotal.second += baseCounts.second.second;
+                StrandBaseCounts baseCounts = sample.strandBaseCount(refbase, altbase);
+                baseCountsBySample[*sampleName] = baseCounts;
+                baseCountsTotal.forwardRef += baseCounts.forwardRef;
+                baseCountsTotal.forwardAlt += baseCounts.forwardAlt;
+                baseCountsTotal.reverseRef += baseCounts.reverseRef;
+                baseCountsTotal.reverseAlt += baseCounts.reverseAlt;
             }
         }
 
@@ -413,9 +410,9 @@ vcf::Variant& Results::vcf(
         long double altReadSNPRate = (altObsCount == 0 ? 0 : altReadSNPSum / altObsCount);
         long double altReadIndelRate = (altObsCount == 0 ? 0 : altReadIndelSum / altObsCount);
         
-        var.info["XAM"].push_back(convert(altReadMismatchRate));
-        var.info["XAS"].push_back(convert(altReadSNPRate));
-        var.info["XAI"].push_back(convert(altReadIndelRate));
+        //var.info["XAM"].push_back(convert(altReadMismatchRate));
+        //var.info["XAS"].push_back(convert(altReadSNPRate));
+        //var.info["XAI"].push_back(convert(altReadIndelRate));
 
         // alt/ref ratios
         //var.info["ARM"].push_back(convert(refReadMismatchRate == 0 ? 0 : altReadMismatchRate / refReadMismatchRate));
@@ -445,8 +442,14 @@ vcf::Variant& Results::vcf(
         }
 
         var.info["SRP"].clear(); // XXX hack
-        var.info["SRP"].push_back(convert((refObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(baseCountsForwardTotal.first, refObsCount, 0.5)))));
-        var.info["SAP"].push_back(convert((altObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(baseCountsForwardTotal.second, altObsCount, 0.5)))));
+        var.info["SRF"].clear();
+        var.info["SRR"].clear();
+        var.info["SRF"].push_back(convert(baseCountsTotal.forwardRef));
+        var.info["SRR"].push_back(convert(baseCountsTotal.reverseRef));
+        var.info["SRP"].push_back(convert((refObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(baseCountsTotal.forwardRef, refObsCount, 0.5)))));
+        var.info["SAF"].push_back(convert(baseCountsTotal.forwardAlt));
+        var.info["SAR"].push_back(convert(baseCountsTotal.reverseAlt));
+        var.info["SAP"].push_back(convert((altObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(baseCountsTotal.forwardAlt, altObsCount, 0.5)))));
         var.info["AB"].push_back(convert((hetAllObsCount == 0) ? 0 : nan2zero((double) hetAlternateObsCount / (double) hetAllObsCount )));
         var.info["ABP"].push_back(convert((hetAllObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(hetAlternateObsCount, hetAllObsCount, 0.5)))));
         var.info["RUN"].push_back(convert(parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)));
@@ -481,10 +484,12 @@ vcf::Variant& Results::vcf(
         } else if (altAllele.type == ALLELE_SNP) {
             var.info["TYPE"].push_back("snp");
 
+            /*
             // CpG
             if (parser->isCpG(altbase)) {
                 var.infoFlags["CpG"] = true;
             }
+            */
         } else if (altAllele.type == ALLELE_MNP) {
             var.info["TYPE"].push_back("mnp");
         } else {

@@ -10,6 +10,29 @@
 
 using namespace std;
 
+class StrandBaseCounts {
+
+public:
+    int forwardRef;
+    int forwardAlt;
+    int reverseRef;
+    int reverseAlt;
+
+StrandBaseCounts(void)
+    : forwardRef(0), forwardAlt(0), reverseRef(0), reverseAlt(0)
+    { }
+
+StrandBaseCounts(int fr,
+                 int fa,
+                 int rr,
+                 int ra)
+    : forwardRef(fr)
+        , forwardAlt(fa)
+        , reverseRef(rr)
+        , reverseAlt(ra) { }
+
+};
+
 // sample tracking and allele sorting
 class Sample : public map<string, vector<Allele*> > {
 
@@ -51,8 +74,7 @@ public:
     // occurs in the case of reference alleles)
     void sortReferenceAlleles(void);
 
-    pair<pair<int, int>, pair<int, int> >
-        baseCount(string refbase, string altbase);
+    StrandBaseCounts strandBaseCount(string refbase, string altbase);
 
     int baseCount(string base, AlleleStrand strand);
 
