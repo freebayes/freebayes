@@ -149,4 +149,6 @@ void normalizeSumToOne(vector<long double>&);
 
 void addLinesFromFile(vector<string>& v, const string& f);
 
+double entropy(const string& st);
+
 #endif

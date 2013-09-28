@@ -63,6 +63,9 @@ public:
     bool allowMNPs;              // -X --allow-mnps
     bool allowComplex;           // -X --allow-complex
     int maxComplexGap;
+    //int maxHaplotypeLength;
+    int minRepeatSize;
+    double minRepeatEntropy;
     bool usePartialObservations;
     bool allowSNPs;              // -I --no-snps
     bool pooledDiscrete;

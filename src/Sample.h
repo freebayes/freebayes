@@ -106,6 +106,8 @@ public:
     int qualSum(const string& base);
     double partialQualSum(Allele& allele);
     double partialQualSum(const string& base);
+
+    void clearFullObservations(void);
 };
 
 

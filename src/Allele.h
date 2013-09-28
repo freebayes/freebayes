@@ -263,6 +263,21 @@ public:
     unsigned int getLengthOnReference(void);
     int referenceLengthFromCigar(void);
 
+    string readSeq(void);
+    string read5p(void);
+    string read3p(void);
+    string read5pNonNull(void);
+    string read3pNonNull(void);
+
+    // the number of bases from the 5p edge of the allele until the end or the next null allele
+    int read5pNonNullBases(void);
+    // the number of bases from the 3p edge of the allele until the end or the next null allele
+    int read3pNonNullBases(void);
+
+    // wish list...
+    //string readRefRelativeSubstr(long int start, long int end);
+    //string readRefStartLenSubstr(long int start, int bp);
+
     vector<Allele*> extend(int pos, int haplotypeLength);
     void squash(void);
     void subtract(int subtractFromRefStart,

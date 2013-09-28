@@ -188,6 +188,12 @@ void Parameters::usage(char** argv) {
         << "      --haplotype-length N" << endl
         << "                   Allow haplotype calls with contiguous embedded matches of up" << endl
         << "                   to this length." << endl
+        << "   --min-repeat-length N" << endl
+        << "                   When assembling observations across repeats, require the total repeat" << endl
+        << "                   length at least this many bp.  (default: 5)" << endl
+        << "   --min-repeat-entropy N" << endl
+        << "                   To detect interrupted repeats, build across sequence until it has" << endl
+        << "                   entropy > N bits per bp.  (default: 0, off)" << endl
         << "   --no-partial-observations" << endl
         << "                   Exclude observations which do not fully span the dynamically-determined" << endl
         << "                   detection window.  (default, use all observations, dividing partial" << endl
@@ -381,6 +387,9 @@ Parameters::Parameters(int argc, char** argv) {
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
     maxComplexGap = 3;
+    //maxHaplotypeLength = 100;
+    minRepeatSize = 5;
+    minRepeatEntropy = 0;
     usePartialObservations = true;
     pooledDiscrete = false;                 // -J --pooled
     pooledContinuous = false;
@@ -484,6 +493,8 @@ Parameters::Parameters(int argc, char** argv) {
             {"no-complex", no_argument, 0, 'u'},
             {"max-complex-gap", required_argument, 0, 'E'},
             {"haplotype-length", required_argument, 0, 'E'},
+            {"min-repeat-size", required_argument, 0, 'E'},
+            {"min-repeat-entropy", required_argument, 0, 'E'},
             {"no-snps", no_argument, 0, 'I'},
             {"indel-exclusion-window", required_argument, 0, 'x'},
             {"theta", required_argument, 0, 'T'},
@@ -675,11 +686,26 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
         case 'E':
-            if (!convert(optarg, maxComplexGap)) {
-                cerr << "could not parse maxComplexGap" << endl;
-                exit(1);
+        {
+            string arg(argv[optind - 2]);
+            if (arg == "--min-repeat-size") {
+                if (!convert(optarg, minRepeatSize)) {
+                    cerr << "could not parse " << arg << endl;
+                    exit(1);
+                }
+            } else if (arg == "--min-repeat-entropy") {
+                if (!convert(optarg, minRepeatEntropy)) {
+                    cerr << "could not parse " << arg << endl;
+                    exit(1);
+                }
+            } else {
+                if (!convert(optarg, maxComplexGap)) {
+                    cerr << "could not parse maxComplexGap" << endl;
+                    exit(1);
+                }
             }
             break;
+        }
 
             // -B --genotyping-max-iterations
         case 'B':

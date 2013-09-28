@@ -113,7 +113,7 @@ int Samples::observationCount(const string& base) {
 }
 
 double Samples::partialObservationCount(const string& base) {
-    double c;
+    double c = 0;
     for (Samples::iterator s = begin(); s != end(); ++s) {
         c += s->second.partialObservationCount(base);
     }
@@ -368,18 +368,26 @@ void Samples::assignPartialSupport(vector<Allele>& alleles,
         //string& base = allele.currentBase;
         // hacks here
         string& aseq = allele.alternateSequence;
+        //cerr << "alternate, seeking partial support " << aseq << endl;
         // construct pseudo-sequence
         for (vector<Allele*>::iterator p = partialObservations.begin(); p != partialObservations.end(); ++p) {
             Allele& partial = **p;
-            string& pseq = partial.alternateSequence;
+            string pseq = partial.alternateSequence;
             bool same = false;
-            if (aseq.size() >= pseq.size()
-                && (aseq.substr(0, pseq.size()) == pseq
-                    || aseq.substr(aseq.size()-pseq.size()) == pseq)) {
+            if (pseq.size() + partial.basesLeft <= aseq.size()) pseq = partial.read5p();
+            else if (pseq.size() + partial.basesRight <= aseq.size()) pseq = partial.read3p();
+            //cerr << partial << " bp l/r " << partial.basesLeft << "/" << partial.basesRight
+            //     << " szes , " << pseq.size() << " vs " << aseq.size() << endl;
+            if (!pseq.empty()
+                && aseq.size() >= pseq.size()
+                && ((partial.alternateSequence.size() + partial.basesRight <= aseq.size()
+                     && (aseq.substr(0, pseq.size()) == pseq))
+                    || (partial.alternateSequence.size() + partial.basesLeft <= aseq.size() 
+                        && (aseq.substr(aseq.size()-pseq.size()) == pseq)))) {
                 // dAY's du saem
                 partialObservationGroups[allele.currentBase].push_back(*p);
                 partialObservationSupport[*p].insert(&*a);
-                //cerr << "partial support ... " << *p << " for " << &*a << endl;
+                //cerr << "partial support of " << *a << " by " << *p << endl;
                 same = true;
             }
             //cerr << "pseudos\t" << allele << endl 
@@ -418,5 +426,11 @@ bool Sample::observationSupports(Allele* obs, Allele* allele) {
             }
         }
         return false;
+    }
+}
+
+void Samples::clearFullObservations(void) {
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        s->second.clear();
     }
 }

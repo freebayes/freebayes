@@ -58,7 +58,7 @@ std::vector< std::vector<T> > multichoose(int k, std::vector<T>& objects) {
             multiset.push_back(*a[i]);
         choices.push_back(multiset);
         j=k;
-        do { j--; } while(a[j]==b[j]);
+        do { j--; } while(j>=0 && a[j]==b[j]);
         if (j<0) break;
         j_1=j;
         while(j_1<=k-1){

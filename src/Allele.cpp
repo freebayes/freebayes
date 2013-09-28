@@ -20,7 +20,7 @@ int Allele::bpLeft(void) {
 }
 
 int Allele::bpRight(void) {
-    return alignmentEnd - position + referenceLength;
+    return alignmentEnd - (position + referenceLength);
 }
 
 // called prior to using the allele in analysis
@@ -957,6 +957,105 @@ baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
 
     return make_pair(make_pair(forwardRef, forwardAlt), make_pair(reverseRef, reverseAlt));
 
+}
+
+string Allele::readSeq(void) {
+    string r;
+    for (vector<Allele>::iterator a = alignmentAlleles->begin(); a != alignmentAlleles->end(); ++a) {
+        r.append(a->alternateSequence);
+    }
+    return r;
+}
+
+string Allele::read5p(void) {
+    string r;
+    vector<Allele>::const_reverse_iterator a = alignmentAlleles->rbegin();
+    while (&*a != this) {
+        ++a;
+    }
+    if ((a+1) != alignmentAlleles->rend()) ++a;
+    while (a != alignmentAlleles->rend()) {
+        r = a->alternateSequence + r;
+        ++a;
+    }
+    r.append(alternateSequence);
+    return r;
+}
+
+string Allele::read3p(void) {
+    string r = alternateSequence;
+    vector<Allele>::const_iterator a = alignmentAlleles->begin();
+    while (&*a != this) {
+        ++a;
+    }
+    if ((a+1) != alignmentAlleles->end()) ++a;
+    while (a != alignmentAlleles->end()) {
+        r.append(a->alternateSequence);
+        ++a;
+    }
+    return r;
+}
+
+string Allele::read5pNonNull(void) {
+    string r = alternateSequence;
+    vector<Allele>::const_reverse_iterator a = alignmentAlleles->rbegin();
+    while (&*a != this) {
+        ++a;
+    }
+    while (a != alignmentAlleles->rend() && !a->isNull()) {
+        if (&*a != this) {
+            r = a->alternateSequence + r;
+        }
+        ++a;
+    }
+    return r;
+}
+
+string Allele::read3pNonNull(void) {
+    string r = alternateSequence;
+    vector<Allele>::const_iterator a = alignmentAlleles->begin();
+    while (&*a != this) {
+        ++a;
+    }
+    while (a != alignmentAlleles->end() && !a->isNull()) {
+        if (&*a != this) {
+            r.append(a->alternateSequence);
+        }
+        ++a;
+    }
+    return r;
+}
+
+int Allele::read5pNonNullBases(void) {
+    int bp = 0;
+    vector<Allele>::const_reverse_iterator a = alignmentAlleles->rbegin();
+    while (&*a != this) {
+        ++a;
+    }
+    while (a != alignmentAlleles->rend() && !a->isNull()) {
+        if (&*a != this) {
+            //cerr << "5p bp = " << bp << " adding " << stringForAllele(*a) << " to " << stringForAllele(*this) << endl;
+            bp += a->alternateSequence.size();
+        }
+        ++a;
+    }
+    return bp;
+}
+
+int Allele::read3pNonNullBases(void) {
+    int bp = 0;
+    vector<Allele>::const_iterator a = alignmentAlleles->begin();
+    while (&*a != this) {
+        ++a;
+    }
+    while (a != alignmentAlleles->end() && !a->isNull()) {
+        if (&*a != this) {
+            //cerr << "3p bp = " << bp << " adding " << stringForAllele(*a) << " to " << stringForAllele(*this) << endl;
+            bp += a->alternateSequence.size();
+        }
+        ++a;
+    }
+    return bp;
 }
 
 // adjusts the allele to have a new start

@@ -262,6 +262,7 @@ public:
     void setPosition(long unsigned int);
     int currentSequencePosition(const BamAlignment& alignment);
     int currentSequencePosition();
+    void unsetAllProcessedFlags(void);
     bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
 
     // builds up haplotype (longer, e.g. ref+snp+ref) alleles to match the longest allele in genotypeAlleles
