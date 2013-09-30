@@ -407,6 +407,7 @@ ostream &operator<<(ostream &out, Allele* &allele) {
 ostream &operator<<(ostream &out, Allele &allele) {
 
     if (!allele.genotypeAllele) {
+        int prec = out.precision();
         // << &allele << ":" 
         out.precision(1);
         out << allele.sampleID
@@ -421,11 +422,13 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << allele.repeatRightBoundary
             << ":" << allele.cigar
             << ":" << allele.quality;
+        out.precision(prec);
     } else {
         out << allele.typeStr() 
             << ":" << allele.length 
             << ":" << (string) allele.alternateSequence;
     }
+    out.precision(5);
     return out;
 }
 
@@ -1441,11 +1444,15 @@ void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
     if (newAllele.type != ALLELE_REFERENCE) {
         quality = min(newAllele.quality, quality);
         lnquality = max(newAllele.lnquality, lnquality);
+        //quality = minQuality(baseQualities);
+        //lnquality = log(quality);
     } else {
+        quality = averageQuality(baseQualities);
+        lnquality = log(quality);
         basesRight += newAllele.referenceLength;
     }
     if (newAllele.type != ALLELE_REFERENCE) {
-	repeatRightBoundary = newAllele.repeatRightBoundary;
+        repeatRightBoundary = newAllele.repeatRightBoundary;
     }
     cigar = mergeCigar(cigar, newAllele.cigar);
     referenceLength = referenceLengthFromCigar();

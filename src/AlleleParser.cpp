@@ -2864,6 +2864,9 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
     //cerr << "start: " << start << " end: " << end << endl;
     //cerr << "haplotypestart: " << haplotypeStart << " haplotypeend: " << haplotypeEnd << endl;
 
+    // save and bail out if we can't construct a haplotype allele
+    vector<Allele> savedAlleles = alleles;
+
     if ((allowPartials && (start <= haplotypeEnd || end >= haplotypeStart))
         || (start <= haplotypeStart && end >= haplotypeEnd)) {
         vector<Allele>::iterator a = alleles.begin();
@@ -2956,6 +2959,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         // now the pointers have changed, so find the allele we want... again!!!!!!
         //cerr << "registered alignment alleles, after haplotype construction," << endl << alleles << endl;
         bool hasHaplotypeAllele = false;
+        bool dividedIndel = false;
         for (vector<Allele>::iterator p = alleles.begin(); p != alleles.end(); ++p) {
             // fix the "base"
             if (!p->isReference()) {
@@ -2966,6 +2970,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
                 aptr = &*p;
                 if (isDividedIndel(*p)) {
                     hasHaplotypeAllele = false;
+                    dividedIndel = true;
                 } else {
                     hasHaplotypeAllele = true;
                 }
@@ -2976,6 +2981,9 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         if (hasHaplotypeAllele) {
             return true;
         } else {
+            if (!allowPartials) {
+                alleles = savedAlleles; // reset alleles
+            }
             return false;
             //assert(hasHaplotypeAllele);
         }
@@ -3116,7 +3124,7 @@ void AlleleParser::buildHaplotypeAlleles(
         */
 
         if (parameters.debug) {
-            cerr << "refr_seq\t" << currentPosition << "\t" << reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength) << endl;
+            cerr << "refr_seq\t" << currentPosition << "\t\t" << reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength) << endl;
             for (vector<Allele*>::iterator h = haplotypeObservations.begin(); h != haplotypeObservations.end(); ++h) {
                 if ((*h)->position == currentPosition && (*h)->referenceLength == haplotypeLength) {
                     if ((*h)->isReference()) {
@@ -3152,7 +3160,7 @@ void AlleleParser::buildHaplotypeAlleles(
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
             cerr << s->first << endl;
             for (Sample::iterator t = s->second.begin(); t != s->second.end(); ++t) {
-                cerr << t->first << " " << t->second << endl;
+                cerr << t->first << " " << t->second << endl << endl;
             }
         }
         */
@@ -3348,15 +3356,23 @@ bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int hapl
             RegisteredAlignment& ra = *rai;
             Allele* aptr;
             // this guard prevents trashing allele pointers when getting partial observations
-            if (ra.start <= currentPosition && ra.end > currentPosition + haplotypeLength
-                && ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
-                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                    a->processed = false; // re-trigger use of all alleles
-                }
-                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                    //a->processed = false; // re-trigger use of all alleles
-                    if (a->position == currentPosition && a->referenceLength == haplotypeLength) {
-                        haplotypeObservations.push_back(&*a);
+            if (ra.start <= currentPosition && ra.end > currentPosition + haplotypeLength) {
+                if (ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
+                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                        a->processed = false; // re-trigger use of all alleles
+                    }
+                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                        //a->processed = false; // re-trigger use of all alleles
+                        if (a->position == currentPosition && a->referenceLength == haplotypeLength) {
+                            haplotypeObservations.push_back(&*a);
+                        }
+                    }
+                } else {
+                    DEBUG2("could not fit observation " << ra.name << " with alleles " << ra.alleles);
+                    // the alleles have (possibly) been changed in fithaplotype, so add them to the registered alleles again
+                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                        a->processed = false;
+                        registeredAlleles.push_back(&*a);
                     }
                 }
             }
@@ -3702,7 +3718,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
                 && alleleCount >= parameters.minAltCount 
                 && ((float) alleleCount / (float) observationCount) >= parameters.minAltFraction) {
                 DEBUG(genotypeAllele << " has support of " << alleleCount 
-                      << " in individual " << s->first << " and fraction " 
+                      << " in individual " << s->first << " (" << observationCount << " obs)" <<  " and fraction " 
                       << (float) alleleCount / (float) observationCount);
                 filteredAlleles[genotypeAllele] = qSum;
                 break;
