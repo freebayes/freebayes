@@ -3256,7 +3256,6 @@ void AlleleParser::buildHaplotypeAlleles(
             }
         }
 
-
         // pick up observations that are potentially partial (not unambiguous)
         // the way to do this is to test the full observations as if they are partial, and if they
         // end up partially supporting multiple observations, removing them from the "complete" observations
@@ -3331,6 +3330,22 @@ void AlleleParser::buildHaplotypeAlleles(
                                              partialObservationSupport);
             }
         }
+
+        // fix registered alleles
+        for (map<long unsigned int, deque<RegisteredAlignment> >::iterator ras = registeredAlignments.begin(); ras != registeredAlignments.end(); ++ras) {
+            deque<RegisteredAlignment>& rq = ras->second;
+            for (deque<RegisteredAlignment>::iterator rai = rq.begin(); rai != rq.end(); ++rai) {
+                RegisteredAlignment& ra = *rai;
+                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                    a->processed = false;
+                    registeredAlleles.push_back(&*a);
+                }
+            }
+        }
+
+        // clean up likely duplicates
+        sort(registeredAlleles.begin(), registeredAlleles.end());
+        registeredAlleles.erase(unique(registeredAlleles.begin(), registeredAlleles.end()), registeredAlleles.end());
 
         if (!parameters.useRefAllele) {
             vector<Allele> refAlleleVector;
