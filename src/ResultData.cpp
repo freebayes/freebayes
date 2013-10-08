@@ -161,7 +161,12 @@ vcf::Variant& Results::vcf(
 
     assert(!var.ref.empty());
     for (vector<string>::iterator a = var.alt.begin(); a != var.alt.end(); ++a) {
-        assert(!a->empty());
+        if (a->empty()) {
+            cerr << "variant at " << parser->currentSequenceName << ":" << referencePosition + 1 << endl;
+            cerr << adjustedAltAlleles.at(a - var.alt.begin()) << endl;
+            cerr << "alt is empty" << endl;
+            exit(1);
+        }
         if (*a == var.ref) {
             cerr << "variant at " << parser->currentSequenceName << ":" << referencePosition + 1 << endl;
             cerr << "alt is the same as the reference" << endl;

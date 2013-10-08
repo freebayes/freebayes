@@ -26,7 +26,7 @@ int Allele::bpRight(void) {
 // called prior to using the allele in analysis
 // called again when haplotype alleles are built, in which case the "currentBase" is set to the alternate sequence of the allele
 void Allele::update(int haplotypeLength) {
-    setQuality();
+    if (isReference()) setQuality();
     basesLeft = bpLeft();
     basesRight = bpRight();
     if (haplotypeLength == 1) {

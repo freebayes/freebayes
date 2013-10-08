@@ -311,6 +311,8 @@ bool sufficientAlternateObservations(Samples& samples, int mincount, float minfr
             observationCount += alleles.size();
         }
 
+        //cerr << "alternateCount " << alternateCount << " ratio " << ((float) alternateCount / (float) observationCount) << endl;
+
         if (alternateCount >= mincount && ((float) alternateCount / (float) observationCount) >= minfraction)
             return true;
         totalAlternateCount += alternateCount;

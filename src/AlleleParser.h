@@ -246,6 +246,7 @@ public:
     void removeNonOverlappingAlleles(vector<Allele*>& alleles,
                                      int haplotypeLength = 1,
                                      bool getAllAllelesInHaplotype = false);
+    void removePreviousAlleles(vector<Allele*>& alleles);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void updateRegisteredAlleles(void);
     void addToRegisteredAlleles(vector<Allele*>& alleles);
@@ -274,7 +275,11 @@ public:
                                map<string, vector<Allele*> >& partialObservationGroups,
                                map<Allele*, set<Allele*> >& partialObservationSupport,
                                int allowedAlleleTypes);
-    void getAlleles(Samples& allelesBySample, int allowedAlleleTypes, int haplotypeLength = 1, bool getAllAllelesInHaplotype = false);
+    void getAlleles(Samples& allelesBySample,
+                    int allowedAlleleTypes,
+                    int haplotypeLength = 1,
+                    bool getAllAllelesInHaplotype = false,
+                    bool ignoreProcessedAlleles = true);
     Allele* referenceAllele(int mapQ, int baseQ);
     Allele* alternateAllele(int mapQ, int baseQ);
     int homopolymerRunLeft(string altbase);
