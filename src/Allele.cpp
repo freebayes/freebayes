@@ -1497,6 +1497,23 @@ bool isDividedIndel(const Allele& allele) {
     }
 }
 
+// returns true if this indel is not properly flanked by reference-matching sequence
+bool isUnflankedIndel(const Allele& allele) {
+    if (allele.isReference() || allele.isSNP() || allele.isMNP()) {
+        return false;
+    } else {
+        vector<pair<int, string> > cigarV = splitCigar(allele.cigar);
+        if (cigarV.back().second == "D"
+            || cigarV.back().second == "I"
+            || cigarV.front().second == "D"
+            || cigarV.front().second == "I") {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
 bool isEmptyAlleleOrIsDividedIndel(const Allele& allele) {
     return isEmptyAllele(allele) || isDividedIndel(allele);
 }

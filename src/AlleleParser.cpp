@@ -984,7 +984,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
         if (isEmptyAllele(newAllele) ||
             newAllele.isReference() && newAllele.referenceLength == 0) {
             // do nothing
-        } else if (newAllele.isReference() && (lastAllele.isInsertion() || lastAllele.isDeletion())) {
+        } else if (newAllele.isReference() && isUnflankedIndel(lastAllele)) {
             // add flanking base to indel, ensuring haplotype length of 2 for all indels
             string seq; vector<pair<int, string> > cig; vector<short> quals;
             //cerr << "subtracting from start " << newAllele << " giving to " << lastAllele << endl;
@@ -2945,7 +2945,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
         } else if (b->position + b->referenceLength > haplotypeEnd) {
             Allele newAllele = *b;
             newAllele.subtractFromStart(haplotypeEnd - b->position, seq, cigar, quals);
-            if (isDividedIndel(newAllele)) {
+            if (isUnflankedIndel(newAllele)) {
                 if (b + 1 != alleles.end()) {
                     ++b;
                 }
@@ -2993,7 +2993,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
             //cerr << *p << endl;
             if (p->position == haplotypeStart && p->position + p->referenceLength == haplotypeEnd) {
                 aptr = &*p;
-                if (isDividedIndel(*p)) {
+                if (isUnflankedIndel(*p)) {
                     hasHaplotypeAllele = false;
                     dividedIndel = true;
                 } else {
@@ -3049,18 +3049,63 @@ void AlleleParser::buildHaplotypeAlleles(
         }
     }
 
-    if (haplotypeLength > 1) {
+    if (false) {
+        if (false) {
+        // break any complex alleles
+        registeredAlleles.clear();
+        long int maxAlignmentEnd = registeredAlignments.rbegin()->first;
+        for (long int i = currentPosition+1; i < maxAlignmentEnd; ++i) {
+            deque<RegisteredAlignment>& ras = registeredAlignments[i];
+            for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
+                RegisteredAlignment& ra = *r;
+                /*
+                if (ra.start > currentPosition && ra.start < currentPosition + haplotypeLength
+                    || ra.end > currentPosition && ra.end < currentPosition + haplotypeLength) {
+                */
+                {
+                    bool divideObs = false;
+                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                        if (
+                            a->position == currentPosition && a->referenceLength > 1
+                            //&& (a->isComplex() || a->isMNP())
+                            ) {
+                            cerr << "a divided obs " << *a << endl;
+                            divideObs == true;
+                            break;
+                        }
+                    }
+                    if (divideObs) {
+                        Allele* aptr;
+                        bool allowPartials = true;
+                        ra.fitHaplotype(currentPosition, haplotypeLength, aptr, true);
+                    }
+                }
+                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
+                    registeredAlleles.push_back(&*a);
+                }
+            }
+        }
+        lastHaplotypeLength = haplotypeLength;
+        unsetAllProcessedFlags();
+        samples.clear();
+        //getAlleles(samples, allowedAlleleTypes, haplotypeLength, true, true);
+        getAlleles(samples, allowedAlleleTypes);
+        alleleGroups.clear();
+        groupAlleles(samples, alleleGroups);
+        alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
+        }
+    } else {
 
         DEBUG("haplotype length is " << haplotypeLength);
 
-	// NB: for indels in tandem repeats, if the indel sequence is
-	// derived from the repeat structure, build the haplotype
-	// across the entire repeat pattern.  This ensures we actually
-	// can discriminate between reference and indel/complex
-	// alleles in the most common misalignment case.  For indels
-	// that match the repeat structure, we have cached the right
-	// boundary of the repeat.  We build the haplotype to the
-	// maximal boundary indicated by the present alleles.
+        // NB: for indels in tandem repeats, if the indel sequence is
+        // derived from the repeat structure, build the haplotype
+        // across the entire repeat pattern.  This ensures we actually
+        // can discriminate between reference and indel/complex
+        // alleles in the most common misalignment case.  For indels
+        // that match the repeat structure, we have cached the right
+        // boundary of the repeat.  We build the haplotype to the
+        // maximal boundary indicated by the present alleles.
 
         int oldHaplotypeLength = haplotypeLength;
         do {
@@ -3117,6 +3162,7 @@ void AlleleParser::buildHaplotypeAlleles(
                 }
             }
         } while (haplotypeLength != oldHaplotypeLength); // && haplotypeLength < parameters.maxHaplotypeLength);
+
 
         // TODO?
         //haplotypeLength = min(parameters.maxHaplotypeLength, haplotypeLength);
@@ -3191,7 +3237,6 @@ void AlleleParser::buildHaplotypeAlleles(
         }
 
         // now re-get the alleles
-        // here we should be including both the partial and whole obs (?)
         getAlleles(samples, allowedAlleleTypes, haplotypeLength, false, true);
 
         // re-group the alleles using groupAlleles()
@@ -3280,7 +3325,6 @@ void AlleleParser::buildHaplotypeAlleles(
         if (maxAlleleLength > haplotypeLength) {
             //cerr << "max allele length = " << maxAlleleLength << endl;
             removeAllelesWithoutReadSpan(registeredAlleles, maxAlleleLength, haplotypeLength);
-            //£ODO remova da processa flagga
             samples.clear();
             // require that reference obs are over an equivalent amount of sequence as the max allele length
             getAlleles(samples, allowedAlleleTypes, haplotypeLength, false, true);
@@ -3360,7 +3404,9 @@ void AlleleParser::buildHaplotypeAlleles(
             }
         }
 
-        // fix registered alleles
+        registeredAlleles.clear();
+
+        // reset registered alleles
         for (map<long unsigned int, deque<RegisteredAlignment> >::iterator ras = registeredAlignments.begin(); ras != registeredAlignments.end(); ++ras) {
             deque<RegisteredAlignment>& rq = ras->second;
             for (deque<RegisteredAlignment>::iterator rai = rq.begin(); rai != rq.end(); ++rai) {
@@ -3371,10 +3417,6 @@ void AlleleParser::buildHaplotypeAlleles(
             }
         }
 
-        // clean up likely duplicates
-        sort(registeredAlleles.begin(), registeredAlleles.end());
-        registeredAlleles.erase(unique(registeredAlleles.begin(), registeredAlleles.end()), registeredAlleles.end());
-      
         if (!parameters.useRefAllele) {
             vector<Allele> refAlleleVector;
             refAlleleVector.push_back(refAllele);
@@ -3505,8 +3547,8 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
     for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
         s->second.clear();
 
-    // if we just switched targets, clean up everything in our input vector
     /*
+    // if we just switched targets, clean up everything in our input vector
     if (justSwitchedTargets) {
         DEBUG2("just switched targets, cleaning up sample alleles");
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
