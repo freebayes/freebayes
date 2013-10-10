@@ -2726,7 +2726,7 @@ void AlleleParser::clearRegisteredAlignments(void) {
 bool AlleleParser::toNextPosition(void) {
 
     if (currentSequenceName.empty()) {
-        DEBUG2("loading first target");
+        DEBUG("loading first target");
         if (!toNextTarget()) {
             return false;
         }
@@ -3049,52 +3049,8 @@ void AlleleParser::buildHaplotypeAlleles(
         }
     }
 
-    if (false) {
-        if (false) {
-        // break any complex alleles
-        registeredAlleles.clear();
-        long int maxAlignmentEnd = registeredAlignments.rbegin()->first;
-        for (long int i = currentPosition+1; i < maxAlignmentEnd; ++i) {
-            deque<RegisteredAlignment>& ras = registeredAlignments[i];
-            for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
-                RegisteredAlignment& ra = *r;
-                /*
-                if (ra.start > currentPosition && ra.start < currentPosition + haplotypeLength
-                    || ra.end > currentPosition && ra.end < currentPosition + haplotypeLength) {
-                */
-                {
-                    bool divideObs = false;
-                    for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                        if (
-                            a->position == currentPosition && a->referenceLength > 1
-                            //&& (a->isComplex() || a->isMNP())
-                            ) {
-                            cerr << "a divided obs " << *a << endl;
-                            divideObs == true;
-                            break;
-                        }
-                    }
-                    if (divideObs) {
-                        Allele* aptr;
-                        bool allowPartials = true;
-                        ra.fitHaplotype(currentPosition, haplotypeLength, aptr, true);
-                    }
-                }
-                for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
-                    registeredAlleles.push_back(&*a);
-                }
-            }
-        }
-        lastHaplotypeLength = haplotypeLength;
-        unsetAllProcessedFlags();
-        samples.clear();
-        //getAlleles(samples, allowedAlleleTypes, haplotypeLength, true, true);
-        getAlleles(samples, allowedAlleleTypes);
-        alleleGroups.clear();
-        groupAlleles(samples, alleleGroups);
-        alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
-        }
-    } else {
+    // always attempt to determine haplotype length in this fashion
+    {
 
         DEBUG("haplotype length is " << haplotypeLength);
 
@@ -3530,6 +3486,7 @@ bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
         } else {
             if (justSwitchedTargets) {
                 nextPosition = 0;
+                justSwitchedTargets = false;
             }
             getAlleles(samples, allowedAlleleTypes);
         }
@@ -3546,42 +3503,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
 
     for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
         s->second.clear();
-
-    /*
-    // if we just switched targets, clean up everything in our input vector
-    if (justSwitchedTargets) {
-        DEBUG2("just switched targets, cleaning up sample alleles");
-        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
-            s->second.clear();
-        justSwitchedTargets = false; // TODO this whole flagged stanza is hacky;
-                                     // to clean up, store the samples map in
-                                     // the AlleleParser and clear it when we jump
-    } else {
-        // otherwise, update and remove non-overlapping and filtered alleles
-        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-            Sample& sample = s->second;
-            for (Sample::iterator g = sample.begin(); g != sample.end(); ++g) {
-                vector<Allele*>& alleles = g->second;
-                // avoid these steps when we're updating the samples after haplotype construction
-                removeNonOverlappingAlleles(alleles, haplotypeLength, getAllAllelesInHaplotype); // removes alleles which no longer overlap our current position
-                if (haplotypeLength == 1) {
-                    updateAllelesCachedData(alleles);  // calls allele.update() on each Allele*
-                }
-                removeFilteredAlleles(alleles); // removes alleles which are filtered at this position,
-                                                  // and requeues them for processing by unsetting their 'processed' flag
-                for (vector<Allele*>::iterator b = alleles.begin(); b != alleles.end(); ++b) {
-                    Allele* a = *b;
-                    if (a->alternateSequence.size() != a->baseQualities.size()) {
-                        cerr << *a << " is broken" << endl;
-                        cerr << a->alternateSequence << " and " << a->baseQualities.size() << " qualities" << endl;
-                        exit(1);
-                    }
-                }
-            }
-            sample.sortReferenceAlleles();  // put reference alleles into the correct group, according to their current base
-        }
-    }
-    */
+    // TODO ^^^ this should be optimized for better scanning performance
 
     // if we have targets and are outside of the current target, don't return anything
 

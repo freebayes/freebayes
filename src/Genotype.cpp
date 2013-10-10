@@ -370,15 +370,12 @@ void GenotypeCombo::init(bool useObsExpectations) {
 
         permutationsln += sdl.genotype->permutationsln;
 
-        //cerr << *sdl.genotype << endl;
         for (Genotype::iterator a = sdl.genotype->begin(); a != sdl.genotype->end(); ++a) {
             const string& alleleBase = a->allele.currentBase;
 
             // allele frequencies in selected genotypes in combo
             AlleleCounter& alleleCounter = alleleCounters[alleleBase];
-            //cerr <<"init "<< alleleCounter.frequency;
             alleleCounter.frequency += a->count;
-            //cerr <<" after "<< alleleCounter.frequency << endl;
 
             if (useObsExpectations) {
                 // observational frequencies for binomial priors
