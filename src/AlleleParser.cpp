@@ -3407,13 +3407,13 @@ bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int hapl
                             haplotypeObservations.push_back(&*a);
                         }
                     }
-                } else {
-                    DEBUG2("could not fit observation " << ra.name << " with alleles " << ra.alleles);
+                } /*else {
+                    DEBUG("could not fit observation " << ra.name << " with alleles " << ra.alleles);
                     // the alleles have (possibly) been changed in fithaplotype, so add them to the registered alleles again
                     for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
                         registeredAlleles.push_back(&*a);
                     }
-                }
+                    }*/
             }
         }
     }
