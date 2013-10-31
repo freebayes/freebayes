@@ -1636,7 +1636,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             }
 
             string refseq = currentSequence.substr(csp, l);
-            if (allATGC(refseq)) {
+            // some aligners like to report deletions at the beginnings and ends of reads.
+            // without any sequence in the read to support this, it is hard to believe
+            // that these deletions are real, so we ignore them here.
+            if (cigarIter != alignment.CigarData.begin()      // guard against deletion at beginning
+                && (cigarIter+1) != alignment.CigarData.end() // and against deletion at end
+                && allATGC(refseq)) {
                 string nullstr;
                 ra.addAllele(
                     makeAllele(ra,
