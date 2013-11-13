@@ -2864,6 +2864,31 @@ bool AlleleParser::dummyProcessNextTarget(void) {
     return true;
 }
 
+void AlleleParser::removeDuplicateAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups, int allowedAlleleTypes, int haplotypeLength, Allele& refallele) {
+
+    map<string, int> seqCounts;
+    bool multipleAllelesWithIdenticalAlts = false;
+    string refseq = currentReferenceHaplotype();
+    ++seqCounts[refseq];
+    for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
+        Allele& allele = *a->second.front();
+        if (seqCounts[allele.alternateSequence] > 0) {
+            multipleAllelesWithIdenticalAlts = true;
+            break;
+        } else {
+            ++seqCounts[allele.alternateSequence];
+        }
+    }
+
+    if (multipleAllelesWithIdenticalAlts) {
+        homogenizeAlleles(alleleGroups, refseq, refallele);
+        getAlleles(samples, allowedAlleleTypes, haplotypeLength, false, true);
+        alleleGroups.clear();
+        groupAlleles(samples, alleleGroups);  // groups by alternate sequence
+    }
+
+}
+
 // adjusts the registered alignment and contained alleles so that one allele
 // covers the entire haplotype window
 // returns a vector of pointers to alleles generated in this process
@@ -3222,50 +3247,8 @@ void AlleleParser::buildHaplotypeAlleles(
 
         // are there two alleles with the same alt sequence?
         // if so, homogenize them, and then re-sort the alleles
-        map<string, int> seqCounts;
-        bool multipleAllelesWithIdenticalAlts = false;
-        string refseq = currentReferenceHaplotype();
-        ++seqCounts[refseq];
-        for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
-            Allele& allele = *a->second.front();
-            if (seqCounts[allele.alternateSequence] > 0) {
-                multipleAllelesWithIdenticalAlts = true;
-                break;
-            } else {
-                ++seqCounts[allele.alternateSequence];
-            }
-        }
 
-        if (multipleAllelesWithIdenticalAlts) {
-            homogenizeAlleles(alleleGroups, refseq);
-            getAlleles(samples, allowedAlleleTypes, haplotypeLength, false, true);
-            alleleGroups.clear();
-            groupAlleles(samples, alleleGroups);  // groups by alternate sequence
-            /*
-            for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
-                cerr << a->first << " " << a->second.front() << endl;
-                if (a->second.front()->alternateSequence == refseq) {
-                    cerr << "here is a ref" << endl;
-                }
-            }
-            */
-
-            /*
-            for (map<string, vector<Allele*> >::iterator a = alleleGroups.begin(); a != alleleGroups.end(); ++a) {
-                if (a->second.front()->alternateSequence == refseq) {
-                    cerr << "here is a ref" << endl;
-                    for (vector<Allele*>::iterator s = a->second.begin(); s != a->second.end(); ++s) {
-                        (*s)->cigar = refAllele.cigar;
-                        (*s)->type = refAllele.type;
-                        (*s)->position = refAllele.position;
-                        (*s)->update();
-                        cerr << *s << endl;
-                    }
-                }
-            }
-            */
-
-        }
+        removeDuplicateAlleles(samples, alleleGroups, allowedAlleleTypes, haplotypeLength, refAllele);
 
         alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles, haplotypeLength);
 
@@ -3383,6 +3366,9 @@ void AlleleParser::buildHaplotypeAlleles(
             refAlleleVector.push_back(refAllele);
             alleles = alleleUnion(alleles, refAlleleVector);
         }
+
+        //removeDuplicateAlleles(samples, alleleGroups, allowedAlleleTypes, haplotypeLength);
+        //alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles, haplotypeLength);
 
     }
 

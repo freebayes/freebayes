@@ -604,9 +604,11 @@ void groupAllelesBySample(list<Allele*>& alleles, map<string, vector<Allele*> >&
 // should have the same cigar and position.  this function picks the most
 // common allele observation per alternate sequence and homogenizes the rest to
 // the same if they are not reference alleles
-void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refseq) {
+void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refseq, Allele& refallele) {
     map<string, map<string, int> > equivs;
     map<string, Allele*> homogenizeTo;
+    // find equivalencies between alleles
+    // base equivalency is self
     for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
         Allele& allele = *g->second.front();
         if (allele.isReference()) {
@@ -614,6 +616,7 @@ void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refs
         }
         equivs[allele.alternateSequence][g->first]++;
     }
+    // 
     for (map<string, map<string, int> >::iterator e = equivs.begin(); e != equivs.end(); ++e) {
         string altseq = e->first;
         map<string, int>& group = e->second;
@@ -623,7 +626,11 @@ void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refs
             ordered[f->second] = f->first;
         }
         string& altbase = ordered.rend()->second;
-        homogenizeTo[altseq] = alleleGroups[altbase].front();
+        if (altseq == refseq) {
+            homogenizeTo[altseq] = &refallele;
+        } else {
+            homogenizeTo[altseq] = alleleGroups[altbase].front();
+        }
     }
     for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
         vector<Allele*>& alleles = g->second;

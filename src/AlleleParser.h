@@ -248,6 +248,8 @@ public:
                                      bool getAllAllelesInHaplotype = false);
     void removePreviousAlleles(vector<Allele*>& alleles);
     void removeFilteredAlleles(vector<Allele*>& alleles);
+    void removeDuplicateAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups,
+                                int allowedAlleleTypes, int haplotypeLength, Allele& refallele);
     void updateRegisteredAlleles(void);
     void addToRegisteredAlleles(vector<Allele*>& alleles);
     void updatePriorAlleles(void);

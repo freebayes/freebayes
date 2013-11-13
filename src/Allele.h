@@ -359,7 +359,7 @@ bool allelesSameSample(Allele &a, Allele &b);
 bool allelesEqual(Allele &a, Allele &b);
 
 void groupAlleles(map<string, vector<Allele*> >& sampleGroups, map<string, vector<Allele*> >& alleleGroups);
-void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refseq);
+void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refseq, Allele& refallele);
 void resetProcessedFlag(map<string, vector<Allele*> >& alleleGroups);
 
 vector<Allele> alleleUnion(vector<Allele>& a1, vector<Allele>& a2);
