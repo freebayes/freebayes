@@ -28,7 +28,7 @@
 #include "CNV.h"
 #include "Result.h"
 #include "LeftAlign.h"
-#include "../vcflib/Variant.h"
+#include "Variant.h"
 #include "version_git.h"
 
 // the size of the window of the reference which is always cached in memory

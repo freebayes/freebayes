@@ -8,7 +8,7 @@
 #include "Allele.h"
 #include "Utility.h"
 #include "AlleleParser.h"
-#include "../vcflib/Variant.h"
+#include "Variant.h"
 #include "version_git.h"
 #include "Result.h"
 

@@ -13,9 +13,10 @@ CFLAGS=-O3 -D_FILE_OFFSET_BITS=64
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 BAMTOOLS_ROOT=../bamtools
+VCFLIB_ROOT=../vcflib
 
-LIBS = -lz -lm -L./ -L../vcflib/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix
-INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath
+LIBS = -L./ -L$(VCFLIB_ROOT)/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix -lz -lm
+INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath -I$(VCFLIB_ROOT)/src -I$(VCFLIB_ROOT)/
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
@@ -174,8 +175,8 @@ LeftAlign.o: LeftAlign.h LeftAlign.cpp $(BAMTOOLS_ROOT)/lib/libbamtools.a
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
 	$(CC) $(CFLAGS) $(INCLUDE) -c IndelAllele.cpp
 
-Variant.o: ../vcflib/Variant.h ../vcflib/Variant.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -c ../vcflib/Variant.cpp
+Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
+	$(CC) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
 ../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h
