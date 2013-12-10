@@ -39,11 +39,22 @@ class Sample : public map<string, vector<Allele*> > {
     friend ostream& operator<<(ostream& out, Sample& sample);
 
 public:
+
+    // includes both fully and partially-supported observations after adding partial obs
+    set<string> supportedAlleles;
+    void setSupportedAlleles(void);
+
     // partial support for alleles, such as for observations that partially overlap the calling window
-    map<string, vector<Allele*> > partials;
+    map<string, vector<Allele*> > partialSupport;
 
     // for fast scaling of qualities for partial supports
     map<Allele*, set<Allele*> > reversePartials;
+
+    // clear the above
+    void clearPartialObservations(void);
+
+    // set of partial observations (keys of the above map) cached for faster GL calculation
+    //vector<Allele*> partialObservations;
 
     // if the observation (partial or otherwise) supports the allele
     bool observationSupports(Allele* obs, Allele* allele);
@@ -88,9 +99,10 @@ public:
     void assignPartialSupport(vector<Allele>& alleles,
                               vector<Allele*>& partialObservations,
                               map<string, vector<Allele*> >& partialObservationGroups,
-                              map<Allele*, set<Allele*> >& partialObservationSupport);
-    //map<string, vector<Allele*> >& partials,
-    //map<Allele*, vector<string*> >& reversePartials);
+                              map<Allele*, set<Allele*> >& partialObservationSupport,
+                              unsigned long haplotypeStart,
+                              int haplotypeLength);
+
     int observationCount(void);
     double observationCountInclPartials(void);
 
@@ -108,6 +120,8 @@ public:
     double partialQualSum(const string& base);
 
     void clearFullObservations(void);
+    void clearPartialObservations(void);
+    void setSupportedAlleles(void);
 };
 
 

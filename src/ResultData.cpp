@@ -34,7 +34,7 @@ vcf::Variant& Results::vcf(
     // set up the reported reference allele
     long int referencePosition = (long int) parser->currentPosition; // 0-based
 
-    // remove alt alleles
+    // remove NULL alt alleles
     vector<Allele> altAlleles;
     for (vector<Allele>::iterator aa = altAllelesIncludingNulls.begin(); aa != altAllelesIncludingNulls.end(); ++aa) {
         if (!aa->isNull()) {
@@ -42,141 +42,19 @@ vcf::Variant& Results::vcf(
         }
     }
 
-    // adjust reference position, reference sequence, and alt alleles by
-    // stripping invariant bases off the beginning and end of the alt alleles
-    // first we find the minimum start and end matches
-    vector<Allele> adjustedAltAlleles;
-    int minStartMatch = 0;
-    int minEndMatch = 0;
-    for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
-        vector<pair<int, string> > cigar = splitCigar(aa->cigar);
-        int startmatch = 0;
-        int endmatch = 0;
-        if (cigar.front().second == "M") {
-            startmatch = cigar.front().first;
-        }
-        if (cigar.back().second == "M") {
-            endmatch = cigar.back().first;
-        }
-        // check excludes complex alleles of the form, e.g. 1X3I
-        if (cigar.size() > 1 && cigar.front().second == "M" && (cigar.at(1).second == "D" || cigar.at(1).second == "I")) {
-            startmatch -= 1; // require at least one base flanking deletions
-        }
-        if (aa == altAlleles.begin()) {
-            minStartMatch = startmatch;
-            minEndMatch = endmatch;
-        } else {
-            minStartMatch = min(minStartMatch, startmatch);
-            minEndMatch = min(minEndMatch, endmatch);
-        }
-    }
-    // if either is non-zero, we have to adjust cigars and alternate sequences to be printed
-    // this is done solely for reporting, so the altAlleles structure is used
-    // for stats generation out of the ML genotype combination
     map<string, string> adjustedCigar;
-    if (minStartMatch || minEndMatch) {
-        for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
-            // subtract the minStartMatch and minEndMatch bases from the allele start and end
-            adjustedAltAlleles.push_back(*aa);
-            Allele& allele = adjustedAltAlleles.back();
-            vector<pair<int, string> > cigar = splitCigar(allele.cigar);
-            // TODO clean this up by writing a wrapper for Allele::subtract() (?)
-            if (cigar.front().second == "M") {
-                cigar.front().first -= minStartMatch;
-                allele.alternateSequence = allele.alternateSequence.substr(minStartMatch);
-            }
-            if (cigar.back().second == "M") {
-                cigar.back().first -= minEndMatch;
-                allele.alternateSequence = allele.alternateSequence.substr(0, allele.alternateSequence.size() - minEndMatch);
-            }
-            allele.cigar = joinCigar(cigar);
-            allele.position += minStartMatch;
-            allele.referenceLength -= minStartMatch + minEndMatch;
-            adjustedCigar[aa->base()] = allele.cigar;
-        }
-        referencePosition += minStartMatch;
-    } else {
-        adjustedAltAlleles = altAlleles;
-        for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
-            adjustedCigar[aa->base()] = aa->cigar;
-        }
+    vector<Allele>& adjustedAltAlleles = altAlleles; // just an alias
+    for (vector<Allele>::iterator aa = altAlleles.begin(); aa != altAlleles.end(); ++aa) {
+        adjustedCigar[aa->base()] = aa->cigar;
+        var.alt.push_back(aa->alternateSequence);
     }
 
-    var.ref = parser->referenceSubstr(referencePosition, 1);
-
-    // the reference sequence should be able to encompass all events at the site, +1bp on the left
-    for (vector<Allele>::iterator aa = adjustedAltAlleles.begin(); aa != adjustedAltAlleles.end(); ++aa) {
-
-        Allele& altAllele = *aa;
-        switch (altAllele.type) {
-        case ALLELE_SNP:
-        case ALLELE_REFERENCE:
-        case ALLELE_MNP:
-            if (var.ref.size() < altAllele.referenceLength) {
-                var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength);
-            }
-            break;
-        case ALLELE_DELETION:
-            // extend the reference sequence
-            if (var.ref.size() < altAllele.referenceLength) {
-                var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength);
-            }
-            break;
-        case ALLELE_INSERTION:
-            break;
-        case ALLELE_COMPLEX:
-            if (var.ref.size() < altAllele.referenceLength) {
-                var.ref = parser->referenceSubstr(referencePosition, altAllele.referenceLength);
-            }
-            break;
-        default:
-            cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
-            break;
-        }
-
-    }
-
-    for (vector<Allele>::iterator aa = adjustedAltAlleles.begin(); aa != adjustedAltAlleles.end(); ++aa) {
-        Allele& altAllele = *aa;
-        string altseq;
-        switch (altAllele.type) {
-        case ALLELE_REFERENCE:
-            break;
-        case ALLELE_SNP:
-        case ALLELE_MNP:
-            altseq = var.ref;
-            altseq.replace(0, altAllele.alternateSequence.size(), altAllele.alternateSequence);
-            var.alt.push_back(altseq);
-            break;
-        case ALLELE_DELETION:
-        case ALLELE_INSERTION: // XXX is this correct???
-        case ALLELE_COMPLEX:
-            var.alt.push_back(altAllele.alternateSequence);
-            break;
-        default:
-            cerr << "Unhandled allele type: " << altAllele.typeStr() << endl;
-            break;
-        }
-    }
-
+    var.ref = refbase;
     assert(!var.ref.empty());
-    for (vector<string>::iterator a = var.alt.begin(); a != var.alt.end(); ++a) {
-        if (a->empty()) {
-            cerr << "variant at " << parser->currentSequenceName << ":" << referencePosition + 1 << endl;
-            cerr << adjustedAltAlleles.at(a - var.alt.begin()) << endl;
-            cerr << "alt is empty" << endl;
-            exit(1);
-        }
-        if (*a == var.ref) {
-            cerr << "variant at " << parser->currentSequenceName << ":" << referencePosition + 1 << endl;
-            cerr << "alt is the same as the reference" << endl;
-            cerr << *a << " == " << var.ref << endl;
-        }
-    }
-
 
     // get the required size of the reference sequence
-
+    // strip identical bases from start and/or end of alleles
+    // if bases have been stripped from the beginning, 
 
     // set up VCF record-wide variables
 
@@ -498,35 +376,11 @@ vcf::Variant& Results::vcf(
         } else if (altAllele.type == ALLELE_MNP) {
             var.info["TYPE"].push_back("mnp");
         } else {
-            cout << "What is this?" << endl;
-            cout << altAllele.type << endl;
-            cout << altAllele << endl;
+            cerr << "What is this?"
+                 << "type: " << altAllele.type << " "
+                 << "allele: " << altAllele << endl;
         }
         var.info["LEN"].push_back(convert(altAllele.length));
-
-
-        // samples
-        /*
-        for (vector<string>::iterator sn = sampleNames.begin(); sn != sampleNames.end(); ++sn) {
-            string& sampleName = *sn;
-            GenotypeComboMap::iterator gc = comboMap.find(sampleName);
-            Results::iterator s = find(sampleName);
-            if (gc != comboMap.end() && s != end()) {
-                Result& sample = s->second;
-                Genotype* genotype = gc->second->genotype;
-
-                map<string, vector<string> >& sampleOutput = var.samples[sampleName];
-
-     
-
-
-            }
-        }
-        */
-
-        // TODO
-        // mismatch rate of reads containing supporting observations
-        // vs. mismatch rate of reads without the alternate, for each alternate
 
     }
 
@@ -742,7 +596,7 @@ vcf::Variant& Results::vcf(
                         if (g->second > maxGL) maxGL = g->second;
                     }
                     for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
-                        genotypeLikelihoodsOutput[g->first] = convert( max((long double)-5, (g->second-maxGL)) );
+                        genotypeLikelihoodsOutput[g->first] = convert( max((long double)-10, (g->second-maxGL)) );
                     }
 
                     vector<string>& datalikelihoods = sampleOutput["GL"];

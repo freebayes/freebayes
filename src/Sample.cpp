@@ -34,8 +34,8 @@ int Sample::partialObservationCount(void) {
 
 double Sample::partialObservationCount(const string& base) {
     double scaledPartialCount = 0;
-    map<string, vector<Allele*> >::iterator g = partials.find(base);
-    if (g != partials.end()) {
+    map<string, vector<Allele*> >::iterator g = partialSupport.find(base);
+    if (g != partialSupport.end()) {
         vector<Allele*>& supportingObs = g->second;
         for (vector<Allele*>::iterator a = supportingObs.begin(); a != supportingObs.end(); ++a) {
             scaledPartialCount += (double) 1 / (double) reversePartials[*a].size();
@@ -78,9 +78,9 @@ double Sample::partialQualSum(Allele& allele) {
 }
 
 double Sample::partialQualSum(const string& base) {
-    Sample::iterator g = partials.find(base);
+    Sample::iterator g = partialSupport.find(base);
     double qsum = 0;
-    if (g != partials.end()) {
+    if (g != partialSupport.end()) {
         vector<Allele*>& alleles = g->second;
         for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
             qsum += (double) (*a)->quality / (double) reversePartials[*a].size();
@@ -355,29 +355,36 @@ ostream& operator<<(ostream& out, Sample& sample) {
 void Samples::assignPartialSupport(vector<Allele>& alleles,
                                    vector<Allele*>& partialObservations,
                                    map<string, vector<Allele*> >& partialObservationGroups,
-                                   map<Allele*, set<Allele*> >& partialObservationSupport) {
+                                   map<Allele*, set<Allele*> >& partialObservationSupport,
+                                   unsigned long haplotypeStart,
+                                   int haplotypeLength) {
 
-    //map<string, vector<Allele*> >& partials,
-    //map<Allele*, vector<string*> >& reversePartials);
-
-    // the canonical alleles as supported by partials
-    //map<string, vector<Allele*> > supportingObs;
-    // the partials as they support canonical alleles
-    //map<Allele*, set<Allele*> > supportedAlleles;
+    // clean up results of any previous calls to this function
+    clearPartialObservations();
 
     for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele& allele = *a;
         //string& base = allele.currentBase;
         // hacks here
         string& aseq = allele.alternateSequence;
-        //cerr << "alternate, seeking partial support " << aseq << endl;
+        //cerr << "alternate, seeking partial support " << aseq << endl
+        //     << "allele: " << allele << endl;
         // construct pseudo-sequence
         for (vector<Allele*>::iterator p = partialObservations.begin(); p != partialObservations.end(); ++p) {
             Allele& partial = **p;
             string pseq = partial.alternateSequence;
             bool same = false;
-            if (pseq.size() + partial.basesLeft <= aseq.size()) pseq = partial.read5p();
-            else if (pseq.size() + partial.basesRight <= aseq.size()) pseq = partial.read3p();
+            // if the partial could support the alternate if we consider "reference-matching"
+            // sequence beyond the haplotype window, add it to the comparison
+            if (partial.position == haplotypeStart && partial.referenceLength == haplotypeLength) {
+                if (pseq.size() + partial.basesLeft <= aseq.size()) {
+                    pseq = partial.read5p();
+                } else if (pseq.size() + partial.basesRight <= aseq.size()) {
+                    pseq = partial.read3p();
+                }
+            }
+            // otherwise, we should be fine to go with the seqs
+            // basically, this is the partial reference coordinate-matching case
             //cerr << partial << " bp l/r " << partial.basesLeft << "/" << partial.basesRight
             //     << " szes , " << pseq.size() << " vs " << aseq.size() << endl;
             if (!pseq.empty()
@@ -392,10 +399,6 @@ void Samples::assignPartialSupport(vector<Allele>& alleles,
                 //cerr << "partial support of " << *a << " by " << *p << endl;
                 same = true;
             }
-            //cerr << "pseudos\t" << allele << endl 
-            //     << "pseudos\t" << partial << endl;
-            //cerr << "pseudo_alt\t" << string(max(0, (int) (allele.position - partial.position)), ' ') << allele.alternateSequence << "\t" << (same ? "==" : "!=" ) << endl;
-            //cerr << "pseudo_obs\t" << string(max(0, (int) (partial.position - allele.position)), ' ') << partial.alternateSequence << endl;
         }
     }
 
@@ -407,11 +410,18 @@ void Samples::assignPartialSupport(vector<Allele>& alleles,
             continue;
         }
         Sample& sample = siter->second;
-        set<Allele*>& supported = partialObservationSupport[*p];
-        for (set<Allele*>::iterator s = supported.begin(); s != supported.end(); ++s) {
-            sample.partials[(*s)->currentBase].push_back(*p);
+        map<Allele*, set<Allele*> >::iterator sup = partialObservationSupport.find(*p);
+        if (sup != partialObservationSupport.end()) {
+            set<Allele*>& supported = sup->second;
+            for (set<Allele*>::iterator s = supported.begin(); s != supported.end(); ++s) {
+                sample.partialSupport[(*s)->currentBase].push_back(*p);
+                sample.supportedAlleles.insert((*s)->currentBase);
+            }
+            if (!supported.empty()) {
+                sample.reversePartials[*p] = supported;
+            }
         }
-        sample.reversePartials[*p] = supported;
+        //sample.partialObservations.push_back(*p);
     }
 
 }
@@ -435,4 +445,28 @@ void Samples::clearFullObservations(void) {
     for (Samples::iterator s = begin(); s != end(); ++s) {
         s->second.clear();
     }
+}
+
+void Samples::clearPartialObservations(void) {
+    for (Samples::iterator s = begin(); s != end(); ++s) {
+        s->second.clearPartialObservations();
+    }
+}
+
+void Sample::clearPartialObservations(void) {
+    supportedAlleles.clear();
+    for (Sample::iterator a = begin(); a != end(); ++a)
+        supportedAlleles.insert(a->first);
+    partialSupport.clear();
+    reversePartials.clear();
+}
+
+void Sample::setSupportedAlleles(void) {
+    for (Sample::iterator a = begin(); a != end(); ++a)
+        supportedAlleles.insert(a->first);
+}
+
+void Samples::setSupportedAlleles(void) {
+    for (Samples::iterator s = begin(); s != end(); ++s)
+        s->second.setSupportedAlleles();
 }
