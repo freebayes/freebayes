@@ -435,8 +435,6 @@ int main (int argc, char *argv[]) {
 
         long double bestComboOddsRatio = 0;
 
-        bool hasHetCombo = false;
-        bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
 
         // what a hack...
@@ -495,6 +493,7 @@ int main (int argc, char *argv[]) {
         //SampleDataLikelihoods marginalLikelihoods = sampleDataLikelihoods;  // heavyweight copy...
         map<string, list<GenotypeCombo> > genotypeCombosByPopulation;
         int genotypingTotalIterations = 0; // tally total iterations required to reach convergence
+        map<string, list<GenotypeCombo> > glMaxCombos;
 
         for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
 
@@ -525,6 +524,7 @@ int main (int argc, char *argv[]) {
             GenotypeCombo nullCombo;
             SampleDataLikelihoods nullSampleDataLikelihoods;
 
+            // this is the genotype-likelihood maximum
             if (parameters.reportGenotypeLikelihoodMax) {
                 GenotypeCombo comboKing;
                 vector<int> initialPosition;
@@ -543,35 +543,42 @@ int main (int argc, char *argv[]) {
                                                parameters.obsBinomialPriors,
                                                parameters.alleleBalancePriors,
                                                parameters.diffusionPriorScalar);
-                populationGenotypeCombos.push_back(comboKing);
 
-            } else {
-
-                // search much longer for convergence
-                convergentGenotypeComboSearch(
-                    populationGenotypeCombos,
-                    nullCombo,
-                    sampleDataLikelihoods, // vary everything
-                    sampleDataLikelihoods,
-                    nullSampleDataLikelihoods,
-                    samples,
-                    genotypeAlleles,
-                    inputAlleleCounts,
-                    adjustedBandwidth,
-                    adjustedBanddepth,
-                    theta,
-                    parameters.pooledDiscrete,
-                    parameters.ewensPriors,
-                    parameters.permute,
-                    parameters.hwePriors,
-                    parameters.obsBinomialPriors,
-                    parameters.alleleBalancePriors,
-                    parameters.diffusionPriorScalar,
-                    itermax,
-                    genotypingTotalIterations,
-                    true); // add homozygous combos
-                // ^^ combo results are sorted by default
+                glMaxCombos[population].push_back(comboKing);
             }
+
+            // search much longer for convergence
+            convergentGenotypeComboSearch(
+                populationGenotypeCombos,
+                nullCombo,
+                sampleDataLikelihoods, // vary everything
+                sampleDataLikelihoods,
+                nullSampleDataLikelihoods,
+                samples,
+                genotypeAlleles,
+                inputAlleleCounts,
+                adjustedBandwidth,
+                adjustedBanddepth,
+                theta,
+                parameters.pooledDiscrete,
+                parameters.ewensPriors,
+                parameters.permute,
+                parameters.hwePriors,
+                parameters.obsBinomialPriors,
+                parameters.alleleBalancePriors,
+                parameters.diffusionPriorScalar,
+                itermax,
+                genotypingTotalIterations,
+                true); // add homozygous combos
+                // ^^ combo results are sorted by default
+        }
+
+        // generate the GL max combo
+        GenotypeCombo glMax;
+        if (parameters.reportGenotypeLikelihoodMax) {
+            list<GenotypeCombo> glMaxGenotypeCombos;
+            combinePopulationCombos(glMaxGenotypeCombos, glMaxCombos);
+            glMax = glMaxGenotypeCombos.front();
         }
 
         // accumulate combos from independently-calculated populations into the list of combos
@@ -589,7 +596,6 @@ int main (int argc, char *argv[]) {
         // recalculate posterior normalizer
         pVar = 1.0;
         pHom = 0.0;
-        hasHetCombo = false;
         // calculates pvar and gets the best het combo
         for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
             if (gc->isHomozygous()
@@ -597,18 +603,15 @@ int main (int argc, char *argv[]) {
                     || !parameters.useRefAllele && gc->alleles().front() == referenceBase)) {
                 pVar -= big_exp(gc->posteriorProb - posteriorNormalizer);
                 pHom += big_exp(gc->posteriorProb - posteriorNormalizer);
-            } else if (!hasHetCombo) { // get the first het combo
-                bestCombo = *gc;
-                hasHetCombo = true;
-                if (gc == genotypeCombos.begin()) {
-                    bestOverallComboIsHet = true;
-                }
             }
         }
 
-        // if for some reason there are no het combos, use the first combo
-        if (!hasHetCombo) {
+        // report the maximum a posteriori estimate
+        // unless we're reporting the GL maximum
+        if (!parameters.reportGenotypeLikelihoodMax) {
             bestCombo = genotypeCombos.front();
+        } else {
+            bestCombo = glMax;
         }
 
         DEBUG2("best combo: " << bestCombo);
@@ -667,7 +670,9 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        if ((1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
+        //if (alts.empty()) alts = genotypeAlleles;
+
+        if (!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
 
             vcf::Variant var(parser->variantCallFile);
 
@@ -683,7 +688,6 @@ int main (int argc, char *argv[]) {
                 parser->sampleList,
                 coverage,
                 bestCombo,
-                bestOverallComboIsHet,
                 alleleGroups,
                 partialObservationGroups,
                 partialObservationSupport,

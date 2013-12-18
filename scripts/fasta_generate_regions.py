@@ -25,7 +25,7 @@ for line in fasta_index_file:
         end = region_start + region_size
         if end > chrom_length:
             end = chrom_length
-        print chrom_name + ":" + str(region_start) + ".." + str(end)
+        print chrom_name + ":" + str(region_start) + "-" + str(end)
         region_start = end
 
 

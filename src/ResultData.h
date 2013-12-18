@@ -53,7 +53,6 @@ public:
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
-        bool bestOverallComboIsHet,
         map<string, vector<Allele*> >& alleleGroups,
         map<string, vector<Allele*> >& partialObservationGroups,
         map<Allele*, set<Allele*> >& partialSupport,

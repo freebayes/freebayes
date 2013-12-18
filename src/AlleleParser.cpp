@@ -426,7 +426,6 @@ string AlleleParser::vcfHeader() {
 
         // supplementary information about the site
         << "##INFO=<ID=ODDS,Number=1,Type=Float,Description=\"The log odds ratio of the best genotype combination to the second-best.\">" << endl
-        << "##INFO=<ID=BVAR,Number=0,Type=Flag,Description=\"The best genotype combination in the posterior is variant (non homozygous).\">" << endl
         << "##INFO=<ID=GTI,Number=1,Type=Integer,Description=\"Number of genotyping iterations required to reach convergence or bailout.\">" << endl
         //<< "##INFO=<ID=TS,Number=0,Type=Flag,Description=\"site has transition SNP\">" << endl
         //<< "##INFO=<ID=TV,Number=0,Type=Flag,Description=\"site has transversion SNP\">" << endl

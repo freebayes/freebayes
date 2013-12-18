@@ -18,7 +18,6 @@ vcf::Variant& Results::vcf(
     vector<string>& sampleNames,
     int coverage,
     GenotypeCombo& genotypeCombo,
-    bool bestOverallComboIsHet,
     map<string, vector<Allele*> >& alleleGroups,
     map<string, vector<Allele*> >& partialObservationGroups,
     map<Allele*, set<Allele*> >& partialObservationSupport,
@@ -347,10 +346,6 @@ vcf::Variant& Results::vcf(
              st != sequencingTechnologies.end(); ++st) { string& tech = *st;
             var.info["technology." + tech].push_back(convert((altObsCount == 0) ? 0
                                                              : nan2zero((double) altObsBySequencingTechnology[tech] / (double) altObsCount )));
-        }
-
-        if (bestOverallComboIsHet) {
-            var.infoFlags["BVAR"] = true;
         }
 
         // allele class

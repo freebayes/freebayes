@@ -445,6 +445,7 @@ ostream& operator<<(ostream& out, GenotypeCombo& g);
 
 map<int, vector<Genotype> > getGenotypesByPloidy(vector<int>& ploidies, vector<Allele>& genotypeAlleles);
 
-void combinePopulationCombos(list<GenotypeCombo>& genotypeCombos, map<string, list<GenotypeCombo> >&                           genotypeCombosByPopulation);
+void combinePopulationCombos(list<GenotypeCombo>& genotypeCombos,
+                             map<string, list<GenotypeCombo> >& genotypeCombosByPopulation);
 
 #endif
