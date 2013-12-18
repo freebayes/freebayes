@@ -1416,10 +1416,13 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     sb = currentSequence.at(csp);
                 } catch (std::out_of_range outOfRange) {
                     cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
-                         << alignment.AlignedBases << endl
-                         << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
-                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl;
-                    abort();
+                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
+                         << alignment.Position << "-" << alignment.GetEndPosition() << endl
+                         << "alignment: " << alignment.AlignedBases << endl
+                         << "currentSequence: " << currentSequence << endl
+                         << "currentSequence matching: " << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl;
+                    //abort();
+                    break;
                 }
 
                 // record mismatch if we have a mismatch here
@@ -3842,6 +3845,8 @@ vector<Allele> AlleleParser::genotypeAlleles(
     if (useOnlyInputAlleles)
         resultAlleles.clear();
 
+    // this needs to be fixed in a big way
+    // the alleles have to be put into the local haplotype structure
     map<long int, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition);
     if (v != inputVariantAlleles.end()) {
         vector<Allele>& inputalleles = v->second;
@@ -3861,6 +3866,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
             }
         }
     }
+    // remove non-unique alleles after
 
     DEBUG2("found " << resultAlleles.size() << " result alleles");
     return resultAlleles;
