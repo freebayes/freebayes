@@ -371,9 +371,11 @@ vcf::Variant& Results::vcf(
         } else if (altAllele.type == ALLELE_MNP) {
             var.info["TYPE"].push_back("mnp");
         } else {
+            /*
             cerr << "What is this?"
                  << "type: " << altAllele.type << " "
                  << "allele: " << altAllele << endl;
+            */
         }
         var.info["LEN"].push_back(convert(altAllele.length));
 

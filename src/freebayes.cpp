@@ -656,7 +656,7 @@ int main (int argc, char *argv[]) {
             vector<pair<Allele, int> > alternates = alternateAlleles(bestCombo, referenceBase);
             for (vector<pair<Allele, int> >::iterator a = alternates.begin(); a != alternates.end(); ++a) {
                 Allele& alt = a->first;
-                if (!alt.isNull())
+                if (!alt.isNull() && !alt.isReference())
                     alts.push_back(alt);
             }
             // if there are no alternate alleles in the best combo, use the genotype alleles
