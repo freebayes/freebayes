@@ -6,7 +6,6 @@
 --------
 
 ## Overview
---------
 
 [*FreeBayes*](http://arxiv.org/abs/1207.3907) is a 
 [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) genetic variant 
@@ -42,7 +41,6 @@ variation across the samples under analysis.
 
 
 ## Citing freebayes
----------
 
 A preprint [Haplotype-based variant detection from short-read 
 sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the 
@@ -61,7 +59,6 @@ ensure precise reproduction of results.
 
 
 ## Obtaining
----------
 
 To download FreeBayes, please use git to download the most recent development
 tree.  Currently, the tree is hosted on github, and can be obtained via:
@@ -73,7 +70,6 @@ nested git submodules for external repositories.
 
 
 ## Compilation
---------
 
 FreeBayes requires g++ and the standard C and C++ development libraries.
 Additionally, cmake is required for building the BamTools API.
@@ -91,7 +87,6 @@ accomplished via
 
 
 ## Usage
---------
 
 In its simplest operation, freebayes requires only two inputs: a FASTA reference
 sequence, and a BAM-format alignment file sorted by reference position.  For
@@ -115,7 +110,6 @@ For a description of available command-line options and their defaults, run:
 
 
 ## Calling variants
---------
 
 You've sequenced some samples.  You have a reference genome or assembled set of 
 contigs, and you'd like to determine reference-relative variants in your 
@@ -174,7 +168,6 @@ can also be done by filtering on the DP flag.
 
 
 ## Calling variants in a population
---------
 
 FreeBayes is designed to be run on many individuals from the same population
 (e.g. many human individuals) simultaneously.  The algorithm exploits a neutral
@@ -206,7 +199,6 @@ column per sample in the input.
 
 
 ## Observation filters and qualities
---------
 
 ### Input filters
 FreeBayes filters its input so as to ignore low-confidence alignments and
@@ -267,7 +259,6 @@ P(MappedCorrectly(Obs))P(SequencedCorrectly(Obs))*.
 
 
 ## Stream processing
---------
 
 FreeBayes can read BAM from standard input `--stdin` instead of directly from
 files.  This allows the application of any number of streaming BAM filters and
@@ -290,7 +281,6 @@ technologies which have characteristic errors which may frustrate certain types
 of variant detection.
 
 ## INDELs
---------
 
 In principle, any gapped aligner which is sensitive to indels will
 produce satisfactory input for use by freebayes.  Due to potential ambiguity, 
@@ -309,7 +299,6 @@ computationally inexpensive and handles the most common classes of alignment
 inconsistency.
 
 ## Haplotype calls
---------
 
 As freebayes is haplotype-based, left-alignment is necessary only for the 
 determination of candidate polymorphic loci.  Once such loci are determined, 
@@ -403,7 +392,6 @@ look no further than the [gkno genome analysis platform](http://gkno.me/).
 
 
 ## Support
---------
 
 Please report any issues or questions to the [freebayes mailing 
 list](https://groups.google.com/forum/#!forum/freebayes), [freebayes issue 
