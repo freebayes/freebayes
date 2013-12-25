@@ -359,7 +359,6 @@ is combined with high a sequencing error rate.
 
 
 ## "Best practices"
---------
 
 FreeBayes follows the patterns suggested by the [Unix 
 philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), which promotes the 
