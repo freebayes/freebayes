@@ -358,7 +358,7 @@ depth will prevent the generation of any calls if a long `--haplotype-window`
 is combined with high a sequencing error rate.
 
 
-## "Best practices"
+## Best practices and design philosophy
 
 FreeBayes follows the patterns suggested by the [Unix 
 philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), which promotes the 
