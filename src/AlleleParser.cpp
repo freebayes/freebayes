@@ -778,7 +778,7 @@ void AlleleParser::loadSampleCNVMap(void) {
     // the current reference sequence.
     if (!parameters.diploidReference) {
         for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-            sampleCNV.setPloidy(r->RefName, r->RefName, 0, r->RefLength, 1);
+            sampleCNV.setPloidy(referenceSampleName, r->RefName, 0, r->RefLength, 1);
         }
     }
 
@@ -842,7 +842,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     usingHaplotypeBasisAlleles = false;
     rightmostHaplotypeBasisAllelePosition = 0;
     nullSample = new Sample();
-
+    referenceSampleName = "reference_sample";
 
     // initialization
     openTraceFile();
@@ -3532,8 +3532,8 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
     if (parameters.useRefAllele) {
         if (currentReferenceAllele) delete currentReferenceAllele; // clean up after last position
         currentReferenceAllele = referenceAllele(parameters.MQR, parameters.BQR);
-        samples[currentSequenceName].clear();
-        samples[currentSequenceName][currentReferenceAllele->currentBase].push_back(currentReferenceAllele);
+        samples[referenceSampleName].clear();
+        samples[referenceSampleName][currentReferenceAllele->currentBase].push_back(currentReferenceAllele);
         //alleles.push_back(currentReferenceAllele);
     }
 

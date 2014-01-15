@@ -146,6 +146,7 @@ public:
     FastaReference reference;
     vector<string> referenceSequenceNames;
     map<int, string> referenceIDToName;
+    string referenceSampleName;
     
     // target regions
     vector<BedTarget> targets;
