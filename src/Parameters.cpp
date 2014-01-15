@@ -142,6 +142,7 @@ void Parameters::usage(char** argv) {
         << "   --report-monomorphic" << endl
         << "                   Report even loci which appear to be monomorphic, and report all" << endl
         << "                   considered alleles, even those which are not in called genotypes." << endl
+        << "                   Loci which do not have any potential alternates have '.' for ALT." << endl
         << endl
         << "reporting:" << endl
         << endl
