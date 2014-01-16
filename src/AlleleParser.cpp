@@ -1382,7 +1382,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         char t = cigarIter->Type;
         DEBUG2("cigar item: " << t << l);
 
-        if (t == 'M') { // match or mismatch
+        if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             int firstMatch = csp; // track the first match after a mismatch, for recording 'reference' alleles
             int mismatchStart = -1;
             bool inMismatch = false;
