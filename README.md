@@ -68,6 +68,21 @@ tree.  Currently, the tree is hosted on github, and can be obtained via:
 Note the use of --recursive.  This is required, as the project contains some
 nested git submodules for external repositories.
 
+### Resolving proxy issues with git
+
+Depending on your local network configuration, you may have problems obtaining
+freebayes via git.  If you see something like this you may be behind a proxy
+that blocks access to standard git:// port (9418).
+
+    $ git clone --recursive git://github.com/ekg/freebayes.git
+    Cloning into 'freebayes'...
+    fatal: Unable to look up github.com (port 9418) (Name or service not known)
+
+Luckily, if you have access to https:// on port 443, then you can use this
+'magic' command as a workaround to enable download of the submodules:
+
+    git config --global url.https://github.com/.insteadOf git://github.com/
+
 
 ## Compilation
 
