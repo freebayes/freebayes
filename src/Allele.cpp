@@ -626,7 +626,9 @@ void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refs
             // pick the best by count
             ordered[f->second] = f->first;
         }
-        string& altbase = ordered.rend()->second;
+
+        // choose the most common group
+        string& altbase = ordered.rbegin()->second;
         if (altseq == refseq) {
             homogenizeTo[altseq] = &refallele;
         } else {
