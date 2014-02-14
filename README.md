@@ -23,7 +23,7 @@ alignments.  This method avoids one of the core problems with alignment-based
 variant detection--- that identical sequences may have multiple possible 
 alignments:
 
-<img src="http://hypervolu.me/~erik/freebayes/figures/haplotype_calling.png" 
+<img src="http://hypervolu.me/freebayes/figures/haplotype_calling.png" 
 width=500/>
 
 *FreeBayes* uses short-read alignments 
