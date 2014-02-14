@@ -1,4 +1,4 @@
 #ifndef VERSION_GIT_H
 #define VERSION_GIT_H
-#define VERSION_GIT "v0.9.10-11-g90b7027-dirty"
+#define VERSION_GIT "v9.9.11-3-gdfddc43-dirty"
 #endif /* VERSION_GIT_H */
