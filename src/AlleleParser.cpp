@@ -1118,6 +1118,9 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
                 }
 
             }
+        } else {
+            ERROR("Could not set haplotype-basis VCF file to target region");
+            exit(1);
         }
         // set the rightmost haplotype position to trigger the next update
         rightmostHaplotypeBasisAllelePosition = pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
