@@ -422,7 +422,8 @@ ostream &operator<<(ostream &out, Allele &allele) {
             //<< ":" << allele.referenceSequence
             << ":" << allele.repeatRightBoundary
             << ":" << allele.cigar
-            << ":" << allele.quality;
+            << ":" << allele.lnmapQuality
+            << ":" << allele.lnquality;
         out.precision(prec);
     } else {
         out << allele.typeStr() 
