@@ -287,10 +287,13 @@ void Parameters::usage(char** argv) {
         << "                   Read length-dependent allele observation biases from FILE." << endl
         << "                   The format is [length] [alignment efficiency relative to reference]" << endl
         << "                   where the efficiency is 1 if there is no relative observation bias." << endl
-        << "   --standard-gls" << endl
-        << "                   Use legacy model to generate genotype likelihoods." << endl
         << "   --base-quality-cap Q" << endl
         << "                   Limit estimated observation quality by capping base quality at Q." << endl
+        << "   --experimental-gls" << endl
+        << "                   Generate genotype likelihoods using 'effective base depth' metric" << endl
+        << "                   qual = 1-BaseQual * 1-MapQual.  Incorporate partial observations." << endl
+        << "                   This is the default when contamination estimates are provided." << endl
+        << "                   Optimized for diploid samples." << endl
         << "   --prob-contamination F" << endl
         << "                   An estimate of contamination to use for all samples.  default: 10e-9" << endl
         << "   --contamination-estimates FILE" << endl
@@ -414,7 +417,7 @@ Parameters::Parameters(int argc, char** argv) {
     reportMonomorphic = false;
     boundIndels = true; // ignore indels at ends of reads
     onlyUseInputAlleles = false;
-    standardGLs = false;
+    standardGLs = true;
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
@@ -525,7 +528,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"haplotype-basis-alleles", required_argument, 0, '9'},
             {"report-genotype-likelihood-max", no_argument, 0, '5'},
             {"report-all-haplotype-alleles", no_argument, 0, '6'},
-            {"standard-gls", no_argument, 0, ')'},
+            {"experimental-gls", no_argument, 0, ')'},
             {"base-quality-cap", required_argument, 0, '('},
             {"prob-contamination", required_argument, 0, '_'},
             {"contamination-estimates", required_argument, 0, ','},
@@ -992,7 +995,7 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
         case ')':
-            standardGLs = true;
+            standardGLs = false;
             break;
 
         case '(':
