@@ -493,6 +493,7 @@ void AlleleParser::setupVCFInput(void) {
     if (!parameters.variantPriorsFile.empty()) {
         variantCallInputFile.open(parameters.variantPriorsFile);
         currentVariant = new vcf::Variant(variantCallInputFile);
+        usingVariantInputAlleles = true;
 
         // get sample names from VCF input file
         //
@@ -511,8 +512,8 @@ void AlleleParser::setupVCFInput(void) {
 
     // haplotype alleles for constructing haplotype alleles
     if (!parameters.haplotypeVariantFile.empty()) {
-	haplotypeVariantInputFile.open(parameters.haplotypeVariantFile);
-	usingHaplotypeBasisAlleles = true;
+        haplotypeVariantInputFile.open(parameters.haplotypeVariantFile);
+        usingHaplotypeBasisAlleles = true;
     }
 }
 
@@ -840,6 +841,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     currentSequenceStart = 0;
     lastHaplotypeLength = 1;
     usingHaplotypeBasisAlleles = false;
+    usingVariantInputAlleles = false;
     rightmostHaplotypeBasisAllelePosition = 0;
     nullSample = new Sample();
     referenceSampleName = "reference_sample";
@@ -1320,6 +1322,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
     if (usingHaplotypeBasisAlleles) {
         updateHaplotypeBasisAlleles(sp, alignment.AlignedBases.size());
+    }
+
+    if (usingVariantInputAlleles) {
+         updateInputVariants(sp, alignment.AlignedBases.size());
     }
 
 #ifdef VERBOSE_DEBUG
@@ -2053,17 +2059,25 @@ void AlleleParser::updateRegisteredAlleles(void) {
     }
 }
 
-void AlleleParser::updateInputVariants(void) {
+void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
-    if (variantCallInputFile.is_open()) {
+    if (pos + referenceLength > rightmostHaplotypeBasisAllelePosition) {
+        stringstream r;
+        //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+        //cerr << "getting variants in " << r.str() << endl;
+        if (variantCallInputFile.setRegion(currentSequenceName,
+                                           rightmostHaplotypeBasisAllelePosition,
+                                           pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
+            //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
+            // get the variants in the target region
+            vcf::Variant var(variantCallInputFile);
+            while (variantCallInputFile.getNextVariant(*currentVariant)) {
 
-        if (hasMoreVariants && currentVariant->position - 1 <= currentPosition && currentVariant->sequenceName == currentSequenceName) {
-            do {
                 DEBUG2("getting input alleles from input VCF at position " << currentVariant->sequenceName << ":" << currentVariant->position);
                 long int pos = currentVariant->position - 1;
                 // get alternate alleles
                 bool includePreviousBaseForIndels = true;
-                map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates(includePreviousBaseForIndels);
+                map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
                 vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
                 for (vector<string>::iterator a = currentVariant->alt.begin(); a != currentVariant->alt.end(); ++a) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
@@ -2079,7 +2093,6 @@ void AlleleParser::updateInputVariants(void) {
                     vector<Allele> alleles;
 
                     for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
-
                         vcf::VariantAllele& variant = *v;
                         long int allelePos = variant.position - 1;
                         AlleleType type;
@@ -2112,25 +2125,51 @@ void AlleleParser::updateInputVariants(void) {
                             }
                             cigar = convert(len) + "X";
                         } else if (variant.ref.size() > variant.alt.size()) {
-                            len = variant.ref.size() - variant.alt.size();
-                            reflen = len;
                             type = ALLELE_DELETION;
-                            cigar = convert(len) + "D";
+                            len = variant.ref.size() - variant.alt.size();
+                            allelePos -= 1;
+                            reflen = len + 2;
+                            alleleSequence =
+                                uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
+                                + alleleSequence
+                                + uppercase(reference.getSubSequence(currentSequenceName, allelePos+len, 1));
+                            cigar = "1M" + convert(len) + "D" + "1M";
                         } else {
-                            len = variant.alt.size() - variant.ref.size();
-                            reflen = 0;
+                            // we always include the flanking bases for these elsewhere, so here too in order to be consistent and trigger use
                             type = ALLELE_INSERTION;
-                            cigar = convert(len) + "I";
+                            // add previous base and post base to match format typically used for calling
+                            allelePos -= 1;
+                            alleleSequence =
+                                uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
+                                + alleleSequence
+                                + uppercase(reference.getSubSequence(currentSequenceName, allelePos+1, 1));
+                            len = variant.alt.size() - var.ref.size();
+                            cigar = "1M" + convert(len) + "I" + "1M";
+                            reflen = 2;
                         }
 
                         Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, cigar, (unsigned int) reflen, allelePos);
                         DEBUG("input allele: " << allele);
                         alleles.push_back(allele);
 
+                        inputVariantAlleles[allele.position].push_back(allele);
+                        genotypeAlleles.push_back(allele);
+                        if (allele.position + 1 != currentVariant->position) {
+                            cerr << "parsed allele position is not the same as the variant position!" << endl;
+                            cerr << *currentVariant << endl;
+                            cerr << allele << endl;
+                            exit(1);
+                        }
+                        if (allele.type != ALLELE_REFERENCE) {
+                            alternatePositions.insert(allele.position);
+                        }
+
                     }
 
                     // Variant::parsedAlternates() only gives us alternate alleles
                     // for now, add reference sequences back between the alternates here
+                    /*
+
                     if (alleles.size() > 1) {
                         vector<Allele> newAlleles;
                         vector<Allele>::iterator p = alleles.begin();
@@ -2150,10 +2189,10 @@ void AlleleParser::updateInputVariants(void) {
                         }
                         alleles = newAlleles;
                         DEBUG2("alleles, post addition of reference sequences: " << alleles);
+                        cerr << "alleles, post addition of reference sequences: " << alleles << endl;
                     }
 
                     // for any indel alleles, grab the flanking bases to match VCF standard
-                    /*
                     vector<Allele>::iterator p = alleles.begin();
                     for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                         if (a->isDeletion()) {
@@ -2177,7 +2216,6 @@ void AlleleParser::updateInputVariants(void) {
                         p = a;
                     }
                     DEBUG2("alleles, post processing of deletions: " << alleles);
-                    */
 
                     // remove 0-length alleles resulting from edge cases in previous processing (e.g. beginning of read)
                     if (alleles.size() > 1) {
@@ -2199,20 +2237,23 @@ void AlleleParser::updateInputVariants(void) {
                             }
                         }
                     }
+                   
 
-                    inputVariantAlleles[allele.position].push_back(allele);
-                    genotypeAlleles.push_back(allele);
-
-                    if (allele.position + 1 != currentVariant->position) {
-                        cerr << "parsed allele position is not the same as the variant position!" << endl;
-                        cerr << *currentVariant << endl;
-                        cerr << allele << endl;
-                        exit(1);
+                    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+                        Allele& allele = *a;
+                        inputVariantAlleles[allele.position].push_back(allele);
+                        genotypeAlleles.push_back(allele);
+                        if (allele.position + 1 != currentVariant->position) {
+                            cerr << "parsed allele position is not the same as the variant position!" << endl;
+                            cerr << *currentVariant << endl;
+                            cerr << allele << endl;
+                            exit(1);
+                        }
+                        if (allele.type != ALLELE_REFERENCE) {
+                            alternatePositions.insert(allele.position);
+                        }
                     }
-
-                    if (allele.type != ALLELE_REFERENCE) {
-                        alternatePositions.insert(allele.position);
-                    }
+*/
 
                 }
 
@@ -2335,10 +2376,18 @@ void AlleleParser::updateInputVariants(void) {
                     */
                 }
 
-            } while ((hasMoreVariants = variantCallInputFile.getNextVariant(*currentVariant))
-                    && currentVariant->position - 1 <= currentPosition
-                    && currentVariant->sequenceName == currentSequenceName);
+            }
         }
+        /*
+        for (map<long int, vector<Allele> >::iterator v = inputVariantAlleles.begin(); v != inputVariantAlleles.end(); ++v) {
+            vector<Allele>& iv = v->second;
+            cerr << "input variants pos = " << v->first << endl;
+            for (vector<Allele>::iterator a = iv.begin(); a != iv.end(); ++a) {
+                cerr << *a << endl;
+            }
+        }
+        */
+        rightmostHaplotypeBasisAllelePosition = pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
     }
 
 }
@@ -2796,8 +2845,8 @@ bool AlleleParser::toNextPosition(void) {
     vector<Allele*> newAlleles;
     updateAlignmentQueue(currentPosition, newAlleles);
     addToRegisteredAlleles(newAlleles);
-    DEBUG2("updating variants");
-    updateInputVariants();
+    //DEBUG2("updating variants");
+    //updateInputVariants();
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles(); // this removes unused left-flanking sequence
     //DEBUG2("updating prior variant alleles");

@@ -315,6 +315,8 @@ string stringForAllele(const Allele &allele) {
             << allele.basesRight;
     } else {
         out << allele.typeStr() << ":"
+            << allele.cigar << ":"
+            << scientific << fixed << allele.position << ":"
             << allele.length << ":"
             << allele.alternateSequence;
     }
@@ -427,6 +429,8 @@ ostream &operator<<(ostream &out, Allele &allele) {
         out.precision(prec);
     } else {
         out << allele.typeStr() 
+            << ":" << allele.cigar
+            << ":" << scientific << fixed << allele.position
             << ":" << allele.length 
             << ":" << (string) allele.alternateSequence;
     }

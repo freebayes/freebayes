@@ -171,6 +171,7 @@ public:
     // map from starting position to length->alle
     map<long int, vector<AllelicPrimitive> > haplotypeBasisAlleles;  // this is in the current reference sequence
     bool usingHaplotypeBasisAlleles;
+    bool usingVariantInputAlleles;
     long int rightmostHaplotypeBasisAllelePosition;
     void updateHaplotypeBasisAlleles(long int pos, int referenceLength);
     bool allowedAllele(long int pos, string& ref, string& alt);
@@ -241,7 +242,7 @@ public:
     RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles, bool gettingPartials = false);
-    void updateInputVariants(void);
+    void updateInputVariants(long int pos, int referenceLength);
     void updateHaplotypeBasisAlleles(void);
     void removeAllelesWithoutReadSpan(vector<Allele*>& alleles, int probeLength, int haplotypeLength);
     void removeNonOverlappingAlleles(vector<Allele*>& alleles,

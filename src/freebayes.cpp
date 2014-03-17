@@ -177,6 +177,14 @@ int main (int argc, char *argv[]) {
             if (parameters.reportMonomorphic) {
                 DEBUG("calling at site even though there are no alternate observations");
             }
+        } else {
+            /*
+            cerr << "has input variants at " << parser->currentSequenceName << ":" << parser->currentPosition << endl;
+            vector<Allele>& inputs = parser->inputVariantAlleles[parser->currentPosition];
+            for (vector<Allele>::iterator a = inputs.begin(); a != inputs.end(); ++a) {
+                cerr << *a << endl;
+            }
+            */
         }
 
         // to ensure proper ordering of output stream
