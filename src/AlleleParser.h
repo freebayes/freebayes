@@ -173,6 +173,7 @@ public:
     bool usingHaplotypeBasisAlleles;
     bool usingVariantInputAlleles;
     long int rightmostHaplotypeBasisAllelePosition;
+    long int rightmostInputAllelePosition;
     void updateHaplotypeBasisAlleles(long int pos, int referenceLength);
     bool allowedAllele(long int pos, string& ref, string& alt);
 

@@ -843,6 +843,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     usingHaplotypeBasisAlleles = false;
     usingVariantInputAlleles = false;
     rightmostHaplotypeBasisAllelePosition = 0;
+    rightmostInputAllelePosition = 0;
     nullSample = new Sample();
     referenceSampleName = "reference_sample";
 
@@ -2061,12 +2062,12 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
-    if (pos + referenceLength > rightmostHaplotypeBasisAllelePosition) {
+    if (pos + referenceLength > rightmostInputAllelePosition) {
         stringstream r;
         //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
         if (variantCallInputFile.setRegion(currentSequenceName,
-                                           rightmostHaplotypeBasisAllelePosition,
+                                           rightmostInputAllelePosition,
                                            pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
@@ -2154,12 +2155,14 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
                         inputVariantAlleles[allele.position].push_back(allele);
                         genotypeAlleles.push_back(allele);
+                        /*
                         if (allele.position + 1 != currentVariant->position) {
                             cerr << "parsed allele position is not the same as the variant position!" << endl;
                             cerr << *currentVariant << endl;
                             cerr << allele << endl;
                             exit(1);
                         }
+                        */
                         if (allele.type != ALLELE_REFERENCE) {
                             alternatePositions.insert(allele.position);
                         }
@@ -2387,7 +2390,8 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
             }
         }
         */
-        rightmostHaplotypeBasisAllelePosition = pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+        //rightmostHaplotypeBasisAllelePosition = pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+        rightmostInputAllelePosition = pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
     }
 
 }
