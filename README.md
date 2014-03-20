@@ -50,8 +50,8 @@ work that leads to publication.
 
 Please use this citation format:
 
-    Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing.
-    *arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
+Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing.
+*arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
 
 If possible, please also refer to the version number provided by freebayes when 
 it is run without arguments or with the `--help` option.  For example, you 
