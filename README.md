@@ -48,6 +48,11 @@ statistical models
 used in FreeBayes.  We ask that you cite this paper if you use FreeBayes in
 work that leads to publication.
 
+Please use this citation format:
+
+    Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing.
+    *arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
+
 If possible, please also refer to the version number provided by freebayes when 
 it is run without arguments or with the `--help` option.  For example, you 
 should see something like this:
@@ -55,7 +60,7 @@ should see something like this:
     version:  v0.9.10-3-g47a713e-dirty
 
 This provides both a point release number and a git commit id, which will 
-ensure precise reproduction of results.
+ensure precise reproducibility of results.
 
 
 ## Obtaining
