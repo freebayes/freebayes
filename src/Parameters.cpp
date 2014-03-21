@@ -212,7 +212,7 @@ void Parameters::usage(char** argv) {
         << "                   default: exclude duplicates marked as such in alignments" << endl
         << "   -m --min-mapping-quality Q" << endl
         << "                   Exclude alignments from analysis if they have a mapping" << endl
-        << "                   quality less than Q.  default: 0" << endl
+        << "                   quality less than Q.  default: 1" << endl
         << "   -q --min-base-quality Q" << endl
         << "                   Exclude alleles from analysis if their supporting base" << endl
         << "                   quality is less than Q.  default: 0" << endl
@@ -421,7 +421,7 @@ Parameters::Parameters(int argc, char** argv) {
     MQR = 100;                     // -M --reference-mapping-quality
     BQR = 60;                     // -B --reference-base-quality
     ploidy = 2;                  // -p --ploidy
-    MQL0 = 0;                    // -m --min-mapping-quality
+    MQL0 = 1;                    // -m --min-mapping-quality
     BQL0 = 0;                    // -q --min-base-quality
     minSupportingAlleleQualitySum = 0;
     minSupportingMappingQualitySum = 0;

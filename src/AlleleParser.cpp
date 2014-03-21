@@ -1945,20 +1945,28 @@ void AlleleParser::updateAlignmentQueue(long int position,
             }
 
             // skip this alignment if we are not using duplicate reads (we remove them by default)
-            if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads)
+            if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads) {
+                //DEBUG("skipping alignment " << currentAlignment.Name << " because it is a duplicate read");
                 continue;
+            }
 
             // skip unmapped alignments, as they cannot be used in the algorithm
-            if (!currentAlignment.IsMapped())
+            if (!currentAlignment.IsMapped()) {
+                //DEBUG("skipping alignment " << currentAlignment.Name << " because it is not mapped");
                 continue;
+            }
 
             // skip alignments which have no aligned bases
-            if (currentAlignment.AlignedBases.size() == 0)
+            if (currentAlignment.AlignedBases.size() == 0) {
+                //DEBUG("skipping alignment " << currentAlignment.Name << " because it has no aligned bases");
                 continue;
+            }
 
             // skip alignments which are non-primary
-            if (!currentAlignment.IsPrimaryAlignment())
+            if (!currentAlignment.IsPrimaryAlignment()) {
+                //DEBUG("skipping alignment " << currentAlignment.Name << " because it is not marked primary");
                 continue;
+            }
 
             if (!gettingPartials && currentAlignment.GetEndPosition() < position) {
                 cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!"
@@ -1971,7 +1979,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
             // such as mismatches
 
             // initially skip reads with low mapping quality (what happens if MapQuality is not in the file)
-            if (currentAlignment.MapQuality > parameters.MQL0) {
+            if (currentAlignment.MapQuality >= parameters.MQL0) {
                 // extend our cached reference sequence to allow processing of this alignment
                 extendReferenceSequence(currentAlignment);
                 // left realign indels
@@ -3478,7 +3486,7 @@ bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int hapl
             RegisteredAlignment& ra = *rai;
             Allele* aptr;
             // this guard prevents trashing allele pointers when getting partial observations
-            if (ra.start <= currentPosition && ra.end > currentPosition + haplotypeLength) {
+            if (ra.start <= currentPosition && ra.end >= currentPosition + haplotypeLength) {
                 if (ra.fitHaplotype(currentPosition, haplotypeLength, aptr)) {
                     for (vector<Allele>::iterator a = ra.alleles.begin(); a != ra.alleles.end(); ++a) {
                         if (a->position == currentPosition && a->referenceLength == haplotypeLength) {
