@@ -248,7 +248,7 @@ int main (int argc, char *argv[]) {
         long double theta = parameters.TH * parser->lastHaplotypeLength;
 
         // if we have only one viable allele, we don't have evidence for variation at this site
-        if (!parameters.reportMonomorphic && genotypeAlleles.size() <= 1 && genotypeAlleles.front().isReference()) {
+        if (!parser->hasInputVariantAllelesAtCurrentPosition() && !parameters.reportMonomorphic && genotypeAlleles.size() <= 1 && genotypeAlleles.front().isReference()) {
             DEBUG("no alternate genotype alleles passed filters at " << parser->currentSequenceName << ":" << parser->currentPosition);
             continue;
         }
