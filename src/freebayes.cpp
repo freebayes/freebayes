@@ -304,11 +304,19 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("calculating data likelihoods");
         // calculate data likelihoods
-        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        //for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+        for (vector<string>::iterator n = parser->sampleList.begin(); n != parser->sampleList.end(); ++n) {
 
-            string sampleName = s->first;
+            //string sampleName = s->first;
+            string& sampleName = *n;
             //DEBUG2("sample: " << sampleName);
-            Sample& sample = s->second;
+            //Sample& sample = s->second;
+            if (samples.find(sampleName) == samples.end()
+                && !(parser->hasInputVariantAllelesAtCurrentPosition()
+                     || parameters.reportMonomorphic)) {
+                continue;
+            }
+            Sample& sample = samples[sampleName];
             vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
             vector<Genotype*> genotypesWithObs;
             for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {

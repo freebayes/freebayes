@@ -58,12 +58,15 @@ vcf::Variant& Results::vcf(
     // set up VCF record-wide variables
 
     var.sequenceName = parser->currentSequenceName;
-    // XXX this should be the position of the matching reference haplotype
     var.position = referencePosition + 1;
     var.id = ".";
     var.filter = ".";
-    // XXX this should be the size of the maximum deletion + 1bp on the left end
+
+    // note that we set QUAL to 0 at loci with no data
     var.quality = max((long double) 0, nan2zero(big2phred(pHom)));
+    if (coverage == 0) {
+        var.quality = 0;
+    }
 
 
     // set up format string
@@ -496,6 +499,10 @@ vcf::Variant& Results::vcf(
             Sample& sample = *gc->second->sample;
             Result& sampleLikelihoods = s->second;
             Genotype* genotype = gc->second->genotype;
+            if (sample.observationCount() == 0) {
+                continue;
+            }
+
             sampleOutput["GT"].push_back(genotype->relativeGenotype(refbase, altAlleles));
 
             if (parameters.calculateMarginals) {
