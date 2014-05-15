@@ -2070,9 +2070,12 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
 void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
+    //cerr << "updating input variants (?) " << pos << " + " << referenceLength << " >? " << rightmostInputAllelePosition << endl;
+
     if (pos + referenceLength > rightmostInputAllelePosition) {
-        stringstream r;
-        //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+        //stringstream r;
+        //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition
+        //  << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
         if (variantCallInputFile.setRegion(currentSequenceName,
                                            rightmostInputAllelePosition,
@@ -2177,95 +2180,6 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
                     }
 
-                    // Variant::parsedAlternates() only gives us alternate alleles
-                    // for now, add reference sequences back between the alternates here
-                    /*
-
-                    if (alleles.size() > 1) {
-                        vector<Allele> newAlleles;
-                        vector<Allele>::iterator p = alleles.begin();
-                        for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                            if (p != a) {
-                                if (p->position + p->referenceLength < a->position) {
-                                    // insert a reference allele
-                                    long int pend = p->position + p->referenceLength;
-                                    string refsequence = uppercase(reference.getSubSequence(currentVariant->sequenceName, pend, a->position - pend));
-                                    string cigar = convert(refsequence.size()) + "M";
-                                    Allele refAllele = genotypeAllele(ALLELE_REFERENCE, refsequence, refsequence.size(), cigar, refsequence.size(), pend);
-                                    newAlleles.push_back(refAllele);
-                                }
-                            }
-                            newAlleles.push_back(*a);
-                            p = a;
-                        }
-                        alleles = newAlleles;
-                        DEBUG2("alleles, post addition of reference sequences: " << alleles);
-                        cerr << "alleles, post addition of reference sequences: " << alleles << endl;
-                    }
-
-                    // for any indel alleles, grab the flanking bases to match VCF standard
-                    vector<Allele>::iterator p = alleles.begin();
-                    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                        if (a->isDeletion()) {
-                            if (p != a) {
-                                if (p->isReference()) {
-                                    string seq; vector<pair<int, string> > cig; vector<short> quals;
-                                    p->subtractFromEnd(1, seq, cig, quals);
-                                    a->addToStart(seq, cig, quals);
-                                }
-                                // they will be merged otherwise in the complex merge step below
-                            } else {
-                                // add the previous reference base
-                                vector<short> quals;
-                                quals.assign(1, 0);
-                                vector<pair<int, string> > cig;
-                                cig.push_back(make_pair(1, "M"));
-                                string seq = uppercase(reference.getSubSequence(currentVariant->sequenceName, a->position - 1, 1));
-                                a->addToStart(seq, cig, quals);
-                            }
-                        }
-                        p = a;
-                    }
-                    DEBUG2("alleles, post processing of deletions: " << alleles);
-
-                    // remove 0-length alleles resulting from edge cases in previous processing (e.g. beginning of read)
-                    if (alleles.size() > 1) {
-                        vector<Allele> newAlleles;
-                        for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                            if (a->referenceLength > 0) {
-                                newAlleles.push_back(*a);
-                            }
-                        }
-                        alleles = newAlleles;
-                    }
-
-                    Allele& allele = alleles.front();
-                    if (alleles.size() > 1) {
-                        vector<Allele>::iterator a = alleles.begin(); ++a;
-                        for (; a != alleles.end(); ++a) {
-                            if (a->referenceLength > 0) {
-                                allele.mergeAllele(*a, ALLELE_COMPLEX);
-                            }
-                        }
-                    }
-                   
-
-                    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-                        Allele& allele = *a;
-                        inputVariantAlleles[allele.position].push_back(allele);
-                        genotypeAlleles.push_back(allele);
-                        if (allele.position + 1 != currentVariant->position) {
-                            cerr << "parsed allele position is not the same as the variant position!" << endl;
-                            cerr << *currentVariant << endl;
-                            cerr << allele << endl;
-                            exit(1);
-                        }
-                        if (allele.type != ALLELE_REFERENCE) {
-                            alternatePositions.insert(allele.position);
-                        }
-                    }
-*/
-
                 }
 
                 // store the allele counts, if they are provided
@@ -2298,8 +2212,9 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                     }
                 }
 
-                if (currentVariant->samples.empty())
+                if (currentVariant->samples.empty()) {
                     continue;
+                }
 
                 if (alternatePositions.size() == 1) {
 
@@ -2857,8 +2772,10 @@ bool AlleleParser::toNextPosition(void) {
     vector<Allele*> newAlleles;
     updateAlignmentQueue(currentPosition, newAlleles);
     addToRegisteredAlleles(newAlleles);
-    //DEBUG2("updating variants");
-    //updateInputVariants();
+    DEBUG2("updating variants");
+    // done typically at each new read, but this handles the case where there is no data for a while
+    updateInputVariants(currentPosition, 1);
+
     DEBUG2("updating registered alleles");
     updateRegisteredAlleles(); // this removes unused left-flanking sequence
     //DEBUG2("updating prior variant alleles");
@@ -2867,11 +2784,6 @@ bool AlleleParser::toNextPosition(void) {
     // if we have alignments which ended at the previous base, erase them and their alleles
     // TODO check that this doesn't leak...
     DEBUG2("erasing old registered alignments");
-    /*
-    map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.find(currentPosition - 2);
-    if (f != registeredAlignments.end()) {
-        registeredAlignments.erase(f);
-        }*/
     map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.begin();
     while (f != registeredAlignments.end()
            && f->first < currentPosition - lastHaplotypeLength) {
