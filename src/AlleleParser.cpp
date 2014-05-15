@@ -2071,6 +2071,7 @@ void AlleleParser::updateRegisteredAlleles(void) {
 void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
     //cerr << "updating input variants (?) " << pos << " + " << referenceLength << " >? " << rightmostInputAllelePosition << endl;
+    if (!usingVariantInputAlleles) return;
 
     if (pos + referenceLength > rightmostInputAllelePosition) {
         //stringstream r;
