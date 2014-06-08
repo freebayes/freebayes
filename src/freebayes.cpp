@@ -454,6 +454,8 @@ int main (int argc, char *argv[]) {
 
         long double bestComboOddsRatio = 0;
 
+        bool hasHetCombo = false;
+        bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
 
         // what a hack...
@@ -617,23 +619,25 @@ int main (int argc, char *argv[]) {
         pHom = 0.0;
         // calculates pvar and gets the best het combo
         for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
-            if (gc->isHomozygous()
-                && (parameters.useRefAllele
-                    || !parameters.useRefAllele && gc->alleles().front() == referenceBase)) {
+            if (gc->isHomozygous() && gc->alleles().front() == referenceBase) {
                 pVar -= big_exp(gc->posteriorProb - posteriorNormalizer);
                 pHom += big_exp(gc->posteriorProb - posteriorNormalizer);
+            } else if (!hasHetCombo) { // get the first het combo
+                bestCombo = *gc;
+                hasHetCombo = true;
+                if (gc == genotypeCombos.begin()) {
+                    bestOverallComboIsHet = true;
+                }
             }
         }
 
         // report the maximum a posteriori estimate
         // unless we're reporting the GL maximum
-        if (!parameters.reportGenotypeLikelihoodMax) {
-            bestCombo = genotypeCombos.front();
-        } else {
+        if (parameters.reportGenotypeLikelihoodMax) {
             bestCombo = glMax;
         }
 
-        DEBUG2("best combo: " << bestCombo);
+        DEBUG("best combo: " << bestCombo);
 
         // odds ratio between the first and second-best combinations
         if (genotypeCombos.size() > 1) {

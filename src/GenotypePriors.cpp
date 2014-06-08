@@ -1,6 +1,6 @@
 #include "GenotypePriors.h"
 
-
+/*
 long double alleleFrequencyProbability(const map<int, int>& alleleFrequencyCounts, long double theta) {
 
     int M = 0;
@@ -49,6 +49,7 @@ long double __alleleFrequencyProbabilityln(const map<int, int>& alleleFrequencyC
     return factorialln(M) - (thetaln + thetaH) + p;
 
 }
+*/
 
 
 long double probabilityGenotypeComboGivenAlleleFrequencyln(GenotypeCombo& genotypeCombo, Allele& allele) {
@@ -111,12 +112,18 @@ genotypeCombinationPriorProbability(
                         << " " << alleleCounter.placedStart
                         << "," << alleleCounter.placedEnd
                         << endl;
-                        */
+                    cerr << "priorObservationExpectationProb = " << priorObservationExpectationProb << endl;
+                    cerr << "binprobln strand = " << binomialProbln(alleleCounter.forwardStrand, obs, 0.5) << endl;
+                    cerr << "binprobln position = " << binomialProbln(alleleCounter.placedLeft, obs, 0.5) << endl;
+                    cerr << "binprobln start = " << binomialProbln(alleleCounter.placedStart, obs, 0.5) << endl;
+                    cerr << "priorObservationExpectationProb = " << priorObservationExpectationProb << endl;
+                    */
 
                     priorObservationExpectationProb
                         += binomialProbln(alleleCounter.forwardStrand, obs, 0.5)
                         +  binomialProbln(alleleCounter.placedLeft, obs, 0.5)
                         +  binomialProbln(alleleCounter.placedStart, obs, 0.5);
+
                 }
             }
             // ok... now do the same move for the observation counts
