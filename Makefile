@@ -1,4 +1,5 @@
 all: vcflib/Makefile
+	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
 	cd src && $(MAKE)
 
 vcflib/Makefile:
