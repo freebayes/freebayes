@@ -839,7 +839,7 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     justSwitchedTargets = false;  // flag to trigger cleanup of Allele*'s and objects after jumping targets
     hasMoreAlignments = true; // flag to track when we run out of alignments in the current target or BAM files
     currentSequenceStart = 0;
-    lastHaplotypeLength = 1;
+    lastHaplotypeLength = 0;
     usingHaplotypeBasisAlleles = false;
     usingVariantInputAlleles = false;
     rightmostHaplotypeBasisAllelePosition = 0;
@@ -2045,8 +2045,11 @@ void AlleleParser::updateRegisteredAlleles(void) {
     // http://stackoverflow.com/questions/347441/erasing-elements-from-a-vector
     vector<Allele*>& alleles = registeredAlleles;
 
+
     for (vector<Allele*>::iterator allele = alleles.begin(); allele != alleles.end(); ++allele) {
         long unsigned int position = (*allele)->position;
+        // note that this will underflow if currentPosition == 0 and lastHaplotypeLength > 0
+        // resolved by setting lastHaplotypeLength = 0 in init, and when we switch targets
         if (currentPosition - lastHaplotypeLength > position + (*allele)->referenceLength) {
             *allele = NULL;
         }
@@ -2518,6 +2521,9 @@ void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles) {
 bool AlleleParser::toNextTarget(void) {
 
     DEBUG2("seeking to next target with alignments...");
+
+    // reset haplotype length; there is no last call in this sequence; it isn't relevant
+    lastHaplotypeLength = 0;
 
     // XXX
     // XXX
