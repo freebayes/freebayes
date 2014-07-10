@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2012/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: main.aux
+The style file: genome_research.bst
+Database file #1: references.bib
+Warning--I didn't find a database entry for "1000GPhaseI"
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+You've used 27 entries,
+            3195 wiz_defined-function locations,
+            811 strings with 9619 characters,
+and the built_in function-call counts, 29266 in all, are:
+= -- 2663
+> -- 1238
+< -- 13
++ -- 1130
+- -- 336
+* -- 2419
+:= -- 4009
+add.period$ -- 81
+call.type$ -- 27
+change.case$ -- 244
+chr.to.int$ -- 25
+cite$ -- 27
+duplicate$ -- 2114
+empty$ -- 2240
+format.name$ -- 405
+if$ -- 5958
+int.to.chr$ -- 3
+int.to.str$ -- 1
+missing$ -- 262
+newline$ -- 139
+num.names$ -- 108
+pop$ -- 634
+preamble$ -- 1
+purify$ -- 217
+quote$ -- 0
+skip$ -- 670
+stack$ -- 0
+substring$ -- 2840
+swap$ -- 632
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 243
+warning$ -- 0
+while$ -- 236
+width$ -- 0
+write$ -- 350
+(There was 1 warning)
