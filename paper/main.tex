@@ -13,6 +13,24 @@
 
 \DeclareMathOperator*{\E}{\mbox{\large E}}
 
+\newcommand{\approptoinn}[2]{\mathrel{\vcenter{
+  \offinterlineskip\halign{\hfil$##$\cr
+    #1\propto\cr\noalign{\kern2pt}#1\sim\cr\noalign{\kern-2pt}}}}}
+
+\newcommand{\appropto}{\mathpalette\approptoinn\relax}
+
+\def\app#1#2{%
+  \mathrel{%
+    \setbox0=\hbox{$#1\sim$}%
+    \setbox2=\hbox{%
+      \rlap{\hbox{$#1\propto$}}%
+      \lower1.1\ht0\box0%
+    }%
+    \raise0.25\ht2\box2%
+  }%
+}
+\def\approxprop{\mathpalette\app\relax}
+
 \begin{document}
 \large
 
@@ -64,7 +82,7 @@ How our approach promises to solve the problems.
 
 While \emph{statistical phasing} approaches are necessary for the determination of large-scale haplotype structure \citep{browning2007, mach2010, delaneau2012, howie2011}, sequencing traces provide short-range phasing information that may be employed directly in primary variant detection to establish phase between proximal alleles.  Present read lengths and error rates limit this \emph{physical phasing} approach to variants clustered within tens to hundreds of bases, but as the cost of obtaining long sequencing traces decreases \citep{branton2008, clarke2009}, physical phasing methods will enable the determination of larger haplotype structure directly using only sequence information from a single sample.
 
-Haplotype-based variant detection methods, in which short haplotypes are read directly from sequencing traces, offer a number of benefits over methods which operate on a single position at a time. Haplotype-based methods ensure semantic consistency among described variants by simultaneously evaluating all classes of alleles in the same context. %The use of locally-phased genotype data can lower the computational burden of genotype imputation by reducing the possible space of haplotypes which must be considered.
+Haplotype-based variant detection methods, in which short haplotypes are read directly from sequencing traces, offer a number of benefits over methods which operate on a single position at a time. Haplotype-based methods ensure semantic consistency among described variants by simultaneously evaluating all classes of alleles in the same context. 
 Locally phased genotypes can be used to improve genotyping accuracy in the context of rare variations that can be difficult to impute due to sparse linkage information.
 
 Similarly, they can assist in the design of genotyping
@@ -96,36 +114,6 @@ These results indicate that FreeBayes provides superior performance to the GATK 
 We observe that the difference in the AUC metric is dominated by both minimum distance from perfect discrimination (perfect sensitivity and perfect specificity), in which FreeBayes consistently outperforms the other methods, and by apparent hard limitation on sensitivity imposed by the other methods.  We hypothesize that the difference in performance for indels, which is larger than that for SNPs, reflects our method's detection of alleles on haplotypes, which improves the signal to noise ratio of the and effectively removes low-frequency alignment artifacts without the need for out-of-band indel and base-quality recalibration methods (we further explore this in \ref{sec:indelerror}).
 
 
-% problem, these results are old, and the depths are all messed up
-% temporary fix is to focus on 10x data, 100 samples as an intermediate place between high and low, few and many samples
-\begin{comment}
-\begin{table}
-\centering
-    \begin{tabular}{|l||l|l|l|l|}
-        \hline
-        variant detector & depth            & samples  & AUC SNPs                & AUC indels                \\ \hline
-        FreeBayes        & 20               & 1        & 0.9951796               & 0.9778426                 \\ 
-        ~                & 50               & 1        & 0.9995107               & 0.9861183                 \\
-        ~                & 100              & 1        & 0.9994589               & 0.9908615                 \\
-        ~                & 200              & 1        & 0.9992723               & 0.9904454                 \\
-        ~                & 100              & 10       & 0.9990198               & 0.9887222                 \\
-        ~                & 10               & 1000     & 0.9506019               & 0.8238546                 \\
-        \hline
-        GATK             & 20               & 1        & 0.9597245               & 0.9239944                 \\ 
-        ~                & 50               & 1        & 0.9855856               & 0.9528566                 \\
-        ~                & 100              & 1        & 0.9873314               & 0.9571918                 \\
-        ~                & 200              & 1        & 0.9919423               & 0.9495481                 \\
-        ~                & 100              & 10       & 0.9982619               & 0.9525444                 \\
-        ~                & 10               & 1000     & 0.9096740               & 0.6765572                 \\
-        \hline
-        samtools         & 20               & 1        & 0.9512304               & 0.9453896                 \\ 
-        ~                & 50               & 1        & 0.9600118               & 0.9157335                 \\
-        ~                & 100              & 1        & 0.9558301               & 0.9070483                 \\
-        ~                & 200              & 1        & 0.9578685               & 0.8855712                 \\
-        ~                & 100              & 10       & 0.9655211               & 0.8313119                 \\
-        ~                & 10               & 1000     & 0.6156088               & 0.5138672                 \\ \hline
-    \end{tabular}
-\end{comment}
 
 \begin{figure}[h!]
 \centering
@@ -313,54 +301,43 @@ Ensemble methods have been shown to provide superior performance to component in
 
 \subsection{Definitions}
 
-At a given genetic locus we have $n$ samples drawn from a population, each of which has a copy number or multiplicity of $m$ within the locus.  We denote the number of copies of the locus present within our set of samples as $M = \sum_{i=1}^n m_i$.  Among these $M$ copies we have $K$ distinct alleles, $b_1,\ldots,b_K$ with allele frequencies $f_1,\ldots,f_K$.  Each individual has an unphased genotype $G_i$ comprised of $k_i$ distinct alleles $b_{i_1},\ldots,b_{k_i}$ and corresponding genotype allele counts $f_{i_1},\ldots,f_{i_{k_i}}$, which may be equivalently expressed as a multiset of alleles $B_i : | B_i | = m_i$.  For the purposes of our analysis, we assume that we cannot accurately discern phasing information outside of the haplotype detection window, so our $G_i$ are unordered and all $G_i$ containing equivalent alleles and frequencies are regarded as equivalent.  Assume a set of $s_i$ sequencing observations $r_{i_1},\ldots,r_{i_{s_i}} = R_i$ for each sample in our set of $n$ samples such that there are $ \sum_{i=1}^n |R_i|$ reads at the genetic locus under analysis.  We use $q_i$ to denote the mapping quality, or probability that the read $r_i$ is mis-mapped against the reference.
+At a given genetic locus we have $n$ samples drawn from a population, each of which has a copy number or multiplicity of $m$ within the locus.  We denote the number of copies of the locus present within our set of samples as $M = \sum_{i=1}^n m_i$.  Among these $M$ copies we have $K$ distinct alleles, $b_1,\ldots,b_K$ with allele counts $c_1,\ldots,c_K$ and frequencies $f_1,\ldots,f_K$.  Each individual has an unphased genotype $G_i$ comprised of $k_i$ distinct alleles $b_{i_1},\ldots,b_{k_i}$ with corresponding genotype allele counts $c_{i_1},\ldots,c_{i_{k_i}}$ and genotype allele frequencies $f_{i_1},\ldots,f_{i_{k_i}} : f_i = c_i / k_i$.  $G_i$ may be equivalently expressed as a multiset of alleles $B_i : | B_i | = m_i$.  For the purposes of our analysis, we assume that we cannot accurately discern phasing information outside of the haplotype detection window, so our $G_i$ are unordered and all $G_i$ containing equivalent alleles and frequencies are regarded as equivalent.  Assume a set of $s_i$ sequencing observations $r_{i_1},\ldots,r_{i_{s_i}} = R_i$ for each sample in our set of $n$ samples such that there are $ \sum_{i=1}^n |R_i|$ reads at the genetic locus under analysis.  We use $q_i$ to denote the mapping quality, or probability that the read $r_i$ is mis-mapped against the reference.
 
 \subsection{A Bayesian approach}
 \label{sec:modeloverview}
 
-To genotype the samples at a specific locus, we could simply apply a Bayesian statistic relating $P(g_i|R_i)$ to the likelihood of sequencing errors in our reads and the prior likelihood of specific genotypes.  However, this maximum-likelihood approach limits our ability to incorporate information from other individuals in the population under analysis, which can improve detection power.
+To genotype the samples at a specific locus, we could simply apply a Bayesian statistic relating $P(G_i|R_i)$ to the likelihood of sequencing errors in our reads and the prior likelihood of specific genotypes.  However, this maximum-likelihood approach limits our ability to incorporate information from other individuals in the population under analysis, which can improve detection power.
 
 Given a set of genotypes $G_1,\ldots,G_n$ and a set of observations observations $R_1,\ldots,R_n$ for all individuals at the current genetic locus, we can use Bayes' theorem to related the probability of a specific combination of genotypes to both the quality of sequencing observations and \emph{a priori} expectations about the distribution of alleles within a set of individuals sampled from the same population:
 
 
 \begin{equation}
-P(G_1,\ldots,G_n|R_1,\ldots,R_n) = { P(G) P(\{R\}|G) \over P(\{R\})} \\
-\end{equation}
-\begin{equation}
-\label{eq:bayesian}
-P(G|\{R\}) = { P(G) \prod_{i=1}^n P(R_i|g_i) \over 
-\sum_{\forall{G}}  P(G) \prod_{i=1}^n P(R_i|g_i) }
+P(G_1,\ldots,G_n|R_1,\ldots,R_n) 
+= { P(G_1,\ldots,G_n) P(R_1,\ldots,R_n|G_1,\ldots,G_n) \over P(R_1,\ldots,R_n)} \\
 \end{equation}
 
-Under this decomposition, $P(\{R\}|G) = \prod_{i=1}^n P(R_i|G_i)$ represents the likelihood that our observations match a given genotype combination (our data likelihood), and $P(G_1,\ldots,G_n)$ represents the prior likelihood of observing a specific genotype combination.  We estimate the data likelihood as the joint probability that the observations for a specific individual support a given genotype.  We use a neutral model of allele diffusion conditioned on an estimated population mutation rate to estimate the prior probability of sampling a given collection of genotypes.
+\begin{equation}
+\label{eq:bayesian}
+P(G_1,\ldots,G_n|R_1,\ldots,R_n) = { P(G_1,\ldots,G_n) \prod_{i=1}^n P(R_i|G_i) \over 
+\sum_{\forall{G_1,\ldots,G_n}}  P(G_1,\ldots,G_n) \prod_{i=1}^n P(R_i|G_i) }
+\end{equation}
+
+In this formulation, $P(R_1,\ldots,R_n|G_1,\ldots,G_n) = \prod_{i=1}^n P(R_i|G_i)$ represents the likelihood that our observations match a given genotype combination (our data likelihood), and $P(G_1,\ldots,G_n)$ represents the prior likelihood of observing a specific genotype combination.  We estimate the data likelihood as the joint probability that the observations for a specific individual support a given genotype.  We use a neutral model of allele diffusion conditioned on an estimated population mutation rate to estimate the prior probability of sampling a given collection of genotypes.
 
 Except for situations with small numbers of samples and potential alleles, we avoid the explicit evaluation of the posterior distribution as implied by (\ref{eq:bayesian}), instead using a number of optimizations to make the algorithm tractable to apply to very large datasets (see section \ref{sec:genotyping}).
 
-\subsection{Incorporating expectations of the sequencability of the locus and alleles}
-\label{sec:modelsequencability}
-
-We observe that a more useful metric for the probability of a given set of genotypes given evidence incorporates our expectation that the locus and alleles under analysis are sequencable, $S$.  If this requirement is not met, and there is undue bias in the sequencing or mapping process which localizes read evidence, then our estimation of the probability of a given genotyping $P(\{G\}|\{R\})$ is not informative.  Previous methods have addressed these issues by adding post-processing steps to recalibrate the estimated quality of variants using known true variants (for instance, \cite{gatk2011} apply a guassian mixture model to features extracted from putatively polymorphic loci to remove variants which are outliers in multiple feature dimensions).  In contrast, we address the issue of loci sequencability by extending the traditional Bayesian variant detection model to incorporate a metric that estimates the accuracy of our model of the genomic locus by mutual information in the read set.  Therefore, we extend (\ref{eq:bayesian}) to:
-%This avoids the requirement of a known truth set, although such post-processing methods can still be applied to results for further improvement in detection performance.
-
-\begin{equation}
-\label{eq:bayesianandmodel}
-P(\{G\}, S | \{R\})  = { P(\{G\}) P(S) \prod_{i=1}^n P(R_i|G_i) \over 
-\sum_{\forall{G_1,\ldots,G_n}} ( P(G_1,\ldots,G_n) P(S) \prod_{i=1}^n P(R_i|G_i) ) }
-\end{equation}
-
-We describe the development of $P(S)$ in section \ref{sec:sequencable}.
 
 \subsection{Estimating the probability of sequencing observations given an underlying genotype, $P(R_i|G)$}
 
-Given a set of reads $R_i = r_{i_1},\ldots,r_{i_{s_i}}$ from a sample at a given locus, we can extract a set of $k_i$ observed alleles $B'_i = b'_1,\ldots,b'_{k_i}$ corresponding to underlying alleles $b_1,\ldots,b_i$ which encapsulate the potential set of represented variants at the locus in the given sample, including erroneous observations.  Each of these observed alleles $b'_i$ has a count $o'_f$ within the observations of the individual sample $: \sum_{j=1}^{k_i} o'_j = s_i$ and corresponds to a true allele $b_i$.
+Given a set of reads $R_i = r_{i_1},\ldots,r_{i_{s_i}}$ from a sample at a given locus, we can extract a set of $k_i$ observed alleles $B'_i = b'_1,\ldots,b'_{k_i}$ corresponding to underlying alleles $b_1,\ldots,b_i$ which encapsulate the potential set of represented variants at the locus in the given sample, including erroneous observations.  Each of these observed alleles $b'_i$ has a count $o_f$ within the observations of the individual sample $: \sum_{j=1}^{k_i} o_j = s_i$ and corresponds to a true allele $b_i$.
 
 The probability of obtaining a single observation $b_i'$ provided a genotype in a single sample is:
 
 \begin{equation}
-P(b'_i|G) = \sum_{\forall(b_i \in G)} { freq(b_i,G)P(b'_i|b_i) }
+P(b'_i|G) = \sum_{\forall(b_i \in G)} { f_i P(b'_i|b_i) }
 \end{equation}
 
-Where $freq(b_i,G)$ is ${f_{i_j} \over m_i}$ for the allele count $f_{i_j}$ in $G$ corresponding to $b_i$.  We observe that the process generating reads from a given locus in a given sample is a multinomial process in which the sampling probabilities for each allele are governed by both the counts of alleles in the genotype and the error process that generates $b'_i$ from underlying $b_i$.  However, for the case that the base observation agrees with the underlying genotype, sampling probability dominates the probability that the observations are derived from a given genotype, and in the case when the observation does not agree with the genotype, the dominant process is the observation error.  Following this observation we introduce the approximation that:
+Here $f_i$ is the genotype allele frequency of $b_i$ in $G$.  We observe that the process generating reads from a given locus in a given sample is a multinomial process in which the sampling probabilities for each allele are governed by both the counts of alleles in the genotype and the error process that generates $b'_i$ from underlying $b_i$.  However, for the case that the base observation agrees with the underlying genotype, sampling probability dominates the probability that the observations are derived from a given genotype, and in the case when the observation does not agree with the genotype, the dominant process is the observation error.  Following this observation we introduce the approximation that:
 
 \begin{equation}
 P(b'|b) = 
@@ -375,8 +352,8 @@ P(b'|b) =
 Here $P(error)$ is the probability that the base is erroneous as determined by the sequencing process used to generate the reads from the sample.  Provided this approximation, we can estimate the probability of a given set of reads conditioned on an underlying genotype by using the multinomial sampling probability to estimate the probability of obtaining the observations that support the genotype scaled by the probability that the observations that disagree with the genotype are erroneous:
 
 \begin{equation}
-P(R_i|G) \approx {s_i \choose o_i,\ldots,o_{k_i} } 
-\prod_{j=1}^{k_i} { \left({f_{i_j} \over m_i}\right)^{o'_j} }
+P(R_i|G) \approx {s_i \choose o_1,\ldots,o_{k_i} } 
+\prod_{j=1}^{k_i} { f_{i_j}^{o_j} }
 \prod_{l=1}^{s_i} { P(b'_l | b_l) }
 \end{equation}
 
@@ -436,36 +413,39 @@ We now can estimate the prior probability of $G_1,\ldots,G_n$ in terms of the ge
 
 \subsubsection{Genotype combination sampling probability $P(G_1,\ldots,G_n | f_1,\ldots,f_k)$}
 
-The multinomial coefficient ${M \choose f_1,\ldots,f_k }$ gives the number of ways which a set of alleles with frequencies $f_1,\ldots,f_k$ may be distributed among $M$ copies of a locus.  For phased genotypes $\hat{G_i}$ the probability of sampling a specific $\hat{G_1},\ldots,\hat{G_n}$ given allele frequencies $f_1,\ldots,f_k$ is thus provided by the inverse of this term:
+The multinomial coefficient ${M \choose c_1,\ldots,c_k }$ gives the number of ways which a set of alleles with frequencies $f_1,\ldots,f_k : f_i = c_i/M$ may be distributed among $M$ copies of a locus.  For phased genotypes $\hat{G_i}$ the probability of sampling a specific $\hat{G_1},\ldots,\hat{G_n}$ given allele frequencies $f_1,\ldots,f_k$ is thus provided by the inverse of this term:
 
 \begin{equation}
 \label{eq:phasedsampling}
 P(\hat{G_1},\ldots,\hat{G_n} | f_1,\ldots,f_k) =
 {M \choose
-  f_1,\ldots,f_k }^{-1}
+  c_1,\ldots,c_k }^{-1}
 \end{equation}
 
-However, our model is limited to unphased genotypes because our primary data only allows phasing within a limited context. Consequently, we must adjust (\ref{eq:phasedsampling}) to reflect the number of phased genotypes which correspond to the unphased genotyping $G_1,\ldots,G_n$.  Each unphased genotype corresponds to as many phased genotypes as there are permutations of the alleles in $G_i$.  Thus, for a given unphased genotyping $G_1,\ldots,G_n$, there are $\prod_{i=1}^n { m_i \choose f_{i_1}, \ldots, f_{i_{k_i}}}$ phased genotypings.
+However, our model is limited to unphased genotypes because our primary data only allows phasing within a limited context. Consequently, we must adjust (\ref{eq:phasedsampling}) to reflect the number of phased genotypes which correspond to the unphased genotyping $G_1,\ldots,G_n$.  Each unphased genotype corresponds to as many phased genotypes as there are permutations of the alleles in $G_i$.  Thus, for a given unphased genotyping $G_1,\ldots,G_n$, there are $\prod_{i=1}^n { m_i \choose c_{i_1}, \ldots, c_{i_{k_i}}}$ phased genotypings.
 
 In conjunction, these two terms provide the probability of sampling a particular unphased genotype combination given a set of allele frequencies:
 
 \begin{equation}
 \label{eq:unphasedsampling}
 P(G_1,\ldots,G_n | f_1,\ldots,f_k) =
-{ M \choose f_1,\ldots,f_k }^{-1}
-\prod_{i=1}^n { m_i \choose f_{i_1}, \ldots, f_{i_{k_i}}}
- = 
-\frac{1}{M!}
-\prod_{l=1}^k f_l! 
-\prod_{i=1}^n \frac{m_i!}{\prod_{j=1}^{k_i} f_{i_j}!}
+{ M \choose c_1,\ldots,c_k }^{-1}
+\prod_{i=1}^n { m_i \choose c_{i_1}, \ldots, c_{i_{k_i}}}
 \end{equation}
+
+%\begin{equation}
+% = 
+%\frac{1}{M!}
+%\prod_{l=1}^k f_l! 
+%\prod_{i=1}^n \frac{m_i!}{\prod_{j=1}^{k_i} f_{i_j}!}
+%\end{equation}
 
 In the case of a fully diploid population, the product of all possible multiset permutations of all genotypes reduces to $2^h$, where $h$ is the number of heterozygous genotypes, simplifying (\ref{eq:unphasedsampling}) to:
 
 \begin{equation}
 P(G_1,\ldots,G_n | f_1,\ldots,f_k) =
 2^h
-{ M \choose f_1,\ldots,f_k }^{-1}
+{ M \choose c_1,\ldots,c_k }^{-1}
 \end{equation}
 
 
@@ -473,7 +453,7 @@ P(G_1,\ldots,G_n | f_1,\ldots,f_k) =
 
 Provided our sample size $n$ is small relative to the population which it samples, and the population is in equilibrium under mutation and genetic drift, the probability of observing a given set of allele frequencies at a locus is given by Ewens' sampling formula \citep{ewens72}.  Ewens' sampling formula is based on an infinite alleles coalescent model, and relates the probability of observing a given set of allele frequencies to the number of sampled chromosomes at the locus ($M$) and the population mutation rate $\theta$.
 
-The application of Ewens' formula to our context is straightforward.  Let $a_f$ be the number of alleles among $b_1,\ldots,b_k$ whose allele frequency within our set of samples is $f$.  We can thus transform our set of frequencies $f_1,\ldots,f_k$ into a set of non-negative frequency counts $a_1,\ldots,a_M : \sum_{f=1}^M{fa_f} = M$.  As many $f_1,\ldots,f_k$ can map to the same $a_1,\ldots,a_M$, this transformation is not invertible, but it is unique from $a_1,\ldots,a_M$ to $f_1,\ldots,f_k$.
+The application of Ewens' formula to our context is straightforward.  Let $a_f$ be the number of alleles among $b_1,\ldots,b_k$ whose allele count within our set of samples is $c$.  We can thus transform our set of frequencies $f_1,\ldots,f_k$ (equivalently, allele counts, $c_1,\ldots,c_k$) into a set of non-negative frequency counts $a_1,\ldots,a_M : \sum_{c=1}^M{ca_c} = M$.  As many $c_1,\ldots,c_k$ can map to the same $a_1,\ldots,a_M$, this transformation is not invertible, but it is unique from $a_1,\ldots,a_M$ to $c_1,\ldots,c_k$.
 
 Having transformed a set of frequencies over alleles to a set of frequency counts over frequencies, we can now use Ewens' sampling formula to approximate $P(f_1,\ldots,f_k)$ given $\theta$:
 
@@ -507,30 +487,86 @@ P(a_M = 1) =
 
 In this case, $P(f_1,\ldots,f_k) = 1 - \theta$ when $M = 2$.  This is sensible as $\theta$ represents the population mutation rate, which can be estimated from the pairwise heterozygosity rate of any two chromosomes in the population \citep{watterson1975, tajima1983}.
 
+\subsection{Expanding the model to incorporate the observability of the locus and alleles}
+\label{sec:modelsequencability}
+
+The bayesian model described in section \ref{sec:modeloverview} can generate posterior estimates based on sequencing quality information and genotype distribution in a panel of samples.  However, this estimate can incorporate only information captured in base quality information and read counts.  This may fail to assess the ability of the sequencing and alignment methods to accurately characterize the locus and alleles that we genotype, which is an important consideration for downstream use of sequencing-derived genotype data.
+
+Previous authors have addressed this limitation by adding post-processing steps to recalibrate the estimated quality of variants using training sets of known variants and known artifacts.  Once variant calls have been made we can annotate them with a variety of features and apply standard machine learning methods to ``recalibrate'' the quality estimates produced from genotype distribution, allele frequency, observation counts, and base quality.  For instance, \cite{gatk2011} apply a guassian mixture model (VQSR) to features extracted from putatively polymorphic loci to remove variants which are outliers in multiple feature dimensions. % also used in 1000G project e.g. SVM
+
+Problematically, such an approach requires a training set, which may not be applicable in contexts with limited validation data, such as is commonly the case in non-model organisms.  Furthermore, the training set may bias our results towards established patterns, decreasing sensitivity to novel variation that might have been previously uncharacterized due to technological limitations.
+
+In contrast, we address the issue of loci sequencability in a general, \emph{a priori} fashion by extending the traditional Bayesian variant detection model to incorporate an indicator, $S$, which describes the ability of our sequencing and alignment methods to characterize the locus we are considering.  We define $S = true$ when we can sequence the locus and alleles and $S = false$ otherwise, and redefine our model (\ref{eq:bayesian}) to estimate the posterior probability of a particular set of genotypes in our samples ($G_1,\ldots,G_n$) and that the locus is sequenceable ($S$) given our aggregate read evidence ($R_1,\ldots,R_n$):
+
+\begin{equation}
+\label{eq:bayesianandmodel}
+P(G_1,\ldots,G_n, S | R_1,\ldots,R_n)  = { P(G_1,\ldots,G_n) P(S) \prod_{i=1}^n P(R_i|G_i) \over 
+\sum_{\forall{G_1,\ldots,G_n}} ( P(G_1,\ldots,G_n) P(S) \prod_{i=1}^n P(R_i|G_i) ) }
+\end{equation}
+
+We will describe the development of $P(S)$ using aggregate statistics built from the read evidence overlapping the locus in section \ref{sec:sequencable}.
+
 \subsection{Estimation of the probability that the locus is sequencable $P(S)$}
 \label{sec:sequencable}
 
-For accurate variant detection via resequencing, we require that the locus in question is sequencable.  That is, we require that the reference is accurate, that we have an accurate model of copy number at the locus, that we have genomic coverage, and that reads can be aligned to the alleles of interest in the region.  In a case where these conditions are met, we assume $S=1$.  Where it is not, $S=0$.
+For accurate variant detection via resequencing, we require that the locus in question is sequencable.  That is, we require that the reference is accurate, that we have an accurate model of copy number at the locus, that we have genomic coverage, and that reads can be aligned to the alleles of interest in the region.  In a case where these conditions are met, we assume $S = true$.  Where it is not, $S = false$.
+
+% TODO cleanup, remove duplication with previous section
+The sequenceability of a locus and its alleles is assumed under previous Bayesian variant detection models \citep{marth99, samtools, li2011stats}.  Uncertainty about the genomic model characterization has been incorporated into data likelihoods or detection thresholds using read mapping quality \citep{snptools, maq}.  In practice, the incorporation of confidence in the characterizability of the locus and alleles requires the reclassification of variant calls on the basis of aggregate metrics describing the calls, such as the ratio of observations for an alternate allele to those for a reference allele among apparent heterozygotes, or the average observation quality (base quality) of alleles.  In practice, variant detectors have been modified to supply annotations to downstream classifiers that ``recalibrate'' the quality estimates, but no existing method has incorporated estimates of sequenceability into the Bayesian inference model.
+
+A quality score recalibrator utilizes training data, particularly as sets of known variants or validated errors, to describe the distribution of true events and errors across the space of possible annotations in the data set to be recalibrated.  The variant calling error function as described by these aggregate metrics can then be approximated using a variety of machine learning methods, such as support vector machines \citep{snpsvm} or a gaussian mixture model as implemented in the GATK's Variant Quality Score Recalibrator (VQSR).
+%  Feature-based recalibration and detection methods have wide utility in variant detection, and we can expect them to become more comon in practice, but they can also be problematic in that they require adequate training sets, which may not be available in a specific experimental context.
+
+We observe that $S$ is proportional to a number of variables which can be estimated directly from the observations covering a genomic locus.  For instance, if the locus and alleles are observable without bias, we expect the count of observations of a sample supporting a particular alternate allele $R_i \equiv b$ to approximate its frequency in the correct genotype $G_i$ for the sample, $|R_i \equiv b|/|R_i| \approx |b \in G_i|/m_i$.  Deviation from this expectation which is observed across many samples may indicate problems mapping reads containing the alternate against the reference, or hidden copy-number variations or paralogs that might frustrate our observation of the locus.  Similarly, if we use whole-genome shotgun techniques, we have a number of other expectations about behavior of the reads in aggregate with respect to a particular allele and locus.  We will express these in terms of a bias terms $B_*$ that equal $0$ when there is no bias for a particular metric.
+
+In an unbiased context, we expect half of our reads to place to either side of the locus (placement bias $B_p$):
 
 \begin{equation}
-P(S|\{R\}) = P(D|\{R\})P(S)
+P(B_p = 0) \propto \binom{|R_{left}|}{|R|} 0.5^{|R_{left}|}
 \end{equation}
 
-The sequenceability of a locus and its alleles is assumed under previous Bayesian variant detection models \citep{marth99, samtools, li2011stats}.  At best, uncertainty about the genomic model characterization is incorporated into data likelihoods or detection thresholds using read mapping quality \citep{snptools, maq}.  In practice, the incorporation of confidence in the characterizability of the locus and alleles requires the reclassification of variant calls on the basis of aggregate metrics describing the calls, such as the ratio of observations for an alternate allele to those for a reference allele among apparent heterozygotes, or the average observation quality (base quality) of alleles.  In practice, variant detectors have been modified to supply annotations to downstream classifiers that "recalibrate" the quality estimates, but no existing method has incorporated estimates of sequenceability into the Bayesian inference model.
+We expect half to contain the allele in the first half of their length (cycle bias $B_c$):
 
-A quality score recalibrator utilizes training data, particularly as sets of known variants or validated errors, to describe the distribution of true events and errors across the space of possible annotations in the data set to be recalibrated.  The variant calling error function as described by these aggregate metrics can then be approximated using a variety of machine learning methods, such as support vector machines \citep{snpsvm} or a gaussian mixture model as implemented in the GATK's Variant Quality Score Recalibrator (VQSR).  Feature-based recalibration and detection methods have wide utility in variant detection, and we can expect them to become more comon in practice, but they can also be problematic in that they require adequate training sets, which may not be available in a specific experimental context.
+\begin{equation}
+P(B_c = 0) \propto \binom{|R_{start}|}{|R|} 0.5^{|R_{start}|}
+\end{equation}
 
-We observe that $S$ is proportional to a number of variables which can be estimated directly from the observations covering a genomic locus.  For instance, when considering a diploid sample, if the locus and alleles are observable without bias, we expect the count of observations supporting a particular alternate allele to approximate the number of observations supporting the reference, $\E(|R_i \equiv allele|/|R_i|) \approx 1/m_i$.  Bias against this may indicate problems mapping observations containing the alternate against the reference, or hidden copy-number variations or paralogs that might frustrate our observation of the locus.  Similarly, assuming we do not have capture bias, we expect half of our reads to place to either side of the locus, half to contain the allele in the first half of their length (unbiased read position), and half to be derived from each strand of DNA.  We thus approximate $P(S)$ from:
+Half should be derived from each strand of DNA (strand bias $B_s$):
 
-% TODO, bug ... allele balance is implemented as a multinomial coefficient
+\begin{equation}
+P(B_s = 0) \propto  \binom{|R_{forward}|}{|R|} 0.5^{|R_{forward}|}
+\end{equation}
+
+And, the aggregate fraction of reads supporting a particular allele in samples with a particular genotype should approximate the frequency of the allele in that particular genotype (allele balance, $B_a$).  Recall that the distinct alleles in a particular set of genotypes are $b_1,\ldots,b_K$, the corresponding allele frequencies in the set are $f_1,\ldots,f_k$, and the observation counts are represented by $o_1,\ldots,o_K$:
+
+%\begin{equation}
+%o_i = |\{r \in R : r \equiv b_i\}|
+%\end{equation}
+
+\begin{equation}
+P(B_a = 0) \propto 
+\prod_{\forall g \in \{G\}} 
+\binom{ |R| }{ o_1,\ldots,o_K }
+\prod_{j=1}^{K} f_j^{o_j}
+\end{equation}
+
+We use these relationships to determine relationships in $P(S)$ under various configurations of alleles and genotypes in the samples:
+
+\begin{equation}
+P(S) \propto P(B_p = 0) P(B_c = 0) P(B_s = 0) P(B_a = 0)
+\end{equation}
+
+
+\begin{comment}
 \begin{eqnarray}
-P(S) \propto & & multinom([|R \equiv b| \forall b_1,\ldots,b_K] ; |\{R\}|, f_i,\ldots,f_K)  \\
-& \times \prod_{\forall b \in \{B\}} & binom(|forwardStrand(\{R \equiv b\})|; |\{R \equiv b\}|, 1/2) \\
+P(S) \propto & & multinom([ |\{R \equiv b\}| \forall b \in K] ; \sum_{i=1}^{n} |R_i|, f_i,\ldots,f_K)  \\
+& \times \prod_{\forall b \in K} & binom(|forwardStrand(\{R \equiv b\})|; |\{R \equiv b\}|, 1/2) \\
 &  & \times binom(|placedLeft(\{R \equiv b\})|; |\{R \equiv b\}|, 1/2) \\
 &  & \times binom(|placedRight(\{R \equiv b\})|; |\{R \equiv b\}|, 1/2)
 \end{eqnarray}
 
-Here $binom(k; n, p)$ is the binomial probability mass function of $k$ successes in $n$ trials with probability $p$.  Similarly, $multinom(k_1,\ldots,k_i; n, p_1,\ldots,p_i)$ provides the multinomial PMF for results $k_1,\ldots,k_i$ in $n$ trials with probabilities $p_1,\ldots,p_i$.  As defined before, we have a set of reads $\{R\}$ at the locus and a set of alleles $\{B\} = b_1,\ldots,b_K$ in a given genotyping across all the samples.
+Here $binom(k; n, p)$ is the binomial probability mass function of $k$ successes in $n$ trials with probability $p$.  Similarly, $multinom(k_1,\ldots,k_n; n, p_1,\ldots,p_i)$ provides the multinomial PMF for results $k_1,\ldots,k_n$ in $n$ trials with probabilities $p_1,\ldots,p_i$.  As defined before, we have a set of reads $\{R\}$ at the locus and a set of alleles $K = b_1,\ldots,b_K$ in a given genotyping across all the samples.
+\end{comment}
 
 %% TODO
 
