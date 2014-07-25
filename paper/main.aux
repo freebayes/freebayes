@@ -54,41 +54,43 @@
 \newlabel{sec:ensemble}{{2.9}{8}}
 \@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Sensitivity to low-frequency variants of various detection methods, as assessed in 191 samples of African ancestry in the 1000 Genomes low-coverage cohort. BC2 is FreeBayes, BI1 is the GATK UnifiedGenotyper, BI2 is the GATK HaplotypeCaller, and SI2 is the global assembler SGA.}}{9}}
 \newlabel{fig:lowfreqsens}{{5}{9}}
-\citation{gatk2011}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Methods}{10}}
 \newlabel{sec:model}{{3}{10}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Definitions}{10}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}A Bayesian approach}{10}}
 \newlabel{sec:modeloverview}{{3.2}{10}}
 \newlabel{eq:bayesian}{{2}{10}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Incorporating expectations of the sequencability of the locus and alleles}{11}}
-\newlabel{sec:modelsequencability}{{3.3}{11}}
-\newlabel{eq:bayesianandmodel}{{3}{11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Estimating the probability of sequencing observations given an underlying genotype, $P(R_i|G)$}{11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Genotype combination priors, $P(G_1,\ldots  ,G_n)$}{12}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.1}Decomposition of prior probability of genotype combination}{12}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.2}Genotype combination sampling probability $P(G_1,\ldots  ,G_n | f_1,\ldots  ,f_k)$}{12}}
-\newlabel{eq:phasedsampling}{{9}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Estimating the probability of sequencing observations given an underlying genotype, $P(R_i|G)$}{11}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Genotype combination priors, $P(G_1,\ldots  ,G_n)$}{11}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Decomposition of prior probability of genotype combination}{11}}
 \citation{ewens72}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.2}Genotype combination sampling probability $P(G_1,\ldots  ,G_n | f_1,\ldots  ,f_k)$}{12}}
+\newlabel{eq:phasedsampling}{{8}{12}}
+\newlabel{eq:unphasedsampling}{{9}{12}}
 \citation{watterson1975,tajima1983}
-\newlabel{eq:unphasedsampling}{{10}{13}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.3}Derivation of $P(f_1,\ldots  ,f_k)$ by Ewens' sampling formula}{13}}
+\citation{gatk2011}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.3}Derivation of $P(f_1,\ldots  ,f_k)$ by Ewens' sampling formula}{13}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Expanding the model to incorporate the observability of the locus and alleles}{13}}
+\newlabel{sec:modelsequencability}{{3.5}{13}}
 \citation{marth99,samtools,li2011stats}
 \citation{snptools,maq}
 \citation{snpsvm}
+\newlabel{eq:bayesianandmodel}{{14}{14}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Estimation of the probability that the locus is sequencable $P(S)$}{14}}
 \newlabel{sec:sequencable}{{3.6}{14}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Direct detection of phase from short-read sequencing}{15}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Parsing haplotype observations from sequencing data}{15}}
-\newlabel{sec:parsing}{{4.1}{15}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The direct detection of phase from short-read sequencing traces and counting of haplotypes across dynamically-determined windows.}}{16}}
-\newlabel{fig:haplotypecalling}{{6}{16}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Direct detection of phase from short-read sequencing}{16}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Parsing haplotype observations from sequencing data}{16}}
+\newlabel{sec:parsing}{{4.1}{16}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Determining a window over which to assemble haplotype observations}{16}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The direct detection of phase from short-read sequencing traces and counting of haplotypes across dynamically-determined windows.}}{17}}
+\newlabel{fig:haplotypecalling}{{6}{17}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Detection and genotyping of local haplotypes}{17}}
 \newlabel{sec:genotyping}{{4.3}{17}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Probability of polymorphism}{17}}
-\newlabel{eq:probpoly}{{22}{17}}
 \bibdata{references}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Probability of polymorphism}{18}}
+\newlabel{eq:probpoly}{{22}{18}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Marginal likelihoods of individual genotypes}{18}}
+\newlabel{eq:marginals}{{23}{18}}
 \bibcite{1000Gphase1}{{1}{2012}{{1000 Genomes Project~Participants}}{{}}}
 \bibcite{dindel}{{2}{2011}{{Albers et~al.}}{{Albers, Lunter, MacArthur, McVean, Ouwehand, and Durbin}}}
 \bibcite{branton2008}{{3}{2008}{{Branton et~al.}}{{Branton, Deamer, Marziali, Bayley, Benner, Butler, Di~Ventra, Garaj, Hibbs, Huang et~al.}}}
@@ -97,8 +99,6 @@
 \bibcite{blmash}{{6}{2003}{{Cleary et~al.}}{{Cleary, Zhang, Di~Nicola, Aronson, Aube, Steinman, Haddad, Redston, Gallinger, Narod et~al.}}}
 \bibcite{delaneau2012}{{7}{2012}{{Delaneau et~al.}}{{Delaneau, Marchini, and Zagury}}}
 \bibcite{gatk2011}{{8}{2011}{{DePristo et~al.}}{{DePristo, Banks, Poplin, Garimella, Maguire, Hartl, Philippakis, del Angel, Rivas, Hanna et~al.}}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Marginal likelihoods of individual genotypes}{18}}
-\newlabel{eq:marginals}{{23}{18}}
 \bibcite{ewens72}{{9}{1972}{{Ewens}}{{}}}
 \bibcite{freebayesgit}{{10}{2012{a}}{{Garrison}}{{}}}
 \bibcite{mutatrixgit}{{11}{2012{b}}{{Garrison}}{{}}}
