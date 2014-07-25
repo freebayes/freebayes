@@ -33,7 +33,8 @@ shift
 command="freebayes $@"
 
 (
-$command | head -100 | grep "^#"  # generate header
+#$command | head -100 | grep "^#" # generate header
 # iterate over regions using gnu parallel to dispatch jobs
-cat $regionsfile | parallel -k -j $ncpus "$command --region {} | grep -v '^#'"
-) | vcfstreamsort -w 1000 | vcfuniq # remove duplicates at region edges
+cat $regionsfile | parallel -k -j $ncpus "$command --region {}" 
+) | vcffirstheader \
+    | vcfstreamsort -w 1000 | vcfuniq # remove duplicates at region edges
