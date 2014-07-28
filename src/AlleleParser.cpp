@@ -19,7 +19,11 @@
 
 // must-see error messages
 #define ERROR(msg) \
-    cerr << msg << endl;
+    cerr << "ERROR(freebayes): " << msg << endl;
+
+// must-see warning messages
+#define WARNING(msg) \
+    cerr << "WARNING(freebayes): " << msg << endl;
 
 using namespace std;
 
@@ -2077,19 +2081,25 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
     if (!usingVariantInputAlleles) return;
 
     if (pos + referenceLength > rightmostInputAllelePosition) {
+        long int start = rightmostInputAllelePosition;
+        if (start == 0) {
+            start = rightmostHaplotypeBasisAllelePosition;
+        }
+
         //stringstream r;
-        //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition
+        //r << currentSequenceName << ":" << start
         //  << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
         if (variantCallInputFile.setRegion(currentSequenceName,
-                                           rightmostInputAllelePosition,
+                                           start,
                                            pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
             vcf::Variant var(variantCallInputFile);
-            while (variantCallInputFile.getNextVariant(*currentVariant)) {
+            bool ok;
+            while (ok = variantCallInputFile.getNextVariant(*currentVariant)) {
 
-                DEBUG2("getting input alleles from input VCF at position " << currentVariant->sequenceName << ":" << currentVariant->position);
+                DEBUG("getting input alleles from input VCF at position " << currentVariant->sequenceName << ":" << currentVariant->position);
                 long int pos = currentVariant->position - 1;
                 // get alternate alleles
                 bool includePreviousBaseForIndels = true;
@@ -2307,6 +2317,8 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                 }
 
             }
+
+            if (!ok) hasMoreVariants = false;
         }
         /*
         for (map<long int, vector<Allele> >::iterator v = inputVariantAlleles.begin(); v != inputVariantAlleles.end(); ++v) {
@@ -2537,8 +2549,9 @@ bool AlleleParser::toNextTarget(void) {
         bool ok = false;
 
         // try to load the first target if we need to
-        if (!currentTarget)
+        if (!currentTarget) {
             ok = loadTarget(&targets.front()) && getFirstAlignment();
+        }
 
         // step through targets until we get to one with alignments
         while (!ok && currentTarget != &targets.back()) {
@@ -2550,16 +2563,25 @@ bool AlleleParser::toNextTarget(void) {
             }
         }
 
-        if (!ok) return false; // last target and couldn't get alignment
+        if (ok) {
 
-        // XXX hack
-        clearRegisteredAlignments();
-        currentSequenceStart = currentAlignment.Position;
-        currentSequenceName = referenceIDToName[currentAlignment.RefID];
-        currentRefID = currentAlignment.RefID;
-        currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
-        currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
-        rightmostHaplotypeBasisAllelePosition = currentPosition;
+            // XXX hack
+            clearRegisteredAlignments();
+            currentSequenceStart = currentAlignment.Position;
+            currentSequenceName = referenceIDToName[currentAlignment.RefID];
+            currentRefID = currentAlignment.RefID;
+            currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
+            currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
+            rightmostHaplotypeBasisAllelePosition = currentPosition;
+
+        } else {
+            if (hasMoreVariants) {
+                return true;
+            } else {
+                return false; // last target, no variants, and couldn't get alignment
+            }
+        }
+
 
     // stdin, no targets cases
     } else if (!currentTarget && (parameters.useStdin || targets.empty())) {
@@ -2620,10 +2642,10 @@ bool AlleleParser::loadTarget(BedTarget* target) {
         stringstream r;
         r << currentTarget->seq << ":" << max(0, currentTarget->left - 1) << "-" << currentTarget->right - 1;
         if (!variantCallInputFile.setRegion(r.str())) {
-            ERROR("Could not set the region of the variants input file to " <<
+            WARNING("Could not set the region of the variants input file to " <<
                     currentTarget->seq << ":" << currentTarget->left << ".." <<
                     currentTarget->right);
-            return false;
+            //return false;
         } else {
             DEBUG("set region of variant input file to " << 
                     currentTarget->seq << ":" << currentTarget->left << ".." <<
@@ -2661,9 +2683,9 @@ bool AlleleParser::getFirstAlignment(void) {
         DEBUG2("got first alignment in target region");
     } else {
         if (currentTarget) {
-            ERROR("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right);
+            WARNING("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right);
         } else {
-            ERROR("Could not find any mapped reads in target region " << currentSequenceName);
+            WARNING("Could not find any mapped reads in target region " << currentSequenceName);
         }
         return false;
     }
@@ -2721,34 +2743,42 @@ void AlleleParser::clearRegisteredAlignments(void) {
 //
 bool AlleleParser::toNextPosition(void) {
 
+    // either bail out
     if (currentSequenceName.empty()) {
         DEBUG("loading first target");
         if (!toNextTarget()) {
             return false;
         }
     } 
+    // or step to the next position
     else {
         ++currentPosition;
     }
 
+    // if we've run off the right edge of a target
     if (!targets.empty() && (
                 (!parameters.allowIndels && currentPosition >= currentTarget->right)
                 || currentPosition > currentTarget->right - 1)) { // time to move to a new target
         DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right + 1);
+        // try to get to the next one, and if this fails, bail out
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
             return false;
         }
     }
 
-    // stdin, no targets case
-    if (parameters.useStdin || targets.empty()) {
-        // TODO rectify this with the other copies of this stanza...
+    // in the stdin, or no targets case
+    // here we assume we are processing an entire BAM or one contiguous region
+    if ((parameters.useStdin && targets.empty()) || targets.empty()) {
         // implicit step of target sequence
         // XXX this must wait for us to clean out all of our alignments at the end of the target
+
+        // here we loop over unaligned reads at the beginning of a target
+        // we need to get to a mapped read to figure out where we are
         while (hasMoreAlignments && !currentAlignment.IsMapped()) {
             hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment);
         }
+        // now, if the current position of this alignment is outside of the reference sequence length, switch references
         if (hasMoreAlignments) {
             if (currentPosition > reference.sequenceLength(currentSequenceName)
                 || registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
@@ -2757,6 +2787,7 @@ bool AlleleParser::toNextPosition(void) {
                 loadReferenceSequence(currentAlignment);
                 justSwitchedTargets = true;
             }
+        // here, if we have run out of alignments
         } else if (!hasMoreAlignments) {
             if (registeredAlignments.empty()) {
                 DEBUG("no more alignments in input");
