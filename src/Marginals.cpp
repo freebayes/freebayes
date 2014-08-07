@@ -56,10 +56,10 @@ long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Sam
             if (rmgsItr == rmgs.end()) {
                 rmgs[sdl.genotype] = gc->posteriorProb;
             } else {
-		//vector<long double> x;
-		//x.push_back(rmgsItr->second); x.push_back(gc->posteriorProb);
+                //vector<long double> x;
+                //x.push_back(rmgsItr->second); x.push_back(gc->posteriorProb);
                 //rmgs[sdl.genotype] = logsumexp_probs(x);
-		rmgs[sdl.genotype] = log(safe_exp(rmgsItr->second) + safe_exp(gc->posteriorProb));
+                rmgs[sdl.genotype] = log(safe_exp(rmgsItr->second) + safe_exp(gc->posteriorProb));
             }
         }
     }
@@ -67,6 +67,7 @@ long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Sam
     // safely add the raw marginal vectors using logsumexp
     // and use to update the sample data likelihoods
     rawMarginalsItr = rawMarginals.begin();
+    long double minAllowedMarginal = -1e-16;
     for (SampleDataLikelihoods::iterator s = likelihoods.begin(); s != likelihoods.end(); ++s) {
         vector<SampleDataLikelihood>& sdls = *s;
         const map<Genotype*, long double>& rawmgs = *rawMarginalsItr++;
@@ -81,7 +82,8 @@ long double marginalGenotypeLikelihoods(list<GenotypeCombo>& genotypeCombos, Sam
         for (vector<SampleDataLikelihood>::iterator sdl = sdls.begin(); sdl != sdls.end(); ++sdl) {
             long double newmarginal = marginals[sdl->genotype] - normalizer;
             delta += newmarginal - sdl->marginal;
-            sdl->marginal = newmarginal;
+            // ensure the marginal is non-0 to guard against underflow
+            sdl->marginal = min(minAllowedMarginal, newmarginal);
         }
     }
 
