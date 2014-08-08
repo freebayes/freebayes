@@ -45,15 +45,18 @@ void AlleleParser::openBams(void) {
     if (parameters.useStdin) {
         if (!bamMultiReader.Open(parameters.bams)) {
             ERROR("Could not read BAM data from stdin");
+            cerr << bamMultiReader.GetErrorString() << endl;
             exit(1);
         }
     } else {
         if (!bamMultiReader.Open(parameters.bams)) {
             ERROR("Could not open input BAM files");
+            cerr << bamMultiReader.GetErrorString() << endl;
             exit(1);
         } else {
             if (!bamMultiReader.LocateIndexes()) {
                 ERROR("Opened BAM reader without index file, jumping is disabled.");
+                cerr << bamMultiReader.GetErrorString() << endl;
                 if (!targets.empty()) {
                     ERROR("Targets specified but no BAM index file provided.");
                     ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
@@ -66,6 +69,7 @@ void AlleleParser::openBams(void) {
         }
         if (!bamMultiReader.SetExplicitMergeOrder(bamMultiReader.MergeByCoordinate)) {
             ERROR("could not set sort order to coordinate");
+            cerr << bamMultiReader.GetErrorString() << endl;
             exit(1);
         }
     }
@@ -2635,6 +2639,7 @@ bool AlleleParser::loadTarget(BedTarget* target) {
 
     if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right - 1)) {  // TODO is bamtools taking 0/1 basing?
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
+        cerr << bamMultiReader.GetErrorString() << endl;
         return false;
     }
 
