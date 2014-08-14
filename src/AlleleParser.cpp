@@ -1007,7 +1007,6 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
             }
         } else if (newAllele.isReference()
                    && (newAllele.referenceLength > maxComplexGap
-                       || ( newAllele.referenceLength <= maxComplexGap && newAllele.basesRight <= maxComplexGap )
                        || newAllele.basesRight == 0)) {
             // if the last allele is reference too, we need to combine them!
             if (lastAllele.isReference()) {
@@ -2108,6 +2107,8 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                 // get alternate alleles
                 bool includePreviousBaseForIndels = true;
                 map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
+                // TODO this would be a nice option: why does it not work?
+                //map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
                 vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
                 for (vector<string>::iterator a = currentVariant->alt.begin(); a != currentVariant->alt.end(); ++a) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
@@ -2536,7 +2537,7 @@ void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles) {
 // false otherwise
 bool AlleleParser::toNextTarget(void) {
 
-    DEBUG2("seeking to next target with alignments...");
+    DEBUG("seeking to next target with alignments...");
 
     // reset haplotype length; there is no last call in this sequence; it isn't relevant
     lastHaplotypeLength = 0;
@@ -2580,6 +2581,7 @@ bool AlleleParser::toNextTarget(void) {
 
         } else {
             if (hasMoreVariants) {
+                DEBUG("continuing because we have more variants");
                 return true;
             } else {
                 return false; // last target, no variants, and couldn't get alignment
@@ -2762,8 +2764,8 @@ bool AlleleParser::toNextPosition(void) {
 
     // if we've run off the right edge of a target
     if (!targets.empty() && (
-                (!parameters.allowIndels && currentPosition >= currentTarget->right)
-                || currentPosition > currentTarget->right - 1)) { // time to move to a new target
+            (!parameters.allowIndels && currentPosition >= currentTarget->right)
+            || currentPosition > currentTarget->right - 1)) { // time to move to a new target
         DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right + 1);
         // try to get to the next one, and if this fails, bail out
         if (!toNextTarget()) {
