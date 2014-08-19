@@ -2703,10 +2703,12 @@ bool AlleleParser::getFirstAlignment(void) {
 
 bool AlleleParser::getFirstVariant(void) {
 
-    hasMoreVariants = true;
+    hasMoreVariants = false;
     if (variantCallInputFile.is_open()) {
         if (!variantCallInputFile.getNextVariant(*currentVariant)) {
             hasMoreVariants = false;
+        } else {
+            hasMoreVariants = true;
         }
 
         if (hasMoreVariants) {
