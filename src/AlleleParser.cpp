@@ -2163,7 +2163,7 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                             alleleSequence =
                                 uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
                                 + alleleSequence
-                                + uppercase(reference.getSubSequence(currentSequenceName, allelePos+len, 1));
+                                + uppercase(reference.getSubSequence(currentSequenceName, allelePos+1+len, 1));
                             cigar = "1M" + convert(len) + "D" + "1M";
                         } else {
                             // we always include the flanking bases for these elsewhere, so here too in order to be consistent and trigger use
@@ -2178,22 +2178,16 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                             cigar = "1M" + convert(len) + "I" + "1M";
                             reflen = 2;
                         }
+                        // TODO deal woth complex subs
 
                         Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, cigar, (unsigned int) reflen, allelePos);
                         DEBUG("input allele: " << allele);
-                        alleles.push_back(allele);
 
-                        inputVariantAlleles[allele.position].push_back(allele);
+                        //alleles.push_back(allele);
                         genotypeAlleles.push_back(allele);
-                        /*
-                        if (allele.position + 1 != currentVariant->position) {
-                            cerr << "parsed allele position is not the same as the variant position!" << endl;
-                            cerr << *currentVariant << endl;
-                            cerr << allele << endl;
-                            exit(1);
-                        }
-                        */
+
                         if (allele.type != ALLELE_REFERENCE) {
+                            inputVariantAlleles[allele.position].push_back(allele);
                             alternatePositions.insert(allele.position);
                         }
 
@@ -2203,6 +2197,9 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
 
                 // store the allele counts, if they are provided
                 //
+                continue;
+
+                // xxx wverything here is skipped
                 if (currentVariant->info.find("AC") != currentVariant->info.end()
                     && currentVariant->info.find("AN") != currentVariant->info.end()) {
                     vector<string>& afstrs = currentVariant->info["AC"];
