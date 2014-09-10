@@ -93,6 +93,7 @@ void Parameters::usage(char** argv) {
         << "parameters:" << endl
         << endl
         << "   -h --help       Prints this help dialog." << endl
+        << "   --version       Prints the release number and the git commit id." << endl
         << endl
         << "input and output:" << endl
         << endl
@@ -465,6 +466,7 @@ Parameters::Parameters(int argc, char** argv) {
     static struct option long_options[] =
         {
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, '#'},
             {"bam", required_argument, 0, 'b'},
             {"bam-list", required_argument, 0, 'L'},
             {"stdin", no_argument, 0, 'c'},
@@ -548,7 +550,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8:z:1:3:E:7:2:9:%:(:_:,:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8:z:1:3:E:7:2:9:%:(:_:,:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -1016,6 +1018,13 @@ Parameters::Parameters(int argc, char** argv) {
         case 'd':
             ++debuglevel;
             break;
+
+	case '#':
+	    
+	    // --version
+            cout << "version:  " << VERSION_GIT << endl;
+	    exit(0);
+	    break;
 
         case 'h':
             usage(argv);
