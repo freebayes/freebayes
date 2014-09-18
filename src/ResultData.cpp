@@ -264,6 +264,7 @@ vcf::Variant& Results::vcf(
                 altReadMismatchSum += allele.readMismatchRate;
                 altReadSNPSum += allele.readSNPRate;
                 altReadIndelSum += allele.readIndelRate;
+				// TODO: add altReadSoftClipRate (avg)
                 if (allele.isProperPair) {
                     ++altproperPairs;
                 }
@@ -340,6 +341,8 @@ vcf::Variant& Results::vcf(
         var.info["RUN"].push_back(convert(parser->homopolymerRunLeft(altbase) + 1 + parser->homopolymerRunRight(altbase)));
         var.info["MQM"].push_back(convert((altObsCount == 0) ? 0 : nan2zero((double) altmqsum / (double) altObsCount)));
         var.info["RPP"].push_back(convert((altObsCount == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(altReadsLeft, altReadsRight + altReadsLeft, 0.5)))));
+        var.info["RPR"].push_back(convert(altReadsRight));
+		var.info["RPL"].push_back(convert(altReadsLeft));
         var.info["EPP"].push_back(convert((altBasesLeft + altBasesRight == 0) ? 0 : nan2zero(ln2phred(hoeffdingln(altEndLeft, altEndLeft + altEndRight, 0.5)))));
         var.info["PAIRED"].push_back(convert((altObsCount == 0) ? 0 : nan2zero((double) altproperPairs / (double) altObsCount)));
         var.info["CIGAR"].push_back(adjustedCigar[altAllele.base()]);
