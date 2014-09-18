@@ -2664,9 +2664,6 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     // now that we've jumped, reset the hasMoreAlignments counter
     hasMoreAlignments = true;
 
-    // same for the variants record
-    hasMoreVariants = true;
-
     DEBUG2("set region");
 
     return true;
