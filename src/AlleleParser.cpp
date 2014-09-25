@@ -1422,9 +1422,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                     b = rDna.at(rp);
                 } catch (std::out_of_range outOfRange) {
                     cerr << "Exception: Cannot read past the end of the alignment's sequence." << endl
+                         << alignment.Name << endl
+                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
                          << alignment.AlignedBases << endl
-                         << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl
-                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl;
+                         << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl;
                     abort();
                 }
 
