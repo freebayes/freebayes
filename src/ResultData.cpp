@@ -93,6 +93,7 @@ vcf::Variant& Results::vcf(
     long double refReadMismatchSum = 0;
     long double refReadSNPSum = 0;
     long double refReadIndelSum = 0;
+    long double refReadSoftClipSum = 0;
     unsigned int refObsCount = 0;
     map<string, int> refObsBySequencingTechnology;
 
@@ -602,8 +603,15 @@ vcf::Variant& Results::vcf(
                     for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
                         if (g->second > maxGL) maxGL = g->second;
                     }
-                    for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
-                        genotypeLikelihoodsOutput[g->first] = convert( max((long double)-10, (g->second-maxGL)) );
+
+                    if (parameters.limitGL == 0) {
+                        for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
+                            genotypeLikelihoodsOutput[g->first] = convert(g->second-maxGL);
+                        }
+                    } else {
+                        for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
+                            genotypeLikelihoodsOutput[g->first] = convert( max((long double) + parameters.limitGL, (g->second-maxGL)) );
+                        }
                     }
 
                     vector<string>& datalikelihoods = sampleOutput["GL"];

@@ -421,6 +421,7 @@ Parameters::Parameters(int argc, char** argv) {
     genotypingMaxBandDepth = 7;
     minPairedAltCount = 0;
     minAltMeanMapQ = 0;
+    limitGL = 0;
     reportAllHaplotypeAlleles = false;
     reportMonomorphic = false;
     boundIndels = true; // ignore indels at ends of reads

@@ -85,6 +85,7 @@ public:
     float genotypeVariantThreshold;
     int siteSelectionMaxIterations;
     bool allSites; // TODO
+    double limitGL; // minimum GL that is output
     int minPairedAltCount;
     double minAltMeanMapQ;
     int minAltQSum;
