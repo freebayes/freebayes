@@ -454,7 +454,6 @@ int main (int argc, char *argv[]) {
 
         long double bestComboOddsRatio = 0;
 
-        bool hasHetCombo = false;
         bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
 
@@ -618,16 +617,14 @@ int main (int argc, char *argv[]) {
         pVar = 1.0;
         pHom = 0.0;
         // calculates pvar and gets the best het combo
-        for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
+        list<GenotypeCombo>::iterator gc = genotypeCombos.begin();
+        bestCombo = *gc;
+        for ( ; gc != genotypeCombos.end(); ++gc) {
             if (gc->isHomozygous() && gc->alleles().front() == referenceBase) {
                 pVar -= big_exp(gc->posteriorProb - posteriorNormalizer);
                 pHom += big_exp(gc->posteriorProb - posteriorNormalizer);
-            } else if (!hasHetCombo) { // get the first het combo
-                bestCombo = *gc;
-                hasHetCombo = true;
-                if (gc == genotypeCombos.begin()) {
-                    bestOverallComboIsHet = true;
-                }
+            } else if (gc == genotypeCombos.begin()) {
+                bestOverallComboIsHet = true;
             }
         }
 
