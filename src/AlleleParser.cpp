@@ -1143,7 +1143,7 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
 }
 
 
-bool AlleleParser::allowedAllele(long int pos, string& ref, string& alt) {
+bool AlleleParser::allowedHaplotypeBasisAllele(long int pos, string& ref, string& alt) {
     // check the haplotypeBasisAllele map for membership of the allele in question in the current sequence
     //cerr << "is allowed: " << pos << " " << ref << "/" << alt << " ?" << endl;
     if (!usingHaplotypeBasisAlleles) {
@@ -1214,20 +1214,20 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
     // if not, adjust the allele so that it's a reference allele with preset BQ and length
     // in effect, this means creating a reference allele of the reference length of the allele with 0 BQ
 
+    // NB, if we are using haplotype basis alleles the algorithm forces
+    // alleles that aren't in the haplotype basis set into the reference space
     if (type != ALLELE_REFERENCE
         && type != ALLELE_NULL 
-        && !allowedAllele(pos + 1,
-                          refSequence,
-                          readSequence)) {
-        //type = ALLELE_REFERENCE;
-        type = ALLELE_NULL;
-        // ... commented out so we don't force everything into reference space (what about indels??)
+        && !allowedHaplotypeBasisAllele(pos + 1,
+                                        refSequence,
+                                        readSequence)) {
+        type = ALLELE_REFERENCE;
         length = referenceLengthFromCigar(cigar);
-        cigar = convert(length) + "N";
+        cigar = convert(length) + "M";
         // by adjusting the cigar, we implicitly adjust
         // allele.referenceLength, which is calculated when the allele is made
         qualstr = string(length, qualityInt2Char(0));
-        readSequence = string(length, 'N');
+        readSequence = currentSequence.substr(pos - currentSequenceStart, length);
     }
 
     // cache information about repeat structure in the alleles, to

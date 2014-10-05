@@ -175,7 +175,7 @@ public:
     long int rightmostHaplotypeBasisAllelePosition;
     long int rightmostInputAllelePosition;
     void updateHaplotypeBasisAlleles(long int pos, int referenceLength);
-    bool allowedAllele(long int pos, string& ref, string& alt);
+    bool allowedHaplotypeBasisAllele(long int pos, string& ref, string& alt);
 
     Allele makeAllele(RegisteredAlignment& ra,
 		      AlleleType type,
