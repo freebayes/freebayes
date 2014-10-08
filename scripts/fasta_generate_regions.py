@@ -4,12 +4,14 @@ import sys
 
 
 if len(sys.argv) == 1:
-    print "usage: ", sys.argv[0], " <fasta index file> <region size>"
+    print "usage: ", sys.argv[0], " <fasta file or index file> <region size>"
     print "generates a list of freebayes/bamtools region specifiers on stdout"
     print "intended for use in creating cluster jobs"
     exit(1)
 
 fasta_index_file = open(sys.argv[1])
+if not fasta_index_file.endswith(".fai"):
+    fasta_index_file = fasta_index_file + ".fai"
 region_size = int(sys.argv[2])
 
 for line in fasta_index_file:
