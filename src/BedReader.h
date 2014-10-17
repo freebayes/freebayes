@@ -21,7 +21,7 @@ public:
 
     string seq;  // sequence name
     int left;    // left position
-    int right;   // right position, adjusted to 0-base
+    int right;   // right position, adjusted to 0-base inclusive
     string desc; // descriptive information, target name typically
 
     BedTarget(string s, int l, int r, string d = "")
