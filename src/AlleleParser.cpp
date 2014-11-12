@@ -1103,9 +1103,12 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
         stringstream r;
         //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
+
+        // tabix expects 1-based, fully closed regions for ti_parse_region()
+        // (which is what setRegion() calls eventually)
         if (haplotypeVariantInputFile.setRegion(currentSequenceName,
-                                                rightmostHaplotypeBasisAllelePosition,
-                                                pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
+                                                rightmostHaplotypeBasisAllelePosition + 1,
+                                                pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW + 1)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
             vcf::Variant var(haplotypeVariantInputFile);
@@ -2101,9 +2104,12 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
         //r << currentSequenceName << ":" << start
         //  << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
+
+        // tabix expects 1-based, fully closed regions for ti_parse_region()
+        // (which is what setRegion() calls eventually)
         if (variantCallInputFile.setRegion(currentSequenceName,
-                                           start,
-                                           pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
+                                           start + 1,
+                                           pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW + 1)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
             vcf::Variant var(variantCallInputFile);
