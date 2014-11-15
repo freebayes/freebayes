@@ -580,9 +580,9 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
 void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int after) {
     basesBeforeCurrentTarget = before;
     basesAfterCurrentTarget = after;
-    DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right << " + " << after << " + before");
+    DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right + 1 << " + " << after << " + before");
     string name = reference.sequenceNameStartingWith(target->seq);
-    currentSequence = uppercase(reference.getSubSequence(name, (target->left - 1) - before, (target->right - target->left) + after + before));
+    currentSequence = uppercase(reference.getSubSequence(name, target->left - before, (target->right + 1 - target->left) + after + before));
     currentReferenceBase = currentReferenceBaseChar();
 }
 
@@ -717,7 +717,7 @@ void AlleleParser::loadTargets(void) {
                 if (foundRangeSep + sep.size() != region.size()) {
                     stopPos = atoi(region.substr(foundRangeSep + sep.size()).c_str()); // end-exclusive, bed-format
                 } else {
-                    stopPos = reference.sequenceLength(startSeq);
+                    stopPos = -1;
                 }
             }
         }
@@ -729,7 +729,7 @@ void AlleleParser::loadTargets(void) {
         BedTarget bd(startSeq,
                     (startPos == 0) ? 0 : startPos,
                     (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos - 1); // internally, we use 0-base inclusive end
-        DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right);
+        DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right + 1);
         targets.push_back(bd);
         bedReader.targets.push_back(bd);
 
@@ -738,15 +738,16 @@ void AlleleParser::loadTargets(void) {
     // check validity of targets wrt. reference
     for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
         BedTarget& bd = *e;
-        if (bd.left < 0 || bd.right - 1 > reference.sequenceLength(bd.seq)) {
+        // internally, we use 0-base inclusive end
+        if (bd.left < 0 || bd.right + 1 > reference.sequenceLength(bd.seq)) {
             ERROR("Target region coordinates (" << bd.seq << " "
-                    << bd.left << " " << bd.right
+                    << bd.left << " " << bd.right + 1
                     << ") outside of reference sequence bounds ("
                     << bd.seq << " " << reference.sequenceLength(bd.seq) << ") terminating.");
             exit(1);
         }
         if (bd.right < bd.left) {
-            ERROR("Invalid target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right << ")"
+            ERROR("Invalid target region coordinates (" << bd.seq << " " << bd.left << " " << bd.right + 1 << ")"
                     << " right bound is lower than left bound!");
             exit(1);
         }
@@ -767,8 +768,8 @@ void AlleleParser::loadTargetsFromBams(void) {
     for( ; refIter != refEnd; ++refIter) {
         RefData refData = *refIter;
         string refName = refData.RefName;
-        BedTarget bd(refName, 0, refData.RefLength); // 0-based half open
-        DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right);
+        BedTarget bd(refName, 0, refData.RefLength); // 0-based inclusive internally
+        DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right + 1);
         targets.push_back(bd);
     }
 }
@@ -830,7 +831,9 @@ bool AlleleParser::inTarget(void) {
     if (targets.empty()) {
         return true;  // everything is in target if we don't have targets
     } else {
-        if (bedReader.targetsOverlap(currentSequenceName, currentPosition, currentPosition + 1)) {
+        // expects 0-based, fully-closed, and we're only checking a single
+        // base, so start == end.
+        if (bedReader.targetsOverlap(currentSequenceName, currentPosition, currentPosition)) {
             return true;
         } else {
             return false;
@@ -933,7 +936,7 @@ string AlleleParser::referenceSubstr(long int pos, unsigned int len) {
 bool AlleleParser::isCpG(string& altbase) {
     // bounds check
     if (floor(currentPosition) - currentSequenceStart - 1 < 0
-            || floor(currentPosition) - currentSequenceStart + 1 > currentSequence.size()) {
+            || floor(currentPosition) - currentSequenceStart + 1 >= currentSequence.size()) {
         return false;
     }
     string prevb = currentSequence.substr(floor(currentPosition) - currentSequenceStart - 1, 1);
@@ -1100,9 +1103,12 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
         stringstream r;
         //r << currentSequenceName << ":" << rightmostHaplotypeBasisAllelePosition << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
+
+        // tabix expects 1-based, fully closed regions for ti_parse_region()
+        // (which is what setRegion() calls eventually)
         if (haplotypeVariantInputFile.setRegion(currentSequenceName,
-                                                rightmostHaplotypeBasisAllelePosition,
-                                                pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
+                                                rightmostHaplotypeBasisAllelePosition + 1,
+                                                pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW + 1)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
             vcf::Variant var(haplotypeVariantInputFile);
@@ -2098,9 +2104,12 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
         //r << currentSequenceName << ":" << start
         //  << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         //cerr << "getting variants in " << r.str() << endl;
+
+        // tabix expects 1-based, fully closed regions for ti_parse_region()
+        // (which is what setRegion() calls eventually)
         if (variantCallInputFile.setRegion(currentSequenceName,
-                                           start,
-                                           pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW)) {
+                                           start + 1,
+                                           pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW + 1)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
             vcf::Variant var(variantCallInputFile);
@@ -2628,7 +2637,7 @@ bool AlleleParser::loadTarget(BedTarget* target) {
 
     DEBUG("processing target " << currentTarget->desc << " " <<
             currentTarget->seq << " " << currentTarget->left << " " <<
-            currentTarget->right);
+            currentTarget->right + 1);
     DEBUG2("loading target reference subsequence");
 
     currentSequenceName = currentTarget->seq;
@@ -2641,24 +2650,26 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     currentPosition = currentTarget->left;
     rightmostHaplotypeBasisAllelePosition = currentTarget->left;
 
-    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right - 1)) {  // TODO is bamtools taking 0/1 basing?
-        ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right);
+    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right + 1)) { // bamtools expects 0-based, half-open
+        ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right + 1);
         cerr << bamMultiReader.GetErrorString() << endl;
         return false;
     }
 
     if (variantCallInputFile.is_open()) {
         stringstream r;
-        r << currentTarget->seq << ":" << max(0, currentTarget->left - 1) << "-" << currentTarget->right - 1;
+        // tabix expects 1-based, fully closed regions for ti_parse_region()
+        // (which is what setRegion() calls eventually)
+        r << currentTarget->seq << ":" << currentTarget->left + 1 << "-" << currentTarget->right + 1;
         if (!variantCallInputFile.setRegion(r.str())) {
             WARNING("Could not set the region of the variants input file to " <<
                     currentTarget->seq << ":" << currentTarget->left << ".." <<
-                    currentTarget->right);
+                    currentTarget->right + 1);
             //return false;
         } else {
             DEBUG("set region of variant input file to " << 
                     currentTarget->seq << ":" << currentTarget->left << ".." <<
-                    currentTarget->right);
+                    currentTarget->right + 1);
         }
     }
 
@@ -2689,7 +2700,7 @@ bool AlleleParser::getFirstAlignment(void) {
         DEBUG2("got first alignment in target region");
     } else {
         if (currentTarget) {
-            WARNING("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right);
+            WARNING("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right + 1);
         } else {
             WARNING("Could not find any mapped reads in target region " << currentSequenceName);
         }
@@ -2764,10 +2775,8 @@ bool AlleleParser::toNextPosition(void) {
     }
 
     // if we've run off the right edge of a target
-    if (!targets.empty() && (
-            (!parameters.allowIndels && currentPosition >= currentTarget->right)
-            || currentPosition > currentTarget->right - 1)) { // time to move to a new target
-        DEBUG("next position " << (long int) currentPosition + 1 <<  " outside of current target right bound " << currentTarget->right + 1);
+    if (!targets.empty() && currentPosition > currentTarget->right) { // time to move to a new target
+        DEBUG("next position " << (long int) currentPosition <<  " outside of current target right bound " << currentTarget->right + 1);
         // try to get to the next one, and if this fails, bail out
         if (!toNextTarget()) {
             DEBUG("no more targets, finishing");
@@ -2788,7 +2797,7 @@ bool AlleleParser::toNextPosition(void) {
         }
         // now, if the current position of this alignment is outside of the reference sequence length, switch references
         if (hasMoreAlignments) {
-            if (currentPosition > reference.sequenceLength(currentSequenceName)
+            if (currentPosition >= reference.sequenceLength(currentSequenceName)
                 || registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
                 DEBUG("at end of sequence");
                 clearRegisteredAlignments();
@@ -2800,7 +2809,7 @@ bool AlleleParser::toNextPosition(void) {
             if (registeredAlignments.empty()) {
                 DEBUG("no more alignments in input");
                 return false;
-            } else if (currentPosition > currentSequence.size() + currentSequenceStart) {
+            } else if (currentPosition >= currentSequence.size() + currentSequenceStart) {
                 DEBUG("at end of sequence");
                 return false;
             }
