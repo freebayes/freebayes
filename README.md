@@ -70,8 +70,14 @@ tree.  Currently, the tree is hosted on github, and can be obtained via:
 
     git clone --recursive git://github.com/ekg/freebayes.git
 
-Note the use of --recursive.  This is required, as the project contains some
+Note the use of --recursive.  This is required in order to download all 
 nested git submodules for external repositories.
+
+After you've already done the above to clone the most recent development 
+version, if you wish to compile a specific version of FreeBayes from, you 
+can then do: 
+
+    git checkout v0.9.18 && git submodule update --recursive
 
 ### Resolving proxy issues with git
 
