@@ -9,9 +9,11 @@ if len(sys.argv) == 1:
     print "intended for use in creating cluster jobs"
     exit(1)
 
-fasta_index_file = open(sys.argv[1])
+fasta_index_file = sys.argv[1]
 if not fasta_index_file.endswith(".fai"):
     fasta_index_file = fasta_index_file + ".fai"
+
+fasta_index_file = open(fasta_index_file)
 region_size = int(sys.argv[2])
 
 for line in fasta_index_file:

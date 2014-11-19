@@ -28,6 +28,11 @@ vector<BedTarget> BedReader::entries(void) {
 
     string line;
     while (std::getline(*this, line)) {
+        // BED is base-numbered, 0-origin, half-open.  This parse turns that
+        // into base-numbered, 0-origin, fully-closed for internal use.  All
+        // coordinates used internally should be in the latter, and coordinates
+        // from the user in the former should be converted immediately to the
+        // internal format.
         vector<string> fields = split(line, " \t");
         BedTarget entry(strip(fields[0]),
                         atoi(strip(fields[1]).c_str()),
