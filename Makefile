@@ -1,6 +1,12 @@
-all: vcflib/Makefile
-	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
+all: vcflib/Makefile log
 	cd src && $(MAKE)
+
+log: src/version_git.h
+	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
+
+src/version_git.h:
+	cd src && $(MAKE) autoversion
+	touch src/version_git.h
 
 vcflib/Makefile:
 	@echo "To build freebayes you must use git to also download its submodules."
