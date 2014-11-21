@@ -280,7 +280,8 @@ If you find freebayes to be slow, or use large amounts of memory, consider the f
 which will decrease runtime at the cost of sensitivity to lower-frequency alleles at multiallelic loci.
 Calculating site qualities requires O(samples*genotypes) runtime, and the number of genotypes is
 exponential in ploidy and the number of alleles that are considered, so this is very important when
-working with high ploidy samples (and also `--pooled-discrete`).
+working with high ploidy samples (and also `--pooled-discrete`). By default, freebayes puts no limit on
+this.
 
 - Remove `--genotype-qualities`: calculating genotype qualities requires O(samples*genotypes) memory.
 
