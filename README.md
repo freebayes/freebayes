@@ -175,6 +175,9 @@ Parallel operation (use 36 cores in this case cores):
     freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 -f ref.fa aln.bam >var.vcf
 
 Note that any of the above examples can be made parallel by using the scripts/freebayes-parallel script.
+If you find freebayes to be slow, you should probably be running it in parallel using this script
+to run on a single host, or generating a series of scripts, one per region, and run them
+on a cluster.
 
 
 ## Calling variants: from fastq to VCF
