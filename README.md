@@ -134,6 +134,7 @@ For a description of available command-line options and their defaults, run:
 
     freebayes --help
 
+
 ## Examples
 
 Call variants assuming a diploid sample:
@@ -269,6 +270,21 @@ open them all simultaneously with freebayes.  The VCF output will have one
 column per sample in the input.
 
 
+## Performance tuning
+
+If you find freebayes to be slow, or use large amounts of memory, consider the following options:
+
+- Set `--use-best-n-alleles 4`: this will reduce the number of alleles that are considered,
+which will decrease runtime at the cost of sensitivity to lower-frequency alleles at multiallelic loci.
+
+- Remove `--genotype-qualities`: calculating genotype qualities requires O(samples*genotypes) memory.
+
+- Set higher input thresholds. Require that N reads in one sample support an allele in order to consider it: `--min-alternate-count N`,
+or that the allele fraction in one sample is M: `--min-alternate-fraction M`. This will filter noisy alleles.
+The defaults, `--min-alternate-count 2 --min-alternate-fraction 0.2`, are most-suitable for diploid, moderate-to-high depth samples,
+and should be changed when working with different ploidy samples.
+
+
 ## Observation filters and qualities
 
 ### Input filters
@@ -320,12 +336,13 @@ haplotype.
 
 ### Effective base depth
 
-By default, filters are left completely open, as both mapping quality and base 
-quality are incorporated into the reported site quality (QUAL in the VCF) and 
+By default, filters are left completely open.
+Use `--experimental-gls` if you would like to integrate both base and mapping 
+quality are into the reported site quality (QUAL in the VCF) and 
 genotype quality (GQ, when supplying `--genotype-qualities`).  This integration 
 is driven by the "Effective Base Depth" metric first developed in 
 [snpTools](http://www.hgsc.bcm.edu/software/snptools), which scales observation 
-quality by mapping quality.  In short, *P(Obs|Genotype) ~ 
+quality by mapping quality.  When `--experimental-gls` is given, *P(Obs|Genotype) ~ 
 P(MappedCorrectly(Obs))P(SequencedCorrectly(Obs))*.
 
 
