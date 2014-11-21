@@ -149,9 +149,11 @@ Use a different ploidy:
 
     freebayes -f ref.fa -p 4 aln.bam >var.vcf
 
-Assume a pooled sample with a known number of genome copies:
+Assume a pooled sample with a known number of genome copies.
+Note that this means that each sample identified in the BAM file is assumed to have 32 genome copies.
+When running with highh --ploidy settings, it may be required to set `--use-best-n-alleles` to a low number to limit memory usage.
 
-    freebayes -f ref.fa -p 20 --pooled-discrete aln.bam >var.vcf
+    freebayes -f ref.fa -p 32 --use-best-n-alleles 4 --pooled-discrete aln.bam >var.vcf
 
 Generate frequency-based calls for all variants passing input thresholds:
 
@@ -276,6 +278,9 @@ If you find freebayes to be slow, or use large amounts of memory, consider the f
 
 - Set `--use-best-n-alleles 4`: this will reduce the number of alleles that are considered,
 which will decrease runtime at the cost of sensitivity to lower-frequency alleles at multiallelic loci.
+Calculating site qualities requires O(samples*genotypes) runtime, and the number of genotypes is
+exponential in ploidy and the number of alleles that are considered, so this is very important when
+working with high ploidy samples (and also `--pooled-discrete`).
 
 - Remove `--genotype-qualities`: calculating genotype qualities requires O(samples*genotypes) memory.
 
