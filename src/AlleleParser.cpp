@@ -1017,6 +1017,9 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                        || newAllele.basesRight == 0)) {
             // if the last allele is reference too, we need to combine them!
             if (lastAllele.isReference()) {
+                DEBUG2("addAllele: mergeAllele/1:"
+                    << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
+                    << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
                 lastAllele.mergeAllele(newAllele, ALLELE_REFERENCE);
                 assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
             } else if (lastAllele.isComplex() || lastAllele.isMNP() || lastAllele.isSNP()) {
@@ -1032,8 +1035,15 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                         string seq; vector<pair<int, string> > cig; vector<short> quals;
                         pAllele.subtractFromEnd(matchlen, seq, cig, quals);
                         alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
+                        DEBUG("addAllele: mergeAllele/2:"
+                           << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
+                           << " .back() "    << alleles.back().typeStr() << "@" << alleles.back().position << ":" << alleles.back().cigar
+                           << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
                         alleles.back().mergeAllele(newAllele, ALLELE_REFERENCE);
                     } else { // expand the complex allele
+                        DEBUG("addAllele: mergeAllele/3:"
+                           << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
+                           << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
                         lastAllele.mergeAllele(newAllele, ALLELE_COMPLEX);
                     }
                 } else {
@@ -1087,6 +1097,11 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                         atype = ALLELE_MNP;
                     }
                 }
+
+                DEBUG("addAllele: mergeAllele/4:"
+                   << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
+                   << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
+
                 lastAllele.mergeAllele(newAllele, atype);
                 assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
             } else {
@@ -2021,7 +2036,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // here we get the deque of alignments ending at this alignment's end position
                 deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
                 // and insert the registered alignment into that deque
-                rq.push_front(RegisteredAlignment(currentAlignment));
+                rq.push_front(RegisteredAlignment(currentAlignment, parameters));
                 RegisteredAlignment& ra = rq.front();
                 registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
                 // backtracking if we have too many mismatches

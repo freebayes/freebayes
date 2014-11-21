@@ -58,8 +58,9 @@ public:
     int snpCount;
     int indelCount;
     int alleleTypes;
+    Parameters parameters;
 
-    RegisteredAlignment(BamAlignment& alignment)
+    RegisteredAlignment(BamAlignment& alignment, Parameters parameters)
         //: alignment(alignment)
         : start(alignment.Position)
         , end(alignment.GetEndPosition())
@@ -69,6 +70,7 @@ public:
         , snpCount(0)
         , indelCount(0)
         , alleleTypes(0)
+        , parameters(parameters)
     {
         alignment.GetTag("RG", readgroup);
     }
