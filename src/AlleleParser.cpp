@@ -1090,20 +1090,55 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
             // -> complex event or MNP
             if (mergeComplex && lastAllele.position + lastAllele.referenceLength == newAllele.position
                 && !lastAllele.isNull()) {
-                AlleleType atype = ALLELE_COMPLEX;
-                if (lastAllele.isSNP() || lastAllele.isMNP()) {
-                    vector<pair<int, string> > cigar = splitCigar(lastAllele.cigar);
-                    if (cigar.back().second == "X" && newAllele.isSNP() || newAllele.isMNP()) {
-                        atype = ALLELE_MNP;
+
+                vector<pair<int, string> > lastCigar = splitCigar(lastAllele.cigar);
+
+                // If the last allele is complex and ends in a match, we need
+                // to check that after merging the then-embedded match won't be
+                // longer than maxComplexGap.  We do this for every new allele,
+                // since we don't want to allow the complex allele to grow
+                // beyond maxComplexGap before splitting.
+                if (lastAllele.isComplex()
+                    && lastCigar.back().second == "M"
+                    && lastCigar.back().first > maxComplexGap)
+                {
+                    // Break apart the complex allele into one complex and one
+                    // reference allele.
+                    //
+                    // FIXME TODO: The allele may not actually be complex
+                    // anymore after splitting, in which case we should demote
+                    // its type to SNP/MNP/INDEL.
+                    // -trs, 20 Nov 2014
+                    alleles.push_back(lastAllele);
+                    Allele& pAllele = alleles.at(alleles.size() - 2);
+                    string seq; vector<pair<int, string> > cig; vector<short> quals;
+                    pAllele.subtractFromEnd(lastCigar.back().first, seq, cig, quals);
+                    alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
+
+                    if (newAllele.isReference()) {
+                        DEBUG2("addAllele: mergeAllele/5:"
+                            << " lastAllele " << lastAllele.typeStr()     << "@" << lastAllele.position     << ":" << lastAllele.cigar
+                            << " .back() "    << alleles.back().typeStr() << "@" << alleles.back().position << ":" << alleles.back().cigar
+                            << " newAllele "  << newAllele.typeStr()      << "@" << newAllele.position      << ":" << newAllele.cigar);
+                        alleles.back().mergeAllele(newAllele, ALLELE_REFERENCE);
+                    } else {
+                        alleles.push_back(newAllele);
                     }
+                } else {
+                    AlleleType atype = ALLELE_COMPLEX;
+                    if (lastAllele.isSNP() || lastAllele.isMNP()) {
+                        if (lastCigar.back().second == "X" && newAllele.isSNP() || newAllele.isMNP()) {
+                            atype = ALLELE_MNP;
+                        }
+                    }
+
+                    DEBUG("addAllele: mergeAllele/4:"
+                       << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
+                       << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
+
+                    lastAllele.mergeAllele(newAllele, atype);
+                    assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
                 }
-
-                DEBUG("addAllele: mergeAllele/4:"
-                   << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
-                   << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
-
-                lastAllele.mergeAllele(newAllele, atype);
-                assert(lastAllele.alternateSequence.size() == lastAllele.baseQualities.size());
             } else {
                 alleles.push_back(newAllele);
             }
