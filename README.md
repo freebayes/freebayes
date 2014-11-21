@@ -134,8 +134,50 @@ For a description of available command-line options and their defaults, run:
 
     freebayes --help
 
+## Examples
 
-## Calling variants
+Call variants assuming a diploid sample:
+
+    freebayes -f ref.fa aln.bam >var.vcf
+
+Require at least 5 supporting observations to consider a variant:
+
+    freebayes -f ref.fa -C 5 aln.bam >var.vcf
+
+Use a different ploidy:
+
+    freebayes -f ref.fa -p 4 aln.bam >var.vcf
+
+Assume a pooled sample with a known number of genome copies:
+
+    freebayes -f ref.fa -p 20 --pooled-discrete aln.bam >var.vcf
+
+Generate frequency-based calls for all variants passing input thresholds:
+
+    freebayes -f ref.fa -F 0.01 -C 1 --pooled-continuous aln.bam >var.vcf
+
+Use an input VCF (bgzipped + tabix indexed) to force calls at particular alleles:
+
+    freebayes -f ref.fa -@ in.vcf.gz aln.bam >var.vcf
+
+Generate long haplotype calls over known variants:
+
+    freebayes -f ref.fa --haplotype-basis-alleles in.vcf.gz \
+                        --haplotype-length 50 aln.bam
+
+Naive variant calling: simply annotate observation counts of SNPs and indels:
+
+    freebayes -f ref.fa --haplotype-length 0 --min-alternate-count 1 \
+        --min-alternate-fraction 0 --pooled-continuous --report-monomorphic >var.vcf
+
+Parallel operation (use 36 cores in this case cores):
+
+    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 -f ref.fa aln.bam >var.vcf
+
+Note that any of the above examples can be made parallel by using the scripts/freebayes-parallel script.
+
+
+## Calling variants: from fastq to VCF
 
 You've sequenced some samples.  You have a reference genome or assembled set of 
 contigs, and you'd like to determine reference-relative variants in your 
