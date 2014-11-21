@@ -282,7 +282,8 @@ which will decrease runtime at the cost of sensitivity to lower-frequency allele
 - Set higher input thresholds. Require that N reads in one sample support an allele in order to consider it: `--min-alternate-count N`,
 or that the allele fraction in one sample is M: `--min-alternate-fraction M`. This will filter noisy alleles.
 The defaults, `--min-alternate-count 2 --min-alternate-fraction 0.2`, are most-suitable for diploid, moderate-to-high depth samples,
-and should be changed when working with different ploidy samples.
+and should be changed when working with different ploidy samples. Alternatively, `--min-alternate-qsum` can be used to set a specific
+quality sum, which may be more flexible than setting a hard count on the number of observations.
 
 
 ## Observation filters and qualities
