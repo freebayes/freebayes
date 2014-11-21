@@ -149,9 +149,10 @@ Use a different ploidy:
 
     freebayes -f ref.fa -p 4 aln.bam >var.vcf
 
-Assume a pooled sample with a known number of genome copies.
-Note that this means that each sample identified in the BAM file is assumed to have 32 genome copies.
-When running with highh --ploidy settings, it may be required to set `--use-best-n-alleles` to a low number to limit memory usage.
+Assume a pooled sample with a known number of genome copies.  Note that this
+means that each sample identified in the BAM file is assumed to have 32 genome
+copies.  When running with highh --ploidy settings, it may be required to set
+`--use-best-n-alleles` to a low number to limit memory usage.
 
     freebayes -f ref.fa -p 32 --use-best-n-alleles 4 --pooled-discrete aln.bam >var.vcf
 
@@ -175,12 +176,14 @@ Naive variant calling: simply annotate observation counts of SNPs and indels:
 
 Parallel operation (use 36 cores in this case cores):
 
-    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 -f ref.fa aln.bam >var.vcf
+    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 \
+        -f ref.fa aln.bam >var.vcf
 
-Note that any of the above examples can be made parallel by using the scripts/freebayes-parallel script.
-If you find freebayes to be slow, you should probably be running it in parallel using this script
-to run on a single host, or generating a series of scripts, one per region, and run them
-on a cluster.
+Note that any of the above examples can be made parallel by using the
+scripts/freebayes-parallel script.  If you find freebayes to be slow, you
+should probably be running it in parallel using this script to run on a single
+host, or generating a series of scripts, one per region, and run them on a
+cluster.
 
 
 ## Calling variants: from fastq to VCF
@@ -274,22 +277,28 @@ column per sample in the input.
 
 ## Performance tuning
 
-If you find freebayes to be slow, or use large amounts of memory, consider the following options:
+If you find freebayes to be slow, or use large amounts of memory, consider the
+following options:
 
-- Set `--use-best-n-alleles 4`: this will reduce the number of alleles that are considered,
-which will decrease runtime at the cost of sensitivity to lower-frequency alleles at multiallelic loci.
-Calculating site qualities requires O(samples*genotypes) runtime, and the number of genotypes is
-exponential in ploidy and the number of alleles that are considered, so this is very important when
-working with high ploidy samples (and also `--pooled-discrete`). By default, freebayes puts no limit on
-this.
+- Set `--use-best-n-alleles 4`: this will reduce the number of alleles that are
+  considered, which will decrease runtime at the cost of sensitivity to
+lower-frequency alleles at multiallelic loci.  Calculating site qualities
+requires O(samples\*genotypes) runtime, and the number of genotypes is
+exponential in ploidy and the number of alleles that are considered, so this is
+very important when working with high ploidy samples (and also
+`--pooled-discrete`). By default, freebayes puts no limit on this.
 
-- Remove `--genotype-qualities`: calculating genotype qualities requires O(samples*genotypes) memory.
+- Remove `--genotype-qualities`: calculating genotype qualities requires
+  O(samples\*genotypes) memory.
 
-- Set higher input thresholds. Require that N reads in one sample support an allele in order to consider it: `--min-alternate-count N`,
-or that the allele fraction in one sample is M: `--min-alternate-fraction M`. This will filter noisy alleles.
-The defaults, `--min-alternate-count 2 --min-alternate-fraction 0.2`, are most-suitable for diploid, moderate-to-high depth samples,
-and should be changed when working with different ploidy samples. Alternatively, `--min-alternate-qsum` can be used to set a specific
-quality sum, which may be more flexible than setting a hard count on the number of observations.
+- Set higher input thresholds. Require that N reads in one sample support an
+  allele in order to consider it: `--min-alternate-count N`, or that the allele
+fraction in one sample is M: `--min-alternate-fraction M`. This will filter
+noisy alleles.  The defaults, `--min-alternate-count 2 --min-alternate-fraction
+0.2`, are most-suitable for diploid, moderate-to-high depth samples, and should
+be changed when working with different ploidy samples. Alternatively,
+`--min-alternate-qsum` can be used to set a specific quality sum, which may be
+more flexible than setting a hard count on the number of observations.
 
 
 ## Observation filters and qualities
@@ -487,10 +496,19 @@ look no further than the [gkno genome analysis platform](http://gkno.me/).
 
 ## Support
 
+### email
+
 Please report any issues or questions to the [freebayes mailing 
 list](https://groups.google.com/forum/#!forum/freebayes), [freebayes issue 
 tracker](https://github.com/ekg/freebayes/issues), or by email to 
-<erik.garrison@bc.edu>.
+<erik.garrison@gmail.com>.
+
+### IRC
+
+If you would like to chat real-time about freebayes, join #freebayes on
+freenode.
+
+### reversion
 
 Note that if you encounter issues with the development HEAD and you would like 
 a quick workaround for an issue that is likely to have been reintroduced 
