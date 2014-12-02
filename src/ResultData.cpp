@@ -594,7 +594,7 @@ vcf::Variant& Results::vcf(
                         }
                     }
 
-                    // normalize GLs to -10 min 0 max using division by max and bounding at -10
+                    // normalize GLs to 0 max using division by max
                     long double minGL = 0;
                     for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
                         if (g->second < minGL) minGL = g->second;
