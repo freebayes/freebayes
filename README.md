@@ -1,8 +1,6 @@
 # *freebayes*, a haplotype-based variant detector
 ## user manual and guide
 
-### Erik Garrison <erik.garrison@bc.edu>
-
 --------
 
 ## Overview
@@ -493,6 +491,17 @@ ection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
 For a push-button solution to variant detection, from reads to variant calls, 
 look no further than the [gkno genome analysis platform](http://gkno.me/).
 
+## Contributors
+
+FreeBayes is made by:
+
+- Erik Garrison 
+- Thomas Sibley 
+- Dillon Lee 
+- Patrick Marks 
+- Noah Spies 
+- Joshua Randall 
+- Jeremy Anderson
 
 ## Support
 
