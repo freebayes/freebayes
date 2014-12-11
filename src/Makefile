@@ -5,7 +5,7 @@
 ################################################################################
 
 # Compiler
-CC=g++
+CXX=g++
 C=gcc
 
 # Compiler flags
@@ -77,106 +77,106 @@ HEADERS=multichoose.h version_git.h
 # executables
 
 freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
+	$(CXX) $(CFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
 alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
+	$(CXX) $(CFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
 
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
+	$(CXX) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
 bamleftalign ../bin/bamleftalign: $(BAMTOOLS_ROOT)/lib/libbamtools.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CC) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/bamleftalign $(LIBS)
+	$(CXX) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: $(BAMTOOLS_ROOT)/lib/libbamtools.a bamfiltertech.o $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
+	$(CXX) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
 # objects
 
 Fasta.o: Fasta.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -c Fasta.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Fasta.cpp
 
 alleles.o: alleles.cpp AlleleParser.o Allele.o
-	$(CC) $(CFLAGS) $(INCLUDE) -c alleles.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c alleles.cpp
 
 dummy.o: dummy.cpp AlleleParser.o Allele.o
-	$(CC) $(CFLAGS) $(INCLUDE) -c dummy.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c dummy.cpp
 
 freebayes.o: freebayes.cpp TryCatch.h $(BAMTOOLS_ROOT)/lib/libbamtools.a
-	$(CC) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
 	$(C) $(CFLAGS) $(INCLUDE) -c fastlz.c	
 
 Parameters.o: Parameters.cpp Parameters.h Version.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Parameters.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Parameters.cpp
 
 Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Allele.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Allele.cpp
 
 Sample.o: Sample.cpp Sample.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Sample.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Sample.cpp
 
 Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Genotype.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Genotype.cpp
 
 Ewens.o: Ewens.cpp Ewens.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Ewens.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Ewens.cpp
 
 AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(BAMTOOLS_ROOT)/lib/libbamtools.a
-	$(CC) $(CFLAGS) $(INCLUDE) -c AlleleParser.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c AlleleParser.cpp
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Utility.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Utility.cpp
 
 SegfaultHandler.o: SegfaultHandler.cpp SegfaultHandler.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c SegfaultHandler.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c SegfaultHandler.cpp
 
 Dirichlet.o: Dirichlet.h Dirichlet.cpp Sum.h Product.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Dirichlet.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Dirichlet.cpp
 
 Multinomial.o: Multinomial.h Multinomial.cpp Sum.h Product.h Utility.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Multinomial.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Multinomial.cpp
 
 DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c DataLikelihood.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c DataLikelihood.cpp
 
 Marginals.o: Marginals.cpp Marginals.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Marginals.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Marginals.cpp
 
 ResultData.o: ResultData.cpp ResultData.h Result.h Result.cpp Allele.h Utility.h Genotype.h AlleleParser.h Version.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c ResultData.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c ResultData.cpp
 
 Result.o: Result.cpp Result.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Result.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Result.cpp
 
 BedReader.o: BedReader.cpp BedReader.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c BedReader.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c BedReader.cpp
 
 CNV.o: CNV.cpp CNV.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c CNV.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c CNV.cpp
 
 Bias.o: Bias.cpp Bias.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c Bias.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c Bias.cpp
 
 split.o: split.h split.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -c split.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c split.cpp
 
 bamleftalign.o: bamleftalign.cpp LeftAlign.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -c bamleftalign.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c bamleftalign.cpp
 
 bamfiltertech.o: bamfiltertech.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -c bamfiltertech.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c bamfiltertech.cpp
 
 LeftAlign.o: LeftAlign.h LeftAlign.cpp $(BAMTOOLS_ROOT)/lib/libbamtools.a
-	$(CC) $(CFLAGS) $(INCLUDE) -c LeftAlign.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c LeftAlign.cpp
 
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
-	$(CC) $(CFLAGS) $(INCLUDE) -c IndelAllele.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c IndelAllele.cpp
 
 Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
+	$(CXX) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
 ../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h

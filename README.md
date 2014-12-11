@@ -515,7 +515,7 @@ tracker](https://github.com/ekg/freebayes/issues), or by email to
 ### IRC
 
 If you would like to chat real-time about freebayes, join #freebayes on
-freenode.
+freenode. A gittr.im chat is also available.
 
 ### reversion
 
