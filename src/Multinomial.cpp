@@ -37,3 +37,13 @@ long double multinomialCoefficientLn(int n, const vector<int>& counts) {
     transform(counts.begin(), counts.end(), count_factorials.begin(), factorialln);
     return factorialln(n) - sum(count_factorials);
 }
+
+long double samplingProbLn(const vector<long double>& probs, const vector<int>& obs) {
+    vector<long double>::const_iterator p = probs.begin();
+    vector<int>::const_iterator o = obs.begin();
+    long double r = 0;
+    for (; p != probs.end() && o != obs.end(); ++p, ++o) {
+        r += powln(log(*p), *o);
+    }
+    return r;
+}

@@ -77,6 +77,8 @@ public:
     int alleleCount(Allele& allele);
     bool containsAllele(Allele& allele);
     bool containsAllele(const string& base);
+    // returns true when the genotype is composed of a subset of the alleles
+    bool matchesAlleles(vector<Allele>& alleles);
     vector<Allele> alternateAlleles(string& refbase);
     vector<string> alternateBases(string& refbase);
     vector<int> counts(void);

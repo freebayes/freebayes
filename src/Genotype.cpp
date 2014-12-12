@@ -64,6 +64,15 @@ int Genotype::alleleCount(Allele& allele) {
     }
 }
 
+// returns true when the genotype is composed of a subset of the alleles
+bool Genotype::matchesAlleles(vector<Allele>& alleles) {
+    int p = 0;
+    for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        p += alleleCount(*a);
+    }
+    return ploidy == p;
+}
+
 double Genotype::alleleSamplingProb(const string& base) {
     map<string, int>::iterator ge = alleleCounts.find(base);
     if (ge == alleleCounts.end()) {

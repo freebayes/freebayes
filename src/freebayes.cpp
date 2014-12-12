@@ -628,14 +628,6 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        // report the maximum a posteriori estimate
-        // unless we're reporting the GL maximum
-        if (parameters.reportGenotypeLikelihoodMax) {
-            bestCombo = glMax;
-        }
-
-        DEBUG("best combo: " << bestCombo);
-
         // odds ratio between the first and second-best combinations
         if (genotypeCombos.size() > 1) {
             bestComboOddsRatio = genotypeCombos.front().posteriorProb - (++genotypeCombos.begin())->posteriorProb;
@@ -690,7 +682,48 @@ int main (int argc, char *argv[]) {
             }
         }
 
-        //if (alts.empty()) alts = genotypeAlleles;
+        // reporting the GL maximum *over all alleles*
+        if (parameters.reportGenotypeLikelihoodMax) {
+            bestCombo = glMax;
+        } else {
+            // the default behavior is to report the GL maximum genotyping over the alleles in the best posterior genotyping
+
+            // select the maximum-likelihood GL given the alternates we have
+            // this is not the same thing as the GL max over all alleles!
+            // it is the GL max over the selected alleles at this point
+
+            vector<Allele> alleles = alts;
+            for (vector<Allele>::iterator a = genotypeAlleles.begin(); a != genotypeAlleles.end(); ++a) {
+                if (a->isReference()) {
+                    alleles.push_back(*a);
+                }
+            }
+            map<string, list<GenotypeCombo> > glMaxComboBasedOnAltsByPop;
+            for (map<string, SampleDataLikelihoods>::iterator p = sampleDataLikelihoodsByPopulation.begin(); p != sampleDataLikelihoodsByPopulation.end(); ++p) {
+                const string& population = p->first;
+                SampleDataLikelihoods& sampleDataLikelihoods = p->second;
+                GenotypeCombo glMaxBasedOnAlts;
+                for (SampleDataLikelihoods::iterator v = sampleDataLikelihoods.begin(); v != sampleDataLikelihoods.end(); ++v) {
+                    SampleDataLikelihood* m = NULL;
+                    for (vector<SampleDataLikelihood>::iterator d = v->begin(); d != v->end(); ++d) {
+                        if (d->genotype->matchesAlleles(alleles)) {
+                            m = &*d;
+                            break;
+                        }
+                    }
+                    assert(m != NULL);
+                    glMaxBasedOnAlts.push_back(m);
+                }
+                glMaxComboBasedOnAltsByPop[population].push_back(glMaxBasedOnAlts);
+            }
+            list<GenotypeCombo> glMaxBasedOnAltsGenotypeCombos; // build new combos into this list
+            combinePopulationCombos(glMaxBasedOnAltsGenotypeCombos, glMaxComboBasedOnAltsByPop);
+            bestCombo = glMaxBasedOnAltsGenotypeCombos.front();
+        }
+
+        DEBUG("best combo: " << bestCombo);
+
+        // output
 
         if (!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
 

@@ -165,6 +165,7 @@ probObservedAllelesGivenGenotype(
             return prodQout;
         } else {
             return prodQout + multinomialSamplingProbLn(alleleProbs, observationCounts);
+            //return prodQout + samplingProbLn(alleleProbs, observationCounts);
         }
     } else {
         // read dependence factor, but inverted to deal with the new GL implementation
