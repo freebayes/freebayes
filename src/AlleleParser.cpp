@@ -1035,13 +1035,13 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                         string seq; vector<pair<int, string> > cig; vector<short> quals;
                         pAllele.subtractFromEnd(matchlen, seq, cig, quals);
                         alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
-                        DEBUG("addAllele: mergeAllele/2:"
+                        DEBUG2("addAllele: mergeAllele/2:"
                            << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
                            << " .back() "    << alleles.back().typeStr() << "@" << alleles.back().position << ":" << alleles.back().cigar
                            << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
                         alleles.back().mergeAllele(newAllele, ALLELE_REFERENCE);
                     } else { // expand the complex allele
-                        DEBUG("addAllele: mergeAllele/3:"
+                        DEBUG2("addAllele: mergeAllele/3:"
                            << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
                            << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
                         lastAllele.mergeAllele(newAllele, ALLELE_COMPLEX);
