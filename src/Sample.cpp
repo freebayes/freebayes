@@ -346,7 +346,7 @@ int countAlleles(Samples& samples) {
 
 ostream& operator<<(ostream& out, Sample& sample) {
     for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) {
-        out << s->first << ":" << s->second.size() << " ";
+        out << s->first << " #" << s->second.size() << endl << s->second << endl;
     }
     return out;
 }
