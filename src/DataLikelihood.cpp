@@ -103,31 +103,16 @@ probObservedAllelesGivenGenotype(
                 // how does this work?
                 // each partial obs is recorded as supporting, but with observation probability scaled by the number of possible haplotypes it supports
                 bool isInGenotype = false;
-                long double q = 0;
+                long double q = qual;
 
                 // for each of the unique genotype alleles
                 for (vector<Allele>::iterator b = genotypeAlleles.begin(); b != genotypeAlleles.end(); ++b) {
-
                     Allele& allele = *b;
                     const string& base = b->currentBase;
-
                     if (obs.currentBase == base
                         || (onPartials && sample.observationSupports(*a, &*b))) {
                         isInGenotype = true;
-                        // here qual represents:
-                        // 
-                        // p(correct base ∧ correct mapping)
-                        //   or 
-                        // qual = (1.0 - exp(obs.lnquality)) * (1.0 - exp(obs.lnmapQuality))
-                        // 
-                        // we assign it to q when obs.currentBase
-                        // is the same as the base of the genotype
-                        //q = qual;
-                    } else {
-                        // and when the two disagree, we take a penalty
-                        //q = 1 - qual;
                     }
-
                 }
 
 
