@@ -16,7 +16,7 @@ probObservedAllelesGivenGenotype(
         map<string, double>& freqs
     ) {
 
-    cerr << "P(" << genotype << " given" << endl <<  sample;
+//    cerr << "P(" << genotype << " given" << endl <<  sample;
 
     int observationCount = sample.observationCount();
     vector<long double> alleleProbs = genotype.alleleProbabilities(observationBias);
@@ -73,7 +73,7 @@ probObservedAllelesGivenGenotype(
                     }
                 }
                 Allele& obs = **a;
-                cerr << "observation: " << obs << endl;
+                //cerr << "observation: " << obs << endl;
                 long double probi = 0;
                 ContaminationEstimate& contamination = contaminations.of(obs.readGroupID);
                 double scale = 1;
@@ -132,7 +132,7 @@ probObservedAllelesGivenGenotype(
 
 
                 long double asampl = genotype.alleleSamplingProb(obs);
-                cerr << genotype << ".alleleSamplingProb(" << obs << ") = " << asampl << endl;
+                //cerr << genotype << ".alleleSamplingProb(" << obs << ") = " << asampl << endl;
                 if (asampl == 0) {
                     // scale by frequency of (this) possibly contaminating allele
                     asampl = contamination.probRefGivenHomAlt;
@@ -160,7 +160,7 @@ probObservedAllelesGivenGenotype(
 
                     //double freq = freqs[base];
 
-                    cerr << q << endl;
+                    //cerr << q << endl;
                     //probi += log(1 - q);
                     prodQout += log(1 - q);
                     //cerr << "prodQout = " << prodQout << endl;
@@ -175,7 +175,7 @@ probObservedAllelesGivenGenotype(
                     //cerr << "probi = " << probi << endl;
 
 
-                    cerr << asampl << endl;
+                    //cerr << asampl << endl;
                     prodSample += log(asampl);
                     //cerr << "prodSample = " << prodSample << endl;
                 }
@@ -193,7 +193,7 @@ probObservedAllelesGivenGenotype(
                     long double lnprobi = probi; //log(min(probi, (long double) 1.0));
                     //cerr << "lnprobi = " << lnprobi << endl;
                     probObsGivenGt += lnprobi;
-                    cerr << "probObsGivenGt = " << probObsGivenGt << endl;
+                    //cerr << "probObsGivenGt = " << probObsGivenGt << endl;
                 }
             }
         }
@@ -209,7 +209,7 @@ probObservedAllelesGivenGenotype(
         if (sum(observationCounts) == 0) {
             return prodQout;
         } else {
-            cerr << "P(obs|" << genotype << ") = " << prodQout + multinomialSamplingProbLn(alleleProbs, observationCounts) << endl << endl << string(80, '@') << endl << endl;
+            //cerr << "P(obs|" << genotype << ") = " << prodQout + multinomialSamplingProbLn(alleleProbs, observationCounts) << endl << endl << string(80, '@') << endl << endl;
             return prodQout + multinomialSamplingProbLn(alleleProbs, observationCounts);
             //return prodQout + samplingProbLn(alleleProbs, observationCounts);
         }
@@ -221,7 +221,7 @@ probObservedAllelesGivenGenotype(
         }
         */
         //cerr << "_ P(obs|" << genotype << ") = " << probObsGivenGt << endl << endl << string(80, '@') << endl << endl;
-        cerr << "->P(obs|"<<genotype << ") = " << prodQout << " + " << prodSample << " = " << prodQout + prodSample << endl;
+        //cerr << "->P(obs|"<<genotype << ") = " << prodQout << " + " << prodSample << " = " << prodQout + prodSample << endl;
         return prodQout + prodSample;
 
         return isinf(probObsGivenGt) ? 0 : probObsGivenGt;
