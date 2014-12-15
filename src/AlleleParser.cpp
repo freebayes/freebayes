@@ -728,7 +728,7 @@ void AlleleParser::loadTargets(void) {
         // REAL BED format is 0 based, half open (end base not included)
         BedTarget bd(startSeq,
                     (startPos == 0) ? 0 : startPos,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos - 1); // internally, we use 0-base inclusive end
+                    ((stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos) - 1); // internally, we use 0-base inclusive end
         DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right + 1);
         targets.push_back(bd);
         bedReader.targets.push_back(bd);
