@@ -728,7 +728,7 @@ void AlleleParser::loadTargets(void) {
         // REAL BED format is 0 based, half open (end base not included)
         BedTarget bd(startSeq,
                     (startPos == 0) ? 0 : startPos,
-                    (stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos - 1); // internally, we use 0-base inclusive end
+                    ((stopPos == -1) ? reference.sequenceLength(startSeq) : stopPos) - 1); // internally, we use 0-base inclusive end
         DEBUG("will process reference sequence " << startSeq << ":" << bd.left << ".." << bd.right + 1);
         targets.push_back(bd);
         bedReader.targets.push_back(bd);
@@ -739,9 +739,9 @@ void AlleleParser::loadTargets(void) {
     for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
         BedTarget& bd = *e;
         // internally, we use 0-base inclusive end
-        if (bd.left < 0 || bd.right > reference.sequenceLength(bd.seq)) {
+        if (bd.left < 0 || bd.right + 1 > reference.sequenceLength(bd.seq)) {
             ERROR("Target region coordinates (" << bd.seq << " "
-                    << bd.left << " " << bd.right
+                    << bd.left << " " << bd.right + 1
                     << ") outside of reference sequence bounds ("
                     << bd.seq << " " << reference.sequenceLength(bd.seq) << ") terminating.");
             exit(1);
