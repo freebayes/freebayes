@@ -7,3 +7,6 @@
 [submodule "intervaltree"]
 	path = intervaltree
 	url = https://github.com/ekg/intervaltree.git
+[submodule "test/test-simple-bash"]
+	path = test/test-simple-bash
+	url = https://github.com/ingydotnet/test-simple-bash.git
