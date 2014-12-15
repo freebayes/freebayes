@@ -739,9 +739,9 @@ void AlleleParser::loadTargets(void) {
     for (vector<BedTarget>::iterator e = targets.begin(); e != targets.end(); ++e) {
         BedTarget& bd = *e;
         // internally, we use 0-base inclusive end
-        if (bd.left < 0 || bd.right > reference.sequenceLength(bd.seq)) {
+        if (bd.left < 0 || bd.right + 1 > reference.sequenceLength(bd.seq)) {
             ERROR("Target region coordinates (" << bd.seq << " "
-                    << bd.left << " " << bd.right
+                    << bd.left << " " << bd.right + 1
                     << ") outside of reference sequence bounds ("
                     << bd.seq << " " << reference.sequenceLength(bd.seq) << ") terminating.");
             exit(1);
