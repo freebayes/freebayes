@@ -23,6 +23,9 @@ install:
 uninstall:
 	rm /usr/local/bin/freebayes /usr/local/bin/bamleftalign
 
+test: all
+	prove test/*.t
+
 clean:
 	cd src && $(MAKE) clean
 	rm -f bin/*
