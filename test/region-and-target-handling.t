@@ -101,5 +101,5 @@ END
 [[ $(run_freebayes --region ref)   == $expected ]]; ok $? "--region ref"
 
 output=$(run_freebayes --region ref:1-20 2>&1)
-[[ $output =~ "Target region coordinates (ref 1 19) outside of reference sequence bounds (ref 8)" ]]
+[[ $output =~ "Target region coordinates (ref 1 20) outside of reference sequence bounds (ref 8)" ]]
     ok $? 'region outside of bounds error' || echo "Output: $output" >&2
