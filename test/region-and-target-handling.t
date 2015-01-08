@@ -3,7 +3,7 @@
 test=$(dirname $0)
 root=$(dirname $0)/..
 source $test/test-simple-bash/lib/test-simple.bash \
-    tests 8
+    tests 9
 
 PATH=$root/bin:$PATH
 
@@ -99,6 +99,8 @@ END
 `
 [[ $(run_freebayes --targets $bed) == $expected ]]; ok $? "--targets $bed"
 [[ $(run_freebayes --region ref)   == $expected ]]; ok $? "--region ref"
+
+[[ $(run_freebayes --region ref:0-1) == $(head -n1 <<<"$expected") ]]; ok $? "--region ref:0-1"
 
 output=$(run_freebayes --region ref:1-20 2>&1)
 [[ $output =~ "Target region coordinates (ref 1 20) outside of reference sequence bounds (ref 8)" ]]
