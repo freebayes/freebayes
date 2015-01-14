@@ -12,12 +12,11 @@ probObservedAllelesGivenGenotype(
         Bias& observationBias,
         bool standardGLs,
         vector<Allele>& genotypeAlleles,
-        vector<Allele>& uniqueAllelesInGenotype,
         Contamination& contaminations,
         map<string, double>& freqs
     ) {
 
-//    cerr << "P(" << genotype << " given" << endl <<  sample;
+    //cerr << "P(" << genotype << " given" << endl <<  sample;
 
     int observationCount = sample.observationCount();
     vector<long double> alleleProbs = genotype.alleleProbabilities(observationBias);
@@ -80,7 +79,6 @@ probObservedAllelesGivenGenotype(
                 // we guard against this externally, by ignoring such alignments (quality has to be > MQL0)
                 long double qual = (1.0 - exp(obs.lnquality)) * (1.0 - exp(obs.lnmapQuality));
                 
-                //cerr << "qual = " << qual << endl;
                 if (onPartials) {
                     map<Allele*, set<Allele*> >::iterator r = sample.reversePartials.find(*a);
                     if (r != sample.reversePartials.end()) {
@@ -88,10 +86,10 @@ probObservedAllelesGivenGenotype(
                             cerr << "partial " << *a << " has empty reverse" << endl;
                             exit(1);
                         }
-                        cerr << "partial " << *a << " supports potentially " << sample.reversePartials[*a].size() << " alleles : ";
-                        for (set<Allele*>::iterator m = sample.reversePartials[*a].begin();
-                             m != sample.reversePartials[*a].end(); ++m) cerr << **m << " ";
-                        cerr << endl;
+                        //cerr << "partial " << *a << " supports potentially " << sample.reversePartials[*a].size() << " alleles : " << endl;
+                        //for (set<Allele*>::iterator m = sample.reversePartials[*a].begin();
+                        //m != sample.reversePartials[*a].end(); ++m) cerr << **m << " ";
+                        //cerr << endl;
                         scale = (double)1/(double)sample.reversePartials[*a].size();
                     }
                 }
@@ -100,18 +98,17 @@ probObservedAllelesGivenGenotype(
                 // how does this work?
                 // each partial obs is recorded as supporting, but with observation probability scaled by the number of possible haplotypes it supports
                 bool isInGenotype = false;
-                long double q = qual;
 
                 // for each of the unique genotype alleles
-                for (vector<Allele>::iterator b = uniqueAllelesInGenotype.begin(); b != uniqueAllelesInGenotype.end(); ++b) {
+                for (vector<Allele>::iterator b = genotypeAlleles.begin(); b != genotypeAlleles.end(); ++b) {
                     Allele& allele = *b;
                     const string& base = allele.currentBase;
-                    if (obs.currentBase == base
-                        || (onPartials && sample.observationSupports(*a, &*b))) {
+                    if (genotype.containsAllele(base)
+                        && (obs.currentBase == base
+                            || (onPartials && sample.observationSupports(*a, &*b)))) {
                         isInGenotype = true;
                     }
                 }
-
 
                 long double asampl = genotype.alleleSamplingProb(obs);
                 //cerr << genotype << ".alleleSamplingProb(" << obs << ") = " << asampl << endl;
@@ -124,68 +121,25 @@ probObservedAllelesGivenGenotype(
                 } else { //if (genotype.ploidy == 2) {
                     // to deal with polyploids
                     // note that this reduces to 1 for diploid heterozygotes
-                    //double scale = asampl / 0.5;
                     // this term captures reference bias
                     if (obs.isReference()) {
                         asampl *= (contamination.probRefGivenHet / 0.5);
-                        //cerr << "asampl = " << asampl << " from asampl *= " << contamination.probRefGivenHet << " / 0.5" << endl;
                     } else {
                         asampl *= ((1 - contamination.probRefGivenHet) / 0.5);
-                        //cerr << "asampl = " << asampl << " from asampl *= ((1- " << contamination.probRefGivenHet << ") / 0.5)" << endl;
                     }
                 }
 
-                if (onPartials) {
-                    q *= scale; // distribute partial support evenly across supported haplotypes
-                }
-
                 if (!isInGenotype) {
-
-                    //double freq = freqs[base];
-
-                    //cerr << q << endl;
-                    //probi += log(1 - q);
-                    prodQout += log(1 - q);
-                    //cerr << "prodQout = " << prodQout << endl;
-                } else {
-
+                    long double q = 1 - qual;
+                    // distribute partial support evenly across supported haplotypes
+                    if (onPartials) {
+                        q *= scale;
+                    }
                     prodQout += log(q);
-                    //cerr << "asampl = " << asampl << endl;
-                    //cerr << "q = " << q << endl;
-                    // here we make P(read|genotype) = p(allele|genotype) * p(read|allele)
-
-
-                    //cerr << "probi = " << probi << endl;
-                    //prodQout += log(q);
-
-                    //cerr << asampl << endl;
-                    //prodSample += log(asampl);
-                    //cerr << "prodSample = " << prodSample << endl;
-
-                    //countIn += scale;
-
                 }
+
                 prodSample += log(asampl);
 
-                /*
-                if (isInGenotype) {
-                    countIn += scale;
-                }
-                */
-
-                //long double lnprobi = log(min(probi, (long double) 1.0));
-                //probObsGivenGt += lnprobi;
-
-                //cerr << "countIn = " << countIn << endl;
-                // bound to (0,1]
-                /*
-                if (probi < 0) {
-                    long double lnprobi = probi; //log(min(probi, (long double) 1.0));
-                    //cerr << "lnprobi = " << lnprobi << endl;
-                    probObsGivenGt += lnprobi;
-                    //cerr << "probObsGivenGt = " << probObsGivenGt << endl;
-                }
-                */
             }
         }
     }
@@ -205,9 +159,8 @@ probObservedAllelesGivenGenotype(
             //return prodQout + samplingProbLn(alleleProbs, observationCounts);
         }
     } else {
-
-        return prodQout + prodSample;
-
+        long double probObsGivenGt = prodQout + prodSample;
+        return isinf(probObsGivenGt) ? 0 : probObsGivenGt;
     }
 
 }
@@ -228,7 +181,6 @@ probObservedAllelesGivenGenotypes(
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype*>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
         Genotype& genotype = **g;
-        vector<Allele> uniqueAllelesInGenotype = genotype.uniqueAlleles();
         results.push_back(
 	    make_pair(*g,
                   probObservedAllelesGivenGenotype(
@@ -239,7 +191,6 @@ probObservedAllelesGivenGenotypes(
                       observationBias,
                       standardGLs,
                       genotypeAlleles,
-                      uniqueAllelesInGenotype,
                       contaminations,
                       freqs)));
     }

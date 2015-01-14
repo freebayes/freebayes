@@ -71,7 +71,7 @@ public:
 
     }
 
-    vector<Allele> uniqueAlleles(void);
+    vector<Allele*> uniqueAlleles(void);
     int getPloidy(void);
     int alleleCount(const string& base);
     int alleleCount(Allele& allele);

@@ -3382,6 +3382,13 @@ void AlleleParser::buildHaplotypeAlleles(
             alleles = alleleUnion(alleles, refAlleleVector);
         }
 
+        // this is where we have established our genotype alleles
+        /*
+        for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+            cerr << "genotype allele " << &*a << " " << *a << endl;
+        }
+        */
+
         // pick up observations that are potentially partial (not unambiguous)
         // the way to do this is to test the full observations as if they are partial, and if they
         // end up partially supporting multiple observations, removing them from the "complete" observations

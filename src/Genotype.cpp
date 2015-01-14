@@ -3,10 +3,11 @@
 #include "multipermute.h"
 
 
-vector<Allele> Genotype::uniqueAlleles(void) {
-    vector<Allele> uniques;
-    for (Genotype::iterator g = this->begin(); g != this->end(); ++g)
-        uniques.push_back(g->allele);
+vector<Allele*> Genotype::uniqueAlleles(void) {
+    vector<Allele*> uniques;
+    for (Genotype::iterator g = this->begin(); g != this->end(); ++g) {
+        uniques.push_back(&g->allele);
+    }
     return uniques;
 }
 
