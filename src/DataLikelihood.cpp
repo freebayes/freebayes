@@ -136,6 +136,7 @@ probObservedAllelesGivenGenotype(
                         q *= scale;
                     }
                     prodQout += log(q);
+                    countOut++;
                 }
 
                 prodSample += log(asampl);
@@ -159,6 +160,9 @@ probObservedAllelesGivenGenotype(
             //return prodQout + samplingProbLn(alleleProbs, observationCounts);
         }
     } else {
+        if (countOut > 1) {
+            prodQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+        }
         long double probObsGivenGt = prodQout + prodSample;
         return isinf(probObsGivenGt) ? 0 : probObsGivenGt;
     }
