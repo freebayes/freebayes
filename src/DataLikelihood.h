@@ -29,6 +29,7 @@ probObservedAllelesGivenGenotype(
         Bias& observationBias,
         bool standardGLs,
         vector<Allele>& genotypeAlleles,
+        vector<Allele>& uniqueAllelesInGenotype,
         Contamination& contaminations,
         map<string, double>& freqs);
 
