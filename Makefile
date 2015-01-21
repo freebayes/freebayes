@@ -8,11 +8,14 @@ src/version_git.h:
 	cd src && $(MAKE) autoversion
 	touch src/version_git.h
 
+# If 'vcflib/Makefile' doesn't exist,
+# it means git submodules were not checked-out with 'git clone --recursive'.
+# manually clone and update them now.
 vcflib/Makefile:
-	@echo "To build freebayes you must use git to also download its submodules."
-	@echo "Do so by downloading freebayes again using this command (note --recursive flag):"
-	@echo "    git clone --recursive git://github.com/ekg/freebayes.git"
-	@error
+	git submodule init
+	git submodule update
+	( cd vcflib ; git submodule init && git submodule update )
+
 
 debug:
 	cd src && $(MAKE) debug
