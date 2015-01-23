@@ -1132,7 +1132,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                         }
                     }
 
-                    DEBUG("addAllele: mergeAllele/4:"
+                    DEBUG2("addAllele: mergeAllele/4:"
                        << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
                        << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
 
