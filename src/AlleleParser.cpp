@@ -1036,7 +1036,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                         pAllele.subtractFromEnd(matchlen, seq, cig, quals);
                         alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
                         DEBUG2("addAllele: mergeAllele/2:"
-                           << " lastAllele " << lastAllele.typeStr() << "@" << lastAllele.position << ":" << lastAllele.cigar
+                           << " pAllele "    << pAllele.typeStr() << "@" << pAllele.position << ":" << pAllele.cigar
                            << " .back() "    << alleles.back().typeStr() << "@" << alleles.back().position << ":" << alleles.back().cigar
                            << " newAllele "  << newAllele.typeStr()  << "@" << newAllele.position  << ":" << newAllele.cigar);
                         alleles.back().mergeAllele(newAllele, ALLELE_REFERENCE);
@@ -1117,7 +1117,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 
                     if (newAllele.isReference()) {
                         DEBUG2("addAllele: mergeAllele/5:"
-                            << " lastAllele " << lastAllele.typeStr()     << "@" << lastAllele.position     << ":" << lastAllele.cigar
+                            << " pAllele "    << pAllele.typeStr()        << "@" << pAllele.position        << ":" << pAllele.cigar
                             << " .back() "    << alleles.back().typeStr() << "@" << alleles.back().position << ":" << alleles.back().cigar
                             << " newAllele "  << newAllele.typeStr()      << "@" << newAllele.position      << ":" << newAllele.cigar);
                         alleles.back().mergeAllele(newAllele, ALLELE_REFERENCE);
