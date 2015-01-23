@@ -1860,6 +1860,24 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
         return ra;
     }
 
+    DEBUG2("registerAlignment: done registering alleles with addAllele");
+
+    // Simplify complex final alleles by splitting off any trailing reference matches
+    Allele& lastAllele = ra.alleles.back();
+    vector< pair<int, string> > lastCigar = splitCigar(lastAllele.cigar);
+    if (lastAllele.isComplex() && lastCigar.back().second == "M") {
+        DEBUG2("registerAlignment: trimming reference matches from end of final complex allele");
+        // FIXME TODO: The allele may not actually be complex
+        // anymore after splitting, in which case we should demote
+        // its type to SNP/MNP/INDEL.
+        // -trs, 23 Jan 2015
+        ra.alleles.push_back(lastAllele);
+        Allele& pAllele = ra.alleles.at(ra.alleles.size() - 2);
+        string seq; vector<pair<int, string> > cig; vector<short> quals;
+        pAllele.subtractFromEnd(lastCigar.back().first, seq, cig, quals);
+        ra.alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
+    }
+
     // this deals with the case in which we have embedded Ns in the read
     // often this happens at the start or end of reads, thus affecting our RegisteredAlignment::start and ::end
     ra.start = ra.alleles.front().position;
