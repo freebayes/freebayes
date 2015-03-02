@@ -91,6 +91,7 @@ probObservedAllelesGivenGenotype(
                         //m != sample.reversePartials[*a].end(); ++m) cerr << **m << " ";
                         //cerr << endl;
                         scale = (double)1/(double)sample.reversePartials[*a].size();
+                        qual *= scale;
                     }
                 }
 
@@ -98,6 +99,7 @@ probObservedAllelesGivenGenotype(
                 // how does this work?
                 // each partial obs is recorded as supporting, but with observation probability scaled by the number of possible haplotypes it supports
                 bool isInGenotype = false;
+                long double asampl = genotype.alleleSamplingProb(obs);
 
                 // for each of the unique genotype alleles
                 for (vector<Allele>::iterator b = genotypeAlleles.begin(); b != genotypeAlleles.end(); ++b) {
@@ -107,11 +109,11 @@ probObservedAllelesGivenGenotype(
                         && (obs.currentBase == base
                             || (onPartials && sample.observationSupports(*a, &*b)))) {
                         isInGenotype = true;
+                        // use the matched allele to estimate the asampl
+                        asampl = max(asampl, (long double)genotype.alleleSamplingProb(allele));
                     }
                 }
 
-                long double asampl = genotype.alleleSamplingProb(obs);
-                //cerr << genotype << ".alleleSamplingProb(" << obs << ") = " << asampl << endl;
                 if (asampl == 0) {
                     // scale by frequency of (this) possibly contaminating allele
                     asampl = contamination.probRefGivenHomAlt;
@@ -129,18 +131,13 @@ probObservedAllelesGivenGenotype(
                     }
                 }
 
+                // distribute observation support across haplotypes
                 if (!isInGenotype) {
-                    long double q = 1 - qual;
-                    // distribute partial support evenly across supported haplotypes
-                    if (onPartials) {
-                        q *= scale;
-                    }
-                    prodQout += log(q);
-                    countOut++;
+                    prodQout += log(1-qual);
+                    countOut += scale;
+                } else {
+                    prodSample += log(asampl*scale);
                 }
-
-                prodSample += log(asampl);
-
             }
         }
     }
