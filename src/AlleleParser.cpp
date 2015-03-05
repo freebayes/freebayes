@@ -2150,17 +2150,18 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
             start = rightmostHaplotypeBasisAllelePosition;
         }
 
-        //stringstream r;
-        //r << currentSequenceName << ":" << start
-        //  << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
-        //cerr << "getting variants in " << r.str() << endl;
+        /*
+        stringstream r;
+        r << currentSequenceName << ":" << start
+          << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
+        cerr << "getting variants in " << r.str() << endl;
+        */
 
         // tabix expects 1-based, fully closed regions for ti_parse_region()
         // (which is what setRegion() calls eventually)
         if (variantCallInputFile.setRegion(currentSequenceName,
                                            start + 1,
                                            pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW + 1)) {
-            //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
             vcf::Variant var(variantCallInputFile);
             bool ok;
@@ -2630,18 +2631,21 @@ bool AlleleParser::toNextTarget(void) {
         }
 
         if (ok) {
+            clearRegisteredAlignments();
+            rightmostHaplotypeBasisAllelePosition = currentPosition;
+            /*
+            cerr << "in the hack" << endl;
 
             // XXX hack
-            clearRegisteredAlignments();
+
             currentSequenceStart = currentAlignment.Position;
             currentSequenceName = referenceIDToName[currentAlignment.RefID];
             currentRefID = currentAlignment.RefID;
             currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
             currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
-            rightmostHaplotypeBasisAllelePosition = currentPosition;
-
+            */
         } else {
-            if (hasMoreVariants) {
+            if (!inputVariantAlleles.empty()) {
                 DEBUG("continuing because we have more variants");
                 return true;
             } else {
@@ -2699,6 +2703,10 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     DEBUG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left;
     rightmostHaplotypeBasisAllelePosition = currentTarget->left;
+
+    if (usingVariantInputAlleles) {
+        updateInputVariants(target->left, target->right - target->left);
+    }
 
     if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right + 1)) { // bamtools expects 0-based, half-open
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right + 1);
@@ -2903,33 +2911,33 @@ bool AlleleParser::toNextPosition(void) {
 
     // and do the same for the variants from the input VCF
     DEBUG2("erasing old input variant alleles");
-    map<long int, vector<Allele> >::iterator v = inputVariantAlleles.find(currentPosition - 3);
-    if (v != inputVariantAlleles.end()) {
-        inputVariantAlleles.erase(v);
+    map<long int, vector<Allele> >::iterator v = inputVariantAlleles.begin();
+    while (v != inputVariantAlleles.end() && v->first < currentPosition) {
+        inputVariantAlleles.erase(v++);
     }
 
     DEBUG2("erasing old input haplotype basis alleles");
-    map<long int, vector<AllelicPrimitive> >::iterator z = haplotypeBasisAlleles.find(currentPosition - 3);
-    if (z != haplotypeBasisAlleles.end()) {
-        haplotypeBasisAlleles.erase(z);
+    map<long int, vector<AllelicPrimitive> >::iterator z = haplotypeBasisAlleles.begin();
+    while (z != haplotypeBasisAlleles.end() && z->first < currentPosition) {
+        haplotypeBasisAlleles.erase(z++);
     }
 
     DEBUG2("erasing old genotype likelihoods");
-    map<long int, map<string, map<string, long double> > >::iterator l = inputGenotypeLikelihoods.find(currentPosition - 3);
-    if (l != inputGenotypeLikelihoods.end()) {
-        inputGenotypeLikelihoods.erase(l);
+    map<long int, map<string, map<string, long double> > >::iterator l = inputGenotypeLikelihoods.begin();
+    while (l != inputGenotypeLikelihoods.end() && l->first < currentPosition) {
+        inputGenotypeLikelihoods.erase(l++);
     }
 
     DEBUG2("erasing old allele frequencies");
-    map<long int, map<Allele, int> >::iterator af = inputAlleleCounts.find(currentPosition - 3);
-    if (af != inputAlleleCounts.end()) {
-        inputAlleleCounts.erase(af);
+    map<long int, map<Allele, int> >::iterator af = inputAlleleCounts.begin();
+    while (af != inputAlleleCounts.end() && af->first < currentPosition) {
+        inputAlleleCounts.erase(af++);
     }
 
     DEBUG2("erasing old cached repeat counts");
-    map<long int, map<string, int> >::iterator rc = cachedRepeatCounts.find(currentPosition - 3);
-    if (rc != cachedRepeatCounts.end()) {
-        cachedRepeatCounts.erase(rc);
+    map<long int, map<string, int> >::iterator rc = cachedRepeatCounts.begin();
+    while (rc != cachedRepeatCounts.end() && rc->first < currentPosition) {
+        cachedRepeatCounts.erase(rc++);
     }
 
     return true;
