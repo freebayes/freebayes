@@ -570,6 +570,7 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     currentSequenceStart = alignment.Position;
     currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
+    rightmostHaplotypeBasisAllelePosition = currentPosition;
     DEBUG2("reference.getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
     currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.Length));
 }
@@ -2150,12 +2151,10 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
             start = rightmostHaplotypeBasisAllelePosition;
         }
 
-        /*
         stringstream r;
         r << currentSequenceName << ":" << start
           << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         cerr << "getting variants in " << r.str() << endl;
-        */
 
         // tabix expects 1-based, fully closed regions for ti_parse_region()
         // (which is what setRegion() calls eventually)
@@ -2632,18 +2631,7 @@ bool AlleleParser::toNextTarget(void) {
 
         if (ok) {
             clearRegisteredAlignments();
-            rightmostHaplotypeBasisAllelePosition = currentPosition;
-            /*
-            cerr << "in the hack" << endl;
-
-            // XXX hack
-
-            currentSequenceStart = currentAlignment.Position;
-            currentSequenceName = referenceIDToName[currentAlignment.RefID];
-            currentRefID = currentAlignment.RefID;
-            currentPosition = (currentPosition < currentAlignment.Position) ? currentAlignment.Position : currentPosition;
-            currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, currentAlignment.Length));
-            */
+            loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
         } else {
             if (!inputVariantAlleles.empty()) {
                 DEBUG("continuing because we have more variants");
