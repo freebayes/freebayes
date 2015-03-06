@@ -23,11 +23,11 @@ install:
 uninstall:
 	rm /usr/local/bin/freebayes /usr/local/bin/bamleftalign
 
-test: all
-	prove test/*.t
+test:
+	cd test && make test
 
 clean:
 	cd src && $(MAKE) clean
 	rm -f bin/*
 
-.PHONY: all install uninstall clean
+.PHONY: all install uninstall clean test

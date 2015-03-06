@@ -1,5 +1,7 @@
 # *freebayes*, a haplotype-based variant detector
 ## user manual and guide
+
+[![Build Status](https://travis-ci.org/ekg/freebayes.svg)](https://travis-ci.org/ekg/freebayes)
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/ekg/freebayes?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 --------

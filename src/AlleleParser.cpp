@@ -2631,7 +2631,7 @@ bool AlleleParser::toNextTarget(void) {
 
         if (ok) {
             clearRegisteredAlignments();
-            loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
+            loadReferenceSequence(currentTarget, 0, 0);
         } else {
             if (!inputVariantAlleles.empty()) {
                 DEBUG("continuing because we have more variants");
@@ -2678,8 +2678,8 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     currentTarget = target;
 
     DEBUG("processing target " << currentTarget->desc << " " <<
-            currentTarget->seq << " " << currentTarget->left << " " <<
-            currentTarget->right + 1);
+          currentTarget->seq << " " << currentTarget->left << " " <<
+          currentTarget->right + 1);
     DEBUG2("loading target reference subsequence");
 
     currentSequenceName = currentTarget->seq;
