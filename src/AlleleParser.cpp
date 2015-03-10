@@ -2631,7 +2631,6 @@ bool AlleleParser::toNextTarget(void) {
 
         if (ok) {
             clearRegisteredAlignments();
-            loadReferenceSequence(currentTarget, 0, 0);
         } else {
             if (!inputVariantAlleles.empty()) {
                 DEBUG("continuing because we have more variants");
