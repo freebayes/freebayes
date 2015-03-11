@@ -2816,7 +2816,17 @@ bool AlleleParser::toNextPosition(void) {
     } 
     // or step to the next position
     else {
-        ++currentPosition;
+        // if there is no data in the pile
+        // and the curentalignment is far away
+        // and there are no more variants in
+        // act as if we are jumping targets
+        if (registeredAlignments.empty()
+            && inputVariantAlleles.empty()
+            && currentAlignment.Position > currentPosition+1) {
+            loadReferenceSequence(currentAlignment);
+        } else {
+            ++currentPosition;
+        }
     }
 
     // if we've run off the right edge of a target
@@ -2832,9 +2842,6 @@ bool AlleleParser::toNextPosition(void) {
     // in the stdin, or no targets case
     // here we assume we are processing an entire BAM or one contiguous region
     if ((parameters.useStdin && targets.empty()) || targets.empty()) {
-        // implicit step of target sequence
-        // XXX this must wait for us to clean out all of our alignments at the end of the target
-
         // here we loop over unaligned reads at the beginning of a target
         // we need to get to a mapped read to figure out where we are
         while (hasMoreAlignments && !currentAlignment.IsMapped()) {
@@ -2849,7 +2856,7 @@ bool AlleleParser::toNextPosition(void) {
                 loadReferenceSequence(currentAlignment);
                 justSwitchedTargets = true;
             }
-        // here, if we have run out of alignments
+        // if we have run out of alignments
         } else if (!hasMoreAlignments) {
             if (registeredAlignments.empty()) {
                 DEBUG("no more alignments in input");
