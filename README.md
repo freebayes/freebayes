@@ -76,9 +76,9 @@ nested git submodules for external repositories.
 
 After you've already done the above to clone the most recent development 
 version, if you wish to compile a specific version of FreeBayes from, you 
-can then do: 
+can then do something like the following: 
 
-    git checkout v0.9.18 && git submodule update --recursive
+    git checkout v0.9.20 && git submodule update --recursive
 
 ### Resolving proxy issues with git
 
@@ -157,7 +157,8 @@ copies.  When running with highh --ploidy settings, it may be required to set
 
     freebayes -f ref.fa -p 32 --use-best-n-alleles 4 --pooled-discrete aln.bam >var.vcf
 
-Generate frequency-based calls for all variants passing input thresholds:
+Generate frequency-based calls for all variants passing input thresholds. You'd do
+this in the case that you didn't know the number of samples in the pool.
 
     freebayes -f ref.fa -F 0.01 -C 1 --pooled-continuous aln.bam >var.vcf
 
@@ -175,7 +176,7 @@ Naive variant calling: simply annotate observation counts of SNPs and indels:
     freebayes -f ref.fa --haplotype-length 0 --min-alternate-count 1 \
         --min-alternate-fraction 0 --pooled-continuous --report-monomorphic >var.vcf
 
-Parallel operation (use 36 cores in this case cores):
+Parallel operation (use 36 cores in this case):
 
     freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 \
         -f ref.fa aln.bam >var.vcf
