@@ -584,6 +584,7 @@ void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int afte
     DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right + 1 << " + " << after << " + before");
     string name = reference.sequenceNameStartingWith(target->seq);
     currentSequence = uppercase(reference.getSubSequence(name, target->left - before, (target->right + 1 - target->left) + after + before));
+    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
     currentReferenceBase = currentReferenceBaseChar();
 }
 
