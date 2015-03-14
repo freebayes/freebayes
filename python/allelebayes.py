@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # calculates data likelihoods for sets of alleles
 
 import multiset
