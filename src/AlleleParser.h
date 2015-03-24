@@ -230,7 +230,6 @@ public:
     vector<int> currentPloidies(Samples& samples);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
-    void loadReferenceSequence(BedTarget*, int, int);
     void loadReferenceSequence(BamAlignment& alignment);
     void preserveReferenceSequenceWindow(int bp);
     void extendReferenceSequence(int);

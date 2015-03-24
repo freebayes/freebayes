@@ -575,18 +575,6 @@ void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.Length));
 }
 
-// intended to load all the sequence covered by reads which overlap our current target
-// this lets us process the reads fully, checking for suspicious reads, etc.
-// but does not require us to load the whole sequence
-void AlleleParser::loadReferenceSequence(BedTarget* target, int before, int after) {
-    basesBeforeCurrentTarget = before;
-    basesAfterCurrentTarget = after;
-    DEBUG2("loading reference subsequence " << target->seq << " from " << target->left << " - " << before << " to " << target->right + 1 << " + " << after << " + before");
-    string name = reference.sequenceNameStartingWith(target->seq);
-    currentSequence = uppercase(reference.getSubSequence(name, target->left - before, (target->right + 1 - target->left) + after + before));
-    currentReferenceBase = currentReferenceBaseChar();
-}
-
 // used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
 void AlleleParser::extendReferenceSequence(int rightExtension) {
     currentSequence += uppercase(reference.getSubSequence(reference.sequenceNameStartingWith(currentSequenceName), 
@@ -2151,10 +2139,12 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
             start = rightmostHaplotypeBasisAllelePosition;
         }
 
+        /*
         stringstream r;
         r << currentSequenceName << ":" << start
           << "-" << pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW;
         cerr << "getting variants in " << r.str() << endl;
+        */
 
         // tabix expects 1-based, fully closed regions for ti_parse_region()
         // (which is what setRegion() calls eventually)
@@ -2463,56 +2453,6 @@ void AlleleParser::getInputAlleleCounts(vector<Allele>& genotypeAlleles, map<str
     }
 }
 
-/*
-void AlleleParser::__removeNonOverlappingAlleles(vector<Allele*>& alleles, int haplotypeLength, bool getAllAllelesInHaplotype) {
-    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
-        Allele* allele = *a;
-        if (haplotypeLength > 1) {
-            if (allele->type == ALLELE_REFERENCE) {
-                // does the reference allele overlap the haplotype
-                if (getAllAllelesInHaplotype
-                        && !(currentPosition <= allele->position && allele->position < currentPosition + haplotypeLength)) {
-                    *a = NULL;
-                } else if (!(allele->position <= currentPosition
-                        && allele->position + allele->referenceLength >= currentPosition + haplotypeLength)) {
-                    *a = NULL;
-                } else if (currentPosition < allele->position) { // not there yet
-                    allele->processed = false;
-                    *a = NULL;
-                }
-            } else { // snps, insertions, deletions
-                if (getAllAllelesInHaplotype
-                        && !(currentPosition <= allele->position && allele->position < currentPosition + haplotypeLength)) {
-                    *a = NULL;
-                } else if (!(currentPosition == allele->position && allele->referenceLength == haplotypeLength)) {
-                    *a = NULL;
-                } else if (currentPosition + haplotypeLength <= allele->position) {
-                    allele->processed = false;
-                    *a = NULL;
-                }
-            }
-        } else {
-            if (allele->type == ALLELE_REFERENCE) {
-                if (!(allele->position + allele->referenceLength > currentPosition)) {
-                    *a = NULL;
-                } else if (currentPosition < allele->position) {
-                    allele->processed = false;
-                    *a = NULL;
-                }
-            } else { // snps, insertions, deletions
-                if (currentPosition >= allele->position) {
-                    *a = NULL;
-                } else if (currentPosition < allele->position) {
-                    allele->processed = false;
-                    *a = NULL;
-                }
-            }
-        }
-    }
-    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
-}
-*/
-
 void AlleleParser::removeAllelesWithoutReadSpan(vector<Allele*>& alleles, int probeLength, int haplotypeLength) {
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele* allele = *a;
@@ -2603,12 +2543,6 @@ bool AlleleParser::toNextTarget(void) {
     // reset haplotype length; there is no last call in this sequence; it isn't relevant
     lastHaplotypeLength = 0;
 
-    // XXX
-    // XXX
-    // TODO cleanup the logic in this section
-    // XXX
-    // XXX
-
     // load first target if we have targets and have not loaded the first
     if (!parameters.useStdin && !targets.empty()) {
 
@@ -2631,6 +2565,7 @@ bool AlleleParser::toNextTarget(void) {
 
         if (ok) {
             clearRegisteredAlignments();
+            loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
         } else {
             if (!inputVariantAlleles.empty()) {
                 DEBUG("continuing because we have more variants");
@@ -2639,7 +2574,6 @@ bool AlleleParser::toNextTarget(void) {
                 return false; // last target, no variants, and couldn't get alignment
             }
         }
-
 
     // stdin, no targets cases
     } else if (!currentTarget && (parameters.useStdin || targets.empty())) {
@@ -2875,7 +2809,7 @@ bool AlleleParser::toNextPosition(void) {
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
 
-    DEBUG2("processing position " << (long unsigned int) currentPosition + 1 << " in sequence " << currentSequenceName);
+    DEBUG("processing position " << (long unsigned int) currentPosition + 1 << " in sequence " << currentSequenceName);
     vector<Allele*> newAlleles;
     updateAlignmentQueue(currentPosition, newAlleles);
     addToRegisteredAlleles(newAlleles);
