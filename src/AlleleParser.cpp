@@ -2565,7 +2565,7 @@ bool AlleleParser::toNextTarget(void) {
 
         if (ok) {
             clearRegisteredAlignments();
-            loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
+            //loadReferenceSequence(currentAlignment); // this seeds us with new reference sequence
         } else {
             if (!inputVariantAlleles.empty()) {
                 DEBUG("continuing because we have more variants");
@@ -2620,6 +2620,7 @@ bool AlleleParser::loadTarget(BedTarget* target) {
     int refSeqID = bamMultiReader.GetReferenceID(currentSequenceName);
 
     DEBUG2("reference sequence id " << refSeqID);
+    currentRefID = refSeqID;
 
     DEBUG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left;
