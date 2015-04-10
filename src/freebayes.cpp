@@ -183,7 +183,7 @@ int main (int argc, char *argv[]) {
         } else {
             /*
             cerr << "has input variants at " << parser->currentSequenceName << ":" << parser->currentPosition << endl;
-            vector<Allele>& inputs = parser->inputVariantAlleles[parser->currentPosition];
+            vector<Allele>& inputs = parser->inputVariantAlleles[parser->currentSequenceName][parser->currentPosition];
             for (vector<Allele>::iterator a = inputs.begin(); a != inputs.end(); ++a) {
                 cerr << *a << endl;
             }
@@ -387,18 +387,6 @@ int main (int argc, char *argv[]) {
             }
             sampleDataLikelihoods.push_back(sampleData);
 
-            DEBUG2("obtaining genotype likelihoods input from VCF");
-            int prevcount = sampleDataLikelihoods.size();
-            parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, sampleDataLikelihoods);
-            // add these sample data likelihoods to 'invariant' likelihoods
-            inputLikelihoodCount += sampleDataLikelihoods.size() - prevcount;
-            parser->addCurrentGenotypeLikelihoods(genotypesByPloidy, invariantSampleDataLikelihoods);
-
-        }
-
-        // if there are not any input GLs, attempt to use the input ACs
-        if (inputLikelihoodCount == 0) {
-            parser->getInputAlleleCounts(genotypeAlleles, inputAlleleCounts);
         }
 
         DEBUG2("finished calculating data likelihoods");

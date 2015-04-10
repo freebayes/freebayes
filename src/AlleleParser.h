@@ -196,11 +196,18 @@ public:
 
     vector<Allele*> registeredAlleles;
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
-    map<long int, vector<Allele> > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
+    map<int, map<long int, vector<Allele> > > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
+    pair<int, long int> nextInputVariantPosition(void);
+    void getInputVariantsInRegion(string& seq, long start = 0, long end = 0);
+    void getAllInputVariants(void);
     //  position         sample     genotype  likelihood
-    map<long int, map<string, map<string, long double> > > inputGenotypeLikelihoods; // drawn from input VCF
-    map<long int, map<Allele, int> > inputAlleleCounts; // drawn from input VCF
+    map<string, map<long int, map<string, map<string, long double> > > > inputGenotypeLikelihoods; // drawn from input VCF
+    map<string, map<long int, map<Allele, int> > > inputAlleleCounts; // drawn from input VCF
     Sample* nullSample;
+
+    bool loadNextPositionWithAlignmentOrInputVariant(BamAlignment& currentAlignment);
+    bool loadNextPositionWithInputVariant(void);
+    bool hasMoreInputVariants(void);
 
     void addCurrentGenotypeLikelihoods(map<int, vector<Genotype> >& genotypesByPloidy,
             vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods);
@@ -231,6 +238,7 @@ public:
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
     void loadReferenceSequence(BamAlignment& alignment);
+    void loadReferenceSequence(string& seqname);
     void preserveReferenceSequenceWindow(int bp);
     void extendReferenceSequence(int);
     void extendReferenceSequence(BamAlignment& alignment);

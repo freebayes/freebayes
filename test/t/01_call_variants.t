@@ -30,8 +30,8 @@ by_region=$((for region in \
     q:11530-11541 \
     q:12119-12130;
 do
-    freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -r $region | grep -v "^#" | wc -l
-done) | grep 1 | wc -l)
+    freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -r $region | grep -v "^#"
+done) |wc -l)
 
 at_once=$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l)
 
@@ -60,7 +60,7 @@ q 12119 12130
 EOF
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -t targets.bed | grep -v "^#" | wc -l) $by_region "a targets bed file can be used with the same effect as running by region"
-rm targets.bed
+#rm targets.bed
 
 
 is $(samtools view -u tiny/NA12878.chr22.tiny.bam | freebayes -f tiny/q.fa --stdin | grep -v "^#" | wc -l) \
