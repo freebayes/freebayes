@@ -2735,9 +2735,9 @@ bool AlleleParser::getFirstAlignment(void) {
         DEBUG2("got first alignment in target region");
     } else {
         if (currentTarget) {
-            WARNING("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right + 1);
+            DEBUG("Could not find any mapped reads in target region " << currentSequenceName << ":" << currentTarget->left << ".." << currentTarget->right + 1);
         } else {
-            WARNING("Could not find any mapped reads in target region " << currentSequenceName);
+            DEBUG("Could not find any mapped reads in target region " << currentSequenceName);
         }
         return false;
     }
@@ -2813,6 +2813,8 @@ bool AlleleParser::toNextPosition(void) {
         if (currentAlignment.GetEndPosition() < currentPosition
             && registeredAlignments.empty()
             && !hasInputVariantAllelesAtCurrentPosition()) {
+            clearRegisteredAlignments();
+            if (!getFirstAlignment()) return false;
             loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
             justSwitchedTargets = true;
         } else {
