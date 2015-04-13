@@ -2812,9 +2812,13 @@ bool AlleleParser::toNextPosition(void) {
         // jump the parser to the next position with an input allele or data
         if (registeredAlignments.empty() && !hasInputVariantAllelesAtCurrentPosition()) {
             if (currentAlignment.GetEndPosition() < currentPosition) {
-                if (!getFirstAlignment() && !hasMoreInputVariants()) return false;
+                hasMoreAlignments = getFirstAlignment();
+                if (!hasMoreAlignments && !hasMoreInputVariants()) return false;
             }
+            // if this is as far as we can go, bail
+            long int lastPosition = currentPosition;
             loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
+            if (lastPosition == currentPosition) return false;
             justSwitchedTargets = true;
         } else {
             ++currentPosition;
