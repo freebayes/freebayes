@@ -2810,11 +2810,10 @@ bool AlleleParser::toNextPosition(void) {
         // and the curentalignment is far away
         // and there are no more variants right here
         // jump the parser to the next position with an input allele or data
-        if (currentAlignment.GetEndPosition() < currentPosition
-            && registeredAlignments.empty()
-            && !hasInputVariantAllelesAtCurrentPosition()) {
-            clearRegisteredAlignments();
-            if (!getFirstAlignment()) return false;
+        if (registeredAlignments.empty() && !hasInputVariantAllelesAtCurrentPosition()) {
+            if (currentAlignment.GetEndPosition() < currentPosition) {
+                if (!getFirstAlignment() && !hasMoreInputVariants()) return false;
+            }
             loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
             justSwitchedTargets = true;
         } else {
