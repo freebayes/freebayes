@@ -2808,18 +2808,12 @@ bool AlleleParser::toNextPosition(void) {
     else {
         // if there is no data in the pile
         // and the curentalignment is far away
-        // and there are no more variants in
-        // act as if we are jumping targets
-        if (registeredAlignments.empty() && !hasInputVariantAllelesAtCurrentPosition()) {
-            /*
-        } else if (registeredAlleles.empty()
-                   && currentAlignment.GetEndPosition() < currentPosition
-                   && inputVariantAlleles.begin()->first > currentPosition) {
-            // variants case, jump to the next variant we care about
-            currentPosition = inputVariantAlleles.begin()->first;
-            */
+        // and there are no more variants right here
+        // jump the parser to the next position with an input allele or data
+        if (currentAlignment.GetEndPosition() < currentPosition
+            && registeredAlignments.empty()
+            && !hasInputVariantAllelesAtCurrentPosition()) {
             loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
-            // this could trigger us to switch targets
             justSwitchedTargets = true;
         } else {
             ++currentPosition;
