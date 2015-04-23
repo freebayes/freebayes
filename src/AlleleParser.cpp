@@ -601,14 +601,9 @@ bool AlleleParser::loadNextPositionWithInputVariant(void) {
 
 // alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
-    DEBUG2("loading reference sequence overlapping first alignment");
+    loadReferenceSequence(referenceIDToName[alignment.RefID]);
     currentPosition = alignment.Position;
-    currentSequenceStart = alignment.Position;
-    currentSequenceName = referenceIDToName[alignment.RefID];
     currentRefID = alignment.RefID;
-    rightmostHaplotypeBasisAllelePosition = currentPosition;
-    DEBUG2("reference.getSubSequence("<< currentSequenceName << ", " << currentSequenceStart << ", " << alignment.AlignedBases.length() << ")");
-    currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, alignment.Length));
 }
 
 void AlleleParser::loadReferenceSequence(string& seqname) {
