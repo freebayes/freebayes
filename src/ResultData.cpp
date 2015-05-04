@@ -1,5 +1,6 @@
 #include "ResultData.h"
 #include "TryCatch.h"
+#include "Utility.h"
 
 using namespace std;
 
@@ -478,10 +479,19 @@ vcf::Variant& Results::vcf(
                 }
             }
             if (fullySpecified) {
-                if (groupPloidy == 2) {
-                    int j = gtspec.front();
-                    int k = gtspec.back();
-                    vcfGenotypeOrder[groupPloidy][genotypeStr] = (k * (k + 1) / 2) + j;
+                // groupPloidy ==  gtspec.size()
+                if (groupPloidy >= 2 ) {
+                    int out = 0;
+                    vcfGenotypeOrder[groupPloidy][genotypeStr] = 0;
+//                      cout << "\t m:" << gtspec.size() << endl;
+                    for (int m = 0; m ++; m < gtspec.size() ){
+                        vcfGenotypeOrder[groupPloidy][genotypeStr] += stirling1( gtspec[m], m+1) / (int) factorial(m+1);
+                        if (gtspec[m] > 4 && groupPloidy > 2){
+                            outputAnyGenotypeLikelihoods = false;
+                            outputExplicitGenotypeLikelihoods = true;
+                            break;
+                            }
+                    }
                 } else if (groupPloidy == 1) {
                     vcfGenotypeOrder[groupPloidy][genotypeStr] = gtspec.front();
                 } else {
@@ -533,6 +543,7 @@ vcf::Variant& Results::vcf(
                         var.format.push_back("GLE");
                     }
 
+//                    map<int, double> genotypeLikelihoods = getGenotypeLikelihoods(sampleLikelihoods, vcfGenotypeOrder, genotypesByPloidy );
                     map<string, string> genotypeLikelihoodsExplicit;
 
                     for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
@@ -565,34 +576,10 @@ vcf::Variant& Results::vcf(
                     if (var.format.back() != "GL") {
                         var.format.push_back("GL");
                     }
+                    cout << "   getGenotypeLikelihoods \n"<< endl;
+                    map<int, double> genotypeLikelihoods = getGenotypeLikelihoods(sampleLikelihoods, vcfGenotypeOrder, genotypesByPloidy );
 
-                    map<int, double> genotypeLikelihoods;
                     map<int, string> genotypeLikelihoodsOutput;
-
-                    for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
-                        if (g->genotype->hasNullAllele()) {
-                            // if the genotype has null (unspecified) alleles, find
-                            // the fully specified genotypes it can match with.
-                            vector<Genotype*> nullmatchgts = g->genotype->nullMatchingGenotypes(genotypesByPloidy[g->genotype->ploidy]);
-                            // the gls for these will be the same, so the gl for
-                            // this genotype can be used for all of them.  these
-                            // are the genotypes which the sample does not have,
-                            // but for which one allele or no alleles match
-                            for (vector<Genotype*>::iterator n = nullmatchgts.begin(); n != nullmatchgts.end(); ++n) {
-                                map<string, int>::iterator o = vcfGenotypeOrder[(*n)->ploidy].find((*n)->str());
-                                if (o != vcfGenotypeOrder[(*n)->ploidy].end()) {
-                                    genotypeLikelihoods[o->second] = ln2log10(g->prob);
-                                }
-                            }
-                        } else {
-                            // otherwise, we are well-specified, and only one
-                            // genotype should match
-                            map<string, int>::iterator o = vcfGenotypeOrder[g->genotype->ploidy].find(g->genotype->str());
-                            if (o != vcfGenotypeOrder[g->genotype->ploidy].end()) {
-                                genotypeLikelihoods[o->second] = ln2log10(g->prob);
-                            }
-                        }
-                    }
 
                     // normalize GLs to 0 max using division by max
                     long double minGL = 0;
@@ -614,6 +601,10 @@ vcf::Variant& Results::vcf(
                         }
                     }
 
+                    for (map<int, double>::iterator g = genotypeLikelihoods.begin(); g != genotypeLikelihoods.end(); ++g) {
+                            cout << g->first << " : " << g->second << endl;
+                    } 
+
                     vector<string>& datalikelihoods = sampleOutput["GL"];
                     // output is sorted by map
                     for (map<int, string>::iterator gl = genotypeLikelihoodsOutput.begin(); gl != genotypeLikelihoodsOutput.end(); ++gl) {
@@ -628,3 +619,37 @@ vcf::Variant& Results::vcf(
     return var;
 
 }
+
+map<int, double> Results::getGenotypeLikelihoods( Result & sampleLikelihoods, 
+                map<int, map<string, int> > & vcfGenotypeOrder,
+                map<int, vector<Genotype> >& genotypesByPloidy             ){
+
+    map<int, double> genotypeLikelihoods;
+    
+    for (Result::iterator g = sampleLikelihoods.begin(); g != sampleLikelihoods.end(); ++g) {
+        if (g->genotype->hasNullAllele()) {
+            // if the genotype has null (unspecified) alleles, find
+            // the fully specified genotypes it can match with.
+            vector<Genotype*> nullmatchgts = g->genotype->nullMatchingGenotypes(genotypesByPloidy[g->genotype->ploidy]);
+            // the gls for these will be the same, so the gl for
+            // this genotype can be used for all of them.  these
+            // are the genotypes which the sample does not have,
+            // but for which one allele or no alleles match
+            for (vector<Genotype*>::iterator n = nullmatchgts.begin(); n != nullmatchgts.end(); ++n) {
+                map<string, int>::iterator o = vcfGenotypeOrder[(*n)->ploidy].find((*n)->str());
+                if (o != vcfGenotypeOrder[(*n)->ploidy].end()) {
+                    genotypeLikelihoods[o->second] = ln2log10(g->prob);
+                }
+            }
+        } else {
+            // otherwise, we are well-specified, and only one
+            // genotype should match
+            map<string, int>::iterator o = vcfGenotypeOrder[g->genotype->ploidy].find(g->genotype->str());
+            if (o != vcfGenotypeOrder[g->genotype->ploidy].end()) {
+                genotypeLikelihoods[o->second] = ln2log10(g->prob);
+            }
+        }
+    }
+    return genotypeLikelihoods;
+}
+

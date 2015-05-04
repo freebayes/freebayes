@@ -1,0 +1,8 @@
+wget -q http://hypervolu.me/freebayes/build/v0.9.21-5-g018c661-dirty &
+cd src && make
+make[1]: Entering directory `/home/dima/data/repos/freebayes/src'
+DETECTED_VERSION = v0.9.21-5-g018c661-dirty
+CURRENT_VERSION  = v0.9.21-5-g018c661-dirty
+g++ -O3 -D_FILE_OFFSET_BITS=64 -g -std=c++0x  -I../bamtools/src -I../ttmath -I../vcflib/src -I../vcflib/ -I../sqlite3pp/src -c freebayes.cpp
+g++ -O3 -D_FILE_OFFSET_BITS=64 -g -std=c++0x  -I../bamtools/src -I../ttmath -I../vcflib/src -I../vcflib/ -I../sqlite3pp/src  freebayes.o BedReader.o CNV.o fastlz.o Fasta.o Parameters.o Allele.o Sample.o Result.o AlleleParser.o Utility.o Genotype.o DataLikelihood.o Multinomial.o Ewens.o ResultData.o Dirichlet.o Marginals.o split.o LeftAlign.o IndelAllele.o Bias.o Contamination.o SegfaultHandler.o ../vcflib/tabixpp/tabix.o ../vcflib/tabixpp/bgzf.o ../vcflib/smithwaterman/SmithWatermanGotoh.o ../vcflib/smithwaterman/disorder.c ../vcflib/smithwaterman/LeftAlign.o ../vcflib/smithwaterman/Repeats.o ../vcflib/smithwaterman/IndelAllele.o Variant.o sqlite3.o sqlite3pp.o SqliteDb.o ../bamtools/lib/libbamtools.a -o ../bin/freebayes -L./ -L../vcflib/tabixpp/ -L../bamtools/lib -ltabix -lz -lm -pthread -ldl
+make[1]: Leaving directory `/home/dima/data/repos/freebayes/src'

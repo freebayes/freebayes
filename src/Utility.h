@@ -21,6 +21,7 @@ using namespace std;
 
 typedef ttmath::Big<TTMATH_BITS(256), TTMATH_BITS(64)> BigFloat;
 
+int stirling1(const int & x, const int & m);
 long double factorial(int);
 short qualityChar2ShortInt(char c);
 long double qualityChar2LongDouble(char c);

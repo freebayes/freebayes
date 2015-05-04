@@ -282,6 +282,14 @@ long double gammaln(
     return y;
 }
 
+int stirling1(const int & x, const int & m){
+    int out = 1;
+    for (int y=x; y++; y<m+x){
+        out = out * y;
+    }
+    return out;
+}
+
 long double factorial(
     int n
     ) {
@@ -298,8 +306,7 @@ long double factorial(
 
 FactorialCache factorialCache;
 
-/*
-long double factorialln(int n) {
+/*long double factorialln(int n) {
     return factorialCache.factorialln(n);
 }
 */

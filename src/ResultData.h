@@ -26,7 +26,7 @@ public:
 
 // maps sample names to results
 class Results : public map<string, Result> {
-
+private:
 public:
     void update(SampleDataLikelihoods& likelihoods) {
         for (SampleDataLikelihoods::iterator s = likelihoods.begin(); s != likelihoods.end(); ++s) {
@@ -59,6 +59,11 @@ public:
         map<int, vector<Genotype> >& genotypesByPloidy,
         vector<string>& sequencingTechnologies,
         AlleleParser* parser);
+
+    map<int, double>  getGenotypeLikelihoods( Result & sampleLikelihoods,
+                map<int, map<string, int> > & vcfGenotypeOrder,
+                map<int, vector<Genotype> >& genotypesByPloidy );
+
 };
 
 

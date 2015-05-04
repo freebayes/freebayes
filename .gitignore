@@ -3,3 +3,5 @@ paper/main.rtf
 bugs/
 bin/
 src/version_git.h
+run.sh
+*.vcf

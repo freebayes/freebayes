@@ -39,6 +39,7 @@
 #include "Bias.h"
 #include "Contamination.h"
 
+#include "SqliteDb.h"
 
 // local helper debugging macros to improve code readability
 #define DEBUG(msg) \
@@ -72,6 +73,10 @@ int main (int argc, char *argv[]) {
 
     Samples samples;
 
+/*    const char * db_file = "vcf.db";
+    SqliteDb * db = new SqliteDb(db_file);
+    db->init_sql_table( "testdrive" );
+*/
     ostream& out = *(parser->output);
 
     Bias observationBias;
@@ -728,8 +733,8 @@ int main (int argc, char *argv[]) {
         if (!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
 
             vcf::Variant var(parser->variantCallFile);
-
-            out << results.vcf(
+            // update the `var` Variant container:         
+            results.vcf(
                 var,
                 pHom,
                 bestComboOddsRatio,
@@ -746,8 +751,12 @@ int main (int argc, char *argv[]) {
                 partialObservationSupport,
                 genotypesByPloidy,
                 parser->sequencingTechnologies,
-                parser)
-                << endl;
+                parser);
+
+           // output per se:
+           // db->print_cov_db( var ); // dslituiev
+
+         out << var  << endl;
 
         } else if (!parameters.failedFile.empty()) {
             // get the unique alternate alleles in this combo, sorted by frequency in the combo

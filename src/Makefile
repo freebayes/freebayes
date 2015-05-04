@@ -3,20 +3,26 @@
 # Erik Garrison, 2010
 # Boston College
 ################################################################################
-
 # Compiler
-CXX=g++
+CXXX=g++
 C=gcc
 
+# verbose output
+V = 1
+CXX_0 = @echo "Compiling $<..."; $(CXXX)
+CXX_1 = $(CXXX)
+CXX = $(CXX_$(V))
+
 # Compiler flags
-CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
+CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g -std=c++0x 
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 BAMTOOLS_ROOT=../bamtools
 VCFLIB_ROOT=../vcflib
+SQLITE_ROOT=../sqlite3pp/src
 
-LIBS = -L./ -L$(VCFLIB_ROOT)/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix -lz -lm
-INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath -I$(VCFLIB_ROOT)/src -I$(VCFLIB_ROOT)/
+LIBS = -L./ -L$(VCFLIB_ROOT)/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix -lz -lm -pthread -ldl
+INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath -I$(VCFLIB_ROOT)/src -I$(VCFLIB_ROOT)/ -I$(SQLITE_ROOT)
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
@@ -70,6 +76,9 @@ OBJECTS=BedReader.o \
 		../vcflib/smithwaterman/Repeats.o \
 		../vcflib/smithwaterman/IndelAllele.o \
 		Variant.o \
+	    sqlite3.o \
+		sqlite3pp.o \
+		SqliteDb.o \
 		$(BAMTOOLS_ROOT)/lib/libbamtools.a
 
 HEADERS=multichoose.h version_git.h
@@ -77,7 +86,7 @@ HEADERS=multichoose.h version_git.h
 # executables
 
 freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
-	$(CXX) $(CFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
+	$(CXX) $(CFLAGS) $(INCLUDE)  freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
 alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
@@ -178,13 +187,21 @@ IndelAllele.o: IndelAllele.cpp IndelAllele.h
 Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
 	$(CXX) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
+sqlite3.o: $(SQLITE_ROOT)/sqlite-amalgamation-3080802/sqlite3.h $(SQLITE_ROOT)/sqlite-amalgamation-3080802/sqlite3.c
+	$(C) $(CFLAGS) $(INCLUDE) -I$(SQLITE_ROOT)/sqlite-amalgamation-3080802 -c $(SQLITE_ROOT)/sqlite-amalgamation-3080802/sqlite3.c 
+
+sqlite3pp.o: $(SQLITE_ROOT)/sqlite3pp.h $(SQLITE_ROOT)/sqlite3pp.cpp
+	$(CXX) -std=c++0x $(CFLAGS) $(INCLUDE) -I$(SQLITE_ROOT)/sqlite-amalgamation-3080802 -c $(SQLITE_ROOT)/sqlite3pp.cpp
+
+SqliteDb.o: SqliteDb.h SqliteDb.cpp
+	$(CXX) -std=c++0x $(CFLAGS) $(INCLUDE) -c SqliteDb.cpp
+
 ../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
 ../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h
 	cd ../vcflib/tabixpp && $(MAKE)
 
 ../vcflib/smithwaterman/SmithWatermanGotoh.o: ../vcflib/smithwaterman/SmithWatermanGotoh.h ../vcflib/smithwaterman/SmithWatermanGotoh.cpp
 	cd ../vcflib/smithwaterman && $(MAKE)
-
 
 VERSION_FILE=./version_git.h
 RELEASED_VERSION_FILE=./version_release.txt
