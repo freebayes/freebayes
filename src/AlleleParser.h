@@ -239,10 +239,6 @@ public:
     void loadFastaReference(void);
     void loadReferenceSequence(BamAlignment& alignment);
     void loadReferenceSequence(string& seqname);
-    void preserveReferenceSequenceWindow(int bp);
-    void extendReferenceSequence(int);
-    void extendReferenceSequence(BamAlignment& alignment);
-    void eraseReferenceSequence(int leftErasure);
     string referenceSubstr(long int position, unsigned int length);
     void loadTargets(void);
     bool getFirstAlignment(void);

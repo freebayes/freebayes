@@ -587,12 +587,9 @@ bool AlleleParser::loadNextPositionWithInputVariant(void) {
     pair<int, long> next = nextInputVariantPosition();
     if (next.first != -1) {
         //cerr << "Next is " << next.first << ":" << next.second << endl;
-        currentSequenceName = referenceIDToName[next.first];
+        loadReferenceSequence(referenceIDToName[next.first]);
         currentPosition = next.second;
         rightmostHaplotypeBasisAllelePosition = currentPosition;
-        currentSequenceStart = currentPosition;
-        currentRefID = bamMultiReader.GetReferenceID(currentSequenceName);
-        currentSequence = uppercase(reference.getSubSequence(currentSequenceName, currentSequenceStart, CACHED_REFERENCE_WINDOW));
         return true;
     } else {
         return false;
@@ -603,83 +600,15 @@ bool AlleleParser::loadNextPositionWithInputVariant(void) {
 void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
     loadReferenceSequence(referenceIDToName[alignment.RefID]);
     currentPosition = alignment.Position;
-    currentRefID = alignment.RefID;
 }
 
 void AlleleParser::loadReferenceSequence(string& seqname) {
     if (currentSequenceName != seqname) {
         currentSequenceName = seqname;
         currentSequenceStart = 0;
+        currentRefID = bamMultiReader.GetReferenceID(currentSequenceName);
         currentSequence = uppercase(reference.getSequence(currentSequenceName));
     }
-}
-
-// used to extend the cached reference subsequence when we encounter a read which extends beyond its right bound
-void AlleleParser::extendReferenceSequence(int rightExtension) {
-    currentSequence += uppercase(reference.getSubSequence(reference.sequenceNameStartingWith(currentSequenceName), 
-                                                 currentTarget->right + basesAfterCurrentTarget,
-                                                 rightExtension));
-    basesAfterCurrentTarget += rightExtension;
-}
-
-// maintain a 10bp window around the curent position
-// to guarantee our ability to process sequence
-void AlleleParser::preserveReferenceSequenceWindow(int bp) {
-
-    // establish left difference between ideal window size and current cached sequence
-    int leftdiff = currentSequenceStart - (floor(currentPosition) - bp);
-    // guard against falling off the left end of our sequence
-    //leftdiff = (floor(currentPosition) - leftdiff < 0) ? floor(currentPosition) : leftdiff;
-    leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
-    // right guard is not needed due to the fact that we are just attempting to
-    // append sequence substr will simply return fewer additional characters if
-    // we go past the right end of the ref
-    int rightdiff = (floor(currentPosition) + bp) - (currentSequenceStart + currentSequence.size());
-
-    if (leftdiff > 0) {
-        //cerr << currentSequenceStart << endl;
-        string left = reference.getSubSequence(currentSequenceName, currentSequenceStart, leftdiff);
-        currentSequence.insert(0, uppercase(left));
-        currentSequenceStart -= left.size();
-
-    }
-    if (rightdiff > 0) {
-        currentSequence += uppercase(reference.getSubSequence(
-                currentSequenceName,
-                (currentSequenceStart + currentSequence.size()),
-                rightdiff));  // always go 10bp past the end of what we need for alignment registration
-    }
-}
-
-// ensure we have cached reference sequence according to the current alignment
-void AlleleParser::extendReferenceSequence(BamAlignment& alignment) {
-
-    int leftdiff = currentSequenceStart - alignment.Position;
-    leftdiff = (currentSequenceStart - leftdiff < 0) ? currentSequenceStart : leftdiff;
-    if (leftdiff > 0) {
-        string left = reference.getSubSequence(currentSequenceName,
-                                               currentSequenceStart,
-                                               leftdiff);
-        currentSequenceStart -= left.size();
-        if (currentSequenceStart < 0) currentSequenceStart = 0;
-        currentSequence.insert(0, uppercase(left));
-    }
-
-    int rightdiff =
-        (alignment.Position + alignment.AlignedBases.size())
-        - (currentSequenceStart + currentSequence.size());
-    if (rightdiff > 0) {
-        currentSequence += uppercase(reference.getSubSequence(
-                                         currentSequenceName,
-                                         (currentSequenceStart + currentSequence.size()),
-                                         rightdiff));
-    }
-}
-
-void AlleleParser::eraseReferenceSequence(int leftErasure) {
-    //cerr << "erasing leftmost " << leftErasure << "bp of cached reference sequence" << endl;
-    currentSequence.erase(0, leftErasure);
-    currentSequenceStart += leftErasure;
 }
 
 void AlleleParser::loadTargets(void) {
@@ -2009,7 +1938,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
         && currentAlignment.RefID == currentRefID) {
         do {
             DEBUG2("top of alignment parsing loop");
-            DEBUG2("currentAlignment.Name == " << currentAlignment.Name);
+            DEBUG("alignment: " << currentAlignment.Name);
             // get read group, and map back to a sample name
             string readGroup;
             if (!currentAlignment.GetTag("RG", readGroup)) {
@@ -2153,14 +2082,6 @@ void AlleleParser::updateRegisteredAlleles(void) {
 
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 
-    if (lowestPosition <= currentPosition) {
-        int diff = lowestPosition - currentSequenceStart;
-        // do we have excess bases beyond the current lowest position - cached_reference_window?
-        // if so, erase them
-        if (diff > CACHED_REFERENCE_WINDOW) {
-            eraseReferenceSequence(diff - CACHED_REFERENCE_WINDOW);
-        }
-    }
 }
 
 pair<int, long int> AlleleParser::nextInputVariantPosition(void) {
@@ -2669,18 +2590,13 @@ bool AlleleParser::loadTarget(BedTarget* target) {
           currentTarget->right + 1);
     DEBUG2("loading target reference subsequence");
 
-    currentSequenceName = currentTarget->seq;
-
-    int refSeqID = bamMultiReader.GetReferenceID(currentSequenceName);
-
-    DEBUG2("reference sequence id " << refSeqID);
-    currentRefID = refSeqID;
+    loadReferenceSequence(currentTarget->seq);
 
     DEBUG2("setting new position " << currentTarget->left);
     currentPosition = currentTarget->left;
     rightmostHaplotypeBasisAllelePosition = currentTarget->left;
 
-    if (!bamMultiReader.SetRegion(refSeqID, currentTarget->left, refSeqID, currentTarget->right + 1)) { // bamtools expects 0-based, half-open
+    if (!bamMultiReader.SetRegion(currentRefID, currentTarget->left, currentRefID, currentTarget->right + 1)) { // bamtools expects 0-based, half-open
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right + 1);
         cerr << bamMultiReader.GetErrorString() << endl;
         return false;
@@ -2872,7 +2788,7 @@ bool AlleleParser::toNextPosition(void) {
 
     // so we have to make sure it's still there (this matters in low-coverage)
     DEBUG2("updating reference sequence cache");
-    preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
+    //preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
     currentReferenceBase = currentReferenceBaseChar();
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
