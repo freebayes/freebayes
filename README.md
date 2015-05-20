@@ -489,8 +489,7 @@ Bayesian model.  (Our upcoming publication will discuss this in more detail.)
 A minimal pre-processing pipeline similar to that described in "Calling 
 variants" should be sufficient for most uses.  For more information, please 
 refer to a recent post by Brad Chapman [on minimal BAM preprocessing 
-methods](http://bcbio.wordpress.com/2013/10/21/updated-comparison-of-variant-det
-ection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
+methods](http://bcbio.wordpress.com/2013/10/21/updated-comparison-of-variant-detection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
 
 For a push-button solution to variant detection, from reads to variant calls, 
 look no further than the [gkno genome analysis platform](http://gkno.me/).
