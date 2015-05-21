@@ -2182,9 +2182,9 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                     allelePos -= 1;
                     reflen = len + 2;
                     alleleSequence =
-                        uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
+                        uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos, 1))
                         + alleleSequence
-                        + uppercase(reference.getSubSequence(currentSequenceName, allelePos+1+len, 1));
+                        + uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos+1+len, 1));
                     cigar = "1M" + convert(len) + "D" + "1M";
                 } else {
                     // we always include the flanking bases for these elsewhere, so here too in order to be consistent and trigger use
@@ -2192,9 +2192,9 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                     // add previous base and post base to match format typically used for calling
                     allelePos -= 1;
                     alleleSequence =
-                        uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
+                        uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos, 1))
                         + alleleSequence
-                        + uppercase(reference.getSubSequence(currentSequenceName, allelePos+1, 1));
+                        + uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos+1, 1));
                     len = variant.alt.size() - var.ref.size();
                     cigar = "1M" + convert(len) + "I" + "1M";
                     reflen = 2;
