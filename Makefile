@@ -28,6 +28,6 @@ test:
 
 clean:
 	cd src && $(MAKE) clean
-	rm -f bin/*
+	rm -fr bin/*
 
 .PHONY: all install uninstall clean test
