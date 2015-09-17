@@ -5,7 +5,7 @@ BASH_TAP_ROOT=bash-tap
 
 PATH=../bin:$PATH # for freebayes
 
-plan tests 6
+plan tests 8
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -70,3 +70,8 @@ is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa
 
 # ensure targeting works even when there are no reads
 is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 19 "freebayes correctly handles variant input"
+
+# ensure that positions at which no variants exist get put in the out vcf
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes puts required variants in output"
+
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" |  wc -l) 3 "freebayes limits calls to input variants correctly"
