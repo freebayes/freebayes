@@ -2571,6 +2571,10 @@ bool AlleleParser::toNextTarget(void) {
         return false;
     }
 
+    if (currentTarget && usingVariantInputAlleles) {
+        getInputVariantsInRegion(currentTarget->seq, currentTarget->left, currentTarget->right);
+    }
+
     loadReferenceSequence(currentSequenceName);
 
     justSwitchedTargets = true;
