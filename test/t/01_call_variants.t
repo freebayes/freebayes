@@ -5,7 +5,7 @@ BASH_TAP_ROOT=bash-tap
 
 PATH=../bin:$PATH # for freebayes
 
-plan tests 6
+plan tests 13
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -70,3 +70,20 @@ is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa
 
 # ensure targeting works even when there are no reads
 is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 19 "freebayes correctly handles variant input"
+
+# ensure that positions at which no variants exist get put in the out vcf
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes puts required variants in output"
+
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" |  wc -l) 3 "freebayes limits calls to input variants correctly"
+
+# check variant input with region specified
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input"
+
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" |  wc -l) 2 "freebayes limits to variant input correctly when region is given"
+
+# check variant input when reading from stdin
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz - < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes handles variant input and reading from stdin"
+
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -l - < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 3 "freebayes limits to variant input when reading from stdin"
+
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l - < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 2 "freebayes handles region, stdin, and variant input"
