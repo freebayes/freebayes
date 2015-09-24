@@ -16,6 +16,7 @@
 #include <cmath>
 #include <time.h>
 #include <float.h>
+#include <stdlib.h>
 
 // private libraries
 #include "api/BamReader.h"
@@ -117,6 +118,10 @@ int main (int argc, char *argv[]) {
     if (parameters.output == "vcf") {
         out << parser->variantCallFile.header << endl;
     }
+            
+    if (0 < parameters.maxCoverage) {
+        srand(13);
+    }
 
     Allele nullAllele = genotypeAllele(ALLELE_NULL, "N", 1, "1N");
 
@@ -173,6 +178,61 @@ int main (int argc, char *argv[]) {
             } else if (parameters.onlyUseInputAlleles) {
                 DEBUG("no input alleles, but using only input alleles for analysis, skipping position");
                 continue;
+            } else if (0 < parameters.maxCoverage) {
+                // go through each sample
+                for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+                    string sampleName = s->first;
+                    Sample& sample = s->second;
+                    // get the coverage for this sample 
+                    int sampleCoverage = 0;
+                    for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
+                        sampleCoverage += sg->second.size();
+                    }
+                    if (sampleCoverage <= parameters.maxCoverage) continue;
+
+                    DEBUG("coverage " << sampleCoverage << " for sample " << sampleName << " was > " << parameters.maxCoverage << ", so we will remove " << (sampleCoverage - parameters.maxCoverage) << " genotypes");
+                    vector<string> genotypesToErase;
+                    do {
+                        double probRemove = (sampleCoverage - parameters.maxCoverage) / (double)sampleCoverage;
+                        vector<string> genotypesToErase;
+                        // iterate through the genotypes
+                        for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
+                            vector<Allele*> allelesToKeep;
+                            // iterate through each allele
+                            for (int alleleIndex = 0; alleleIndex < sg->second.size(); alleleIndex++) {
+                                // only if we have more alleles to remove
+                                if (parameters.maxCoverage < sampleCoverage) {
+                                    double r = rand() / (double)RAND_MAX;
+                                    if (r < probRemove) { // skip over this allele
+                                        sampleCoverage--;
+                                        continue;
+                                    }
+                                }
+                                // keep it
+                                allelesToKeep.push_back(sg->second[alleleIndex]);
+                            }
+                            // re-assign the alleles to this genotype
+                            if (allelesToKeep.size() < sg->second.size()) {
+                                sg->second.assign(allelesToKeep.begin(), allelesToKeep.end());
+                            }
+                            // if no more alleles for this genotype, remove it later
+                            if (sg->second.empty()) {
+                                genotypesToErase.push_back(sg->first);
+                            }
+                        }
+                        // remove empty genotypes
+                        for (vector<string>::iterator gt = genotypesToErase.begin(); gt != genotypesToErase.end(); ++gt) {
+                            sample.erase(*gt);
+                        }
+                    } while (parameters.maxCoverage < sampleCoverage);
+                    sampleCoverage = 0;
+                    for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
+                        sampleCoverage += sg->second.size();
+                    }
+                    DEBUG("coverage for sample " << sampleName << " is now " << sampleCoverage);
+                }
+                // update coverage
+                coverage = countAlleles(samples);
             }
 
             DEBUG2("coverage " << parser->currentSequenceName << ":" << parser->currentPosition << " == " << coverage);

@@ -453,6 +453,7 @@ Parameters::Parameters(int argc, char** argv) {
     probContamination = 10e-9;
     //minAltQSumTotal = 0;
     minCoverage = 0;
+    maxCoverage = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -523,6 +524,7 @@ Parameters::Parameters(int argc, char** argv) {
             //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
             {"min-alternate-qsum", required_argument, 0, '3'},
             {"min-coverage", required_argument, 0, '!'},
+            {"max-coverage", required_argument, 0, '+'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -548,7 +550,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8:z:1:3:E:7:2:9:%:_:,:(:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8:z:1:3:E:7:2:9:%:_:,:(:!:+:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -655,6 +657,14 @@ Parameters::Parameters(int argc, char** argv) {
         case '!':
             if (!convert(optarg, minCoverage)) {
                 cerr << "could not parse min-coverage" << endl;
+                exit(1);
+            }
+            break;
+
+            // -+ --max-coverage
+        case '+':
+            if (!convert(optarg, maxCoverage)) {
+                cerr << "could not parse max-coverage" << endl;
                 exit(1);
             }
             break;
@@ -808,7 +818,7 @@ Parameters::Parameters(int argc, char** argv) {
             }
             break;
 
-	    case '5':
+        case '5':
             reportGenotypeLikelihoodMax = true;
             break;
 
@@ -900,7 +910,7 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
             // -% --observation-bias
-	    case '%':
+        case '%':
             alleleObservationBiasFile = optarg;
             break;
 
@@ -966,7 +976,7 @@ Parameters::Parameters(int argc, char** argv) {
             variantPriorsFile = optarg;
             break;
 
-	    case '9':
+        case '9':
             haplotypeVariantFile = optarg;
             break;
 
@@ -974,7 +984,7 @@ Parameters::Parameters(int argc, char** argv) {
             onlyUseInputAlleles = true;
             break;
 
-	    case '6':
+        case '6':
         {
             string arg(argv[optind - 1]);
             if (arg == "--report-monomorphic") {
@@ -1015,12 +1025,12 @@ Parameters::Parameters(int argc, char** argv) {
             ++debuglevel;
             break;
 
-	case '#':
-	    
-	    // --version
+    case '#':
+        
+        // --version
             cout << "version:  " << VERSION_GIT << endl;
-	    exit(0);
-	    break;
+        exit(0);
+        break;
 
         case 'h':
             usage(argv);
