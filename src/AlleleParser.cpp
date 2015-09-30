@@ -2517,6 +2517,8 @@ void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles) {
 // false otherwise
 bool AlleleParser::toNextTarget(void) {
 
+    DEBUG("to next target");
+
     clearRegisteredAlignments();
 
     // reset haplotype length; there is no last call in this sequence; it isn't relevant
@@ -2711,88 +2713,71 @@ void AlleleParser::clearRegisteredAlignments(void) {
 // if none exist, return false
 //
 bool AlleleParser::toNextPosition(void) {
-
-    // either bail out
+    // is this our first position? (indicated by empty currentSequenceName)
+    // if so, load it up
+    bool first_pos = false;
     if (currentSequenceName.empty()) {
         DEBUG("loading first target");
         if (!toNextTarget()) {
             return false;
         }
-    } 
-    // or step to the next position
-    else {
-        // if there is no data in the pile
-        // and the curentalignment is far away
-        // and there are no more variants right here
-        // jump the parser to the next position with an input allele or data
-        if (registeredAlignments.empty() && !hasInputVariantAllelesAtCurrentPosition()) {
-            if (currentAlignment.GetEndPosition() < currentPosition) {
-                hasMoreAlignments = getFirstAlignment();
-                if (!hasMoreAlignments && !hasMoreInputVariants()) return false;
-            }
-            // if this is as far as we can go, bail
-            long int lastPosition = currentPosition;
-            loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
-            if (lastPosition == currentPosition) return false;
-            justSwitchedTargets = true;
-        } else {
-            ++currentPosition;
-        }
+        first_pos = true;
     }
 
-    // if we've run off the right edge of a target
-    if (!targets.empty() && currentPosition > currentTarget->right) { // time to move to a new target
-        DEBUG("next position " << (long int) currentPosition <<  " outside of current target right bound " << currentTarget->right + 1);
-        // try to get to the next one, and if this fails, bail out
-        if (!toNextTarget()) {
-            DEBUG("no more targets, finishing");
-            return false;
-        }
-    }
-
-    // in the stdin, or no targets case
     // here we assume we are processing an entire BAM or one contiguous region
-    if ((parameters.useStdin && targets.empty()) || targets.empty()) {
+    if (parameters.useStdin || targets.empty()) {
         // here we loop over unaligned reads at the beginning of a target
         // we need to get to a mapped read to figure out where we are
         while (hasMoreAlignments && !currentAlignment.IsMapped()) {
             hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment);
         }
-        // now, if the current position of this alignment is outside of the reference sequence length, switch references
-        if (hasMoreAlignments) {
+        // determine if we have more alignments or not
+        if (!hasMoreAlignments) {
+            if (hasMoreInputVariants() || hasInputVariantAllelesAtCurrentPosition()) {
+                // continue as we have more variants
+                DEBUG("continuing because we have more input variants");
+                loadNextPositionWithInputVariant();
+            } else if (registeredAlignments.empty()) {
+                DEBUG("no more alignments in input");
+                return false;
+            } else if (currentPosition >= currentSequence.size() + currentSequenceStart) {
+                DEBUG("no more alignments in input");
+                DEBUG("at end of sequence");
+                return false;
+            } else {
+                ++currentPosition;
+            }
+        } else {
+            // step the position
+            ++currentPosition;
+            // if the current position of this alignment is outside of the reference sequence length
+            // we need to switch references
             if (currentPosition >= reference.sequenceLength(currentSequenceName)
                 || registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
                 DEBUG("at end of sequence");
                 clearRegisteredAlignments();
-                loadReferenceSequence(currentAlignment);
+                loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
                 justSwitchedTargets = true;
             }
-        // if we have run out of alignments
-        } else if (!hasMoreAlignments) {
-            if (registeredAlignments.empty()) {
-                if (hasMoreInputVariants() || hasInputVariantAllelesAtCurrentPosition()) {
-                    //loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
-                    //justSwitchedTargets = true;
-                } else {
-                    DEBUG("no more alignments in input");
-                    return false;
-                }
-            } else if (currentPosition >= currentSequence.size() + currentSequenceStart) {
-                if (hasMoreInputVariants() || hasInputVariantAllelesAtCurrentPosition()) {
-                    //loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
-                    //justSwitchedTargets = true;
-                } else {
-                    DEBUG("no more alignments in input");
-                    DEBUG("at end of sequence");
-                    return false;
-                }
+        }
+    } else {
+        // or if it's not we should step to the next position
+        ++currentPosition;
+        // if we've run off the right edge of a target, jump
+        if (currentPosition > currentTarget->right) {
+            // time to move to a new target
+            DEBUG("next position " << (long int) currentPosition
+                  <<  " outside of current target right bound " << currentTarget->right + 1);
+            // try to get to the next one, and if this fails, bail out
+            if (!toNextTarget()) {
+                DEBUG("no more targets, finishing");
+                return false;
             }
+            justSwitchedTargets = true;
         }
     }
 
     // so we have to make sure it's still there (this matters in low-coverage)
-    DEBUG2("updating reference sequence cache");
-    //preserveReferenceSequenceWindow(CACHED_REFERENCE_WINDOW);
     currentReferenceBase = currentReferenceBaseChar();
 
     // handle the case in which we don't have targets but in which we've switched reference sequence
@@ -3517,6 +3502,7 @@ bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
         if (!toNextPosition()) {
             return false;
         } else {
+            // triggers cleanup
             if (justSwitchedTargets) {
                 nextPosition = 0;
                 justSwitchedTargets = false;
