@@ -608,6 +608,17 @@ void AlleleParser::loadReferenceSequence(string& seqname) {
         currentSequenceStart = 0;
         currentRefID = bamMultiReader.GetReferenceID(currentSequenceName);
         currentSequence = uppercase(reference.getSequence(currentSequenceName));
+        int i = 0; // check the first few characters and verify they are not garbage
+        for (string::iterator citr = currentSequence.begin();
+             i < 100 && citr != currentSequence.end(); ++citr, ++i) {
+            char c = *citr;
+            if (c != 'A' && c != 'T' && c != 'G' && c != 'C' && c != 'N') {
+                ERROR("Found non-DNA character " << c << " at position " << i << " in " << seqname << endl
+                      << ". Is your reference compressed or corrupted? "
+                      << "freebayes requires an uncompressed reference sequence.");
+                exit(1);
+            }
+        }
     }
 }
 

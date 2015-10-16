@@ -5,7 +5,7 @@ BASH_TAP_ROOT=bash-tap
 
 PATH=../bin:$PATH # for freebayes
 
-plan tests 13
+plan tests 14
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -82,8 +82,14 @@ is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.ch
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" |  wc -l) 2 "freebayes limits to variant input correctly when region is given"
 
 # check variant input when reading from stdin
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz - < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes handles variant input and reading from stdin"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes handles variant input and reading from stdin"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -l - < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 3 "freebayes limits to variant input when reading from stdin"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -l --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 3 "freebayes limits to variant input when reading from stdin"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l - < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 2 "freebayes handles region, stdin, and variant input"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 2 "freebayes handles region, stdin, and variant input"
+
+gzip -c tiny/q.fa >tiny/q.fa.gz
+cp tiny/q.fa.fai tiny/q.fa.gz.fai
+freebayes -f tiny/q.fa.gz -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l - < tiny/NA12878.chr22.tiny.bam >/dev/null 2>/dev/null
+is $? 1 "freebayes bails out when given a gzipped or corrupted reference"
+rm tiny/q.fa.gz.*
