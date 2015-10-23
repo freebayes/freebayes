@@ -5,7 +5,7 @@ BASH_TAP_ROOT=bash-tap
 
 PATH=../bin:$PATH # for freebayes
 
-plan tests 14
+plan tests 15
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -75,6 +75,8 @@ is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep 
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes puts required variants in output"
 
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" |  wc -l) 3 "freebayes limits calls to input variants correctly"
+
+is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz -l tiny/1read.bam | grep -v "^#" | wc -l) 20 "freebayes reports all input variants even when there is no input data"
 
 # check variant input with region specified
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input"

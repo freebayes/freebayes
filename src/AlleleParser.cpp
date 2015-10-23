@@ -2744,7 +2744,7 @@ bool AlleleParser::toNextPosition(void) {
         }
         // determine if we have more alignments or not
         if (!hasMoreAlignments) {
-            if (hasMoreInputVariants() || hasInputVariantAllelesAtCurrentPosition()) {
+            if (hasMoreInputVariants()) {
                 // continue as we have more variants
                 DEBUG("continuing because we have more input variants");
                 loadNextPositionWithInputVariant();
