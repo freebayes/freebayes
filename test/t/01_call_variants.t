@@ -4,8 +4,10 @@ BASH_TAP_ROOT=bash-tap
 . ./bash-tap/bash-tap-bootstrap
 
 PATH=../bin:$PATH # for freebayes
+PATH=../scripts:$PATH # for freebayes-parallel
+PATH=../vcflib/bin:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 15
+plan tests 17
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -95,3 +97,7 @@ cp tiny/q.fa.fai tiny/q.fa.gz.fai
 freebayes -f tiny/q.fa.gz -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l - < tiny/NA12878.chr22.tiny.bam >/dev/null 2>/dev/null
 is $? 1 "freebayes bails out when given a gzipped or corrupted reference"
 rm tiny/q.fa.gz.*
+
+is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel tiny/q.regions 2 -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "running in parallel makes no difference"
+
+is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
