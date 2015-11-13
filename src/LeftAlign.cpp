@@ -48,12 +48,17 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             sp += l;
             rp += l;
         } else if (t == 'D') { // deletion
-            indels.push_back(FBIndelAllele(false, l, sp, rp, referenceSequence.substr(sp, l)));
+            indels.push_back(FBIndelAllele(false, l, sp, rp, referenceSequence.substr(sp, l), false));
+            alignmentAlignedBases.insert(rp + aabOffset, string(l, '-'));
+            aabOffset += l;
+            sp += l;  // update reference sequence position
+        } else if (t == 'N') {
+            indels.push_back(FBIndelAllele(false, l, sp, rp, referenceSequence.substr(sp, l), true));
             alignmentAlignedBases.insert(rp + aabOffset, string(l, '-'));
             aabOffset += l;
             sp += l;  // update reference sequence position
         } else if (t == 'I') { // insertion
-            indels.push_back(FBIndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l)));
+            indels.push_back(FBIndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l), false));
             alignedReferenceSequence.insert(sp + softBegin.size() + arsOffset, string(l, '-'));
             arsOffset += l;
             rp += l;
@@ -68,8 +73,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             }
             rp += l;
         } else if (t == 'H') { // hard clip on the read, clipped sequence is not present in the read
-        } else if (t == 'N') { // skipped region in the reference not present in read, aka splice
-            sp += l;
+            //} else if (t == 'N') { // skipped region in the reference not present in read, aka splice
+            //sp += l;
         }
     }
 
@@ -117,6 +122,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             }
 #endif
             while (steppos >= 0 && readsteppos >= 0
+                   && !indel.splice
                    && indel.sequence == referenceSequence.substr(steppos, indel.length)
                    && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
                    && (id == indels.begin()
@@ -178,7 +184,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             // if so, do it
             int prev_end_ref = previous->insertion ? previous->position : previous->position + previous->length;
             int prev_end_read = !previous->insertion ? previous->readPosition : previous->readPosition + previous->length;
-            if (previous->insertion == indel.insertion
+            if (!previous->splice && !indel.splice &&
+                previous->insertion == indel.insertion
                     && ((previous->insertion
                         && (previous->position < indel.position
                         && previous->readPosition + previous->readPosition < indel.readPosition))
@@ -240,9 +247,13 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     FBIndelAllele last = *id++;
     if (last.position > 0) {
         newCigar.push_back(CigarOp('M', last.position));
-        newCigar.push_back(CigarOp((last.insertion ? 'I' : 'D'), last.length));
+    }
+    if (last.insertion) {
+        newCigar.push_back(CigarOp('I', last.length));
+    } else if (last.splice) {
+        newCigar.push_back(CigarOp('N', last.length));
     } else {
-        newCigar.push_back(CigarOp((last.insertion ? 'I' : 'D'), last.length));
+        newCigar.push_back(CigarOp('D', last.length));
     }
     int lastend = last.insertion ? last.position : (last.position + last.length);
     LEFTALIGN_DEBUG(last << ",");
@@ -259,7 +270,14 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             op.Length += indel.length;
         } else if (indel.position >= lastend) {  // also catches differential indels, but with the same position
             newCigar.push_back(CigarOp('M', indel.position - lastend));
-            newCigar.push_back(CigarOp((indel.insertion ? 'I' : 'D'), indel.length));
+            if (indel.insertion) {
+                newCigar.push_back(CigarOp('I', indel.length));
+            } else if (indel.splice) {
+                newCigar.push_back(CigarOp('N', indel.length));
+            } else { // deletion
+                newCigar.push_back(CigarOp('D', indel.length));
+            }
+
         }
         last = *id;
         lastend = last.insertion ? last.position : (last.position + last.length);

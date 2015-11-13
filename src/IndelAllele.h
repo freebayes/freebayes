@@ -18,11 +18,12 @@ public:
     int position;
     int readPosition;
     string sequence;
+    bool splice;
 
     bool homopolymer(void);
 
-    FBIndelAllele(bool i, int l, int p, int rp, string s)
-        : insertion(i), length(l), position(p), readPosition(rp), sequence(s)
+    FBIndelAllele(bool i, int l, int p, int rp, string s, bool n)
+    : insertion(i), length(l), position(p), readPosition(rp), sequence(s), splice(n)
     { }
 };
 

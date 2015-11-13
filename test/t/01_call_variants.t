@@ -100,4 +100,7 @@ rm tiny/q.fa.gz.*
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel tiny/q.regions 2 -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "running in parallel makes no difference"
 
-is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
+#is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
+
+
+is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam | grep ^1 | wc -l) 1 "freebayes can handle spliced reads"

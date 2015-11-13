@@ -23,7 +23,8 @@ bool FBhomopolymer(string sequence) {
 
 ostream& operator<<(ostream& out, const FBIndelAllele& indel) {
     string t = indel.insertion ? "i" : "d";
-    out << t <<  ":" << indel.position << ":" << indel.readPosition << ":" << indel.sequence;
+    out << t <<  ":" << indel.position << ":" << indel.readPosition
+        << ":" << indel.sequence << ":" << (indel.splice?"splice":"");
     return out;
 }
 
@@ -31,7 +32,8 @@ bool operator==(const FBIndelAllele& a, const FBIndelAllele& b) {
     return (a.insertion == b.insertion
             && a.length == b.length
             && a.position == b.position
-            && a.sequence == b.sequence);
+            && a.sequence == b.sequence
+            && a.splice == b.splice);
 }
 
 bool operator!=(const FBIndelAllele& a, const FBIndelAllele& b) {
