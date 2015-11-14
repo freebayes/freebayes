@@ -124,8 +124,6 @@ public:
     void setSupportedAlleles(void);
 };
 
-
-
 int countAlleles(Samples& samples);
 // using this one...
 void groupAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups);

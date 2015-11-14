@@ -38,6 +38,7 @@
 
 #include "Bias.h"
 #include "Contamination.h"
+#include "NonCall.h"
 
 
 // local helper debugging macros to improve code readability
@@ -78,6 +79,7 @@ int main (int argc, char *argv[]) {
     list<Allele*> alleles;
 
     Samples samples;
+    NonCalls nonCalls;
 
     ostream& out = *(parser->output);
 
@@ -129,6 +131,15 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("at start of main loop");
 
+        // did we switch chromosomes? if so, we may need to output a gVCF record
+        Results results;
+        if (parameters.gVCFout && !nonCalls.empty()
+            && nonCalls.begin()->first != parser->currentSequenceName) {
+            vcf::Variant var(parser->variantCallFile);
+            out << results.gvcf(var, nonCalls, parser) << endl;
+            nonCalls.clear();
+        }
+
         // don't process non-ATGC's in the reference
         string cb = parser->currentReferenceBaseString();
         if (cb != "A" && cb != "T" && cb != "C" && cb != "G") {
@@ -164,17 +175,18 @@ int main (int argc, char *argv[]) {
 
         DEBUG("position: " << parser->currentSequenceName << ":" << (long unsigned int) parser->currentPosition + 1 << " coverage: " << coverage);
 
+        bool skip = false;
         if (!parser->hasInputVariantAllelesAtCurrentPosition()) {
             // skips 0-coverage regions
             if (coverage == 0) {
                 DEBUG("no alleles left at this site after filtering");
-                continue;
+                skip = true;
             } else if (coverage < parameters.minCoverage) {
                 DEBUG("post-filtering coverage of " << coverage << " is less than --min-coverage of " << parameters.minCoverage);
-                continue;
+                skip = true;
             } else if (parameters.onlyUseInputAlleles) {
                 DEBUG("no input alleles, but using only input alleles for analysis, skipping position");
-                continue;
+                skip = true;
             }
 
             DEBUG2("coverage " << parser->currentSequenceName << ":" << parser->currentPosition << " == " << coverage);
@@ -184,7 +196,7 @@ int main (int argc, char *argv[]) {
             if (!parameters.reportMonomorphic
                 && !sufficientAlternateObservations(samples, parameters.minAltCount, parameters.minAltFraction)) {
                 DEBUG("insufficient alternate observations");
-                continue;
+                skip = true;
             }
             if (parameters.reportMonomorphic) {
                 DEBUG("calling at site even though there are no alternate observations");
@@ -197,6 +209,13 @@ int main (int argc, char *argv[]) {
                 cerr << *a << endl;
             }
             */
+        }
+
+        if (skip) {
+            // record data for gVCF
+            nonCalls.record(parser->currentSequenceName, parser->currentPosition, samples);
+            // and step ahead
+            continue;
         }
 
         // to ensure proper ordering of output stream
@@ -303,7 +322,6 @@ int main (int argc, char *argv[]) {
         //cerr << "estimated minor count " << estimatedMinorAllelesAtLocus << endl;
         
 
-        Results results;
         map<string, vector<vector<SampleDataLikelihood> > > sampleDataLikelihoodsByPopulation;
         map<string, vector<vector<SampleDataLikelihood> > > variantSampleDataLikelihoodsByPopulation;
         map<string, vector<vector<SampleDataLikelihood> > > invariantSampleDataLikelihoodsByPopulation;
@@ -724,6 +742,13 @@ int main (int argc, char *argv[]) {
 
         if (!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
 
+            // write the last gVCF record(s)
+            if (parameters.gVCFout) {
+                vcf::Variant var(parser->variantCallFile);
+                out << results.gvcf(var, nonCalls, parser) << endl;
+                nonCalls.clear();
+            }
+
             vcf::Variant var(parser->variantCallFile);
 
             out << results.vcf(
@@ -746,22 +771,20 @@ int main (int argc, char *argv[]) {
                 parser)
                 << endl;
 
-        } else if (!parameters.failedFile.empty()) {
-            // get the unique alternate alleles in this combo, sorted by frequency in the combo
-            long unsigned int position = parser->currentPosition;
-            for (vector<Allele>::iterator ga =  genotypeAlleles.begin(); ga != genotypeAlleles.end(); ++ga) {
-                if (ga->type == ALLELE_REFERENCE)
-                    continue;
-                parser->failedFile
-                    << parser->currentSequenceName << "\t"
-                    << position << "\t"
-                    << position + ga->length << "\t"
-                    << *ga << endl;
-            }
-            // BED format
+        } else if (parameters.gVCFout) {
+            // record statistics for gVCF output
+            nonCalls.record(parser->currentSequenceName, parser->currentPosition, samples);
         }
         DEBUG2("finished position");
 
+    }
+
+    // write the last gVCF record
+    if (parameters.gVCFout) {
+        Results results;
+        vcf::Variant var(parser->variantCallFile);
+        out << results.gvcf(var, nonCalls, parser) << endl;
+        nonCalls.clear();
     }
 
     DEBUG("total sites: " << total_sites << endl

@@ -61,6 +61,7 @@ OBJECTS=BedReader.o \
 		IndelAllele.o \
 		Bias.o \
 		Contamination.o \
+		NonCall.o \
 		SegfaultHandler.o \
 		../vcflib/tabixpp/tabix.o \
 		../vcflib/tabixpp/bgzf.o \
@@ -150,6 +151,9 @@ ResultData.o: ResultData.cpp ResultData.h Result.h Result.cpp Allele.h Utility.h
 
 Result.o: Result.cpp Result.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c Result.cpp
+
+NonCall.o: NonCall.cpp NonCall.h
+	$(CXX) $(CFLAGS) $(INCLUDE) -c NonCall.cpp
 
 BedReader.o: BedReader.cpp BedReader.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c BedReader.cpp

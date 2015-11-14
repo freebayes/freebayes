@@ -226,7 +226,6 @@ public:
  
     void openBams(void);
     void openTraceFile(void);
-    void openFailedFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
     void getPopulations(void);
@@ -323,7 +322,7 @@ public:
     string currentReferenceHaplotype();
 
     // output files
-    ofstream logFile, outputFile, traceFile, failedFile;
+    ofstream logFile, outputFile, traceFile;
     ostream* output;
 
     // utility

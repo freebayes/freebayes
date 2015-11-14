@@ -94,17 +94,6 @@ void AlleleParser::openTraceFile(void) {
     }
 }
 
-void AlleleParser::openFailedFile(void) {
-    if (!parameters.failedFile.empty()) {
-        failedFile.open(parameters.failedFile.c_str(), ios::out);
-        DEBUG("Opening failed alleles file: " << parameters.failedFile << " ...");
-        if (!failedFile) {
-            ERROR(" unable to open failed alleles file: " << parameters.failedFile );
-            exit(1);
-        }
-    }
-}
-
 void AlleleParser::openOutputFile(void) {
     if (parameters.outputFile != "") {
         outputFile.open(parameters.outputFile.c_str(), ios::out);
@@ -456,7 +445,9 @@ string AlleleParser::vcfHeader() {
         << "##INFO=<ID=MQM,Number=A,Type=Float,Description=\"Mean mapping quality of observed alternate alleles\">" << endl
         << "##INFO=<ID=MQMR,Number=1,Type=Float,Description=\"Mean mapping quality of observed reference alleles\">" << endl
         << "##INFO=<ID=PAIRED,Number=A,Type=Float,Description=\"Proportion of observed alternate alleles which are supported by properly paired read fragments\">" << endl
-        << "##INFO=<ID=PAIREDR,Number=1,Type=Float,Description=\"Proportion of observed reference alleles which are supported by properly paired read fragments\">" << endl;
+        << "##INFO=<ID=PAIREDR,Number=1,Type=Float,Description=\"Proportion of observed reference alleles which are supported by properly paired read fragments\">" << endl
+        << "##INFO=<ID=MIN,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
+        << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Last position (inclusive) in gVCF output record.\">" << endl;
 
     // sequencing technology tags, which vary according to input data
     for (vector<string>::iterator st = sequencingTechnologies.begin(); st != sequencingTechnologies.end(); ++st) {
@@ -479,6 +470,7 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
         << "##FORMAT=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
         << "##FORMAT=<ID=QA,Number=A,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
+        << "##FORMAT=<ID=MIN,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
         //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
         //<< "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
         //<< "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
@@ -832,7 +824,6 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
 
     // initialization
     openTraceFile();
-    openFailedFile();
     openOutputFile();
 
     loadFastaReference();
