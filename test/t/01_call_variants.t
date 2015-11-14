@@ -40,25 +40,25 @@ at_once=$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc
 is $by_region $at_once "freebayes produces the same number of calls if targeted per site or called without targets"
 
 cat >targets.bed <<EOF
-q 180 191
-q 1002 1013
-q 1811 1825
-q 1911 1922
-q 2344 2355
-q 3257 3268
-q 4443 4454
-q 5003 5014
-q 5074 5085
-q 5089 5100
-q 5632 5646
-q 6412 6423
-q 8840 8851
-q 9245 9265
-q 9785 9796
-q 10526 10537
-q 11255 11266
-q 11530 11541
-q 12119 12130
+q	180	191
+q	1002	1013
+q	1811	1825
+q	1911	1922
+q	2344	2355
+q	3257	3268
+q	4443	4454
+q	5003	5014
+q	5074	5085
+q	5089	5100
+q	5632	5646
+q	6412	6423
+q	8840	8851
+q	9245	9265
+q	9785	9796
+q	10526	10537
+q	11255	11266
+q	11530	11541
+q	12119	12130
 EOF
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -t targets.bed | grep -v "^#" | wc -l) $by_region "a targets bed file can be used with the same effect as running by region"
