@@ -33,14 +33,12 @@ vector<BedTarget> BedReader::entries(void) {
         // coordinates used internally should be in the latter, and coordinates
         // from the user in the former should be converted immediately to the
         // internal format.
-        vector<string> fields = split(line, "\t"); // only split on '\t' per BED spec
-        if( fields.size() > 1 ){ // skip track, browser, ect lines which are space delimited
-            BedTarget entry(strip(fields[0]),
-                            atoi(strip(fields[1]).c_str()),
-                            atoi(strip(fields[2]).c_str()) - 1, // use inclusive format internally
-                            (fields.size() >= 4) ? strip(fields[3]) : "");
-            entries.push_back(entry);
-        }
+        vector<string> fields = split(line, " \t"); // only split on '\t' per BED spec
+        BedTarget entry(strip(fields[0]),
+                        atoi(strip(fields[1]).c_str()),
+                        atoi(strip(fields[2]).c_str()) - 1, // use inclusive format internally
+                        (fields.size() >= 4) ? strip(fields[3]) : "");
+        entries.push_back(entry);
     }
 
     return entries;
