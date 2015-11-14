@@ -33,7 +33,7 @@ vector<BedTarget> BedReader::entries(void) {
         // coordinates used internally should be in the latter, and coordinates
         // from the user in the former should be converted immediately to the
         // internal format.
-        vector<string> fields = split(line, " \t"); // only split on '\t' per BED spec
+        vector<string> fields = split(line, " \t");
         BedTarget entry(strip(fields[0]),
                         atoi(strip(fields[1]).c_str()),
                         atoi(strip(fields[2]).c_str()) - 1, // use inclusive format internally
