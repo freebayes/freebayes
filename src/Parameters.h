@@ -36,7 +36,7 @@ public:
     string output;               // -v --vcf
     string outputFile;
     string traceFile;
-    string failedFile;    // -l --failed-alleles
+    bool gVCFout;    // -l --gvcf
     string variantPriorsFile;
     string haplotypeVariantFile;
     bool reportAllHaplotypeAlleles;

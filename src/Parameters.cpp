@@ -95,13 +95,12 @@ void Parameters::usage(char** argv) {
         << "   -h --help       Prints this help dialog." << endl
         << "   --version       Prints the release number and the git commit id." << endl
         << endl
-        << "input and output:" << endl
+        << "input:" << endl
         << endl
         << "   -b --bam FILE   Add FILE to the set of BAM files to be analyzed." << endl
         << "   -L --bam-list FILE" << endl
         << "                   A file containing a list of BAM files to be analyzed." << endl
         << "   -c --stdin      Read BAM input on stdin." << endl
-        << "   -v --vcf FILE   Output VCF-format results to FILE." << endl
         << "   -f --fasta-reference FILE" << endl
         << "                   Use FILE as the reference sequence for analysis." << endl
         << "                   An index file (FILE.fai) will be created if none exists." << endl
@@ -127,10 +126,12 @@ void Parameters::usage(char** argv) {
         << "                      reference sequence, start, end, sample name, copy number" << endl
         << "                   ... for each region in each sample which does not have the" << endl
         << "                   default copy number as set by --ploidy." << endl
-        << "   --trace FILE    Output an algorithmic trace to FILE." << endl
-        << "   --failed-alleles FILE" << endl
-        << "                   Write a BED file of the analyzed positions which do not" << endl
-        << "                   pass --pvar to FILE." << endl
+        << endl
+        << "output:" << endl
+        << endl
+        << "   -v --vcf FILE   Output VCF-format results to FILE. (default: stdout)" << endl
+        << "   --gvcf" << endl
+        << "                   Write gVCF output, which indicates coverage in uncalled regions." << endl
         << "   -@ --variant-input VCF" << endl
         << "                   Use variants reported in VCF file as input to the algorithm." << endl
         << "                   Variants in this file will included in the output even if" << endl
@@ -152,12 +153,10 @@ void Parameters::usage(char** argv) {
         << "                   Report even loci which appear to be monomorphic, and report all" << endl
         << "                   considered alleles, even those which are not in called genotypes." << endl
         << "                   Loci which do not have any potential alternates have '.' for ALT." << endl
-        << endl
-        << "reporting:" << endl
-        << endl
         << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
         << "                   at the site is greater than N.  default: 0.0.  Note that post-" << endl
         << "                   filtering is generally recommended over the use of this parameter." << endl
+        << "   --trace FILE    Output an algorithmic trace to FILE." << endl
         << endl
         << "population model:" << endl
         << endl
@@ -378,7 +377,7 @@ Parameters::Parameters(int argc, char** argv) {
     output = "vcf";               // -v --vcf
     outputFile = "";
     traceFile = "";
-    failedFile = "";
+    gVCFout = false;
     alleleObservationBiasFile = "";
 
     // operation parameters
@@ -476,7 +475,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"cnv-map", required_argument, 0, 'A'},
             {"vcf", required_argument, 0, 'v'},
             {"trace", required_argument, 0, '&'},
-            {"failed-alleles", required_argument, 0, '8'},
+            {"gvcf", no_argument, 0, '8'},
             {"use-duplicate-reads", no_argument, 0, '4'},
             {"no-partial-observations", no_argument, 0, '['},
             {"use-best-n-alleles", required_argument, 0, 'n'},
@@ -548,7 +547,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8:z:1:3:E:7:2:9:%:_:,:(:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -625,9 +624,9 @@ Parameters::Parameters(int argc, char** argv) {
             addLinesFromFile(bams, string(optarg));
             break;
 
-            // -8 --failed-alleles
+            // -8 --gvcf
         case '8':
-            failedFile = optarg;
+            gVCFout = true;
             break;
 
             // -4 --use-duplicate-reads

@@ -11,6 +11,7 @@
 #include "Variant.h"
 #include "version_git.h"
 #include "Result.h"
+#include "NonCall.h"
 
 using namespace std;
 
@@ -49,7 +50,7 @@ public:
         string refbase,
         vector<Allele>& altAlleles,
         map<string, int> repeats,
-	int genotypingIterations,
+        int genotypingIterations,
         vector<string>& sampleNames,
         int coverage,
         GenotypeCombo& genotypeCombo,
@@ -58,6 +59,11 @@ public:
         map<Allele*, set<Allele*> >& partialSupport,
         map<int, vector<Genotype> >& genotypesByPloidy,
         vector<string>& sequencingTechnologies,
+        AlleleParser* parser);
+
+    vcf::Variant& gvcf(
+        vcf::Variant& var,
+        NonCalls& noncalls,
         AlleleParser* parser);
 };
 

@@ -628,3 +628,66 @@ vcf::Variant& Results::vcf(
     return var;
 
 }
+
+
+vcf::Variant& Results::gvcf(
+    vcf::Variant& var,
+    NonCalls& nonCalls,
+    AlleleParser* parser) {
+
+    // what is the first position in the nonCalls?
+    const string& startChrom = nonCalls.begin()->first;
+    long startPos = nonCalls.begin()->second.begin()->first;
+    // what is the current position?
+    // is it on a different chromosome?
+    long endPos;
+    if (startChrom != parser->currentSequenceName) {
+        endPos = parser->reference.sequenceLength(startChrom);
+    } else {
+        endPos = parser->currentPosition - 1;
+    }
+    long numSites = endPos - startPos;
+
+    // set up site call
+    var.ref = parser->currentReferenceBaseString();
+    var.alt.push_back("<*>");
+    var.sequenceName = parser->currentSequenceName;
+    var.position = startPos + 1;
+    var.id = ".";
+    var.filter = ".";
+    // TODO change to actual quality
+    var.quality = 0;
+    // set up format string
+    var.format.clear();
+    var.format.push_back("GQ");
+    var.format.push_back("DP");
+    var.format.push_back("MIN");
+    var.format.push_back("QR");
+    var.format.push_back("QA");
+    
+    NonCall total = nonCalls.aggregateAll();
+    var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
+    var.info["MIN"].push_back(convert(total.minDepth));
+    var.info["END"].push_back(convert(endPos + 1));
+
+    // genotype quality is 1- p(polymorphic)
+    
+    map<string, NonCall> perSample;
+    nonCalls.aggregatePerSample(perSample);
+
+    // iterate through the samples and aggregate information about them
+    for (vector<string>::const_iterator s = parser->sampleList.begin();
+         s != parser->sampleList.end(); ++s) {
+        const string& sampleName = *s;
+        const NonCall& nc = perSample[sampleName];
+        map<string, vector<string> >& sampleOutput = var.samples[sampleName];
+        long double qual = nc.reflnQ - nc.altlnQ;
+        sampleOutput["GQ"].push_back(convert(ln2phred(qual)));
+        sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
+        sampleOutput["MIN"].push_back(convert(nc.minDepth));
+        sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
+        sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
+    }
+
+    return var;
+}
