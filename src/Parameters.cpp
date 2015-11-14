@@ -1081,4 +1081,14 @@ Parameters::Parameters(int argc, char** argv) {
         exit(1);
     }
 
+    // check that there aren't duplicates in the bams list
+    for( int i=1; i<bams.size(); ++i ){
+        for( int j=0; j<i; ++j ){
+            if( bams[i] == bams[j] ){
+                cerr << "Error: Duplicate bam file '" << bams[i] << "'" << endl;
+                exit(1);
+            }
+        }
+    }
+
 }
