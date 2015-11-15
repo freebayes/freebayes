@@ -639,21 +639,23 @@ vcf::Variant& Results::gvcf(
     pair<string, long> start = nonCalls.firstPos();
     const string& startChrom = start.first;
     long startPos = start.second;
-    // what is the current position?
-    // is it on a different chromosome?
+    // startPos and endPos are zero-based, half-open -- [startPos,endPos)
+
+    // what is the current position? nb: can't be on a different chrom
     long endPos;
     if (startChrom != parser->currentSequenceName) {
         endPos = parser->reference.sequenceLength(startChrom);
     } else {
-        endPos = parser->currentPosition - 1;
+        endPos = parser->currentPosition;
     }
     long numSites = endPos - startPos;
+    assert(numSites > 0);
 
     // set up site call
     var.ref = parser->currentReferenceBaseString();
     var.alt.push_back("<*>");
     var.sequenceName = parser->currentSequenceName;
-    var.position = startPos + 1;
+    var.position = startPos + 1; // output text field is one-based
     var.id = ".";
     var.filter = ".";
     // TODO change to actual quality
@@ -669,7 +671,9 @@ vcf::Variant& Results::gvcf(
     NonCall total = nonCalls.aggregateAll();
     var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
     var.info["MIN"].push_back(convert(total.minDepth));
-    var.info["END"].push_back(convert(endPos + 1));
+    // The text END field is one-based, inclusive. We proudly conflate this
+    // with our zero-based, exclusive endPos.
+    var.info["END"].push_back(convert(endPos));
 
     // genotype quality is 1- p(polymorphic)
     
