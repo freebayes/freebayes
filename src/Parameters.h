@@ -35,8 +35,8 @@ public:
     //string log;
     string output;               // -v --vcf
     string outputFile;
-    string traceFile;
     bool gVCFout;    // -l --gvcf
+    int gVCFchunk;
     string variantPriorsFile;
     string haplotypeVariantFile;
     bool reportAllHaplotypeAlleles;
@@ -50,8 +50,6 @@ public:
     string contaminationEstimateFile;
 
     // operation parameters
-    bool outputAlleles;          //  unused...
-    bool trace;                  // -L --trace
     bool useDuplicateReads;      // -E --use-duplicate-reads
     bool suppressOutput;         // -S --suppress-output
     int useBestNAlleles;         // -n --use-best-n-alleles

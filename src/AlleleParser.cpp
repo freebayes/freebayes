@@ -83,17 +83,6 @@ void AlleleParser::openBams(void) {
 
 }
 
-void AlleleParser::openTraceFile(void) {
-    if (parameters.trace) {
-        traceFile.open(parameters.traceFile.c_str(), ios::out);
-        DEBUG("Opening trace file: " << parameters.traceFile << " ...");
-        if (!traceFile) {
-            ERROR(" unable to open trace file: " << parameters.traceFile );
-            exit(1);
-        }
-    }
-}
-
 void AlleleParser::openOutputFile(void) {
     if (parameters.outputFile != "") {
         outputFile.open(parameters.outputFile.c_str(), ios::out);
@@ -823,7 +812,6 @@ AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, 
     referenceSampleName = "reference_sample";
 
     // initialization
-    openTraceFile();
     openOutputFile();
 
     loadFastaReference();

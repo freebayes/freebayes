@@ -66,6 +66,9 @@ void Parameters::usage(char** argv) {
         << "    # call variants assuming a diploid sample" << endl
         << "    freebayes -f ref.fa aln.bam >var.vcf" << endl
         << endl
+        << "    # call variants assuming a diploid sample, providing gVCF output" << endl
+        << "    freebayes -f ref.fa --gvcf aln.bam >var.gvcf" << endl
+        << endl
         << "    # require at least 5 supporting observations to consider a variant" << endl
         << "    freebayes -f ref.fa -C 5 aln.bam >var.vcf" << endl
         << endl
@@ -132,6 +135,8 @@ void Parameters::usage(char** argv) {
         << "   -v --vcf FILE   Output VCF-format results to FILE. (default: stdout)" << endl
         << "   --gvcf" << endl
         << "                   Write gVCF output, which indicates coverage in uncalled regions." << endl
+        << "   --gvcf-chunk NUM" << endl
+        << "                   When writing gVCF output emit a record for every NUM bases." << endl
         << "   -@ --variant-input VCF" << endl
         << "                   Use variants reported in VCF file as input to the algorithm." << endl
         << "                   Variants in this file will included in the output even if" << endl
@@ -156,7 +161,6 @@ void Parameters::usage(char** argv) {
         << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
         << "                   at the site is greater than N.  default: 0.0.  Note that post-" << endl
         << "                   filtering is generally recommended over the use of this parameter." << endl
-        << "   --trace FILE    Output an algorithmic trace to FILE." << endl
         << endl
         << "population model:" << endl
         << endl
@@ -376,13 +380,11 @@ Parameters::Parameters(int argc, char** argv) {
     cnvFile = "";
     output = "vcf";               // -v --vcf
     outputFile = "";
-    traceFile = "";
     gVCFout = false;
+    gVCFchunk = 0;
     alleleObservationBiasFile = "";
 
     // operation parameters
-    outputAlleles = false;          //
-    trace = false;                  // -L --trace
     useDuplicateReads = false;      // -E --use-duplicate-reads
     suppressOutput = false;         // -N --suppress-output
     useBestNAlleles = 0;         // -n --use-best-n-alleles
@@ -474,8 +476,8 @@ Parameters::Parameters(int argc, char** argv) {
             {"populations", required_argument, 0, '2'},
             {"cnv-map", required_argument, 0, 'A'},
             {"vcf", required_argument, 0, 'v'},
-            {"trace", required_argument, 0, '&'},
             {"gvcf", no_argument, 0, '8'},
+            {"gvcf-chunk", required_argument, 0, '&'},
             {"use-duplicate-reads", no_argument, 0, '4'},
             {"no-partial-observations", no_argument, 0, '['},
             {"use-best-n-alleles", required_argument, 0, 'n'},
@@ -613,12 +615,6 @@ Parameters::Parameters(int argc, char** argv) {
             leftAlignIndels = false;
             break;
 
-            // -L --trace
-        case '&':
-            traceFile = optarg;
-            trace = true;
-            break;
-
             // --bam-list
         case 'L':
             addLinesFromFile(bams, string(optarg));
@@ -627,6 +623,10 @@ Parameters::Parameters(int argc, char** argv) {
             // -8 --gvcf
         case '8':
             gVCFout = true;
+            break;
+
+        case '&':
+            gVCFchunk = atoi(optarg);
             break;
 
             // -4 --use-duplicate-reads

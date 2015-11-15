@@ -7,7 +7,7 @@ PATH=../bin:$PATH # for freebayes
 PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 18
+plan tests 19
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -106,3 +106,5 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 
 is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam | grep ^1 | wc -l) 1 "freebayes can handle spliced reads"
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
+
+is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 50 | grep '<\*>' | wc -l) 245 "freebayes produces the expected number of lines of gVCF output"
