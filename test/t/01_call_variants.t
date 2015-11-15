@@ -106,3 +106,5 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 
 is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam | grep ^1 | wc -l) 1 "freebayes can handle spliced reads"
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
+
+#is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 10 | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"

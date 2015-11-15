@@ -41,6 +41,8 @@ public:
     void record(const string& seqName, long pos, const Samples& samples);
     NonCall aggregateAll(void);
     void aggregatePerSample(map<string, NonCall>& perSite);
+    pair<string, long> firstPos(void);
+    pair<string, long> lastPos(void);
 };
 
 #endif

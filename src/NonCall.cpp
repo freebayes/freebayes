@@ -72,3 +72,15 @@ void NonCalls::record(const string& seqName, long pos, const Samples& samples) {
         }
     }
 }
+
+pair<string, long> NonCalls::firstPos(void) {
+    const string& startChrom = begin()->first;
+    long startPos = begin()->second.begin()->first;
+    return make_pair(startChrom, startPos);
+}
+
+pair<string, long> NonCalls::lastPos(void) {
+    const string& endChrom = rbegin()->first;
+    long endPos = rbegin()->second.rbegin()->first;
+    return make_pair(endChrom, endPos);
+}

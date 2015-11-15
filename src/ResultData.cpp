@@ -636,8 +636,9 @@ vcf::Variant& Results::gvcf(
     AlleleParser* parser) {
 
     // what is the first position in the nonCalls?
-    const string& startChrom = nonCalls.begin()->first;
-    long startPos = nonCalls.begin()->second.begin()->first;
+    pair<string, long> start = nonCalls.firstPos();
+    const string& startChrom = start.first;
+    long startPos = start.second;
     // what is the current position?
     // is it on a different chromosome?
     long endPos;

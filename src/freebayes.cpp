@@ -131,10 +131,14 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("at start of main loop");
 
-        // did we switch chromosomes? if so, we may need to output a gVCF record
+        // did we switch chromosomes or exceed our gVCF chunk size?
+        // if so, we may need to output a gVCF record
         Results results;
-        if (parameters.gVCFout && !nonCalls.empty()
-            && nonCalls.begin()->first != parser->currentSequenceName) {
+        if (parameters.gVCFout && !nonCalls.empty() &&
+            ( nonCalls.begin()->first != parser->currentSequenceName
+              || (parameters.gVCFchunk &&
+                  nonCalls.lastPos().second - nonCalls.firstPos().second
+                  > parameters.gVCFchunk))) {
             vcf::Variant var(parser->variantCallFile);
             out << results.gvcf(var, nonCalls, parser) << endl;
             nonCalls.clear();
@@ -146,30 +150,6 @@ int main (int argc, char *argv[]) {
             DEBUG2("current reference base is N");
             continue;
         }
-
-        if (parameters.trace) {
-            for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-                const string& name = s->first;
-                for (Sample::iterator g = s->second.begin(); g != s->second.end(); ++g) {
-                    vector<Allele*>& group = g->second;
-                    for (vector<Allele*>::iterator a = group.begin(); a != group.end(); ++a) {
-                        Allele& allele = **a;
-                        parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1  
-                                          << ",allele," << name << "," << allele.readID << "," << allele.base() << ","
-                                          << allele.currentQuality() << "," << allele.mapQuality << endl;
-                    }
-                }
-            }
-            DEBUG2("after trace generation");
-        }
-
-        /*
-        if (!parser->inTarget()) {
-            DEBUG("position: " << parser->currentSequenceName << ":" << (long unsigned int) parser->currentPosition + 1
-                  << " is not inside any targets, skipping");
-            continue;
-        }
-        */
 
         int coverage = countAlleles(samples);
 
@@ -419,23 +399,6 @@ int main (int argc, char *argv[]) {
         DEBUG2("finished calculating data likelihoods");
 
 
-        // this section is a hack to make output of trace identical to BamBayes trace
-        // and also outputs the list of samples
-        vector<bool> samplesWithData;
-        if (parameters.trace) {
-            parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",samples,";
-            for (vector<string>::iterator s = sampleListPlusRef.begin(); s != sampleListPlusRef.end(); ++s) {
-                if (parameters.trace) parser->traceFile << *s << ":";
-                Results::iterator r = results.find(*s);
-                if (r != results.end()) {
-                    samplesWithData.push_back(true);
-                } else {
-                    samplesWithData.push_back(false);
-                }
-            }
-            parser->traceFile << endl;
-        }
-
         // if somehow we get here without any possible sample genotype likelihoods, bail out
         bool hasSampleLikelihoods = false;
         for (map<string, vector<vector<SampleDataLikelihood> > >::iterator s = sampleDataLikelihoodsByPopulation.begin(); s != sampleDataLikelihoodsByPopulation.end(); ++s) {
@@ -471,50 +434,6 @@ int main (int argc, char *argv[]) {
 
         bool bestOverallComboIsHet = false;
         GenotypeCombo bestCombo; // = NULL;
-
-        // what a hack...
-        /*
-        if (parameters.trace) {
-            for (list<GenotypeCombo>::iterator gc = genotypeCombos.begin(); gc != genotypeCombos.end(); ++gc) {
-                vector<Genotype*> comboGenotypes;
-                for (GenotypeCombo::iterator g = gc->begin(); g != gc->end(); ++g)
-                    comboGenotypes.push_back((*g)->genotype);
-                long double posteriorProb = gc->posteriorProb;
-                long double dataLikelihoodln = gc->probObsGivenGenotypes;
-                long double priorln = gc->posteriorProb;
-                long double priorlnG_Af = gc->priorProbG_Af;
-                long double priorlnAf = gc->priorProbAf;
-                long double priorlnBin = gc->priorProbObservations;
-
-                parser->traceFile << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ",genotypecombo,";
-
-                int j = 0;
-                GenotypeCombo::iterator i = gc->begin();
-                for (vector<bool>::iterator d = samplesWithData.begin(); d != samplesWithData.end(); ++d) {
-                    if (*d) {
-                        parser->traceFile << IUPAC(*(*i)->genotype);
-                        ++i;
-                    } else {
-                        parser->traceFile << "?";
-                    }
-                }
-                // TODO cleanup this and above
-                parser->traceFile 
-                    << "," << dataLikelihoodln
-                    << "," << priorln
-                    << "," << priorlnG_Af
-                    << "," << priorlnAf
-                    << "," << priorlnBin
-                    << "," << posteriorProb
-                    << "," << safe_exp(posteriorProb - posteriorNormalizer)
-                    << endl;
-            }
-        }
-        */
-
-        // the second clause guards against float underflow causing us not to output a position
-        // practically, parameters.PVL == 0 means "report all genotypes which pass our input filters"
-
 
         GenotypeCombo bestGenotypeComboByMarginals;
         vector<vector<SampleDataLikelihood> > allSampleDataLikelihoods;

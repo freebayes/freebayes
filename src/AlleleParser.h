@@ -225,7 +225,6 @@ public:
     vector<string> bamHeaderLines;
  
     void openBams(void);
-    void openTraceFile(void);
     void openOutputFile(void);
     void getSampleNames(void);
     void getPopulations(void);
@@ -322,7 +321,7 @@ public:
     string currentReferenceHaplotype();
 
     // output files
-    ofstream logFile, outputFile, traceFile;
+    ofstream logFile, outputFile;
     ostream* output;
 
     // utility
