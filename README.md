@@ -214,7 +214,7 @@ observation count (AO).
 * (possibly, **Iterate** the variant detection process in response to insight 
 gained from your interpretation)
 
-FreeBayes a standard VCF 4.1 outut stream.  This format is designed for the
+FreeBayes emits a standard VCF 4.1 output stream.  This format is designed for the
 probabilistic description of allelic variants within a population of samples,
 but it is equally suited to describing the probability of variation in a single
 sample.
