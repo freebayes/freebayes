@@ -119,6 +119,7 @@ public:
     int minAltCount;             // -C --min-alternate-count
     int minAltTotal;             // -G --min-alternate-total
     int minCoverage;             // -! --min-coverage
+    int maxCoverage;             // -+ --max-coverage
     int debuglevel;              // -d --debug increments
     bool debug; // set if debuglevel >=1
     bool debug2; // set if debuglevel >=2
