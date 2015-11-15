@@ -743,7 +743,7 @@ int main (int argc, char *argv[]) {
         if (!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
 
             // write the last gVCF record(s)
-            if (parameters.gVCFout) {
+            if (parameters.gVCFout && !nonCalls.empty()) {
                 vcf::Variant var(parser->variantCallFile);
                 out << results.gvcf(var, nonCalls, parser) << endl;
                 nonCalls.clear();
@@ -780,7 +780,7 @@ int main (int argc, char *argv[]) {
     }
 
     // write the last gVCF record
-    if (parameters.gVCFout) {
+    if (parameters.gVCFout && !nonCalls.empty()) {
         Results results;
         vcf::Variant var(parser->variantCallFile);
         out << results.gvcf(var, nonCalls, parser) << endl;
