@@ -6,6 +6,7 @@ INSTALL ?=	install
 RM ?=		rm
 MKDIR ?=	mkdir
 BINS =		bin/freebayes bin/bamleftalign
+STRIP ?=	strip
 
 all: log
 	cd src && $(MAKE) -f Makefile.external-libs
