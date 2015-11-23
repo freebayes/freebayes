@@ -20,10 +20,13 @@ src/version_git.h:
 debug:
 	cd src && $(MAKE) -f Makefile.external-libs debug
 
-install:
-	${MKDIR} ${DESTDIR}${PREFIX}/bin
+install: ${BINS}
+	${MKDIR} -p ${DESTDIR}${PREFIX}/bin
 	${INSTALL} -c ${BINS} ${DESTDIR}${PREFIX}/bin
 
+install-strip: install
+	${STRIP} ${DESTDIR}${PREFIX}/bin/*
+	
 uninstall:
 	${RM} /usr/local/bin/freebayes /usr/local/bin/bamleftalign
 
@@ -34,4 +37,4 @@ clean:
 	cd src && $(MAKE) -f Makefile.external-libs clean
 	${RM} -fr bin/*
 
-.PHONY: all install uninstall clean test
+.PHONY: all install install-strip uninstall clean test
