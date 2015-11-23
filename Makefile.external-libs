@@ -4,6 +4,8 @@ DESTDIR ?=	stage
 PREFIX ?=	/usr/local
 INSTALL ?=	install
 RM ?=		rm
+MKDIR ?=	mkdir
+BINS =		bin/freebayes bin/bamleftalign
 
 all: log
 	cd src && $(MAKE) -f Makefile.external-libs
@@ -19,7 +21,8 @@ debug:
 	cd src && $(MAKE) -f Makefile.external-libs debug
 
 install:
-	${INSTALL} -c bin/freebayes bin/bamleftalign ${STAGEDIR}${PREFIX}
+	${MKDIR} ${DESTDIR}${PREFIX}/bin
+	${INSTALL} -c ${BINS} ${DESTDIR}${PREFIX}/bin
 
 uninstall:
 	${RM} /usr/local/bin/freebayes /usr/local/bin/bamleftalign

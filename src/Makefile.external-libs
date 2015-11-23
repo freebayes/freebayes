@@ -1,6 +1,8 @@
 ################################################################################
-# Makefile for FreeBayes
-# Erik Garrison, 2010
+# Makefile for FreeBayes with separately installed libraries
+# Jason Bacon, 2015
+# UW - Milwaukee
+# Adapted from Makefile by Erik Garrison, 2010
 # Boston College
 ################################################################################
 
