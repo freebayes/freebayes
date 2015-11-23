@@ -163,9 +163,9 @@ public:
     BedReader bedReader;
 
     // VCF
-    vcf::VariantCallFile variantCallFile;
-    vcf::VariantCallFile variantCallInputFile;   // input variant alleles, to target analysis
-    vcf::VariantCallFile haplotypeVariantInputFile;  // input alleles which will be used to construct haplotype alleles
+    vcflib::VariantCallFile variantCallFile;
+    vcflib::VariantCallFile variantCallInputFile;   // input variant alleles, to target analysis
+    vcflib::VariantCallFile haplotypeVariantInputFile;  // input alleles which will be used to construct haplotype alleles
 
     // input haplotype alleles
     // 
@@ -349,7 +349,7 @@ private:
 
     int currentRefID;
     BamAlignment currentAlignment;
-    vcf::Variant* currentVariant;
+    vcflib::Variant* currentVariant;
 
 };
 

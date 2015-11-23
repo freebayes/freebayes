@@ -144,7 +144,7 @@ int main (int argc, char *argv[]) {
               || (parameters.gVCFchunk &&
                   nonCalls.lastPos().second - nonCalls.firstPos().second
                   > parameters.gVCFchunk))) {
-            vcf::Variant var(parser->variantCallFile);
+            vcflib::Variant var(parser->variantCallFile);
             out << results.gvcf(var, nonCalls, parser) << endl;
             nonCalls.clear();
         }
@@ -726,12 +726,12 @@ int main (int argc, char *argv[]) {
 
             // write the last gVCF record(s)
             if (parameters.gVCFout && !nonCalls.empty()) {
-                vcf::Variant var(parser->variantCallFile);
+                vcflib::Variant var(parser->variantCallFile);
                 out << results.gvcf(var, nonCalls, parser) << endl;
                 nonCalls.clear();
             }
 
-            vcf::Variant var(parser->variantCallFile);
+            vcflib::Variant var(parser->variantCallFile);
 
             out << results.vcf(
                 var,
@@ -764,7 +764,7 @@ int main (int argc, char *argv[]) {
     // write the last gVCF record
     if (parameters.gVCFout && !nonCalls.empty()) {
         Results results;
-        vcf::Variant var(parser->variantCallFile);
+        vcflib::Variant var(parser->variantCallFile);
         out << results.gvcf(var, nonCalls, parser) << endl;
         nonCalls.clear();
     }

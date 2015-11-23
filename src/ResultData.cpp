@@ -5,8 +5,8 @@ using namespace std;
 
 
 
-vcf::Variant& Results::vcf(
-    vcf::Variant& var, // variant to update
+vcflib::Variant& Results::vcf(
+    vcflib::Variant& var, // variant to update
     BigFloat pHom,
     long double bestComboOddsRatio,
     //long double alleleSamplingProb,
@@ -630,8 +630,8 @@ vcf::Variant& Results::vcf(
 }
 
 
-vcf::Variant& Results::gvcf(
-    vcf::Variant& var,
+vcflib::Variant& Results::gvcf(
+    vcflib::Variant& var,
     NonCalls& nonCalls,
     AlleleParser* parser) {
 

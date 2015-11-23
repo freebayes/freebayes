@@ -6,7 +6,7 @@
 
 # Compiler
 CXX ?=		c++
-C ?=		cc
+CC ?=		cc
 
 LOCALBASE ?=	/usr/local
 
@@ -17,7 +17,8 @@ CFLAGS +=	-D_FILE_OFFSET_BITS=64
 # enables verbose debugging via --debug2
 # CFLAGS =	-O3 -static -D VERBOSE_DEBUG
 
-LIBS =		-L./ -L$(LOCALBASE)/lib -ltabix -lsmithwaterman -lbamtools \
+LIBS =		-L./ -L$(LOCALBASE)/lib \
+		-lvcflib -ltabix -lsw -lbamtools \
 		-lz -lm
 INCLUDE =	-I$(LOCALBASE)/include \
 		-I$(LOCALBASE)/include/bamtools \
@@ -65,8 +66,7 @@ OBJECTS=BedReader.o \
 		Bias.o \
 		Contamination.o \
 		NonCall.o \
-		SegfaultHandler.o \
-		Variant.o
+		SegfaultHandler.o
 
 HEADERS=multichoose.h version_git.h
 
@@ -103,7 +103,7 @@ freebayes.o: freebayes.cpp TryCatch.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
-	$(C) $(CFLAGS) $(INCLUDE) -c fastlz.c	
+	$(CC) $(CFLAGS) $(INCLUDE) -c fastlz.c	
 
 Parameters.o: Parameters.cpp Parameters.h Version.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c Parameters.cpp
@@ -173,9 +173,6 @@ LeftAlign.o: LeftAlign.h LeftAlign.cpp
 
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c IndelAllele.cpp
-
-Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
-	$(CXX) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 VERSION_FILE=./version_git.h
 RELEASED_VERSION_FILE=./version_release.txt
