@@ -18,8 +18,8 @@ CFLAGS +=	-D_FILE_OFFSET_BITS=64
 # CFLAGS =	-O3 -static -D VERBOSE_DEBUG
 
 LIBS =		-L./ -L$(LOCALBASE)/lib \
-		-lvcflib -ltabix -lsw -lbamtools \
-		-lz -lm
+		-lvcflib -ltabix -lhts -lsw -lbamtools \
+		-lexecinfo -lz -lm
 INCLUDE =	-I$(LOCALBASE)/include \
 		-I$(LOCALBASE)/include/bamtools \
 		-I$(LOCALBASE)/include/vcflib \
