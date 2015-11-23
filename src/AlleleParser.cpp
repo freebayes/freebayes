@@ -553,7 +553,7 @@ bool AlleleParser::loadNextPositionWithAlignmentOrInputVariant(BamAlignment& ali
     if (next.first != -1) {
         int varRefID = next.first;
         //cerr << varRefID << " " << alignment.RefID << " " << next.second << " " << alignment.Position << endl;
-        if (!hasMoreAlignments || varRefID < alignment.RefID || varRefID == alignment.RefID && next.second < alignment.Position) {
+        if (!hasMoreAlignments || varRefID < alignment.RefID || (varRefID == alignment.RefID && next.second < alignment.Position)) {
             return loadNextPositionWithInputVariant();
         } else {
             loadReferenceSequence(alignment);
