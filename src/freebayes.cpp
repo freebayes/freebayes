@@ -256,7 +256,9 @@ int main (int argc, char *argv[]) {
 
         if (skip) {
             // record data for gVCF
-            nonCalls.record(parser->currentSequenceName, parser->currentPosition, samples);
+            if (parameters.gVCFout) {
+                nonCalls.record(parser->currentSequenceName, parser->currentPosition, samples);
+            }
             // and step ahead
             continue;
         }
