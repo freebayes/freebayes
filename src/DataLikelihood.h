@@ -17,6 +17,8 @@
 #include "Dirichlet.h"
 #include "Bias.h"
 #include "Contamination.h"
+#include "AlleleParser.h"
+#include "ResultData.h"
 
 using namespace std;
 
@@ -43,5 +45,21 @@ probObservedAllelesGivenGenotypes(
         vector<Allele>& genotypeAlleles,
         Contamination& contaminations,
         map<string, double>& freqs);
+
+void
+calculateSampleDataLikelihoods(
+    Samples& samples,
+    Results& results,
+    AlleleParser* parser,
+    map<int, vector<Genotype> >& genotypesByPloidy,
+    Parameters& parameters,
+    bool usingNull,
+    Bias& observationBias,
+    vector<Allele>& genotypeAlleles,
+    Contamination& contaminationEstimates,
+    map<string, double>& estimatedAlleleFrequencies,
+    map<string, vector<vector<SampleDataLikelihood> > >& sampleDataLikelihoodsByPopulation,
+    map<string, vector<vector<SampleDataLikelihood> > >& variantSampleDataLikelihoodsByPopulation,
+    map<string, vector<vector<SampleDataLikelihood> > >& invariantSampleDataLikelihoodsByPopulation);
 
 #endif

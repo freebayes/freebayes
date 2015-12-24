@@ -197,3 +197,103 @@ probObservedAllelesGivenGenotypes(
     }
     return results;
 }
+
+void
+calculateSampleDataLikelihoods(
+    Samples& samples,
+    Results& results,
+    AlleleParser* parser,
+    map<int, vector<Genotype> >& genotypesByPloidy,
+    Parameters& parameters,
+    bool usingNull,
+    Bias& observationBias,
+    vector<Allele>& genotypeAlleles,
+    Contamination& contaminationEstimates,
+    map<string, double>& estimatedAlleleFrequencies,
+    map<string, vector<vector<SampleDataLikelihood> > >& sampleDataLikelihoodsByPopulation,
+    map<string, vector<vector<SampleDataLikelihood> > >& variantSampleDataLikelihoodsByPopulation,
+    map<string, vector<vector<SampleDataLikelihood> > >& invariantSampleDataLikelihoodsByPopulation) {
+
+    for (vector<string>::iterator n = parser->sampleList.begin(); n != parser->sampleList.end(); ++n) {
+        //string sampleName = s->first;
+        string& sampleName = *n;
+        //DEBUG2("sample: " << sampleName);
+        //Sample& sample = s->second;
+        if (samples.find(sampleName) == samples.end()
+            && !(parser->hasInputVariantAllelesAtCurrentPosition()
+                 || parameters.reportMonomorphic)) {
+            continue;
+        }
+        Sample& sample = samples[sampleName];
+        vector<Genotype>& genotypes = genotypesByPloidy[parser->currentSamplePloidy(sampleName)];
+        vector<Genotype*> genotypesWithObs;
+        for (vector<Genotype>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
+            if (parameters.excludePartiallyObservedGenotypes) {
+                if (g->sampleHasSupportingObservationsForAllAlleles(sample)) {
+                    genotypesWithObs.push_back(&*g);
+                }
+            } else if (parameters.excludeUnobservedGenotypes && usingNull) {
+                if (g->sampleHasSupportingObservations(sample)) {
+                    //cerr << sampleName << " has suppporting obs for " << *g << endl;
+                    genotypesWithObs.push_back(&*g);
+                } else if (g->hasNullAllele() && g->homozygous) {
+                    // this genotype will never be added if we are running in observed-only mode, but
+                    // we still need it for consistency
+                    genotypesWithObs.push_back(&*g);
+                }
+            } else {
+                genotypesWithObs.push_back(&*g);
+            }
+        }
+
+        // skip this sample if we have no observations supporting any of the genotypes we are going to evaluate
+        if (genotypesWithObs.empty()) {
+            continue;
+        }
+
+        vector<pair<Genotype*, long double> > probs
+            = probObservedAllelesGivenGenotypes(sample, genotypesWithObs,
+                                                parameters.RDF, parameters.useMappingQuality,
+                                                observationBias, parameters.standardGLs,
+                                                genotypeAlleles,
+                                                contaminationEstimates,
+                                                estimatedAlleleFrequencies);
+            
+#ifdef VERBOSE_DEBUG
+        if (parameters.debug2) {
+            for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
+                cerr << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
+                     << sampleName << ",likelihood," << *(p->first) << "," << p->second << endl;
+            }
+        }
+#endif
+
+        Result& sampleData = results[sampleName];
+        sampleData.name = sampleName;
+        sampleData.observations = &sample;
+        for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
+            sampleData.push_back(SampleDataLikelihood(sampleName, &sample, p->first, p->second, 0));
+        }
+
+        sortSampleDataLikelihoods(sampleData);
+
+        string& population = parser->samplePopulation[sampleName];
+        vector<vector<SampleDataLikelihood> >& sampleDataLikelihoods = sampleDataLikelihoodsByPopulation[population];
+        vector<vector<SampleDataLikelihood> >& variantSampleDataLikelihoods = variantSampleDataLikelihoodsByPopulation[population];
+        vector<vector<SampleDataLikelihood> >& invariantSampleDataLikelihoods = invariantSampleDataLikelihoodsByPopulation[population];
+
+        if (parameters.genotypeVariantThreshold != 0) {
+            if (sampleData.size() > 1
+                && abs(sampleData.at(1).prob - sampleData.front().prob)
+                < parameters.genotypeVariantThreshold) {
+                variantSampleDataLikelihoods.push_back(sampleData);
+            } else {
+                invariantSampleDataLikelihoods.push_back(sampleData);
+            }
+        } else {
+            variantSampleDataLikelihoods.push_back(sampleData);
+        }
+        sampleDataLikelihoods.push_back(sampleData);
+
+    }
+}
