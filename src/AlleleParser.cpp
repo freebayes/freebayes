@@ -448,9 +448,13 @@ string AlleleParser::vcfHeader() {
         headerss << "##INFO=<ID=REPEAT,Number=1,Type=String,Description=\"Description of the local repeat structures flanking the current position\">" << endl;
     }
 
+    string gqType = "Float";
+    if (parameters.strictVCF)
+        gqType = "Integer";
+
         // format fields for genotypes
     headerss << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
-        << "##FORMAT=<ID=GQ,Number=1,Type=Float,Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
+        << "##FORMAT=<ID=GQ,Number=1,Type=" << gqType << ",Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
         // this can be regenerated with RA, AA, QR, QA
         << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
 	//<< "##FORMAT=<ID=GLE,Number=1,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype.  For instance, 0^-75.22|1^-223.42|0/0^-323.03|1/0^-99.29|1/1^-802.53 represents both haploid and diploid genotype likilehoods in a biallelic context\">" << endl
