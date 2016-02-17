@@ -27,6 +27,16 @@
 
 using namespace std;
 
+namespace {  // anonymous namespace
+
+// Convert a std::string into an integer, ignoring any commas.
+int stringToInt(string str) {
+    str.erase(remove(str.begin(), str.end(), ','), str.end());
+    return atoi(str.c_str());
+}
+
+}  // anonymous namespace
+
 
 // open BAM input file
 void AlleleParser::openBams(void) {
@@ -660,15 +670,15 @@ void AlleleParser::loadTargets(void) {
                 foundRangeSep = region.find("-", foundFirstColon);
             }
             if (foundRangeSep == string::npos) {
-                startPos = atoi(region.substr(foundFirstColon + 1).c_str());
+                startPos = stringToInt(region.substr(foundFirstColon + 1));
                 // differ from bamtools in this regard, in that we process only
                 // the specified position if a range isn't given
                 stopPos = startPos + 1;
             } else {
-                startPos = atoi(region.substr(foundFirstColon + 1, foundRangeSep - foundFirstColon).c_str());
+                startPos = stringToInt(region.substr(foundFirstColon + 1, foundRangeSep - foundFirstColon).c_str());
                 // if we have range sep specified, but no second number, read to the end of sequence
                 if (foundRangeSep + sep.size() != region.size()) {
-                    stopPos = atoi(region.substr(foundRangeSep + sep.size()).c_str()); // end-exclusive, bed-format
+                    stopPos = stringToInt(region.substr(foundRangeSep + sep.size()).c_str()); // end-exclusive, bed-format
                 } else {
                     stopPos = -1;
                 }
