@@ -161,6 +161,8 @@ void Parameters::usage(char** argv) {
         << "   -P --pvar N     Report sites if the probability that there is a polymorphism" << endl
         << "                   at the site is greater than N.  default: 0.0.  Note that post-" << endl
         << "                   filtering is generally recommended over the use of this parameter." << endl
+        << "   --strict-vcf" << endl
+        << "                   Generate strict VCF format (FORMAT/GQ will be an int)" << endl
         << endl
         << "population model:" << endl
         << endl
@@ -398,6 +400,7 @@ Parameters::Parameters(int argc, char** argv) {
     allowMNPs = true;            // -X --no-mnps
     allowSNPs = true;          // -I --no-snps
     allowComplex = true;
+    strictVCF = false;
     maxComplexGap = 3;
     //maxHaplotypeLength = 100;
     minRepeatSize = 5;
@@ -514,6 +517,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"indel-exclusion-window", required_argument, 0, 'x'},
             {"theta", required_argument, 0, 'T'},
             {"pvar", required_argument, 0, 'P'},
+            {"strict-vcf", no_argument, 0, '/'},
             {"read-dependence-factor", required_argument, 0, 'D'},
             {"binomial-obs-priors-off", no_argument, 0, 'V'},
             {"allele-balance-priors-off", no_argument, 0, 'a'},
@@ -701,6 +705,10 @@ Parameters::Parameters(int argc, char** argv) {
                 cerr << "could not parse site-selection-max-iterations" << endl;
                 exit(1);
             }
+            break;
+
+        case '/':
+            strictVCF = true;
             break;
 
         case 'u':

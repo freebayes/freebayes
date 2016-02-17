@@ -60,6 +60,7 @@ public:
     bool leftAlignIndels;        // -O --left-align-indels
     bool allowMNPs;              // -X --allow-mnps
     bool allowComplex;           // -X --allow-complex
+    bool strictVCF;
     int maxComplexGap;
     //int maxHaplotypeLength;
     int minRepeatSize;

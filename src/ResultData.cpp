@@ -510,7 +510,11 @@ vcf::Variant& Results::vcf(
             sampleOutput["GT"].push_back(genotype->relativeGenotype(refbase, altAlleles));
 
             if (parameters.calculateMarginals) {
-                sampleOutput["GQ"].push_back(convert(nan2zero(big2phred((BigFloat)1 - big_exp(sampleLikelihoods.front().marginal)))));
+                double val = nan2zero(big2phred((BigFloat)1 - big_exp(sampleLikelihoods.front().marginal)));
+                if (parameters.strictVCF)
+                    sampleOutput["GQ"].push_back(convert(int(round(val))));
+                else
+                    sampleOutput["GQ"].push_back(convert(val));
             }
 
             sampleOutput["DP"].push_back(convert(sample.observationCount()));
