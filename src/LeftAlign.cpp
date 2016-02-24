@@ -44,7 +44,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         unsigned int l = c->Length;
         char t = c->Type;
         cigar_before << l << t;
-        if (t == 'M') { // match or mismatch
+        if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             sp += l;
             rp += l;
         } else if (t == 'D') { // deletion
@@ -333,7 +333,7 @@ int countMismatches(BamAlignment& alignment, string referenceSequence) {
         c != alignment.CigarData.end(); ++c) {
         unsigned int l = c->Length;
         char t = c->Type;
-        if (t == 'M') { // match or mismatch
+        if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             for (int i = 0; i < l; ++i) {
                 if (alignment.QueryBases.at(rp) != referenceSequence.at(sp))
                     ++mismatches;
