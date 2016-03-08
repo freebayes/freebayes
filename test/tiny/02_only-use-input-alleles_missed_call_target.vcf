@@ -1,0 +1,10 @@
+##fileformat=VCFv4.1
+##fileDate=20150325
+##INFO=<ID=Archer_Gene,Number=1,Type=String,Description="COSMIC Mutation Database identifier. Provided by Archer Analysis">
+##INFO=<ID=STRAND,Number=1,Type=String,Description="Archer_Gene name. Provided by Archer Analysis">
+##INFO=<ID=CDS,Number=1,Type=String,Description="Mutation in the CDS. Provided by Archer Analysis">
+##INFO=<ID=Archer_MutationAA,Number=1,Type=String,Description="Archer_MutationAA">
+##INFO=<ID=CNT,Number=1,Type=String,Description="CNT">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr12_fragment	186	COSM87301	C	CAGCTCC	.	.	Archer_Gene=KRAS;STRAND=-;CDS=c.33_34insGGAGCT;Archer_MutationAA=p.A11_G12insGA;CNT=2
+chr12_fragment	186	COSM1140136	C	A	.	.	Archer_Gene=KRAS_ENST00000256078;STRAND=-;CDS=c.34G>T;Archer_MutationAA=p.G12C;CNT=79

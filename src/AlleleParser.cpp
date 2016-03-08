@@ -3843,10 +3843,6 @@ vector<Allele> AlleleParser::genotypeAlleles(
     }
 
     // now add in the alleles from the input variant set
-
-    if (useOnlyInputAlleles)
-        resultAlleles.clear();
-
     // this needs to be fixed in a big way
     // the alleles have to be put into the local haplotype structure
     if (inputVariantAlleles.find(currentRefID) != inputVariantAlleles.end()) {
