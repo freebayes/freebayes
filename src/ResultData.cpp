@@ -659,7 +659,7 @@ vcf::Variant& Results::gvcf(
     assert(numSites > 0);
 
     // set up site call
-    var.ref = parser->currentReferenceBaseString();
+    var.ref = parser->referenceSubstr(startPos, 1);
     var.alt.push_back("<*>");
     var.sequenceName = parser->currentSequenceName;
     var.position = startPos + 1; // output text field is one-based
