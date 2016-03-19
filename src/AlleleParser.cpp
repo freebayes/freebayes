@@ -353,7 +353,13 @@ string AlleleParser::vcfHeader() {
         << "##fileformat=VCFv4.1" << endl
         << "##fileDate=" << dateStr() << endl
         << "##source=freeBayes " << VERSION_GIT << endl
-        << "##reference=" << reference.filename << endl
+        << "##reference=" << reference.filename << endl;
+
+    for (vector<RefData>::const_iterator it = referenceSequences.begin();
+            it != referenceSequences.end(); ++it)
+        headerss << "##contig=<ID=" << it->RefName << ",length=" << it->RefLength << ">" << endl;
+
+    headerss
         << "##phasing=none" << endl
         << "##commandline=\"" << parameters.commandline << "\"" << endl
         << "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with data\">" << endl
