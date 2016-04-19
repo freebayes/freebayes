@@ -58,7 +58,7 @@ If possible, please also refer to the version number provided by freebayes when
 it is run without arguments or with the `--help` option.  For example, you 
 should see something like this:
 
-    version:  v0.9.10-3-g47a713e-dirty
+    version:  v0.9.10-3-g47a713e
 
 This provides both a point release number and a git commit id, which will 
 ensure precise reproducibility of results.
@@ -73,12 +73,6 @@ tree.  Currently, the tree is hosted on github, and can be obtained via:
 
 Note the use of --recursive.  This is required in order to download all 
 nested git submodules for external repositories.
-
-After you've already done the above to clone the most recent development 
-version, if you wish to compile a specific version of FreeBayes from, you 
-can then do something like the following: 
-
-    git checkout v0.9.20 && git submodule update --recursive
 
 ### Resolving proxy issues with git
 
