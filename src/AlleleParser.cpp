@@ -46,12 +46,12 @@ void AlleleParser::openBams(void) {
         DEBUG("Opening BAM fomat alignment input file: " << parameters.bams.front() << " ...");
     } else if (parameters.bams.size() > 1) {
         DEBUG("Opening " << parameters.bams.size() << " BAM fomat alignment input files");
-        for (vector<string>::const_iterator b = parameters.bams.begin(); 
+        for (vector<string>::const_iterator b = parameters.bams.begin();
                 b != parameters.bams.end(); ++b) {
             DEBUG2(*b);
         }
     }
-    
+
     if (parameters.useStdin) {
         if (!bamMultiReader.Open(parameters.bams)) {
             ERROR("Could not read BAM data from stdin");
@@ -271,7 +271,7 @@ void AlleleParser::getSampleNames(void) {
                        << endl
                        << "samples " << name << " and " << s->second << " map to " << readGroupID << endl
                        << endl
-                       << "As freebayes operates on a virtually merged stream of its input files," << endl 
+                       << "As freebayes operates on a virtually merged stream of its input files," << endl
                        << "it will not be possible to determine what sample an alignment belongs to" << endl
                        << "at runtime." << endl
                        << endl
@@ -333,7 +333,7 @@ void AlleleParser::getSampleNames(void) {
              //--------------------------------------------------------------------------------
            << "Warning: No sample file given, and no @RG tags found in BAM header." << endl
            << "All alignments from all input files will be assumed to come from the same" << endl
-           << "individual.  To group alignments by sample, you must add read groups and sample" << endl 
+           << "individual.  To group alignments by sample, you must add read groups and sample" << endl
            << "names to your alignments.  You can do this using ./scripts/sam_add_rg.pl in the" << endl
            << "freebayes source tree, or by specifying read groups and sample names when you" << endl
            << "prepare your sequencing data for alignment." << endl
@@ -451,7 +451,7 @@ string AlleleParser::vcfHeader() {
         << "##INFO=<ID=MQMR,Number=1,Type=Float,Description=\"Mean mapping quality of observed reference alleles\">" << endl
         << "##INFO=<ID=PAIRED,Number=A,Type=Float,Description=\"Proportion of observed alternate alleles which are supported by properly paired read fragments\">" << endl
         << "##INFO=<ID=PAIREDR,Number=1,Type=Float,Description=\"Proportion of observed reference alleles which are supported by properly paired read fragments\">" << endl
-        << "##INFO=<ID=MIN,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
+        << "##INFO=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
         << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"Last position (inclusive) in gVCF output record.\">" << endl;
 
     // sequencing technology tags, which vary according to input data
@@ -480,7 +480,7 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
         << "##FORMAT=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
         << "##FORMAT=<ID=QA,Number=A,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
-        << "##FORMAT=<ID=MIN,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
+        << "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
         //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
         //<< "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
         //<< "##FORMAT=<ID=SAF,Number=1,Type=Integer,Description=\"Number of alternate observations on the forward strand\">" << endl
@@ -1132,7 +1132,7 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
             vcf::Variant var(haplotypeVariantInputFile);
             while (haplotypeVariantInputFile.getNextVariant(var)) {
                 //cerr << "input variant: " << var << endl;
-		
+
                 // the following stanza is for parsed
                 // alternates. instead use whole haplotype calls, as
                 // alternates can be parsed prior to providing the
@@ -1241,7 +1241,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
     // NB, if we are using haplotype basis alleles the algorithm forces
     // alleles that aren't in the haplotype basis set into the reference space
     if (type != ALLELE_REFERENCE
-        && type != ALLELE_NULL 
+        && type != ALLELE_NULL
         && !allowedHaplotypeBasisAllele(pos + 1,
                                         refSequence,
                                         readSequence)) {
@@ -1305,7 +1305,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
         while (minEntropy > 0 && // ignore if turned off
                repeatRightBoundary - currentSequenceStart < currentSequence.size() && //guard
                entropy(currentSequence.substr(start, repeatRightBoundary - pos)) < minEntropy) {
-            //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, "; 
+            //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, ";
             //cerr << "increasing rought boundary to ";
             ++repeatRightBoundary;
             //cerr << repeatRightBoundary << endl;
@@ -1368,7 +1368,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                "alignment isMateMapped " << alignment.IsMateMapped() << endl <<
                "alignment isProperPair " << alignment.IsProperPair() << endl <<
                "alignment mapQual " << alignment.MapQuality << endl <<
-               "alignment sampleID " << sampleName << endl << 
+               "alignment sampleID " << sampleName << endl <<
                "alignment position " << alignment.Position << endl <<
                "alignment length " << alignment.Length << endl <<
                "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
@@ -1402,7 +1402,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
      *
      * Also, we don't store the entire undelying sequence; just the subsequence
      * that matches our current target region.
-     * 
+     *
      * As we step through a match sequence, we look for mismatches.  When we
      * see one we set a positional flag indicating the location, and we emit a
      * 'Reference' allele that stretches from the the base after the last
@@ -1532,7 +1532,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                            lqual,
                                            qualp),
                                 parameters.allowComplex, parameters.maxComplexGap);
-			    
+
                         } else {
                             ra.addAllele(
                                 makeAllele(ra,
@@ -1582,7 +1582,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                        lqual,
                                        qualp),
                             parameters.allowComplex, parameters.maxComplexGap);
-			
+
                     } else {
                         ra.addAllele(
                             makeAllele(ra,
@@ -1927,8 +1927,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                                         bool gettingPartials) {
 
     DEBUG2("updating alignment queue");
-    DEBUG2("currentPosition = " << position 
-           << "; currentSequenceStart = " << currentSequenceStart 
+    DEBUG2("currentPosition = " << position
+           << "; currentSequenceStart = " << currentSequenceStart
            << "; currentSequence end = " << currentSequence.size() + currentSequenceStart);
 
     // make sure we have sequence for the *first* alignment
@@ -1937,7 +1937,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
-    DEBUG2("currentAlignment.Position == " << currentAlignment.Position 
+    DEBUG2("currentAlignment.Position == " << currentAlignment.Position
            << ", currentAlignment.AlignedBases.size() == " << currentAlignment.AlignedBases.size()
            << ", currentPosition == " << position
            << ", currentSequenceStart == " << currentSequenceStart
@@ -2630,7 +2630,7 @@ bool AlleleParser::loadTarget(BedTarget* target) {
                     currentTarget->right + 1);
             //return false;
         } else {
-            DEBUG("set region of variant input file to " << 
+            DEBUG("set region of variant input file to " <<
                     currentTarget->seq << ":" << currentTarget->left << ".." <<
                     currentTarget->right + 1);
         }
@@ -2901,7 +2901,7 @@ bool RegisteredAlignment::fitHaplotype(int haplotypeStart, int haplotypeLength, 
     vector<Allele> newAlleles;
 
     int haplotypeEnd = haplotypeStart + haplotypeLength;
-    
+
     //if (containedAlleleTypes == ALLELE_REFERENCE) {
     //    return false;
     //}
@@ -3159,7 +3159,7 @@ void AlleleParser::buildHaplotypeAlleles(
 
         // for each non-reference allele within the haplotype length of this
         // position, adjust the length and reference sequences of the adjacent
-        // alleles 
+        // alleles
         DEBUG("fitting haplotype block " << currentPosition << " to " << currentPosition + haplotypeLength << ", " << haplotypeLength << "bp");
 
         lastHaplotypeLength = haplotypeLength;
@@ -3367,7 +3367,7 @@ void AlleleParser::buildHaplotypeAlleles(
                 (*p)->setQuality();
                 (*p)->update(haplotypeLength);
             }
-            
+
             // now add in partial observations collected from partially-overlapping reads
             if (!partialHaplotypeObservations.empty()) {
                 samples.assignPartialSupport(alleles,
@@ -3555,9 +3555,9 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
         if (allowedAlleleTypes & allele.type
             && ((haplotypeLength > 1 &&
                  ((allele.type == ALLELE_REFERENCE
-                   && allele.position <= currentPosition 
+                   && allele.position <= currentPosition
                    && allele.position + allele.referenceLength >= currentPosition + haplotypeLength)
-                  || 
+                  ||
                   (allele.position == currentPosition
                    && allele.referenceLength == haplotypeLength)
                   ||
@@ -3570,7 +3570,7 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
                  ((allele.type == ALLELE_REFERENCE
                    && allele.position <= currentPosition
                    && allele.position + allele.referenceLength > currentPosition)
-                  || 
+                  ||
                   (allele.position == currentPosition)))
                 ) ) {
             allele.update(haplotypeLength);
@@ -3644,10 +3644,10 @@ Allele* AlleleParser::referenceAllele(int mapQ, int baseQ) {
     string sequencingTech = "reference";
     string baseQstr = "";
     //baseQstr += qualityInt2Char(baseQ);
-    Allele* allele = new Allele(ALLELE_REFERENCE, 
+    Allele* allele = new Allele(ALLELE_REFERENCE,
                                 currentSequenceName,
                                 currentPosition,
-                                &currentPosition, 
+                                &currentPosition,
                                 &currentReferenceBase,
                                 1,
                                 currentPosition + 1,
@@ -3736,7 +3736,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
 
     map<Allele, int> filteredAlleles;
 
-    DEBUG("filtering genotype alleles which are not supported by at least " << parameters.minAltCount 
+    DEBUG("filtering genotype alleles which are not supported by at least " << parameters.minAltCount
            << " observations comprising at least " << parameters.minAltFraction << " of the observations in a single individual");
     for (vector<pair<Allele, int> >::iterator p = unfilteredAlleles.begin();
          p != unfilteredAlleles.end(); ++p) {
@@ -3746,7 +3746,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
         DEBUG("genotype allele: " << genotypeAllele << " qsum " << qSum);
 
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-            Sample& sample = s->second; 
+            Sample& sample = s->second;
             int alleleCount = 0;
             int qsum = 0;
             Sample::iterator c = sample.find(genotypeAllele.currentBase);
@@ -3760,10 +3760,10 @@ vector<Allele> AlleleParser::genotypeAlleles(
             }
             int observationCount = sample.observationCount();
             if (qsum >= parameters.minAltQSum
-                && alleleCount >= parameters.minAltCount 
+                && alleleCount >= parameters.minAltCount
                 && ((float) alleleCount / (float) observationCount) >= parameters.minAltFraction) {
-                DEBUG(genotypeAllele << " has support of " << alleleCount 
-                      << " in individual " << s->first << " (" << observationCount << " obs)" <<  " and fraction " 
+                DEBUG(genotypeAllele << " has support of " << alleleCount
+                      << " in individual " << s->first << " (" << observationCount << " obs)" <<  " and fraction "
                       << (float) alleleCount / (float) observationCount);
                 filteredAlleles[genotypeAllele] = qSum;
                 break;
@@ -3936,7 +3936,7 @@ map<string, int> AlleleParser::repeatCounts(long int position, const string& seq
             j += i;
             ++rightsteps;
         }
-        // if we went left and right a non-zero number of times, 
+        // if we went left and right a non-zero number of times,
         if (leftsteps + rightsteps > 1) {
             counts[seq] = leftsteps + rightsteps;
         }
