@@ -17,7 +17,7 @@ VCFLIB_ROOT=../vcflib
 TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
 HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
-LIBS = -lz -lm 
+LIBS = -lz -lm -lpthread
 INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT)/
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
