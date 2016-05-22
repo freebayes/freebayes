@@ -10,3 +10,6 @@
 [submodule "bash-tap"]
 	path = test/bash-tap
 	url = https://github.com/illusori/bash-tap.git
+[submodule "vcflib"]
+	path = vcflib
+	url = https://github.com/vcflib/vcflib.git
