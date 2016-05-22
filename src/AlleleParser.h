@@ -88,11 +88,11 @@ public:
     AlleleFilter(long unsigned int s, long unsigned int e) : start(s), end(e) {}
 
     // true of the allele is outside of our window
-    bool operator()(Allele& a) { 
+    bool operator()(Allele& a) {
         return !(start >= a.position && end < a.position + a.length);
     }
 
-    bool operator()(Allele*& a) { 
+    bool operator()(Allele*& a) {
         return !(start >= a->position && end < a->position + a->length);
     }
 
@@ -129,9 +129,9 @@ class AlleleParser {
 public:
 
     Parameters parameters; // holds operational parameters passed at program invocation
-    
+
     AlleleParser(int argc, char** argv);
-    ~AlleleParser(void); 
+    ~AlleleParser(void);
 
     vector<string> sampleList; // list of sample names, indexed by sample id
     vector<string> sampleListFromBam; // sample names drawn from BAM file
@@ -149,7 +149,7 @@ public:
     vector<string> referenceSequenceNames;
     map<int, string> referenceIDToName;
     string referenceSampleName;
-    
+
     // target regions
     vector<BedTarget> targets;
     // returns true if we are within a target
@@ -163,12 +163,12 @@ public:
     BedReader bedReader;
 
     // VCF
-    vcf::VariantCallFile variantCallFile;
-    vcf::VariantCallFile variantCallInputFile;   // input variant alleles, to target analysis
-    vcf::VariantCallFile haplotypeVariantInputFile;  // input alleles which will be used to construct haplotype alleles
+    vcflib::VariantCallFile variantCallFile;
+    vcflib::VariantCallFile variantCallInputFile;   // input variant alleles, to target analysis
+    vcflib::VariantCallFile haplotypeVariantInputFile;  // input alleles which will be used to construct haplotype alleles
 
     // input haplotype alleles
-    // 
+    //
     // as calling progresses, a window of haplotype basis alleles from the flanking sequence
     // map from starting position to length->alle
     map<long int, vector<AllelicPrimitive> > haplotypeBasisAlleles;  // this is in the current reference sequence
@@ -223,7 +223,7 @@ public:
 
     string bamHeader;
     vector<string> bamHeaderLines;
- 
+
     void openBams(void);
     void openOutputFile(void);
     void getSampleNames(void);
@@ -349,7 +349,7 @@ private:
 
     int currentRefID;
     BamAlignment currentAlignment;
-    vcf::Variant* currentVariant;
+    vcflib::Variant* currentVariant;
 
 };
 

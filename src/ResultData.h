@@ -41,8 +41,8 @@ public:
         }
     }
 
-    vcf::Variant& vcf(
-        vcf::Variant& var, // variant to update
+    vcflib::Variant& vcf(
+        vcflib::Variant& var, // variant to update
         BigFloat pHom,
         long double bestComboOddsRatio,
         //long double alleleSamplingProb,
@@ -61,8 +61,8 @@ public:
         vector<string>& sequencingTechnologies,
         AlleleParser* parser);
 
-    vcf::Variant& gvcf(
-        vcf::Variant& var,
+    vcflib::Variant& gvcf(
+        vcflib::Variant& var,
         NonCalls& noncalls,
         AlleleParser* parser);
 };

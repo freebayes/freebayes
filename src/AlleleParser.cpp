@@ -506,7 +506,7 @@ void AlleleParser::setupVCFInput(void) {
     // variant input for analysis and targeting
     if (!parameters.variantPriorsFile.empty()) {
         variantCallInputFile.open(parameters.variantPriorsFile);
-        currentVariant = new vcf::Variant(variantCallInputFile);
+        currentVariant = new vcflib::Variant(variantCallInputFile);
         usingVariantInputAlleles = true;
 
         // get sample names from VCF input file
@@ -1129,7 +1129,7 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
                                                 pos + referenceLength + CACHED_BASIS_HAPLOTYPE_WINDOW + 1)) {
             //cerr << "the vcf line " << haplotypeVariantInputFile.line << endl;
             // get the variants in the target region
-            vcf::Variant var(haplotypeVariantInputFile);
+            vcflib::Variant var(haplotypeVariantInputFile);
             while (haplotypeVariantInputFile.getNextVariant(var)) {
                 //cerr << "input variant: " << var << endl;
 
@@ -1143,9 +1143,9 @@ void AlleleParser::updateHaplotypeBasisAlleles(long int pos, int referenceLength
                   }
                 */
 
-                map<string, vector<vcf::VariantAllele> > variants = var.parsedAlternates();
-                for (map<string, vector<vcf::VariantAllele> >::iterator a = variants.begin(); a != variants.end(); ++a) {
-                    for (vector<vcf::VariantAllele>::iterator v = a->second.begin(); v != a->second.end(); ++v) {
+                map<string, vector<vcflib::VariantAllele> > variants = var.parsedAlternates();
+                for (map<string, vector<vcflib::VariantAllele> >::iterator a = variants.begin(); a != variants.end(); ++a) {
+                    for (vector<vcflib::VariantAllele>::iterator v = a->second.begin(); v != a->second.end(); ++v) {
                         //cerr << v->ref << "/" << v->alt << endl;
                         if (v->ref != v->alt) {
                             //cerr << "basis allele " << v->position << " " << v->ref << "/" << v->alt << endl;
@@ -2128,7 +2128,7 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
     if (!usingVariantInputAlleles) return;
 
     // get the variants in the target region
-    vcf::Variant var(variantCallInputFile);
+    vcflib::Variant var(variantCallInputFile);
     if (!seq.empty()) {
         variantCallInputFile.setRegion(seq, start, end);
     }
@@ -2138,10 +2138,10 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
         long int pos = currentVariant->position - 1;
         // get alternate alleles
         bool includePreviousBaseForIndels = true;
-        map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
+        map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
         // TODO this would be a nice option: why does it not work?
-        //map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
-        vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
+        //map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
+        vector< vector<vcflib::VariantAllele> > orderedVariantAlleles;
         for (vector<string>::iterator a = currentVariant->alt.begin(); a != currentVariant->alt.end(); ++a) {
             orderedVariantAlleles.push_back(variantAlleles[*a]);
         }
@@ -2149,14 +2149,14 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
         vector<Allele> genotypeAlleles;
         set<long int> alternatePositions;
 
-        for (vector< vector<vcf::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
+        for (vector< vector<vcflib::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
 
-            vector<vcf::VariantAllele>& altAllele = *g;
+            vector<vcflib::VariantAllele>& altAllele = *g;
 
             vector<Allele> alleles;
 
-            for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
-                vcf::VariantAllele& variant = *v;
+            for (vector<vcflib::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
+                vcflib::VariantAllele& variant = *v;
                 long int allelePos = variant.position - 1;
                 AlleleType type;
                 string alleleSequence = variant.alt;
@@ -2261,7 +2261,7 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
         if (gotRegion) {
 
             // get the variants in the target region
-            vcf::Variant var(variantCallInputFile);
+            vcflib::Variant var(variantCallInputFile);
             bool ok;
             while (ok = variantCallInputFile.getNextVariant(*currentVariant)) {
 
@@ -2269,10 +2269,10 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                 long int pos = currentVariant->position - 1;
                 // get alternate alleles
                 bool includePreviousBaseForIndels = true;
-                map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
+                map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
                 // TODO this would be a nice option: why does it not work?
-                //map<string, vector<vcf::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
-                vector< vector<vcf::VariantAllele> > orderedVariantAlleles;
+                //map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
+                vector< vector<vcflib::VariantAllele> > orderedVariantAlleles;
                 for (vector<string>::iterator a = currentVariant->alt.begin(); a != currentVariant->alt.end(); ++a) {
                     orderedVariantAlleles.push_back(variantAlleles[*a]);
                 }
@@ -2280,14 +2280,14 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                 vector<Allele> genotypeAlleles;
                 set<long int> alternatePositions;
 
-                for (vector< vector<vcf::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
+                for (vector< vector<vcflib::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
 
-                    vector<vcf::VariantAllele>& altAllele = *g;
+                    vector<vcflib::VariantAllele>& altAllele = *g;
 
                     vector<Allele> alleles;
 
-                    for (vector<vcf::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
-                        vcf::VariantAllele& variant = *v;
+                    for (vector<vcflib::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
+                        vcflib::VariantAllele& variant = *v;
                         long int allelePos = variant.position - 1;
                         AlleleType type;
                         string alleleSequence = variant.alt;
