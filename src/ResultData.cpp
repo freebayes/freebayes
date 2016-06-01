@@ -5,8 +5,8 @@ using namespace std;
 
 
 
-vcf::Variant& Results::vcf(
-    vcf::Variant& var, // variant to update
+vcflib::Variant& Results::vcf(
+    vcflib::Variant& var, // variant to update
     BigFloat pHom,
     long double bestComboOddsRatio,
     //long double alleleSamplingProb,
@@ -53,7 +53,7 @@ vcf::Variant& Results::vcf(
 
     // get the required size of the reference sequence
     // strip identical bases from start and/or end of alleles
-    // if bases have been stripped from the beginning, 
+    // if bases have been stripped from the beginning,
 
     // set up VCF record-wide variables
 
@@ -297,7 +297,7 @@ vcf::Variant& Results::vcf(
         long double altReadMismatchRate = (altObsCount == 0 ? 0 : altReadMismatchSum / altObsCount);
         long double altReadSNPRate = (altObsCount == 0 ? 0 : altReadSNPSum / altObsCount);
         long double altReadIndelRate = (altObsCount == 0 ? 0 : altReadIndelSum / altObsCount);
-        
+
         //var.info["XAM"].push_back(convert(altReadMismatchRate));
         //var.info["XAS"].push_back(convert(altReadSNPRate));
         //var.info["XAI"].push_back(convert(altReadIndelRate));
@@ -421,7 +421,7 @@ vcf::Variant& Results::vcf(
     // tally partial observations to get a mean coverage per bp of reference
     int haplotypeLength = refbase.size();
     int basesInObservations = 0;
-    
+
     for (map<string, vector<Allele*> >::iterator g = alleleGroups.begin(); g != alleleGroups.end(); ++g) {
         for (vector<Allele*>::iterator a = g->second.begin(); a != g->second.end(); ++a) {
             basesInObservations += (*a)->alternateSequence.size();
@@ -431,7 +431,7 @@ vcf::Variant& Results::vcf(
     for (map<Allele*, set<Allele*> >::iterator p = partialObservationSupport.begin(); p != partialObservationSupport.end(); ++p) {
         basesInObservations += p->first->alternateSequence.size();
     }
- 
+
     double depthPerBase = (double) basesInObservations / (double) haplotypeLength;
     var.info["DPB"].push_back(convert(depthPerBase));
 
@@ -637,8 +637,8 @@ vcf::Variant& Results::vcf(
 }
 
 
-vcf::Variant& Results::gvcf(
-    vcf::Variant& var,
+vcflib::Variant& Results::gvcf(
+    vcflib::Variant& var,
     NonCalls& nonCalls,
     AlleleParser* parser) {
 
@@ -671,19 +671,19 @@ vcf::Variant& Results::gvcf(
     var.format.clear();
     var.format.push_back("GQ");
     var.format.push_back("DP");
-    var.format.push_back("MIN");
+    var.format.push_back("MIN_DP");
     var.format.push_back("QR");
     var.format.push_back("QA");
-    
+
     NonCall total = nonCalls.aggregateAll();
     var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
-    var.info["MIN"].push_back(convert(total.minDepth));
+    var.info["MIN_DP"].push_back(convert(total.minDepth));
     // The text END field is one-based, inclusive. We proudly conflate this
     // with our zero-based, exclusive endPos.
     var.info["END"].push_back(convert(endPos));
 
     // genotype quality is 1- p(polymorphic)
-    
+
     map<string, NonCall> perSample;
     nonCalls.aggregatePerSample(perSample);
 
@@ -696,7 +696,7 @@ vcf::Variant& Results::gvcf(
         long double qual = nc.reflnQ - nc.altlnQ;
         sampleOutput["GQ"].push_back(convert(ln2phred(qual)));
         sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
-        sampleOutput["MIN"].push_back(convert(nc.minDepth));
+        sampleOutput["MIN_DP"].push_back(convert(nc.minDepth));
         sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
         sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
     }

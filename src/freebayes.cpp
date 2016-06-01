@@ -2,7 +2,7 @@
 // freebayes
 //
 // A bayesian genetic variant detector.
-// 
+//
 
 // standard includes
 //#include <cstdio>
@@ -59,7 +59,7 @@
     cerr << msg << endl;
 
 
-using namespace std; 
+using namespace std;
 
 // todo
 // generalize the main function to take the parameters as input
@@ -120,7 +120,7 @@ int main (int argc, char *argv[]) {
     if (parameters.output == "vcf") {
         out << parser->variantCallFile.header << endl;
     }
-            
+
     if (0 < parameters.maxCoverage) {
         srand(13);
     }
@@ -144,7 +144,7 @@ int main (int argc, char *argv[]) {
               || (parameters.gVCFchunk &&
                   nonCalls.lastPos().second - nonCalls.firstPos().second
                   > parameters.gVCFchunk))) {
-            vcf::Variant var(parser->variantCallFile);
+            vcflib::Variant var(parser->variantCallFile);
             out << results.gvcf(var, nonCalls, parser) << endl;
             nonCalls.clear();
         }
@@ -177,7 +177,7 @@ int main (int argc, char *argv[]) {
                 for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
                     string sampleName = s->first;
                     Sample& sample = s->second;
-                    // get the coverage for this sample 
+                    // get the coverage for this sample
                     int sampleCoverage = 0;
                     for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
                         sampleCoverage += sg->second.size();
@@ -365,7 +365,7 @@ int main (int argc, char *argv[]) {
         int estimatedMinorAllelesAtLocus = max(1, (int) ceil((double) numCopiesOfLocus * estimatedMinorFrequency));
         //cerr << "estimated minor frequency " << estimatedMinorFrequency << endl;
         //cerr << "estimated minor count " << estimatedMinorAllelesAtLocus << endl;
-        
+
 
         map<string, vector<vector<SampleDataLikelihood> > > sampleDataLikelihoodsByPopulation;
         map<string, vector<vector<SampleDataLikelihood> > > variantSampleDataLikelihoodsByPopulation;
@@ -658,12 +658,12 @@ int main (int argc, char *argv[]) {
 
             // write the last gVCF record(s)
             if (parameters.gVCFout && !nonCalls.empty()) {
-                vcf::Variant var(parser->variantCallFile);
+                vcflib::Variant var(parser->variantCallFile);
                 out << results.gvcf(var, nonCalls, parser) << endl;
                 nonCalls.clear();
             }
 
-            vcf::Variant var(parser->variantCallFile);
+            vcflib::Variant var(parser->variantCallFile);
 
             out << results.vcf(
                 var,
@@ -696,7 +696,7 @@ int main (int argc, char *argv[]) {
     // write the last gVCF record
     if (parameters.gVCFout && !nonCalls.empty()) {
         Results results;
-        vcf::Variant var(parser->variantCallFile);
+        vcflib::Variant var(parser->variantCallFile);
         out << results.gvcf(var, nonCalls, parser) << endl;
         nonCalls.clear();
     }

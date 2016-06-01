@@ -12,4 +12,4 @@ $(freebayes):
 	cd .. && $(MAKE)
 
 $(vcfuniq):
-	cd ../vcflib && $(MAKE)
+	cd ../vcflib && make clean && make

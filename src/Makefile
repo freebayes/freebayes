@@ -14,9 +14,11 @@ CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 
 BAMTOOLS_ROOT=../bamtools
 VCFLIB_ROOT=../vcflib
+TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
+HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
-LIBS = -L./ -L$(VCFLIB_ROOT)/tabixpp/ -L$(BAMTOOLS_ROOT)/lib -ltabix -lz -lm
-INCLUDE = -I$(BAMTOOLS_ROOT)/src -I../ttmath -I$(VCFLIB_ROOT)/src -I$(VCFLIB_ROOT)/
+LIBS = -lz -lm -lpthread
+INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT)/
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
@@ -37,7 +39,8 @@ gprof:
 # builds bamtools static lib, and copies into root
 $(BAMTOOLS_ROOT)/lib/libbamtools.a:
 	cd $(BAMTOOLS_ROOT) && mkdir -p build && cd build && cmake .. && $(MAKE)
-
+$(HTSLIB_ROOT)/libhts.a:
+	cd $(HTSLIB_ROOT) && make
 
 OBJECTS=BedReader.o \
 		CNV.o \
@@ -64,14 +67,15 @@ OBJECTS=BedReader.o \
 		NonCall.o \
 		SegfaultHandler.o \
 		../vcflib/tabixpp/tabix.o \
-		../vcflib/tabixpp/bgzf.o \
+		../vcflib/tabixpp/htslib/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
-		../vcflib/smithwaterman/disorder.c \
+		../vcflib/smithwaterman/disorder.cpp \
 		../vcflib/smithwaterman/LeftAlign.o \
 		../vcflib/smithwaterman/Repeats.o \
 		../vcflib/smithwaterman/IndelAllele.o \
 		Variant.o \
-		$(BAMTOOLS_ROOT)/lib/libbamtools.a
+		$(BAMTOOLS_ROOT)/lib/libbamtools.a \
+		$(HTSLIB_ROOT)/libhts.a
 
 HEADERS=multichoose.h version_git.h
 
@@ -104,7 +108,7 @@ alleles.o: alleles.cpp AlleleParser.o Allele.o
 dummy.o: dummy.cpp AlleleParser.o Allele.o
 	$(CXX) $(CFLAGS) $(INCLUDE) -c dummy.cpp
 
-freebayes.o: freebayes.cpp TryCatch.h $(BAMTOOLS_ROOT)/lib/libbamtools.a
+freebayes.o: freebayes.cpp TryCatch.h $(HTSLIB_ROOT)/libhts.a $(BAMTOOLS_ROOT)/lib/libbamtools.a
 	$(CXX) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
@@ -125,7 +129,7 @@ Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 Ewens.o: Ewens.cpp Ewens.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c Ewens.cpp
 
-AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(BAMTOOLS_ROOT)/lib/libbamtools.a
+AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(BAMTOOLS_ROOT)/lib/libbamtools.a $(HTSLIB_ROOT)/libhts.a
 	$(CXX) $(CFLAGS) $(INCLUDE) -c AlleleParser.cpp
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h
@@ -173,7 +177,7 @@ bamleftalign.o: bamleftalign.cpp LeftAlign.cpp
 bamfiltertech.o: bamfiltertech.cpp
 	$(CXX) $(CFLAGS) $(INCLUDE) -c bamfiltertech.cpp
 
-LeftAlign.o: LeftAlign.h LeftAlign.cpp $(BAMTOOLS_ROOT)/lib/libbamtools.a
+LeftAlign.o: LeftAlign.h LeftAlign.cpp $(BAMTOOLS_ROOT)/lib/libbamtools.a $(HTSLIB_ROOT)/libhts.a
 	$(CXX) $(CFLAGS) $(INCLUDE) -c LeftAlign.cpp
 
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
@@ -182,8 +186,9 @@ IndelAllele.o: IndelAllele.cpp IndelAllele.h
 Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
 	$(CXX) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
-../vcflib/tabixpp/tabix.o: ../vcflib/tabixpp/tabix.hpp ../vcflib/tabixpp/tabix.cpp
-../vcflib/tabixpp/bgzf.o: ../vcflib/tabixpp/bgzf.c ../vcflib/tabixpp/bgzf.h
+../vcflib/tabixpp/tabix.o:
+	cd $(TABIX_ROOT)/ && make
+../vcflib/tabixpp/htslib/bgzf.o: ../vcflib/tabixpp/htslib/bgzf.c ../vcflib/tabixpp/htslib/htslib/bgzf.h
 	cd ../vcflib/tabixpp && $(MAKE)
 
 ../vcflib/smithwaterman/SmithWatermanGotoh.o: ../vcflib/smithwaterman/SmithWatermanGotoh.h ../vcflib/smithwaterman/SmithWatermanGotoh.cpp
