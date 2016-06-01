@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/ekg/freebayes.png?label=ready&title=Ready)](https://waffle.io/ekg/freebayes)
 # *freebayes*, a haplotype-based variant detector
 ## user manual and guide
 
