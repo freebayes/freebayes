@@ -183,7 +183,6 @@ int main (int argc, char *argv[]) {
                         sampleCoverage += sg->second.size();
                     }
                     if (sampleCoverage <= parameters.maxCoverage) {
-                        skip = true;
                         continue;
                     }
 
