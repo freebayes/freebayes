@@ -1300,11 +1300,18 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
         // a dangerous game
         int start = pos - currentSequenceStart;
         double minEntropy = parameters.minRepeatEntropy;
+		int nCount = 0;
+		int maxConsecutiveNs = 10;
         // check first that' wer'e actually ina repeat... TODO
         //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, " << endl;
         while (minEntropy > 0 && // ignore if turned off
+			   nCount <= maxConsecutiveNs &&
                repeatRightBoundary - currentSequenceStart < currentSequence.size() && //guard
                entropy(currentSequence.substr(start, repeatRightBoundary - pos)) < minEntropy) {
+			string base;
+			base = currentSequence.at(repeatRightBoundary);
+			if (base == "N" || base == "n") nCount++;
+			else nCount = 0;
             //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, "; 
             //cerr << "increasing rought boundary to ";
             ++repeatRightBoundary;
