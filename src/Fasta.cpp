@@ -245,6 +245,17 @@ FastaReference::~FastaReference(void) {
     delete index;
 }
 
+string removeIupac(string& str) {
+	for (int i=0; i<str.length(); ++i) {
+		char c = str[i];
+		if (c != 'A' && c != 'T' && c != 'G' && c != 'C' && c != 'N' &&
+				c != 'a' && c != 't' && c != 'g' && c != 'c' && c != 'n') {
+			str[i] = 'N';
+		}
+	}
+	return str;
+}
+
 string FastaReference::getSequence(string seqname) {
     FastaIndexEntry entry = index->entry(seqname);
     int newlines_in_sequence = entry.length / entry.line_blen;
@@ -260,7 +271,7 @@ string FastaReference::getSequence(string seqname) {
     string s = seq;
     free(seq);
     s.resize((pend - pbegin)/sizeof(char));
-    return s;
+	return removeIupac(s);
 }
 
 // TODO cleanup; odd function.  use a map
@@ -298,7 +309,7 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     string s = seq;
     free(seq);
     s.resize((pend - pbegin)/sizeof(char));
-    return s;
+	return removeIupac(s);
 }
 
 long unsigned int FastaReference::sequenceLength(string seqname) {
