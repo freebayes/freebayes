@@ -4,8 +4,8 @@ NonCall NonCalls::aggregateAll(void) {
     NonCall aggregate;
     bool first = true;
     for (NonCalls::const_iterator nc = this->begin(); nc != this->end(); ++nc) {
-        for (map<long, map<string, NonCall> >::const_iterator p = nc->second.begin();
-             p != nc->second.end(); ++p) {
+        for (map<long, map<string, NonCall> >::const_iterator p
+            = nc->second.begin(); p != nc->second.end(); ++p) {
             for (map<string, NonCall>::const_iterator s = p->second.begin();
                  s != p->second.end(); ++s) {
                 const NonCall& nonCall = s->second;
@@ -13,12 +13,14 @@ NonCall NonCalls::aggregateAll(void) {
                 aggregate.altCount += nonCall.altCount;
                 aggregate.reflnQ += nonCall.reflnQ;
                 aggregate.altlnQ += nonCall.altlnQ;
+                aggregate.nCount += 1;
                 if (first) {
-                    aggregate.minDepth = nonCall.refCount + nonCall.altCount;
-                    first = false;
+                      aggregate.minDepth = nonCall.refCount + nonCall.altCount;
+                      first = false;
                 } else {
-                    aggregate.minDepth = min(aggregate.minDepth, nonCall.refCount + nonCall.altCount);
-                }
+                    aggregate.minDepth = min(aggregate.minDepth,
+                      nonCall.refCount + nonCall.altCount);
+                  }
             }
         }
     }
@@ -39,6 +41,7 @@ void NonCalls::aggregatePerSample(map<string, NonCall>& perSample) {
                 aggregate.altCount += nonCall.altCount;
                 aggregate.reflnQ += nonCall.reflnQ;
                 aggregate.altlnQ += nonCall.altlnQ;
+                aggregate.nCount += 1;
                 if (!seen.count(name)) {
                     aggregate.minDepth = nonCall.refCount + nonCall.altCount;
                     seen.insert(name);

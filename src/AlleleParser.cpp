@@ -2107,7 +2107,8 @@ pair<int, long int> AlleleParser::nextInputVariantPosition(void) {
             return make_pair(currentRefID, ic->first);
         } else {
             // find next chrom with input alleles
-            map<int, map<long, vector<Allele> > >::iterator nc = inputVariantAlleles.upper_bound(currentRefID);
+            map<int, map<long, vector<Allele> > >::iterator nc
+              = inputVariantAlleles.upper_bound(currentRefID);
             if (nc != inputVariantAlleles.end()) {
                 return make_pair(nc->first, nc->second.begin()->first);
             } else {
@@ -2142,20 +2143,24 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
         // TODO this would be a nice option: why does it not work?
         //map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
         vector< vector<vcflib::VariantAllele> > orderedVariantAlleles;
-        for (vector<string>::iterator a = currentVariant->alt.begin(); a != currentVariant->alt.end(); ++a) {
+        for (vector<string>::iterator a = currentVariant->alt.begin();
+          a != currentVariant->alt.end(); ++a) {
             orderedVariantAlleles.push_back(variantAlleles[*a]);
         }
 
         vector<Allele> genotypeAlleles;
         set<long int> alternatePositions;
 
-        for (vector< vector<vcflib::VariantAllele> >::iterator g = orderedVariantAlleles.begin(); g != orderedVariantAlleles.end(); ++g) {
+        for (vector< vector<vcflib::VariantAllele> >::iterator
+          g = orderedVariantAlleles.begin();
+          g != orderedVariantAlleles.end(); ++g) {
 
             vector<vcflib::VariantAllele>& altAllele = *g;
 
             vector<Allele> alleles;
 
-            for (vector<vcflib::VariantAllele>::iterator v = altAllele.begin(); v != altAllele.end(); ++v) {
+            for (vector<vcflib::VariantAllele>::iterator v = altAllele.begin();
+              v != altAllele.end(); ++v) {
                 vcflib::VariantAllele& variant = *v;
                 long int allelePos = variant.position - 1;
                 AlleleType type;

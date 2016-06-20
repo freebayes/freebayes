@@ -20,6 +20,7 @@ public:
         , altCount(0)
         , altlnQ(0)
         , minDepth(0)
+        , nCount(0)
 
     { }
     NonCall(int rc, long double rq, int ac, long double aq, int mdp)
@@ -32,6 +33,7 @@ public:
     int refCount;
     int altCount;
     int minDepth;
+    int nCount  ; 
     long double reflnQ;
     long double altlnQ;
 };
