@@ -676,8 +676,17 @@ vcflib::Variant& Results::gvcf(
     var.format.push_back("QA");
 
     NonCall total = nonCalls.aggregateAll();
+
+    /* This resets min depth to zero if nonCalls is less than numSites. */
+
+    int minDepth = total.minDepth;
+
+    if(numSites != total.nCount){
+        minDepth = 0;
+    }
+
     var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
-    var.info["MIN_DP"].push_back(convert(total.minDepth));
+    var.info["MIN_DP"].push_back(convert(minDepth));
     // The text END field is one-based, inclusive. We proudly conflate this
     // with our zero-based, exclusive endPos.
     var.info["END"].push_back(convert(endPos));
@@ -695,8 +704,18 @@ vcflib::Variant& Results::gvcf(
         map<string, vector<string> >& sampleOutput = var.samples[sampleName];
         long double qual = nc.reflnQ - nc.altlnQ;
         sampleOutput["GQ"].push_back(convert(ln2phred(qual)));
+
+
+      /* This resets min depth to zero if nonCalls is less than numSites. */
+
+        int minDepth = nc.minDepth;
+
+        if(numSites != nc.nCount){
+            minDepth = 0;
+        }
+
         sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
-        sampleOutput["MIN_DP"].push_back(convert(nc.minDepth));
+        sampleOutput["MIN_DP"].push_back(convert(minDepth));
         sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
         sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
     }
