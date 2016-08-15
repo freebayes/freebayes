@@ -38,7 +38,7 @@ gprof:
 
 # builds bamtools static lib, and copies into root
 $(BAMTOOLS_ROOT)/lib/libbamtools.a:
-	cd $(BAMTOOLS_ROOT) && mkdir -p build && cd build && cmake .. && $(MAKE)
+	cd $(BAMTOOLS_ROOT) && mkdir -p build && cd build && cmake $(BAMTOOLS_ARGS) .. && $(MAKE)
 $(HTSLIB_ROOT)/libhts.a:
 	cd $(HTSLIB_ROOT) && make
 
