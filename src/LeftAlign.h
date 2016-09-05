@@ -54,6 +54,7 @@ using namespace BamTools;
 #define FILLREADGROUP(rg, align) (align).GetTag("RG", (rg))
 #define ADDCIGAR push_back
 #define CIGOP CigarOp
+#define GETHEADERTEXT GetHeaderText()
 #else
 
 #define GETNEXT(reader, alignment) reader.GetNextRecord(alignment)
@@ -88,6 +89,7 @@ using namespace BamTools;
 #define ADDCIGAR add
 #define CIGOP SeqLib::CigarField
 #define FILLREADGROUP(rg, align) (rg) = (align).GetZTag("RG")
+#define GETHEADERTEXT HeaderConcat()
 #include "SeqLib/BamReader.h"
 #include "SeqLib/BamWriter.h"
 #endif

@@ -119,14 +119,8 @@ void AlleleParser::openBams(void) {
     }
 #endif
 
-
     // retrieve header information
-#ifdef HAVE_BAMTOOLS
-    bamHeader = bamMultiReader.GetHeaderText();
-#else
-    SeqLib::BamHeader hdr = bamMultiReader.Header();
-    bamHeader = hdr.AsString();
-#endif
+    bamHeader = bamMultiReader.GETHEADERTEXT;
     bamHeaderLines = split(bamHeader, '\n');
 
     DEBUG(" done");
