@@ -18,12 +18,82 @@
 #ifdef HAVE_BAMTOOLS
 #include "api/BamAlignment.h"
 #include "api/BamReader.h"
+#include "api/BamMultiReader.h"
 #include "api/BamWriter.h"
 using namespace BamTools;
+#define GETNEXT(reader, alignment) reader.GetNextAlignment(alignment)
+#define GETERRORSTRING(reader) reader.GetErrorString()
+#define ISMAPPED IsMapped()
+#define REFID RefID
+#define POSITION Position
+#define REFNAME RefName
+#define REFLEN RefLength
+#define REFVEC RefVector
+#define REFDATA RefData
+#define BAMALIGN BamAlignment
+#define QUALITIES Qualities
+#define QUERYBASES QueryBases
+#define ALIGNEDBASES AlignedBases.size()
+#define QNAME Name
+#define GETREFDATA GetReferenceData()
+#define GETREFNUM GetReferenceCount()
+#define GETREFID(name) GetReferenceID(name)
+#define ENDPOSITION GetEndPosition()
+#define SEQLEN QueryBases.size()
+#define MAPPINGQUALITY MapQuality
+#define CIGAR std::vector<CigarOp>
+#define GETCIGAR CigarData
+#define ISDUPLICATE IsDuplicate()
+#define ISREVERSESTRAND IsReverseStrand()
+#define ISPAIRED IsPaired()
+#define ISMATEMAPPED IsMateMapped()
+#define ISPROPERPAIR IsProperPair()
+#define CIGLEN Length
+#define CIGTYPE Type
+#define BAMREADER BamMultiReader
+#define FILLREADGROUP(rg, align) (align).GetTag("RG", (rg))
+#define ADDCIGAR push_back
+#define CIGOP CigarOp
 #else
+
+#define GETNEXT(reader, alignment) reader.GetNextRecord(alignment)
+#define MAPPINGQUALITY MapQuality()
+#define ISMAPPED MappedFlag()
+#define ISPAIRED PairedFlag()
+#define ISMATEMAPPED MateMappedFlag()
+#define ISPROPERPAIR ProperPair()
+#define ISREVERSESTRAND ReverseFlag()
+#define SEQLEN Length()
+#define BAMALIGN SeqLib::BamRecord
+#define REFID ChrID()
+#define POSITION Position()
+#define REFVEC std::vector<SeqLib::HeaderSequence>
+#define REFDATA SeqLib::HeaderSequence
+#define REFNAME Name
+#define REFLEN Length
+#define QUALITIES Qualities()
+#define QUERYBASES Sequence()
+#define ALIGNEDBASES NumAlignedBases()
+#define QNAME Qname()
+#define GETREFDATA Header().GetHeaderSequenceVector()
+#define GETREFNUM Header().NumSequences()
+#define ENDPOSITION PositionEnd()
+#define CIGAR SeqLib::Cigar
+#define BAMREADER SeqLib::BamReader
+#define GETCIGAR GetCigar()
+#define GETREFID(name) Header().Name2ID(name)
+#define ISDUPLICATE DuplicateFlag()
+#define CIGLEN Length()
+#define CIGTYPE Type()
+#define ADDCIGAR add
+#define CIGOP SeqLib::CigarField
+#define FILLREADGROUP(rg, align) (rg) = (align).GetZTag("RG")
 #include "SeqLib/BamReader.h"
 #include "SeqLib/BamWriter.h"
 #endif
+
+
+
 
 #include "IndelAllele.h"
 
@@ -36,15 +106,8 @@ using namespace BamTools;
 
 using namespace std;
 
-#ifdef HAVE_BAMTOOLS
-bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug = false);
-bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations = 20, bool debug = false);
-int countMismatches(BamAlignment& alignment, string referenceSequence);
-#else
-bool leftAlign(SeqLib::BamRecord& alignment, string& referenceSequence, bool debug = false);
-bool stablyLeftAlign(SeqLib::BamRecord& alignment, string referenceSequence, int maxiterations = 20, bool debug = false);
-int countMismatches(SeqLib::BamRecord& alignment, string referenceSequence);
-#endif
-
+bool leftAlign(BAMALIGN& alignment, string& referenceSequence, bool debug = false);
+bool stablyLeftAlign(BAMALIGN& alignment, string referenceSequence, int maxiterations = 20, bool debug = false);
+int countMismatches(BAMALIGN& alignment, string referenceSequence);
 
 #endif

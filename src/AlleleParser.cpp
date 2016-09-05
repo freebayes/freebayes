@@ -395,16 +395,10 @@ string AlleleParser::vcfHeader() {
         << "##source=freeBayes " << VERSION_GIT << endl
         << "##reference=" << reference.filename << endl;
 
-#ifdef HAVE_BAMTOOLS
-    for (vector<RefData>::const_iterator it = referenceSequences.begin();
-            it != referenceSequences.end(); ++it)
-        headerss << "##contig=<ID=" << it->RefName << ",length=" << it->RefLength << ">" << endl;
-#else
-    for (std::vector<SeqLib::HeaderSequence>::const_iterator it = referenceSequences.begin();
-            it != referenceSequences.end(); ++it)
-        headerss << "##contig=<ID=" << it->Name << ",length=" << it->Length << ">" << endl;
-#endif
-
+    for (REFVEC::const_iterator it = referenceSequences.begin();
+	 it != referenceSequences.end(); ++it)
+      headerss << "##contig=<ID=" << it->REFNAME << ",length=" << it->REFLEN << ">" << endl;
+    
     headerss
         << "##phasing=none" << endl
         << "##commandline=\"" << parameters.commandline << "\"" << endl
@@ -584,25 +578,14 @@ void AlleleParser::loadBamReferenceSequenceNames(void) {
     //--------------------------------------------------------------------------
 
     // store the names of all the reference sequences in the BAM file
-#ifdef HAVE_BAMTOOLS
-    referenceSequences = bamMultiReader.GetReferenceData();
+    referenceSequences = bamMultiReader.GETREFDATA;
     int i = 0;
-    for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-        referenceIDToName[i] = r->RefName;
+    for (REFVEC::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
+        referenceIDToName[i] = r->REFNAME;
         ++i;
     }
 
-    DEBUG("Number of ref seqs: " << bamMultiReader.GetReferenceCount());
-#else
-    referenceSequences = bamMultiReader.Header().GetHeaderSequenceVector();
-    int i = 0;
-    for (vector<SeqLib::HeaderSequence>::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-        referenceIDToName[i] = r->Name;
-        ++i;
-    }
-
-    DEBUG("Number of ref seqs: " << bamMultiReader.Header().NumSequences());
-#endif
+    DEBUG("Number of ref seqs: " << bamMultiReader.GETREFNUM);
 }
 
 
@@ -625,65 +608,46 @@ bool AlleleParser::hasMoreInputVariants(void) {
     return next.first != -1;
 }
 
-#ifdef HAVE_BAMTOOLS
-bool AlleleParser::loadNextPositionWithAlignmentOrInputVariant(BamAlignment& alignment) {
-#else
-  bool AlleleParser::loadNextPositionWithAlignmentOrInputVariant(SeqLib::BamRecord& alignment) {
-#endif
+bool AlleleParser::loadNextPositionWithAlignmentOrInputVariant(BAMALIGN& alignment) {
+
     pair<int, long> next = nextInputVariantPosition();
     if (next.first != -1) {
         int varRefID = next.first;
-        //cerr << varRefID << " " << alignment.RefID << " " << next.second << " " << alignment.Position << endl;
-#ifdef HAVE_BAMTOOLS
-        if (!hasMoreAlignments || varRefID < alignment.RefID || varRefID == alignment.RefID && next.second < alignment.Position) {
-#else
-	  if (!hasMoreAlignments || varRefID < alignment.ChrID() || varRefID == alignment.ChrID() && next.second < alignment.Position()) {
-#endif
-            return loadNextPositionWithInputVariant();
+        if (!hasMoreAlignments || varRefID < alignment.REFID || varRefID == alignment.REFID && next.second < alignment.POSITION) {
+	  return loadNextPositionWithInputVariant();
         } else {
-            loadReferenceSequence(alignment);
+	  loadReferenceSequence(alignment);
         }
     } else {
-        loadReferenceSequence(alignment);
+      loadReferenceSequence(alignment);
     }
     return true;
 }
 
 bool AlleleParser::loadNextPositionWithInputVariant(void) {
-    pair<int, long> next = nextInputVariantPosition();
-    if (next.first != -1) {
-        //cerr << "Next is " << next.first << ":" << next.second << endl;
-        loadReferenceSequence(referenceIDToName[next.first]);
-        currentPosition = next.second;
-        rightmostHaplotypeBasisAllelePosition = currentPosition;
-        return true;
-    } else {
-        return false;
-    }
+  pair<int, long> next = nextInputVariantPosition();
+  if (next.first != -1) {
+    //cerr << "Next is " << next.first << ":" << next.second << endl;
+    loadReferenceSequence(referenceIDToName[next.first]);
+    currentPosition = next.second;
+    rightmostHaplotypeBasisAllelePosition = currentPosition;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // alignment-based method for loading the first bit of our reference sequence
-#ifdef HAVE_BAMTOOLS
-void AlleleParser::loadReferenceSequence(BamAlignment& alignment) {
-    loadReferenceSequence(referenceIDToName[alignment.RefID]);
-    currentPosition = alignment.Position;
+void AlleleParser::loadReferenceSequence(BAMALIGN& alignment) {
+  loadReferenceSequence(referenceIDToName[alignment.REFID]);
+  currentPosition = alignment.POSITION; 
 }
-#else
- void AlleleParser::loadReferenceSequence(SeqLib::BamRecord& alignment) {
-   loadReferenceSequence(referenceIDToName[alignment.ChrID()]);
-   currentPosition = alignment.Position();
-}
-#endif
 
 void AlleleParser::loadReferenceSequence(string& seqname) {
     if (currentSequenceName != seqname) {
         currentSequenceName = seqname;
         currentSequenceStart = 0;
-#ifdef HAVE_BAMTOOLS
-        currentRefID = bamMultiReader.GetReferenceID(currentSequenceName);
-#else
-        currentRefID = bamMultiReader.Header().Name2ID(currentSequenceName);
-#endif
+        currentRefID = bamMultiReader.GETREFID(currentSequenceName);
         currentSequence = uppercase(reference.getSequence(currentSequenceName));
         int i = 0; // check the first few characters and verify they are not garbage
         for (string::iterator citr = currentSequence.begin();
@@ -808,27 +772,15 @@ void AlleleParser::loadTargetsFromBams(void) {
     // otherwise, if we weren't given a region string or targets file, analyze
     // all reference sequences from BAM file
     DEBUG2("no targets specified, using all targets from BAM files");
-#ifdef HAVE_BAMTOOLS
-    RefVector::iterator refIter = referenceSequences.begin();
-    RefVector::iterator refEnd  = referenceSequences.end();
+    REFVEC::iterator refIter = referenceSequences.begin();
+    REFVEC::iterator refEnd  = referenceSequences.end();
     for( ; refIter != refEnd; ++refIter) {
-        RefData refData = *refIter;
-        string refName = refData.RefName;
-        BedTarget bd(refName, 0, refData.RefLength); // 0-based inclusive internally
+        REFDATA refData = *refIter;
+        string refName = refData.REFNAME;
+        BedTarget bd(refName, 0, refData.REFLEN); // 0-based inclusive internally
         DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right + 1);
         targets.push_back(bd);
     }
-#else
-    vector<SeqLib::HeaderSequence>::iterator refIter = referenceSequences.begin();
-    vector<SeqLib::HeaderSequence>::iterator refEnd  = referenceSequences.end();
-    for( ; refIter != refEnd; ++refIter) {
-        SeqLib::HeaderSequence refData = *refIter;
-        string refName = refData.Name;
-        BedTarget bd(refName, 0, refData.Length); // 0-based inclusive internally
-        DEBUG2("will process reference sequence " << refName << ":" << bd.left << ".." << bd.right + 1);
-        targets.push_back(bd);
-    }
-#endif
 }
 
 void AlleleParser::loadSampleCNVMap(void) {
@@ -847,19 +799,12 @@ void AlleleParser::loadSampleCNVMap(void) {
     // header to get the reference names and sizes, and then setPloidy on them
     // in the sampleCNV map.  note that the reference "sample" is named after
     // the current reference sequence.
-#ifdef HAVE_BAMTOOLS
     if (!parameters.diploidReference) {
-        for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-            sampleCNV.setPloidy(referenceSampleName, r->RefName, 0, r->RefLength, 1);
+        for (REFVEC::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
+            sampleCNV.setPloidy(referenceSampleName, r->REFNAME, 0, r->REFLEN, 1);
         }
-#else
-	if (!parameters.diploidReference) {
-	  for (vector<SeqLib::HeaderSequence>::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-            sampleCNV.setPloidy(referenceSampleName, r->Name, 0, r->Length, 1);
-	  }
-#endif
-	}
-
+    }
+    
 }
 
 int AlleleParser::currentSamplePloidy(string const& sample) {
@@ -966,15 +911,9 @@ AlleleParser::~AlleleParser(void) {
 }
 
 // position of alignment relative to current sequence
-#ifdef HAVE_BAMTOOLS
-int AlleleParser::currentSequencePosition(const BamAlignment& alignment) {
-    return alignment.Position - currentSequenceStart;
+int AlleleParser::currentSequencePosition(const BAMALIGN& alignment) {
+  return alignment.POSITION - currentSequenceStart;
 }
-#else
- int AlleleParser::currentSequencePosition(const SeqLib::BamRecord& alignment) {
-   return alignment.Position() - currentSequenceStart;
- }
-#endif
 
 // relative current position within the cached currentSequence
 int AlleleParser::currentSequencePosition() {
@@ -1021,19 +960,14 @@ bool AlleleParser::isCpG(string& altbase) {
     }
 }
 
-#ifdef HAVE_BAMTOOLS
-void capBaseQuality(BamAlignment& alignment, int baseQualityCap) {
-    string& rQual = alignment.Qualities;
-#else
- void capBaseQuality(SeqLib::BamRecord& alignment, int baseQualityCap) {
-   string rQual = alignment.Qualities();
-#endif
-    char qualcap = qualityInt2Char(baseQualityCap);
-    for (string::iterator c = rQual.begin(); c != rQual.end(); ++c) {
-        if (qualityChar2ShortInt(*c) > baseQualityCap) {
-            *c = qualcap;
-        }
+void capBaseQuality(BAMALIGN& alignment, int baseQualityCap) {
+  string rQual = alignment.QUALITIES;
+  char qualcap = qualityInt2Char(baseQualityCap);
+  for (string::iterator c = rQual.begin(); c != rQual.end(); ++c) {
+    if (qualityChar2ShortInt(*c) > baseQualityCap) {
+      *c = qualcap;
     }
+  }
 }
 
 void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int maxComplexGap, bool boundIndels) {
@@ -1302,22 +1236,12 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
                                 int basesRight,
                                 string& readSequence,
                                 string& sampleName,
-#ifdef HAVE_BAMTOOLS
-                                BamAlignment& alignment,
-#else
-                                SeqLib::BamRecord& alignment,
-#endif
+                                BAMALIGN& alignment,
                                 string& sequencingTech,
                                 long double qual,
                                 string& qualstr
     ) {
 
-#ifdef HAVE_BAMTOOLS
-#else
-  //jwala  
-  assert(!alignment.isEmpty());
-#endif
-  
     string cigar;
     int reflen = length;
 
@@ -1434,10 +1358,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
         }
     }
 
-#ifdef HAVE_BAMTOOLS
-#else
-    string qnamer = alignment.Qname();
-#endif
+    string qnamer = alignment.QNAME;
 
     return Allele(type,
                   currentSequenceName,
@@ -1450,69 +1371,38 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
                   basesRight,
                   readSequence,
                   sampleName,
-#ifdef HAVE_BAMTOOLS
-                  alignment.Name,
-                  ra.readgroup,
-                  sequencingTech,
-                  !alignment.IsReverseStrand(),
-                  max(qual, (long double) 0), // ensure qual is at least 0
-                  qualstr,
-                  alignment.MapQuality,
-                  alignment.IsPaired(),
-                  alignment.IsMateMapped(),
-                  alignment.IsProperPair(),
-                  cigar,
-                  &ra.alleles,
-                  alignment.Position,
-                  alignment.GetEndPosition());
-#else
                   qnamer,
                   ra.readgroup,
                   sequencingTech,
-                  !alignment.ReverseFlag(),
+                  !alignment.ISREVERSESTRAND,
                   max(qual, (long double) 0), // ensure qual is at least 0
                   qualstr,
-		    alignment.MapQuality(),
-		    alignment.PairedFlag(),
-		    alignment.MateMappedFlag(),
-                  alignment.ProperPair(),
+                  alignment.MAPPINGQUALITY,
+                  alignment.ISPAIRED,
+                  alignment.ISMATEMAPPED,
+                  alignment.ISPROPERPAIR,
                   cigar,
                   &ra.alleles,
-		    alignment.Position(),
-                  alignment.PositionEnd());
-#endif
+                  alignment.POSITION,
+                  alignment.ENDPOSITION);
 
 }
 
-#ifdef HAVE_BAMTOOLS
-RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech) {
+RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech) {
 
-    string rDna = alignment.QueryBases;
-    string rQual = alignment.Qualities;
+    string rDna = alignment.QUERYBASES;
+    string rQual = alignment.QUALITIES;
     int rp = 0;  // read position, 0-based relative to read
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
-    int sp = alignment.Position;  // sequence position
+    int sp = alignment.POSITION;  // sequence position
     if (usingHaplotypeBasisAlleles) {
-        updateHaplotypeBasisAlleles(sp, alignment.AlignedBases.size());
+        updateHaplotypeBasisAlleles(sp, alignment.ALIGNEDBASES);
     }
-#else
-    RegisteredAlignment& AlleleParser::registerAlignment(SeqLib::BamRecord& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech) {
-
-      string rDna = alignment.Sequence();
-      string rQual = alignment.Qualities();
-      int rp = 0;  // read position, 0-based relative to read
-      int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
-      int sp = alignment.Position();  // sequence position
-      if (usingHaplotypeBasisAlleles) {
-        updateHaplotypeBasisAlleles(sp, alignment.NumAlignedBases());
-      }
-
-#endif
 
 #ifdef VERBOSE_DEBUG
     if (parameters.debug2) {
         DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
-               "alignment readName " << alignment.Name << endl <<
+               "alignment readName " << alignment.QNAME << endl <<
                "alignment isPaired " << alignment.IsPaired() << endl <<
                "alignment isMateMapped " << alignment.IsMateMapped() << endl <<
                "alignment isProperPair " << alignment.IsProperPair() << endl <<
@@ -1564,7 +1454,6 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
      *
      */
 
-#ifdef HAVE_BAMTOOLS
     /*    std::cerr << "********" << std::endl 
 	      << alignment.QueryBases << std::endl
 	      << alignment.AlignedBases << std::endl;
@@ -1574,25 +1463,14 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
       std::cerr << cigarIter2->Length << cigarIter2->Type;
     std::cerr << std::endl;
     */
-    vector<bool> indelMask (alignment.AlignedBases.size(), false);
-#else
-    vector<bool> indelMask (alignment.NumAlignedBases(), false);
-#endif
+    vector<bool> indelMask (alignment.ALIGNEDBASES, false);
 
-#ifdef HAVE_BAMTOOLS
-    vector<CigarOp>::const_iterator cigarIter = alignment.CigarData.begin();
-    vector<CigarOp>::const_iterator cigarEnd  = alignment.CigarData.end();
+    CIGAR cigar = alignment.GETCIGAR;
+    CIGAR::const_iterator cigarIter = cigar.begin();
+    CIGAR::const_iterator cigarEnd  = cigar.end();
     for ( ; cigarIter != cigarEnd; ++cigarIter ) {
-        int l = cigarIter->Length;
-        char t = cigarIter->Type;
-#else
-	SeqLib::Cigar cigar = alignment.GetCigar();
-	SeqLib::Cigar::const_iterator cigarIter = cigar.begin();
-	SeqLib::Cigar::const_iterator cigarEnd  = cigar.end();
-	for ( ; cigarIter != cigarEnd; ++cigarIter ) {
-	  int l = cigarIter->Length();
-	  char t = cigarIter->Type();
-#endif
+        int l = cigarIter->CIGLEN;
+        char t = cigarIter->CIGTYPE;
 	  DEBUG2("cigar item: " << t << l);
 
         if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
@@ -1612,13 +1490,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 try {
                     b = rDna.at(rp);
                 } catch (std::out_of_range outOfRange) {
-#ifdef HAVE_BAMTOOLS
                     cerr << "Exception: Cannot read past the end of the alignment's sequence." << endl
-                         << alignment.Name << endl
+                         << alignment.QNAME << endl
                          << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
-                         << alignment.AlignedBases << endl
-                         << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl;
-#endif
+		      //<< alignment.AlignedBases << endl
+                         << currentSequence.substr(csp, alignment.ALIGNEDBASES) << endl;
 		    cerr << " RP " << rp << " " << rDna  <<" len " << rDna.length() <<  std::endl;
                     abort();
                 }
@@ -1631,15 +1507,13 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 try {
                     sb = currentSequence.at(csp);
                 } catch (std::out_of_range outOfRange) {
-#ifdef HAVE_BAMTOOLS
-                    cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
+		  cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
                          << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
-                         << alignment.Position << "-" << alignment.GetEndPosition() << endl
-                         << "alignment: " << alignment.AlignedBases << endl
-                         << "currentSequence: " << currentSequence << endl
-                         << "currentSequence matching: " << currentSequence.substr(csp, alignment.AlignedBases.size()) << endl;
-#endif
-                    //abort();
+		       << alignment.POSITION << "-" << alignment.ENDPOSITION << endl
+		    //<< "alignment: " << alignment.AlignedBases << endl
+		       << "currentSequence: " << currentSequence << endl
+		       << "currentSequence matching: " << currentSequence.substr(csp, alignment.ALIGNEDBASES) << endl;
+		  //abort();
                     break;
                 }
 
@@ -1657,20 +1531,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                            sp - length,
                                            length,
                                            rp, // bases left (for first base in ref allele)
-#ifdef HAVE_BAMTOOLS
-                                           alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
-#else
-                                           alignment.Length() - rp, // bases right (for first base in ref allele)
-#endif
+                                           alignment.SEQLEN - rp, // bases right (for first base in ref allele)
                                            readSequence,
                                            sampleName,
                                            alignment,
                                            sequencingTech,
-#ifdef HAVE_BAMTOOLS
-                                           alignment.MapQuality, // reference allele quality == mapquality
-#else
-                                           alignment.MapQuality(), // reference allele quality == mapquality
-#endif
+                                           alignment.MAPPINGQUALITY, // reference allele quality == mapquality
                                            qualstr),
                                 parameters.allowComplex, parameters.maxComplexGap);
                         }
@@ -1708,11 +1574,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                            sp - length + j,
                                            1,
                                            rp - length - j, // bases left
-#ifdef HAVE_BAMTOOLS
-                                           alignment.QueryBases.size() - rp + j, // bases right
-#else
-                                           alignment.Length() - rp + j, // bases right
-#endif
+                                           alignment.SEQLEN - rp + j, // bases right
                                            rs,
                                            sampleName,
                                            alignment,
@@ -1728,11 +1590,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                            sp - length + j,
                                            1,
                                            rp - length - j, // bases left
-#ifdef HAVE_BAMTOOLS
-                                           alignment.QueryBases.size() - rp + j, // bases right
-#else
-                                           alignment.Length() - rp + j, // bases right
-#endif
+                                           alignment.SEQLEN - rp + j, // bases right
                                            rs,
                                            sampleName,
                                            alignment,
@@ -1766,11 +1624,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                        sp - length + j,
                                        1,
                                        rp - length - j, // bases left
-#ifdef HAVE_BAMTOOLS
-                                       alignment.QueryBases.size() - rp + j, // bases right
-#else
-                                       alignment.Length() - rp + j, // bases right
-#endif
+                                       alignment.SEQLEN - rp + j, // bases right
                                        rs,
                                        sampleName,
                                        alignment,
@@ -1786,11 +1640,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                        sp - length + j,
                                        1,
                                        rp - length - j, // bases left
-#ifdef HAVE_BAMTOOLS
-                                       alignment.QueryBases.size() - rp + j, // bases right
-#else
-                                       alignment.Length() - rp + j, // bases right
-#endif
+                                       alignment.SEQLEN - rp + j, // bases right
                                        rs,
                                        sampleName,
                                        alignment,
@@ -1813,20 +1663,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                    sp - length,
                                    length,
                                    rp, // bases left (for first base in ref allele)
-#ifdef HAVE_BAMTOOLS
-                                   alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
-#else
-                                   alignment.Length() - rp, // bases right (for first base in ref allele)
-#endif
+                                   alignment.SEQLEN - rp, // bases right (for first base in ref allele)
                                    readSequence,
                                    sampleName,
                                    alignment,
                                    sequencingTech,
-#ifdef HAVE_BAMTOOLS
-                                   alignment.MapQuality, // ... hmm
-#else
-                                   alignment.MapQuality(), // ... hmm
-#endif
+                                   alignment.MAPPINGQUALITY, // ... hmm
                                    qualstr),
                         parameters.allowComplex, parameters.maxComplexGap);
                 }
@@ -1884,11 +1726,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             if (qual >= parameters.BQL2) {
                 //ra.mismatches += l;
                 for (int i=0; i<l; i++) {
-#ifdef HAVE_BAMTOOLS
-                    indelMask[sp - alignment.Position + i] = true;
-#else
-                    indelMask[sp - alignment.Position() + i] = true;
-#endif
+                    indelMask[sp - alignment.POSITION + i] = true;
                 }
             }
 
@@ -1896,16 +1734,10 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
             // some aligners like to report deletions at the beginnings and ends of reads.
             // without any sequence in the read to support this, it is hard to believe
             // that these deletions are real, so we ignore them here.
-#ifdef HAVE_BAMTOOLS
-            if (cigarIter != alignment.CigarData.begin()      // guard against deletion at beginning
-                && (cigarIter+1) != alignment.CigarData.end() // and against deletion at end
-                && allATGC(refseq)) {
-#else
-	      SeqLib::Cigar cigar = alignment.GetCigar();
+	      CIGAR cigar = alignment.GETCIGAR;
 	      if (cigarIter != cigar.begin()      // guard against deletion at beginning
 		  && (cigarIter+1) != cigar.end() // and against deletion at end
                 && allATGC(refseq)) {
-#endif
                 string nullstr;
                 ra.addAllele(
                     makeAllele(ra,
@@ -1913,11 +1745,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                sp,
                                l,
                                rp, // bases left (for first base in ref allele)
-#ifdef HAVE_BAMTOOLS
-                               alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
-#else
-                               alignment.Length() - rp, // bases right (for first base in ref allele)
-#endif
+                               alignment.SEQLEN - rp, // bases right (for first base in ref allele)
                                nullstr, // no read sequence for deletions
                                sampleName,
                                alignment,
@@ -1979,11 +1807,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
 
             if (qual >= parameters.BQL2) {
                 //ra.mismatches += l;
-#ifdef HAVE_BAMTOOLS
-                indelMask[sp - alignment.Position] = true;
-#else
-                indelMask[sp - alignment.Position()] = true;
-#endif
+                indelMask[sp - alignment.POSITION] = true;
             }
 
             string readseq = rDna.substr(rp, l);
@@ -1995,11 +1819,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                sp,
                                l,
                                rp - l, // bases left (for first base in ref allele)
-#ifdef HAVE_BAMTOOLS
-                               alignment.QueryBases.size() - rp, // bases right (for first base in ref allele)
-#else
-                               alignment.Length() - rp, // bases right (for first base in ref allele)
-#endif
+                               alignment.SEQLEN - rp, // bases right (for first base in ref allele)
                                readseq,
                                sampleName,
                                alignment,
@@ -2018,11 +1838,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                 // nothing to do, soft clip is beyond the beginning of the reference
             } else {
                 string qualstr = rQual.substr(rp, l);
-#ifdef HAVE_BAMTOOLS
-                string readseq = alignment.QueryBases.substr(rp, l);
-#else
-                string readseq = alignment.Sequence().substr(rp, l);
-#endif
+                string readseq = alignment.QUERYBASES.substr(rp, l);
                 // skip these bases in the read
                 ra.addAllele(
                     makeAllele(ra,
@@ -2030,20 +1846,12 @@ RegisteredAlignment& AlleleParser::registerAlignment(BamAlignment& alignment, Re
                                sp - l,
                                l,
                                rp - l, // bases left
-#ifdef HAVE_BAMTOOLS
-                               alignment.QueryBases.size() - rp, // bases right
-#else
-                               alignment.Length() - rp, // bases right
-#endif
+                               alignment.SEQLEN - rp, // bases right
                                readseq,
                                sampleName,
                                alignment,
                                sequencingTech,
-#ifdef HAVE_BAMTOOLS
-                               alignment.MapQuality,
-#else
-                               alignment.MapQuality(),
-#endif
+                               alignment.MAPPINGQUALITY,
                                qualstr),
                     parameters.allowComplex, parameters.maxComplexGap);
             }
@@ -2180,31 +1988,19 @@ void AlleleParser::updateAlignmentQueue(long int position,
     // push to the front until we get to an alignment that doesn't overlap our
     // current position or we reach the end of available alignments
     // filter input reads; only allow mapped reads with a certain quality
-#ifdef HAVE_BAMTOOLS
-    DEBUG2("currentAlignment.Position == " << currentAlignment.Position
-           << ", currentAlignment.AlignedBases.size() == " << currentAlignment.AlignedBases.size()
+    DEBUG2("currentAlignment.Position == " << currentAlignment.POSITION
+           << ", currentAlignment.AlignedBases.size() == " << currentAlignment.ALIGNEDBASES
            << ", currentPosition == " << position
            << ", currentSequenceStart == " << currentSequenceStart
            << " .. + currentSequence.size() == " << currentSequenceStart + currentSequence.size()
         );
-#endif
 
-#ifdef HAVE_BAMTOOLS
     if (hasMoreAlignments
-        && currentAlignment.Position <= position
-        && currentAlignment.RefID == currentRefID) {
-#else
-    if (hasMoreAlignments
-        && currentAlignment.Position() <= position
-        && currentAlignment.ChrID() == currentRefID) {
-#endif
+        && currentAlignment.POSITION <= position
+        && currentAlignment.REFID == currentRefID) {
         do {
             DEBUG2("top of alignment parsing loop");
-#ifdef HAVE_BAMTOOLS
-            DEBUG("alignment: " << currentAlignment.Name);
-#else
-            DEBUG("alignment: " << currentAlignment.Qname());
-#endif
+            DEBUG("alignment: " << currentAlignment.QNAME);
             // get read group, and map back to a sample name
             string readGroup;
 #ifdef HAVE_BAMTOOLS	    
@@ -2215,11 +2011,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
 #endif
                 if (!oneSampleAnalysis) {
                     ERROR("Couldn't find read group id (@RG tag) for BAM Alignment " <<
-#ifdef HAVE_BAMTOOLS
-                          currentAlignment.Name << " at position " << position
-#else
-                          currentAlignment.Qname() << " at position " << position
-#endif
+                          currentAlignment.QNAME << " at position " << position
                           << " in sequence " << currentSequence << " EXITING!");
                     exit(1);
                 } else {
@@ -2227,13 +2019,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 }
             } else {
                 if (oneSampleAnalysis) {
-#ifdef HAVE_BAMTOOLS
                     ERROR("No read groups specified in BAM header, but alignment " <<
-                          currentAlignment.Name << " at position " << position
-#else
-                    ERROR("No read groups specified in BAM header, but alignment " <<
-                          currentAlignment.Qname() << " at position " << position
-#endif
+                          currentAlignment.QNAME << " at position " << position
                           << " in sequence " << currentSequence << " has a read group.");
                     exit(1);
                 }
@@ -2246,32 +2033,20 @@ void AlleleParser::updateAlignmentQueue(long int position,
             }
 
             // skip this alignment if we are not using duplicate reads (we remove them by default)
-#ifdef HAVE_BAMTOOLS
-            if (currentAlignment.IsDuplicate() && !parameters.useDuplicateReads) {
-#else
-	      if (currentAlignment.DuplicateFlag() && !parameters.useDuplicateReads) {
-#endif
-                //DEBUG("skipping alignment " << currentAlignment.Name << " because it is a duplicate read");
+            if (currentAlignment.ISDUPLICATE && !parameters.useDuplicateReads) {
+                DEBUG("skipping alignment " << currentAlignment.QNAME << " because it is a duplicate read");
                 continue;
             }
 
             // skip unmapped alignments, as they cannot be used in the algorithm
-#ifdef HAVE_BAMTOOLS
-            if (!currentAlignment.IsMapped()) {
-#else
-            if (!currentAlignment.MappedFlag()) {
-#endif
-                //DEBUG("skipping alignment " << currentAlignment.Name << " because it is not mapped");
+            if (!currentAlignment.ISMAPPED) {
+                DEBUG("skipping alignment " << currentAlignment.QNAME << " because it is not mapped");
                 continue;
             }
 
             // skip alignments which have no aligned bases
-#ifdef HAVE_BAMTOOLS
-            if (currentAlignment.AlignedBases.size() == 0) {
-#else
-            if (currentAlignment.NumMatchBases() == 0) {
-#endif
-                //DEBUG("skipping alignment " << currentAlignment.Name << " because it has no aligned bases");
+            if (currentAlignment.ALIGNEDBASES == 0) {
+                DEBUG("skipping alignment " << currentAlignment.QNAME << " because it has no aligned bases");
                 continue;
             }
 
@@ -2285,13 +2060,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 continue;
             }
 
-#ifdef HAVE_BAMTOOLS
-            if (!gettingPartials && currentAlignment.GetEndPosition() < position) {
-                cerr << currentAlignment.Name << " at " << currentSequenceName << ":" << currentAlignment.Position << " is out of order!"
-#else
-            if (!gettingPartials && currentAlignment.PositionEnd() < position) {
-	      cerr << currentAlignment.Qname() << " at " << currentSequenceName << ":" << currentAlignment.Position() << " is out of order!"
-#endif
+            if (!gettingPartials && currentAlignment.ENDPOSITION < position) {
+	      cerr << currentAlignment.QNAME << " at " << currentSequenceName << ":" << currentAlignment.POSITION << " is out of order!"
 		   << " expected after " << position << endl;
 	      continue;
             }
@@ -2301,20 +2071,12 @@ void AlleleParser::updateAlignmentQueue(long int position,
             // such as mismatches
 
             // initially skip reads with low mapping quality (what happens if MapQuality is not in the file)
-#ifdef HAVE_BAMTOOLS
-            if (currentAlignment.MapQuality >= parameters.MQL0) {
-#else
-	      if (currentAlignment.MapQuality() >= parameters.MQL0) {
-#endif
+            if (currentAlignment.MAPPINGQUALITY >= parameters.MQL0) {
                 // extend our cached reference sequence to allow processing of this alignment
                 //extendReferenceSequence(currentAlignment);
                 // left realign indels
                 if (parameters.leftAlignIndels) {
-#ifdef HAVE_BAMTOOLS
-                    int length = currentAlignment.GetEndPosition() - currentAlignment.Position + 1;
-#else
-                    int length = currentAlignment.PositionEnd() - currentAlignment.Position() + 1;
-#endif
+                    int length = currentAlignment.ENDPOSITION - currentAlignment.POSITION + 1;
                     stablyLeftAlign(currentAlignment,
                                     currentSequence.substr(currentSequencePosition(currentAlignment), length));
                 }
@@ -2331,11 +2093,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 }
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
-#ifdef HAVE_BAMTOOLS
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.GetEndPosition()];
-#else
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.PositionEnd()];
-#endif
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.ENDPOSITION];
+
                 // and insert the registered alignment into that deque
                 rq.push_front(RegisteredAlignment(currentAlignment, parameters));
                 RegisteredAlignment& ra = rq.front();
@@ -2343,11 +2102,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // backtracking if we have too many mismatches
                 // or if there are no recorded alleles
                 if (ra.alleles.empty()
-#ifdef HAVE_BAMTOOLS
-                    || ((float) ra.mismatches / (float) currentAlignment.QueryBases.size()) > parameters.readMaxMismatchFraction
-#else
-                    || ((float) ra.mismatches / (float) currentAlignment.Length()) > parameters.readMaxMismatchFraction
-#endif
+                    || ((float) ra.mismatches / (float) currentAlignment.SEQLEN) > parameters.readMaxMismatchFraction
                     || ra.mismatches > parameters.RMU
                     || ra.snpCount > parameters.readSnpLimit
                     || ra.indelCount > parameters.readIndelLimit) {
@@ -2359,15 +2114,9 @@ void AlleleParser::updateAlignmentQueue(long int position,
                     }
                 }
 	      }
-#ifdef HAVE_BAMTOOLS
-        } while ((hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment))
-                 && currentAlignment.Position <= position
-                 && currentAlignment.RefID == currentRefID);
-#else
-        } while ((hasMoreAlignments = bamMultiReader.GetNextRecord(currentAlignment))
-                 && currentAlignment.Position() <= position
-                 && currentAlignment.ChrID() == currentRefID);
-#endif
+	    } while ((hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment))
+                 && currentAlignment.POSITION <= position
+                 && currentAlignment.REFID == currentRefID);
     }
 
     DEBUG2("... finished pushing new alignments");
@@ -2537,11 +2286,7 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                 genotypeAlleles.push_back(allele);
 
                 if (allele.type != ALLELE_REFERENCE) {
-#ifdef HAVE_BAMTOOLS
-                    inputVariantAlleles[bamMultiReader.GetReferenceID(currentVariant->sequenceName)][allele.position].push_back(allele);
-#else
-                    inputVariantAlleles[bamMultiReader.Header().Name2ID(currentVariant->sequenceName)][allele.position].push_back(allele);
-#endif
+                    inputVariantAlleles[bamMultiReader.GETREFID(currentVariant->sequenceName)][allele.position].push_back(allele);
                     alternatePositions.insert(allele.position);
                 }
             }
@@ -2671,11 +2416,7 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                         genotypeAlleles.push_back(allele);
 
                         if (allele.type != ALLELE_REFERENCE) {
-#ifdef HAVE_BAMTOOLS
-                            inputVariantAlleles[bamMultiReader.GetReferenceID(allele.referenceName)][allele.position].push_back(allele);
-#else
-                            inputVariantAlleles[bamMultiReader.Header().Name2ID(allele.referenceName)][allele.position].push_back(allele);
-#endif
+                            inputVariantAlleles[bamMultiReader.GETREFID(allele.referenceName)][allele.position].push_back(allele);
                             alternatePositions.insert(allele.position);
                         }
 
@@ -2947,7 +2688,6 @@ bool AlleleParser::loadTarget(BedTarget* target) {
 #else
     if (!bamMultiReader.SetRegion(SeqLib::GenomicRegion(currentRefID, currentTarget->left, currentTarget->right + 1))) { // bamtools expects 0-based, half-open
         ERROR("Could not SetRegion to " << currentTarget->seq << ":" << currentTarget->left << ".." << currentTarget->right + 1);
-        //cerr << bamMultiReader.GetErrorString() << endl;
         return false;
     }
 #endif
@@ -2981,24 +2721,15 @@ bool AlleleParser::loadTarget(BedTarget* target) {
 bool AlleleParser::getFirstAlignment(void) {
 
     bool hasAlignments = true;
-#ifdef HAVE_BAMTOOLS
-    if (!bamMultiReader.GetNextAlignment(currentAlignment)) {
-#else
-    if (!bamMultiReader.GetNextRecord(currentAlignment)) {
-#endif
-        hasAlignments = false;
+    if (!GETNEXT(bamMultiReader, currentAlignment)) {
+      hasAlignments = false;
     } else {
-#ifdef HAVE_BAMTOOLS
-        while (!currentAlignment.IsMapped()) {
-            if (!bamMultiReader.GetNextAlignment(currentAlignment)) {
-#else
-        while (!currentAlignment.MappedFlag()) {
-            if (!bamMultiReader.GetNextRecord(currentAlignment)) {
-#endif
-                hasAlignments = false;
-                break;
-            }
-        }
+      while (!currentAlignment.ISMAPPED) {
+	if (!GETNEXT(bamMultiReader, currentAlignment)) { 
+	  hasAlignments = false;
+	  break;
+	}
+      }
     }
 
     if (hasAlignments) {
@@ -3081,14 +2812,9 @@ bool AlleleParser::toNextPosition(void) {
     if (parameters.useStdin || targets.empty()) {
         // here we loop over unaligned reads at the beginning of a target
         // we need to get to a mapped read to figure out where we are
-#ifdef HAVE_BAMTOOLS
-        while (hasMoreAlignments && !currentAlignment.IsMapped()) {
-            hasMoreAlignments = bamMultiReader.GetNextAlignment(currentAlignment);
-#else
-        while (hasMoreAlignments && !currentAlignment.MappedFlag()) {
-            hasMoreAlignments = bamMultiReader.GetNextRecord(currentAlignment);
-#endif
-        }
+      while (hasMoreAlignments && !currentAlignment.ISMAPPED) {
+	hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment);
+    }
         // determine if we have more alignments or not
         if (!hasMoreAlignments) {
             if (hasMoreInputVariants()) {
@@ -3111,11 +2837,7 @@ bool AlleleParser::toNextPosition(void) {
             // if the current position of this alignment is outside of the reference sequence length
             // we need to switch references
             if (currentPosition >= reference.sequenceLength(currentSequenceName)
-#ifdef HAVE_BAMTOOLS
-                || registeredAlignments.empty() && currentRefID != currentAlignment.RefID) {
-#else
-	      || registeredAlignments.empty() && currentRefID != currentAlignment.ChrID()) {
-#endif
+                || registeredAlignments.empty() && currentRefID != currentAlignment.REFID) {
                 DEBUG("at end of sequence");
                 clearRegisteredAlignments();
                 loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
@@ -3207,12 +2929,7 @@ bool AlleleParser::dummyProcessNextTarget(void) {
         return false;
     }
 
-#ifdef HAVE_BAMTOOLS
-    while (bamMultiReader.GetNextAlignment(currentAlignment)) {
-#else
-    while (bamMultiReader.GetNextRecord(currentAlignment)) {
-#endif
-    }
+    while (GETNEXT(bamMultiReader, currentAlignment)) { }
 
     return true;
 }

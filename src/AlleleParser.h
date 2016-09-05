@@ -31,14 +31,6 @@
 #include "Variant.h"
 #include "version_git.h"
 
-#ifdef HAVE_BAMTOOLS
-#include "api/BamReader.h"
-#include "api/BamMultiReader.h"
-using namespace BamTools;
-#else
-#include "SeqLib/BamReader.h"
-#endif
-
 // the size of the window of the reference which is always cached in memory
 #define CACHED_REFERENCE_WINDOW 300
 
@@ -67,37 +59,19 @@ public:
     int alleleTypes;
     Parameters parameters;
 
-#ifdef HAVE_BAMTOOLS
-    RegisteredAlignment(BamAlignment& alignment, Parameters parameters)
+    RegisteredAlignment(BAMALIGN& alignment, Parameters parameters)
         //: alignment(alignment)
-        : start(alignment.Position)
-        , end(alignment.GetEndPosition())
-        , refid(alignment.RefID)
-        , name(alignment.Name)
+        : start(alignment.POSITION)
+        , end(alignment.ENDPOSITION)
+        , refid(alignment.REFID)
+        , name(alignment.QNAME)
         , mismatches(0)
         , snpCount(0)
         , indelCount(0)
         , alleleTypes(0)
         , parameters(parameters)
-#else
-      RegisteredAlignment(SeqLib::BamRecord& alignment, Parameters parameters)
-      //: alignment(alignment)
-      : start(alignment.Position())
-      , end(alignment.PositionEnd())
-      , refid(alignment.ChrID())
-      , name(alignment.Qname())
-      , mismatches(0)
-      , snpCount(0)
-      , indelCount(0)
-      , alleleTypes(0)
-      , parameters(parameters)
-#endif
     {
-#ifdef HAVE_BAMTOOLS      
-        alignment.GetTag("RG", readgroup);
-#else
-	readgroup = alignment.GetZTag("RG");
-#endif
+      FILLREADGROUP(readgroup, alignment);
     }
 
     void addAllele(Allele allele, bool mergeComplex = true,
@@ -146,12 +120,7 @@ public:
 
 bool operator<(const AllelicPrimitive& a, const AllelicPrimitive& b);
 
-#ifdef HAVE_BAMTOOLS
-void capBaseQuality(BamAlignment& alignment, int baseQualityCap);
-#else
-void capBaseQuality(SeqLib::BamRecord& alignment, int baseQualityCap);
-#endif
-
+void capBaseQuality(BAMALIGN& alignment, int baseQualityCap);
 
 class AlleleParser {
 
@@ -185,13 +154,9 @@ public:
     // useful for controlling output when we are reading from stdin
     bool inTarget(void);
 
-#ifdef HAVE_BAMTOOLS
     // bamreader
-    BamMultiReader bamMultiReader;
-#else
-    // bamreader
-    SeqLib::BamReader bamMultiReader;
-#endif
+    BAMREADER bamMultiReader;
+
     // bed reader
     BedReader bedReader;
 
@@ -220,11 +185,7 @@ public:
 		      int basesRight,
 		      string& readSequence,
 		      string& sampleName,
-#ifdef HAVE_BAMTOOLS
-		      BamAlignment& alignment,
-#else
-		      SeqLib::BamRecord& alignment,
-#endif
+		      BAMALIGN& alignment,
 		      string& sequencingTech,
 		      long double qual,
 		      string& qualstr);
@@ -242,11 +203,7 @@ public:
     map<string, map<long int, map<Allele, int> > > inputAlleleCounts; // drawn from input VCF
     Sample* nullSample;
 
-#ifdef HAVE_BAMTOOLS
-    bool loadNextPositionWithAlignmentOrInputVariant(BamAlignment& currentAlignment);
-#else
-    bool loadNextPositionWithAlignmentOrInputVariant(SeqLib::BamRecord& currentAlignment);
-#endif
+    bool loadNextPositionWithAlignmentOrInputVariant(BAMALIGN& currentAlignment);
     bool loadNextPositionWithInputVariant(void);
     bool hasMoreInputVariants(void);
 
@@ -256,11 +213,7 @@ public:
     void getInputAlleleCounts(vector<Allele>& genotypeAlleles, map<string, int>& inputAFs);
 
     // reference names indexed by id
-#ifdef HAVE_BAMTOOLS
-    vector<RefData> referenceSequences;
-#else
-    vector<SeqLib::HeaderSequence> referenceSequences;
-#endif
+    REFVEC referenceSequences;
     // ^^ vector of objects containing:
     //RefName;          //!< Name of reference sequence
     //RefLength;        //!< Length of reference sequence
@@ -280,11 +233,7 @@ public:
     vector<int> currentPloidies(Samples& samples);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
-#ifdef HAVE_BAMTOOLS
-    void loadReferenceSequence(BamAlignment& alignment);
-#else
-    void loadReferenceSequence(SeqLib::BamRecord& alignment);
-#endif
+    void loadReferenceSequence(BAMALIGN& alignment);
     void loadReferenceSequence(string& seqname);
     string referenceSubstr(long int position, unsigned int length);
     void loadTargets(void);
@@ -292,11 +241,7 @@ public:
     bool getFirstVariant(void);
     void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
-#ifdef HAVE_BAMTOOLS
-    RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
-#else
-    RegisteredAlignment& registerAlignment(SeqLib::BamRecord& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
-#endif
+    RegisteredAlignment& registerAlignment(BAMALIGN& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles, bool gettingPartials = false);
     void updateInputVariants(long int pos, int referenceLength);
@@ -322,11 +267,7 @@ public:
     bool dummyProcessNextTarget(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
-#ifdef HAVE_BAMTOOLS
-    int currentSequencePosition(const BamAlignment& alignment);
-#else
-    int currentSequencePosition(const SeqLib::BamRecord& alignment);
-#endif
+    int currentSequencePosition(const BAMALIGN& alignment);
     int currentSequencePosition();
     void unsetAllProcessedFlags(void);
     bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
@@ -405,11 +346,7 @@ private:
     int basesAfterCurrentTarget;  // ........................................  after ...................
 
     int currentRefID;
-#ifdef HAVE_BAMTOOLS
-    BamAlignment currentAlignment;
-#else
-    SeqLib::BamRecord currentAlignment;
-#endif
+    BAMALIGN currentAlignment;
     vcflib::Variant* currentVariant;
 
 };
