@@ -13,12 +13,13 @@ CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 BAMTOOLS_ROOT=../bamtools
+SEQLIB_ROOT=../SeqLib
 VCFLIB_ROOT=../vcflib
 TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
 HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
 LIBS = -lz -lm -lpthread
-INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT)/
+INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
@@ -41,6 +42,9 @@ $(BAMTOOLS_ROOT)/lib/libbamtools.a:
 	cd $(BAMTOOLS_ROOT) && mkdir -p build && cd build && cmake .. && $(MAKE)
 $(HTSLIB_ROOT)/libhts.a:
 	cd $(HTSLIB_ROOT) && make
+
+$(SEQLIB_ROOT)/src/libseqlib.a:
+	cd $(SEQLIB_ROOT)/src && ./configure && make 
 
 OBJECTS=BedReader.o \
 		CNV.o \
@@ -75,7 +79,10 @@ OBJECTS=BedReader.o \
 		../vcflib/smithwaterman/IndelAllele.o \
 		Variant.o \
 		$(BAMTOOLS_ROOT)/lib/libbamtools.a \
-		$(HTSLIB_ROOT)/libhts.a
+			$(SEQLIB_ROOT)/src/libseqlib.a	\
+			$(SEQLIB_ROOT)/bwa/libbwa.a	\
+			$(SEQLIB_ROOT)/fermi-lite/libfml.a	\
+			$(SEQLIB_ROOT)/htslib/libhts.a
 
 HEADERS=multichoose.h version_git.h
 
@@ -90,10 +97,10 @@ alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
-bamleftalign ../bin/bamleftalign: $(BAMTOOLS_ROOT)/lib/libbamtools.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CXX) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(BAMTOOLS_ROOT)/lib/libbamtools.a -o ../bin/bamleftalign $(LIBS)
+bamleftalign ../bin/bamleftalign: $(BAMTOOLS_ROOT)/lib/libbamtools.a $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
+	$(CXX) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(BAMTOOLS_ROOT)/lib/libbamtools.a $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
 
-bamfiltertech ../bin/bamfiltertech: $(BAMTOOLS_ROOT)/lib/libbamtools.a bamfiltertech.o $(OBJECTS) $(HEADERS)
+bamfiltertech ../bin/bamfiltertech: $(BAMTOOLS_ROOT)/lib/libbamtools.a $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 

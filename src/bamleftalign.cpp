@@ -11,9 +11,17 @@
 #include <vector>
 
 #include "Fasta.h"
+
+#ifdef HAVE_BAMTOOLS
 #include "api/BamAlignment.h"
 #include "api/BamReader.h"
 #include "api/BamWriter.h"
+using namespace BamTools;
+#else
+#include "SeqLib/BamReader.h"
+#include "SeqLib/BamWriter.h"
+#endif
+
 //#include "IndelAllele.h"
 #include "LeftAlign.h"
 
@@ -25,7 +33,6 @@
 #endif
 
 using namespace std;
-using namespace BamTools;
 
 void printUsage(char** argv) {
     cerr << "usage: [BAM data stream] | " << argv[0] << " [options]" << endl
@@ -123,6 +130,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+#ifdef HAVE_BAMTOOLS
     BamReader reader;
     if (!reader.Open("stdin")) {
         cerr << "could not open stdin for reading" << endl;
@@ -139,18 +147,51 @@ int main(int argc, char** argv) {
         cerr << "could not open stdout for writing" << endl;
         exit(1);
     }
+#else
+    SeqLib::BamReader reader;
+    if (!reader.Open("-")) {
+        cerr << "could not open stdin for reading" << endl;
+        exit(1);
+    }
+
+    SeqLib::BamWriter writer;
+    writer.SetHeader(reader.Header());
+
+    if (isuncompressed) {
+      std::cerr << " SEQLIB uncompressed not available yet " << std::endl; //writer.SetCompressionMode(BamWriter::Uncompressed);
+    }
+
+    if (!suppress_output && !writer.Open("-")) {
+        cerr << "could not open stdout for writing" << endl;
+        exit(1);
+    }
+#endif
 
     // store the names of all the reference sequences in the BAM file
     map<int, string> referenceIDToName;
+#ifdef HAVE_BAMTOOLS
     vector<RefData> referenceSequences = reader.GetReferenceData();
     int i = 0;
     for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
         referenceIDToName[i] = r->RefName;
         ++i;
     }
+#else
+    SeqLib::HeaderSequenceVector referenceSequences = reader.Header().GetHeaderSequenceVector();
+    int i = 0;
+    for (SeqLib::HeaderSequenceVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
+        referenceIDToName[i] = r->Name;
+        ++i;
+    }
+#endif
 
+#ifdef HAVE_BAMTOOLS
     BamAlignment alignment;
+#else
+    SeqLib::BamRecord alignment;
+#endif
 
+#ifdef HAVE_BAMTOOLS
     while (reader.GetNextAlignment(alignment)) {
 
             DEBUG("---------------------------   read    --------------------------" << endl);
@@ -193,5 +234,49 @@ int main(int argc, char** argv) {
         writer.Close();
 
     return 0;
+#else
+    while (reader.GetNextRecord(alignment)) {
 
+      string qname = alignment.Qname();
+            DEBUG("---------------------------   read    --------------------------" << endl);
+            DEBUG("| " << referenceIDToName[alignment.ChrID()] << ":" << alignment.Position() << endl);
+            DEBUG("| " << qname << ":" << alignment.PositionEnd() << endl);
+            DEBUG("| " << qname << ":" << (alignment.MappedFlag() ? " mapped" : " unmapped") << endl);
+            DEBUG("| " << qname << ":" << " cigar data size: " << alignment.GetCigar.size() << endl);
+            DEBUG("--------------------------- realigned --------------------------" << endl);
+
+            // skip unmapped alignments, as they cannot be left-realigned without CIGAR data
+            if (alignment.MappedFlag()) {
+
+                int endpos = alignment.PositionEnd();
+                int length = endpos - alignment.Position() + 1;
+                if (alignment.Position() >= 0 && length > 0) {
+                    if (!stablyLeftAlign(alignment,
+                                reference.getSubSequence(
+							 referenceIDToName[alignment.ChrID()],
+							 alignment.Position(),
+							 length),
+                                maxiterations, debug)) {
+		      cerr << "unstable realignment of " << qname
+			   << " at " << referenceIDToName[alignment.ChrID()] << ":" << alignment.Position() << endl
+			   << alignment.Sequence() << endl;
+                    }
+                }
+
+            }
+
+            DEBUG("----------------------------------------------------------------" << endl);
+            DEBUG(endl);
+
+        if (!suppress_output)
+            writer.WriteRecord(alignment);
+
+    }
+
+    //reader.Close();
+    if (!suppress_output)
+        writer.Close();
+
+    return 0;
+#endif
 }

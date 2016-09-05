@@ -72,6 +72,12 @@ using namespace std;
 // freebayes main
 int main (int argc, char *argv[]) {
 
+#ifdef HAVE_BAMTOOLS
+  std::cerr << " HAVE BAMTOOLS " << std::endl;
+#else
+  std::cerr << " HAVE SEQLIB " << std::endl;
+#endif
+
     // install segfault handler
     signal(SIGSEGV, segfaultHandler);
 

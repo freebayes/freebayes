@@ -22,12 +22,19 @@
 //
 // In practice, we must call this function until the alignment is stabilized.
 //
+#ifdef HAVE_BAMTOOLS
 bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
+    string alignmentAlignedBases = alignment.QueryBases;
+  const string alignmentSequence = alignment.QueryBases;
+#else
+bool leftAlign(SeqLib::BamRecord& alignment, string& referenceSequence, bool debug) {
+  const string alignmentSequence = alignment.Sequence();
+  string alignmentAlignedBases = alignment.Sequence();
+#endif
 
     int arsOffset = 0; // pointer to insertion point in aligned reference sequence
     string alignedReferenceSequence = referenceSequence;
     int aabOffset = 0;
-    string alignmentAlignedBases = alignment.QueryBases;
 
     // store information about the indels
     vector<FBIndelAllele> indels;
@@ -39,10 +46,19 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     string softEnd;
 
     stringstream cigar_before, cigar_after;
+#ifdef HAVE_BAMTOOLS
     for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
         c != alignment.CigarData.end(); ++c) {
         unsigned int l = c->Length;
         char t = c->Type;
+#else
+	//	for (auto* c : alignment.GetCigar()) {
+	SeqLib::Cigar cigar = alignment.GetCigar();
+	for (SeqLib::Cigar::const_iterator c = cigar.begin();
+	     c != cigar.end(); ++c) {
+	  unsigned int l = c->Length();
+	  char t = c->Type();
+#endif
         cigar_before << l << t;
         if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             sp += l;
@@ -58,7 +74,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             aabOffset += l;
             sp += l;  // update reference sequence position
         } else if (t == 'I') { // insertion
-            indels.push_back(FBIndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l), false));
+            indels.push_back(FBIndelAllele(true, l, sp, rp, alignmentSequence.substr(rp, l), false));
             alignedReferenceSequence.insert(sp + softBegin.size() + arsOffset, string(l, '-'));
             arsOffset += l;
             rp += l;
@@ -116,7 +132,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             if (debug) {
                 if (steppos >= 0 && readsteppos >= 0) {
                     cerr << referenceSequence.substr(steppos, indel.length) << endl;
-                    cerr << alignment.QueryBases.substr(readsteppos, indel.length) << endl;
+                    cerr << alignmentSequence.substr(readsteppos, indel.length) << endl;
                     cerr << indel.sequence << endl;
                 }
             }
@@ -124,7 +140,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             while (steppos >= 0 && readsteppos >= 0
                    && !indel.splice
                    && indel.sequence == referenceSequence.substr(steppos, indel.length)
-                   && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
+                   && indel.sequence == alignmentSequence.substr(readsteppos, indel.length)
+                   //&& indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
                    && (id == indels.begin()
                        || (previous->insertion && steppos >= previous->position)
                        || (!previous->insertion && steppos >= previous->position + previous->length))) {
@@ -156,8 +173,10 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         steppos = indel.position - 1;
         readsteppos = indel.readPosition - 1;
         while (steppos >= 0 && readsteppos >= 0
-               && alignment.QueryBases.at(readsteppos) == referenceSequence.at(steppos)
-               && alignment.QueryBases.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
+               //&& alignment.QueryBases.at(readsteppos) == referenceSequence.at(steppos)
+               //&& alignment.QueryBases.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
+               && alignmentSequence.at(readsteppos) == referenceSequence.at(steppos)
+               && alignmentSequence.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
                && (id == indels.begin()
                    || (previous->insertion && indel.position - 1 >= previous->position)
                    || (!previous->insertion && indel.position - 1 >= previous->position + previous->length))) {
@@ -196,7 +215,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                         ))) {
                 if (previous->homopolymer()) {
                     string seq = referenceSequence.substr(prev_end_ref, indel.position - prev_end_ref);
-                    string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
+                    //string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
+                    string readseq = alignmentSequence.substr(prev_end_read, indel.position - prev_end_ref);
                     LEFTALIGN_DEBUG("seq: " << seq << endl << "readseq: " << readseq << endl);
                     if (previous->sequence.at(0) == seq.at(0)
                             && FBhomopolymer(seq)
@@ -237,23 +257,49 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     //
     // and simultaneously reconstruct the cigar
 
+#ifdef HAVE_BAMTOOLS
     vector<CigarOp> newCigar;
+#else
+    SeqLib::Cigar newCigar;
+#endif
 
     if (!softBegin.empty()) {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('S', softBegin.size()));
+#else
+        newCigar.add(SeqLib::CigarField('S', softBegin.size()));
+#endif
     }
 
     vector<FBIndelAllele>::iterator id = indels.begin();
     FBIndelAllele last = *id++;
     if (last.position > 0) {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('M', last.position));
+#else
+	assert(last.position <= 151);
+        newCigar.add(SeqLib::CigarField('M', last.position));
+#endif
     }
     if (last.insertion) {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('I', last.length));
+#else
+	assert(last.length <= 151);
+        newCigar.add(SeqLib::CigarField('I', last.length));
+#endif
     } else if (last.splice) {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('N', last.length));
+#else
+        newCigar.add(SeqLib::CigarField('N', last.length));
+#endif
     } else {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('D', last.length));
+#else
+        newCigar.add(SeqLib::CigarField('D', last.length));
+#endif
     }
     int lastend = last.insertion ? last.position : (last.position + last.length);
     LEFTALIGN_DEBUG(last << ",");
@@ -262,20 +308,51 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         FBIndelAllele& indel = *id;
         LEFTALIGN_DEBUG(indel << ",");
         if (indel.position < lastend) {
+#ifdef HAVE_BAMTOOLS
             cerr << "impossibility?: indel realigned left of another indel" << endl << alignment.Name
                 << " " << alignment.Position << endl << alignment.QueryBases << endl;
+#endif
+#ifdef HAVE_SEQLIB
+            cerr << "impossibility?: indel realigned left of another indel" << endl << alignment.Qname()
+		 << " " << alignment.Position() << endl << alignmentSequence << endl;
+#endif
+
             exit(1);
+
         } else if (indel.position == lastend && indel.insertion == last.insertion) {
+#ifdef HAVE_BAMTOOLS
             CigarOp& op = newCigar.back();
             op.Length += indel.length;
+#else
+	    SeqLib::CigarField& op = newCigar.back();
+	    op = SeqLib::CigarField(op.Type(), op.Length() + indel.length);
+#endif
         } else if (indel.position >= lastend) {  // also catches differential indels, but with the same position
-            newCigar.push_back(CigarOp('M', indel.position - lastend));
+#ifdef HAVE_BAMTOOLS
+	    newCigar.push_back(CigarOp('M', indel.position - lastend));
+#else
+	    assert(indel.position - lastend <= 151);
+	    newCigar.add(SeqLib::CigarField('M', indel.position - lastend));
+#endif
             if (indel.insertion) {
+#ifdef HAVE_BAMTOOLS
                 newCigar.push_back(CigarOp('I', indel.length));
+#else
+		assert(indel.length <= 151);
+		newCigar.add(SeqLib::CigarField('I', indel.length));
+#endif
             } else if (indel.splice) {
+#ifdef HAVE_BAMTOOLS
                 newCigar.push_back(CigarOp('N', indel.length));
+#else
+                newCigar.add(SeqLib::CigarField('N', indel.length));
+#endif
             } else { // deletion
+#ifdef HAVE_BAMTOOLS
                 newCigar.push_back(CigarOp('D', indel.length));
+#else
+                newCigar.add(SeqLib::CigarField('D', indel.length));
+#endif
             }
 
         }
@@ -284,33 +361,62 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     }
     
     if (lastend < alignedLength) {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('M', alignedLength - lastend));
+#else
+	assert(alignedLength - lastend <= 151);
+        newCigar.add(SeqLib::CigarField('M', alignedLength - lastend));
+#endif
     }
 
     if (!softEnd.empty()) {
+#ifdef HAVE_BAMTOOLS
         newCigar.push_back(CigarOp('S', softEnd.size()));
+#else
+        newCigar.add(SeqLib::CigarField('S', softEnd.size()));
+#endif
     }
 
     LEFTALIGN_DEBUG(endl);
 
 #ifdef VERBOSE_DEBUG
     if (debug) {
+#ifdef HAVE_BAMTOOLS
         for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
             c != alignment.CigarData.end(); ++c) {
             unsigned int l = c->Length;
             char t = c->Type;
+#else
+	    SeqLib::Cigar cigar = alignment.GetCigar();
+	  for (Cigar::const_iterator c = cigar.begin();
+	       c != cigar.end(); ++c) {
+            unsigned int l = c->Length();
+            char t = c->Type();
+#endif
             cerr << l << t;
         }
         cerr << endl;
     }
 #endif
 
+#ifdef HAVE_BAMTOOLS
     alignment.CigarData = newCigar;
+#else
+    alignment.SetCigar(newCigar);
+#endif
 
-    for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
-        c != alignment.CigarData.end(); ++c) {
-        unsigned int l = c->Length;
-        char t = c->Type;
+#ifdef HAVE_BAMTOOLS
+        for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
+            c != alignment.CigarData.end(); ++c) {
+            unsigned int l = c->Length;
+            char t = c->Type;
+#else
+	    cigar = alignment.GetCigar();
+	    for (SeqLib::Cigar::const_iterator c = cigar.begin();
+	       c != cigar.end(); ++c) {
+            unsigned int l = c->Length();
+            char t = c->Type();
+#endif
         cigar_after << l << t;
     }
     LEFTALIGN_DEBUG(cigar_after.str() << endl);
@@ -324,18 +430,33 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 
 }
 
+#ifdef HAVE_BAMTOOLS
 int countMismatches(BamAlignment& alignment, string referenceSequence) {
+  const string alignmentSequence = alignment.QueryBases;
+#else
+  int countMismatches(SeqLib::BamRecord& alignment, string referenceSequence) {
+    const string alignmentSequence = alignment.Sequence();
+#endif
 
     int mismatches = 0;
     int sp = 0;
     int rp = 0;
+#ifdef HAVE_BAMTOOLS
     for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
         c != alignment.CigarData.end(); ++c) {
         unsigned int l = c->Length;
         char t = c->Type;
+#else
+	SeqLib::Cigar cigar = alignment.GetCigar();
+	for (SeqLib::Cigar::const_iterator c = cigar.begin();
+	     c != cigar.end(); ++c) {
+	  unsigned int l = c->Length();
+	  char t = c->Type();
+#endif
         if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             for (int i = 0; i < l; ++i) {
-                if (alignment.QueryBases.at(rp) != referenceSequence.at(sp))
+	      //if (alignment.QueryBases.at(rp) != referenceSequence.at(sp))
+                if (alignmentSequence.at(rp) != referenceSequence.at(sp))
                     ++mismatches;
                 ++sp;
                 ++rp;
@@ -360,15 +481,17 @@ int countMismatches(BamAlignment& alignment, string referenceSequence) {
 // realignment.  Returns true on realignment success or non-realignment.
 // Returns false if we exceed the maximum number of realignment iterations.
 //
-bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations, bool debug) {
+#ifdef HAVE_BAMTOOLS
+    bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations, bool debug) {
+#else
+    bool stablyLeftAlign(SeqLib::BamRecord& alignment, string referenceSequence, int maxiterations, bool debug) {
+#endif
 
 #ifdef VERBOSE_DEBUG
     int mismatchesBefore = countMismatches(alignment, referenceSequence);
 #endif
 
     if (!leftAlign(alignment, referenceSequence, debug)) {
-
-        LEFTALIGN_DEBUG("did not realign" << endl);
         return true;
 
     } else {
@@ -381,7 +504,11 @@ bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxi
         int mismatchesAfter = countMismatches(alignment, referenceSequence);
 
         if (mismatchesBefore != mismatchesAfter) {
+#ifdef HAVE_BAMTOOLS
             cerr << alignment.Name << endl;
+#else
+            cerr << alignment.Qname() << endl;
+#endif
             cerr << "ERROR: found " << mismatchesBefore << " mismatches before, but " << mismatchesAfter << " after left realignment!" << endl;
             exit(1);
         }

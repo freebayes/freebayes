@@ -14,9 +14,16 @@
 #include <vector>
 
 #include "Fasta.h"
+
+#ifdef HAVE_BAMTOOLS
 #include "api/BamAlignment.h"
 #include "api/BamReader.h"
 #include "api/BamWriter.h"
+using namespace BamTools;
+#else
+#include "SeqLib/BamReader.h"
+#include "SeqLib/BamWriter.h"
+#endif
 
 #include "IndelAllele.h"
 
@@ -28,10 +35,16 @@
 #endif
 
 using namespace std;
-using namespace BamTools;
 
+#ifdef HAVE_BAMTOOLS
 bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug = false);
 bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations = 20, bool debug = false);
 int countMismatches(BamAlignment& alignment, string referenceSequence);
+#else
+bool leftAlign(SeqLib::BamRecord& alignment, string& referenceSequence, bool debug = false);
+bool stablyLeftAlign(SeqLib::BamRecord& alignment, string referenceSequence, int maxiterations = 20, bool debug = false);
+int countMismatches(SeqLib::BamRecord& alignment, string referenceSequence);
+#endif
+
 
 #endif
