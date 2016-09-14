@@ -62,7 +62,7 @@ q	12119	12130
 EOF
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -t targets.bed | grep -v "^#" | wc -l) $by_region "a targets bed file can be used with the same effect as running by region"
-#rm targets.bed
+rm targets.bed
 
 
 is $(samtools view -u tiny/NA12878.chr22.tiny.bam | freebayes -f tiny/q.fa --stdin | grep -v "^#" | wc -l) \
@@ -96,7 +96,7 @@ gzip -c tiny/q.fa >tiny/q.fa.gz
 cp tiny/q.fa.fai tiny/q.fa.gz.fai
 freebayes -f tiny/q.fa.gz -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l - < tiny/NA12878.chr22.tiny.bam >/dev/null 2>/dev/null
 is $? 1 "freebayes bails out when given a gzipped or corrupted reference"
-rm tiny/q.fa.gz.*
+rm tiny/q.fa.gz*
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel tiny/q.regions 2 -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "running in parallel makes no difference"
 
