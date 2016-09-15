@@ -43,9 +43,9 @@ void AlleleParser::openBams(void) {
 
     // report differently if we have one or many bam files
     if (parameters.bams.size() == 1) {
-        DEBUG("Opening BAM fomat alignment input file: " << parameters.bams.front() << " ...");
+        DEBUG("Opening BAM format alignment input file: " << parameters.bams.front() << " ...");
     } else if (parameters.bams.size() > 1) {
-        DEBUG("Opening " << parameters.bams.size() << " BAM fomat alignment input files");
+        DEBUG("Opening " << parameters.bams.size() << " BAM format alignment input files");
         for (vector<string>::const_iterator b = parameters.bams.begin();
                 b != parameters.bams.end(); ++b) {
             DEBUG2(*b);
@@ -84,13 +84,21 @@ void AlleleParser::openBams(void) {
         }
     }
 
-
-    // retrieve header information
-    bamHeader = bamMultiReader.GetHeaderText();
-    bamHeaderLines = split(bamHeader, '\n');
+    if (!parameters.useStdin) {
+        BamReader reader;
+        for (vector<string>::const_iterator b = parameters.bams.begin();
+             b != parameters.bams.end(); ++b) {
+            reader.Open(*b);
+            string bamHeader = reader.GetHeaderText();
+            vector<string> headerLines = split(bamHeader, '\n');
+            bamHeaderLines.insert(bamHeaderLines.end(), headerLines.begin(), headerLines.end());
+            reader.Close();
+        }
+    } else {
+        bamHeaderLines = split(bamMultiReader.GetHeaderText(), '\n');
+    }
 
     DEBUG(" done");
-
 }
 
 void AlleleParser::openOutputFile(void) {
@@ -267,7 +275,7 @@ void AlleleParser::getSampleNames(void) {
             map<string, string>::iterator s = readGroupToSampleNames.find(readGroupID);
             if (s != readGroupToSampleNames.end()) {
                 if (s->second != name) {
-                    ERROR("ERROR: multiple samples (SM) map to the same read group (RG)" << endl
+                    ERROR("multiple samples (SM) map to the same read group (RG)" << endl
                        << endl
                        << "samples " << name << " and " << s->second << " map to " << readGroupID << endl
                        << endl

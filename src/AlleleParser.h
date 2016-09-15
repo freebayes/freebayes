@@ -221,7 +221,6 @@ public:
     //RefLength;        //!< Length of reference sequence
     //RefHasAlignments; //!< True if BAM file contains alignments mapped to reference sequence
 
-    string bamHeader;
     vector<string> bamHeaderLines;
 
     void openBams(void);
