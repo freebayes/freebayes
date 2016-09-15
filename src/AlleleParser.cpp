@@ -149,6 +149,26 @@ void AlleleParser::getSequencingTechnologies(void) {
                     cerr << "no sequencing technology specified in @RG tag (no PL: in @RG tag) " << endl << headerLine << endl;
                 }
             } else {
+                map<string, string>::iterator s = readGroupToTechnology.find(readGroupID);
+                if (s != readGroupToTechnology.end()) {
+                    if (s->second != tech) {
+                        ERROR("multiple technologies (PL) map to the same read group (RG)" << endl
+                              << endl
+                              << "technologies " << tech << " and " << s->second << " map to " << readGroupID << endl
+                              << endl
+                              << "As freebayes operates on a virtually merged stream of its input files," << endl
+                              << "it will not be possible to determine what technology an alignment belongs to" << endl
+                              << "at runtime." << endl
+                              << endl
+                              << "To resolve the issue, ensure that RG ids are unique to one technology" << endl
+                              << "across all the input files to freebayes." << endl
+                              << endl
+                              << "See bamaddrg (https://github.com/ekg/bamaddrg) for a method which can" << endl
+                              << "add RG tags to alignments." << endl);
+                        exit(1);
+                    }
+                    // if it's the same technology and RG combo, no worries
+                }
                 readGroupToTechnology[readGroupID] = tech;
                 technologies[tech] = true;
             }

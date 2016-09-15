@@ -5,7 +5,7 @@ source ./bash-tap/bash-tap-bootstrap
 
 PATH=../bin:$PATH # for freebayes
 
-plan tests 5
+plan tests 7
 
 ref=$(basename $0).ref
 
@@ -61,9 +61,18 @@ bam2=$(make_bam "id2" "sample2" "platform2")
 is "$(run_freebayes -f ${ref} ${bam1} ${bam2})" "${expected}" "freebayes calls from two BAMs with different samples for different read groups"
 
 bam1=$(make_bam "id1" "sample1" "platform1")
+bam2=$(make_bam "id2" "sample1" "platform2")
+is "$(run_freebayes -f ${ref} ${bam1} ${bam2})" "${expected}" "freebayes calls from two BAMs with different technologies for different read groups"
+
+bam1=$(make_bam "id1" "sample1" "platform1")
 bam2=$(make_bam "id1" "sample2" "platform1")
 expected='ERROR\(freebayes\): multiple samples \(SM\) map to the same read group \(RG\)'
 like "$(run_freebayes -f ${ref} ${bam1} ${bam2})" "${expected}" "freebayes rejects two BAMs with different samples for same read groups"
+
+bam1=$(make_bam "id1" "sample1" "platform1")
+bam2=$(make_bam "id1" "sample1" "platform2")
+expected='ERROR\(freebayes\): multiple technologies \(PL\) map to the same read group \(RG\)'
+like "$(run_freebayes -f ${ref} ${bam1} ${bam2})" "${expected}" "freebayes rejects two BAMs with different technologies for same read groups"
 
 bam1=$(make_bam "id1" "sample1" "platform1")
 bam2=$(make_bam "id2" "sample2" "platform2" "" "C")
