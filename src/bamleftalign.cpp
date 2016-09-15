@@ -12,17 +12,6 @@
 
 #include "Fasta.h"
 
-#ifdef HAVE_BAMTOOLS
-#include "api/BamAlignment.h"
-#include "api/BamReader.h"
-#include "api/BamWriter.h"
-using namespace BamTools;
-#else
-#include "SeqLib/BamReader.h"
-#include "SeqLib/BamWriter.h"
-#endif
-
-//#include "IndelAllele.h"
 #include "LeftAlign.h"
 
 #ifdef VERBOSE_DEBUG
@@ -130,12 +119,14 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-#ifdef HAVE_BAMTOOLS
-    BamReader reader;
-    if (!reader.Open("stdin")) {
+
+    BAMSINGLEREADER reader;
+    if (!reader.Open(STDIN)) {
         cerr << "could not open stdin for reading" << endl;
         exit(1);
     }
+
+#ifdef HAVE_BAMTOOLS
 
     BamWriter writer;
 
@@ -148,18 +139,14 @@ int main(int argc, char** argv) {
         exit(1);
     }
 #else
-    SeqLib::BamReader reader;
-    if (!reader.Open("-")) {
-        cerr << "could not open stdin for reading" << endl;
-        exit(1);
-    }
 
-    SeqLib::BamWriter writer;
-    writer.SetHeader(reader.Header());
-
-    if (isuncompressed) {
-      std::cerr << " SEQLIB uncompressed not available yet " << std::endl; //writer.SetCompressionMode(BamWriter::Uncompressed);
+    SeqLib::BamWriter writer(isuncompressed ? SeqLib::SAM : SeqLib::BAM);
+    SeqLib::BamHeader hdr = reader.Header();
+    if (hdr.isEmpty()) {
+      cerr << "could not open header for input" << endl;
+      exit(1);
     }
+    writer.SetHeader(hdr);
 
     if (!suppress_output && !writer.Open("-")) {
         cerr << "could not open stdout for writing" << endl;
@@ -169,53 +156,39 @@ int main(int argc, char** argv) {
 
     // store the names of all the reference sequences in the BAM file
     map<int, string> referenceIDToName;
-#ifdef HAVE_BAMTOOLS
-    vector<RefData> referenceSequences = reader.GetReferenceData();
+    REFVEC referenceSequences = reader.GETREFDATA;
     int i = 0;
-    for (RefVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-        referenceIDToName[i] = r->RefName;
+    for (REFVEC::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
+        referenceIDToName[i] = r->REFNAME;
         ++i;
     }
-#else
-    SeqLib::HeaderSequenceVector referenceSequences = reader.Header().GetHeaderSequenceVector();
-    int i = 0;
-    for (SeqLib::HeaderSequenceVector::iterator r = referenceSequences.begin(); r != referenceSequences.end(); ++r) {
-        referenceIDToName[i] = r->Name;
-        ++i;
-    }
-#endif
 
-#ifdef HAVE_BAMTOOLS
-    BamAlignment alignment;
-#else
-    SeqLib::BamRecord alignment;
-#endif
+    BAMALIGN alignment;
 
-#ifdef HAVE_BAMTOOLS
-    while (reader.GetNextAlignment(alignment)) {
-
+    while (GETNEXT(reader, alignment)) {
+      
             DEBUG("---------------------------   read    --------------------------" << endl);
-            DEBUG("| " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl);
-            DEBUG("| " << alignment.Name << ":" << alignment.GetEndPosition() << endl);
-            DEBUG("| " << alignment.Name << ":" << (alignment.IsMapped() ? " mapped" : " unmapped") << endl);
-            DEBUG("| " << alignment.Name << ":" << " cigar data size: " << alignment.CigarData.size() << endl);
+            DEBUG("| " << referenceIDToName[alignment.REFID] << ":" << alignment.POSITION << endl);
+            DEBUG("| " << alignment.QNAME << ":" << alignment.ENDPOSITION << endl);
+            DEBUG("| " << alignment.QNAME << ":" << (alignment.ISMAPPED ? " mapped" : " unmapped") << endl);
+            DEBUG("| " << alignment.QNAME << ":" << " cigar data size: " << alignment.GETCIGAR.size() << endl);
             DEBUG("--------------------------- realigned --------------------------" << endl);
 
             // skip unmapped alignments, as they cannot be left-realigned without CIGAR data
-            if (alignment.IsMapped()) {
+            if (alignment.ISMAPPED) {
 
-                int endpos = alignment.GetEndPosition();
-                int length = endpos - alignment.Position + 1;
-                if (alignment.Position >= 0 && length > 0) {
+                int endpos = alignment.ENDPOSITION;
+                int length = endpos - alignment.POSITION + 1;
+                if (alignment.POSITION >= 0 && length > 0) {
                     if (!stablyLeftAlign(alignment,
                                 reference.getSubSequence(
-                                    referenceIDToName[alignment.RefID],
-                                    alignment.Position,
+                                    referenceIDToName[alignment.REFID],
+                                    alignment.POSITION,
                                     length),
                                 maxiterations, debug)) {
-                        cerr << "unstable realignment of " << alignment.Name
-                             << " at " << referenceIDToName[alignment.RefID] << ":" << alignment.Position << endl
-                             << alignment.AlignedBases << endl;
+                        cerr << "unstable realignment of " << alignment.QNAME
+                             << " at " << referenceIDToName[alignment.REFID] << ":" << alignment.POSITION << endl
+                             << alignment.QUERYBASES << endl;
                     }
                 }
 
@@ -225,7 +198,7 @@ int main(int argc, char** argv) {
             DEBUG(endl);
 
         if (!suppress_output)
-            writer.SaveAlignment(alignment);
+	  WRITEALIGNMENT(writer, alignment);
 
     }
 
@@ -234,49 +207,4 @@ int main(int argc, char** argv) {
         writer.Close();
 
     return 0;
-#else
-    while (reader.GetNextRecord(alignment)) {
-
-      string qname = alignment.Qname();
-            DEBUG("---------------------------   read    --------------------------" << endl);
-            DEBUG("| " << referenceIDToName[alignment.ChrID()] << ":" << alignment.Position() << endl);
-            DEBUG("| " << qname << ":" << alignment.PositionEnd() << endl);
-            DEBUG("| " << qname << ":" << (alignment.MappedFlag() ? " mapped" : " unmapped") << endl);
-            DEBUG("| " << qname << ":" << " cigar data size: " << alignment.GetCigar.size() << endl);
-            DEBUG("--------------------------- realigned --------------------------" << endl);
-
-            // skip unmapped alignments, as they cannot be left-realigned without CIGAR data
-            if (alignment.MappedFlag()) {
-
-                int endpos = alignment.PositionEnd();
-                int length = endpos - alignment.Position() + 1;
-                if (alignment.Position() >= 0 && length > 0) {
-                    if (!stablyLeftAlign(alignment,
-                                reference.getSubSequence(
-							 referenceIDToName[alignment.ChrID()],
-							 alignment.Position(),
-							 length),
-                                maxiterations, debug)) {
-		      cerr << "unstable realignment of " << qname
-			   << " at " << referenceIDToName[alignment.ChrID()] << ":" << alignment.Position() << endl
-			   << alignment.Sequence() << endl;
-                    }
-                }
-
-            }
-
-            DEBUG("----------------------------------------------------------------" << endl);
-            DEBUG(endl);
-
-        if (!suppress_output)
-            writer.WriteRecord(alignment);
-
-    }
-
-    //reader.Close();
-    if (!suppress_output)
-        writer.Close();
-
-    return 0;
-#endif
 }

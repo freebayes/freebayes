@@ -51,10 +51,13 @@ using namespace BamTools;
 #define CIGLEN Length
 #define CIGTYPE Type
 #define BAMREADER BamMultiReader
+#define BAMSINGLEREADER BamReader
 #define FILLREADGROUP(rg, align) (align).GetTag("RG", (rg))
 #define ADDCIGAR push_back
 #define CIGOP CigarOp
 #define GETHEADERTEXT GetHeaderText()
+#define STDIN "stdin"
+#define WRITEALIGNMENT(writer, alignment) writer.SaveAlignment(alignment)
 #else
 
 #define GETNEXT(reader, alignment) reader.GetNextRecord(alignment)
@@ -81,6 +84,7 @@ using namespace BamTools;
 #define ENDPOSITION PositionEnd()
 #define CIGAR SeqLib::Cigar
 #define BAMREADER SeqLib::BamReader
+#define BAMSINGLEREADER SeqLib::BamReader
 #define GETCIGAR GetCigar()
 #define GETREFID(name) Header().Name2ID(name)
 #define ISDUPLICATE DuplicateFlag()
@@ -92,6 +96,8 @@ using namespace BamTools;
 #define GETHEADERTEXT HeaderConcat()
 #include "SeqLib/BamReader.h"
 #include "SeqLib/BamWriter.h"
+#define STDIN "-"
+#define WRITEALIGNMENT(writer, alignment) writer.WriteRecord(alignment)
 #endif
 
 
