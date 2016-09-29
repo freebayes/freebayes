@@ -674,7 +674,7 @@ void AlleleParser::loadTargets(void) {
             size_t foundRangeSep = region.find(sep, foundFirstColon);
             if (foundRangeSep == string::npos) {
                 sep = "-";
-                foundRangeSep = region.find("-", foundFirstColon);
+                foundRangeSep = region.find(sep, foundFirstColon);
             }
             if (foundRangeSep == string::npos) {
                 startPos = stringToInt(region.substr(foundFirstColon + 1));
@@ -2765,7 +2765,9 @@ bool AlleleParser::toNextPosition(void) {
             }
         } else {
             // step the position
-            ++currentPosition;
+            if (!first_pos) {
+                ++currentPosition;
+            }
             // if the current position of this alignment is outside of the reference sequence length
             // we need to switch references
             if (currentPosition >= reference.sequenceLength(currentSequenceName)
@@ -2778,7 +2780,9 @@ bool AlleleParser::toNextPosition(void) {
         }
     } else {
         // or if it's not we should step to the next position
-        ++currentPosition;
+        if (!first_pos) {
+            ++currentPosition;
+        }
         // if we've run off the right edge of a target, jump
         if (currentPosition > currentTarget->right) {
             // time to move to a new target
