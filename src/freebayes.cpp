@@ -44,7 +44,7 @@
 
 // local helper debugging macros to improve code readability
 #define DEBUG(msg) \
-    if (parameters.debug) { cerr << msg << endl; }
+     if (parameters.debug) { cerr << msg << endl; }
 
 // lower-priority messages
 #ifdef VERBOSE_DEBUG
