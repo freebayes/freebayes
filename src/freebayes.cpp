@@ -44,7 +44,7 @@
 
 // local helper debugging macros to improve code readability
 #define DEBUG(msg) \
-    if (parameters.debug) { cerr << msg << endl; }
+     if (parameters.debug) { cerr << msg << endl; }
 
 // lower-priority messages
 #ifdef VERBOSE_DEBUG
@@ -653,7 +653,7 @@ int main (int argc, char *argv[]) {
 
         // output
 
-        if (!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL || parameters.PVL == 0) {
+        if ((!alts.empty() && (1 - pHom.ToDouble()) >= parameters.PVL) || parameters.PVL == 0){
 
             // write the last gVCF record(s)
             if (parameters.gVCFout && !nonCalls.empty()) {

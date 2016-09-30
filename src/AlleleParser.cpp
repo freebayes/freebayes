@@ -646,7 +646,7 @@ bool AlleleParser::loadNextPositionWithAlignmentOrInputVariant(BAMALIGN& alignme
     pair<int, long> next = nextInputVariantPosition();
     if (next.first != -1) {
         int varRefID = next.first;
-        if (!hasMoreAlignments || varRefID < alignment.REFID || varRefID == alignment.REFID && next.second < alignment.POSITION) {
+        if (!hasMoreAlignments || varRefID < alignment.REFID || (varRefID == alignment.REFID && next.second < alignment.POSITION)) {
 	  return loadNextPositionWithInputVariant();
         } else {
 	  loadReferenceSequence(alignment);
@@ -1039,7 +1039,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
         Allele& lastAllele = alleles.back();
 
         if (isEmptyAllele(newAllele) ||
-            newAllele.isReference() && newAllele.referenceLength == 0) {
+            (newAllele.isReference() && newAllele.referenceLength == 0)) {
             // do nothing
         } else if (newAllele.isReference() && isUnflankedIndel(lastAllele)) {
             // add flanking base to indel, ensuring haplotype length of 2 for all indels
@@ -1167,7 +1167,7 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
                 } else {
                     AlleleType atype = ALLELE_COMPLEX;
                     if (lastAllele.isSNP() || lastAllele.isMNP()) {
-                        if (lastCigar.back().second == "X" && newAllele.isSNP() || newAllele.isMNP()) {
+		      if ((lastCigar.back().second == "X" && newAllele.isSNP()) || newAllele.isMNP()) {
                             atype = ALLELE_MNP;
                         }
                     }
@@ -2228,7 +2228,7 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
         variantCallInputFile.setRegion(seq, start, end);
     }
     bool ok;
-    while (ok = variantCallInputFile.getNextVariant(*currentVariant)) {
+    while ((ok = variantCallInputFile.getNextVariant(*currentVariant))) {
 
         long int pos = currentVariant->position - 1;
         // get alternate alleles
@@ -2362,7 +2362,7 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
             // get the variants in the target region
             vcflib::Variant var(variantCallInputFile);
             bool ok;
-            while (ok = variantCallInputFile.getNextVariant(*currentVariant)) {
+            while ((ok = variantCallInputFile.getNextVariant(*currentVariant))) {
 
                 DEBUG("getting input alleles from input VCF at position " << currentVariant->sequenceName << ":" << currentVariant->position);
                 long int pos = currentVariant->position - 1;
@@ -2654,7 +2654,7 @@ bool AlleleParser::toNextTarget(void) {
             if (!loadTarget(++currentTarget)) {
                 continue;
             }
-            if (ok = getFirstAlignment()) {
+            if ((ok = getFirstAlignment())) {
                 break;
             }
         }
@@ -2872,7 +2872,7 @@ bool AlleleParser::toNextPosition(void) {
             // if the current position of this alignment is outside of the reference sequence length
             // we need to switch references
             if (currentPosition >= reference.sequenceLength(currentSequenceName)
-                || registeredAlignments.empty() && currentRefID != currentAlignment.REFID) {
+                || (registeredAlignments.empty() && currentRefID != currentAlignment.REFID)) {
                 DEBUG("at end of sequence");
                 clearRegisteredAlignments();
                 loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
@@ -3216,8 +3216,8 @@ void AlleleParser::buildHaplotypeAlleles(
                 deque<RegisteredAlignment>& ras = registeredAlignments[i];
                 for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
                     RegisteredAlignment& ra = *r;
-                    if (ra.start > currentPosition && ra.start < currentPosition + haplotypeLength
-                        || ra.end > currentPosition && ra.end < currentPosition + haplotypeLength) {
+                    if ((ra.start > currentPosition && ra.start < currentPosition + haplotypeLength)
+			 || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
                         Allele* aptr;
                         bool allowPartials = true;
                         ra.fitHaplotype(currentPosition, haplotypeLength, aptr, allowPartials);
@@ -3527,7 +3527,7 @@ void AlleleParser::buildHaplotypeAlleles(
 
 }
 
-bool AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations) {
+void AlleleParser::getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations) {
     for (map<long unsigned int, deque<RegisteredAlignment> >::iterator ras = registeredAlignments.begin(); ras != registeredAlignments.end(); ++ras) {
         deque<RegisteredAlignment>& rq = ras->second;
         for (deque<RegisteredAlignment>::iterator rai = rq.begin(); rai != rq.end(); ++rai) {
@@ -3569,7 +3569,7 @@ void AlleleParser::unsetAllProcessedFlags(void) {
 
 
 // process the next length bp of alignments, so as to get allele observations partially overlapping our calling window
-bool AlleleParser::getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials) {
+void AlleleParser::getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials) {
     //cerr << "getting partial observations of haplotype from " << currentPosition << " to " << currentPosition + haplotypeLength << endl;
     vector<Allele*> newAlleles;
 
@@ -3588,8 +3588,8 @@ bool AlleleParser::getPartialObservationsOfHaplotype(Samples& samples, int haplo
         deque<RegisteredAlignment>& ras = registeredAlignments[i];
         for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
             RegisteredAlignment& ra = *r;
-            if (ra.start > currentPosition && ra.start < currentPosition + haplotypeLength
-                || ra.end > currentPosition && ra.end < currentPosition + haplotypeLength) {
+            if ((ra.start > currentPosition && ra.start < currentPosition + haplotypeLength)
+		 || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
                 Allele* aptr;
                 bool allowPartials = true;
                 ra.fitHaplotype(currentPosition, haplotypeLength, aptr, allowPartials);

@@ -261,8 +261,8 @@ public:
     bool loadTarget(BedTarget*);
     bool toFirstTargetPosition(void);
     bool toNextPosition(void);
-    bool getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations);
-    bool getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials);
+    void getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations);
+    void getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials);
     bool dummyProcessNextTarget(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
