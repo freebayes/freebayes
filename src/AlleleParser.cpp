@@ -378,7 +378,7 @@ string AlleleParser::vcfHeader() {
 
     stringstream headerss;
     headerss
-        << "##fileformat=VCFv4.1" << endl
+        << "##fileformat=VCFv4.2" << endl
         << "##fileDate=" << dateStr() << endl
         << "##source=freeBayes " << VERSION_GIT << endl
         << "##reference=" << reference.filename << endl;
@@ -503,7 +503,7 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=GL,Number=G,Type=Float,Description=\"Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy\">" << endl
 	//<< "##FORMAT=<ID=GLE,Number=1,Type=String,Description=\"Genotype Likelihood Explicit, same as GL, but with tags to indicate the specific genotype.  For instance, 0^-75.22|1^-223.42|0/0^-323.03|1/0^-99.29|1/1^-802.53 represents both haploid and diploid genotype likilehoods in a biallelic context\">" << endl
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
-        << "##FORMAT=<ID=DPR,Number=A,Type=Integer,Description=\"Number of observation for each allele\">" << endl
+        << "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Number of observation for each allele\">" << endl
         << "##FORMAT=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
         << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
         << "##FORMAT=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
