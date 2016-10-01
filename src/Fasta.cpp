@@ -245,15 +245,14 @@ FastaReference::~FastaReference(void) {
     delete index;
 }
 
-string removeIupac(string& str) {
-	for (int i=0; i<str.length(); ++i) {
-		char c = str[i];
-		if (c != 'A' && c != 'T' && c != 'G' && c != 'C' && c != 'N' &&
-				c != 'a' && c != 't' && c != 'g' && c != 'c' && c != 'n') {
-			str[i] = 'N';
-		}
-	}
-	return str;
+string removeIupacBases(string& str) {
+    const string bases = "ATGCNatgcn";
+    size_t found = str.find_first_not_of(bases);
+    while (found != string::npos) {
+        str[found] = 'N';
+        found = str.find_first_not_of(bases, found + 1);
+    }
+    return str;
 }
 
 string FastaReference::getSequence(string seqname) {
@@ -271,7 +270,7 @@ string FastaReference::getSequence(string seqname) {
     string s = seq;
     free(seq);
     s.resize((pend - pbegin)/sizeof(char));
-	return removeIupac(s);
+    return removeIupacBases(s);
 }
 
 // TODO cleanup; odd function.  use a map
@@ -309,7 +308,7 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     string s = seq;
     free(seq);
     s.resize((pend - pbegin)/sizeof(char));
-	return removeIupac(s);
+    return removeIupacBases(s);
 }
 
 long unsigned int FastaReference::sequenceLength(string seqname) {
