@@ -23,6 +23,7 @@
 using namespace BamTools;
 #define GETNEXT(reader, alignment) reader.GetNextAlignment(alignment)
 #define GETERRORSTRING(reader) reader.GetErrorString()
+#define ALIGNMENTLENGTH Length
 #define ISMAPPED IsMapped()
 #define REFID RefID
 #define POSITION Position
@@ -62,6 +63,7 @@ using namespace BamTools;
 
 #define GETNEXT(reader, alignment) reader.GetNextRecord(alignment)
 #define MAPPINGQUALITY MapQuality()
+#define ALIGNMENTLENGTH Length()
 #define ISMAPPED MappedFlag()
 #define ISPAIRED PairedFlag()
 #define ISMATEMAPPED MateMappedFlag()

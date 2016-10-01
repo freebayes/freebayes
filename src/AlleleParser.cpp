@@ -1436,25 +1436,26 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
     if (parameters.debug2) {
         DEBUG2("registering alignment " << rp << " " << csp << " " << sp << endl <<
                "alignment readName " << alignment.QNAME << endl <<
-               "alignment isPaired " << alignment.IsPaired() << endl <<
-               "alignment isMateMapped " << alignment.IsMateMapped() << endl <<
-               "alignment isProperPair " << alignment.IsProperPair() << endl <<
-               "alignment mapQual " << alignment.MapQuality << endl <<
+               "alignment isPaired " << alignment.ISPAIRED << endl <<
+               "alignment isMateMapped " << alignment.ISMATEMAPPED << endl <<
+               "alignment isProperPair " << alignment.ISPROPERPAIR << endl <<
+               "alignment mapQual " << alignment.MAPPINGQUALITY << endl <<
                "alignment sampleID " << sampleName << endl <<
-               "alignment position " << alignment.Position << endl <<
-               "alignment length " << alignment.Length << endl <<
-               "alignment AlignedBases.size() " << alignment.AlignedBases.size() << endl <<
-               "alignment GetEndPosition() " << alignment.GetEndPosition() << endl <<
-               "alignment end position " << alignment.Position + alignment.AlignedBases.size());
+               "alignment position " << alignment.POSITION << endl <<
+               "alignment length " << alignment.ALIGNMENTLENGTH << endl <<
+               "alignment AlignedBases.size() " << alignment.ALIGNEDBASES << endl <<
+               "alignment GetEndPosition() " << alignment.ENDPOSITION << endl <<
+               "alignment end position " << alignment.POSITION + alignment.ALIGNEDBASES);
 
         stringstream cigarss;
         int alignedLength = 0;
-        for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin(); c != alignment.CigarData.end(); ++c) {
-            cigarss << c->Type << c->Length;
-            if (c->Type == 'D')
-                alignedLength += c->Length;
-            if (c->Type == 'M')
-                alignedLength += c->Length;
+	CIGAR cig = alignment.GETCIGAR;
+        for (CIGAR::const_iterator c = cig.begin(); c != cig.end(); ++c) {
+            cigarss << c->CIGTYPE << c->CIGLEN;
+            if (c->CIGTYPE == 'D')
+                alignedLength += c->CIGLEN;
+            if (c->CIGTYPE == 'M')
+                alignedLength += c->CIGLEN;
         }
 
         DEBUG2("alignment cigar " << cigarss.str());
@@ -1462,9 +1463,9 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
         DEBUG2("current sequence pointer: " << csp);
 
         DEBUG2("read:          " << rDna);
-        DEBUG2("aligned bases: " << alignment.AlignedBases);
-        DEBUG2("qualities:     " << alignment.Qualities);
-        DEBUG2("reference seq: " << currentSequence.substr(csp, alignment.AlignedBases.size()));
+        DEBUG2("aligned bases: " << alignment.QUERYBASES);
+        DEBUG2("qualities:     " << alignment.QUALITIES);
+        DEBUG2("reference seq: " << currentSequence.substr(csp, alignment.ALIGNEDBASES));
     }
 #endif
 
