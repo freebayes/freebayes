@@ -609,18 +609,18 @@ void AlleleParser::loadReferenceSequence(string& seqname) {
         currentSequenceName = seqname;
         currentSequenceStart = 0;
         currentRefID = bamMultiReader.GetReferenceID(currentSequenceName);
-        currentSequence = uppercase(reference.getSequence(currentSequenceName));
-        int i = 0; // check the first few characters and verify they are not garbage
-        for (string::iterator citr = currentSequence.begin();
-             i < 100 && citr != currentSequence.end(); ++citr, ++i) {
-            char c = *citr;
-            if (c != 'A' && c != 'T' && c != 'G' && c != 'C' && c != 'N') {
-                ERROR("Found non-DNA character " << c << " at position " << i << " in " << seqname << endl
-                      << ". Is your reference compressed or corrupted? "
-                      << "freebayes requires an uncompressed reference sequence.");
-                exit(1);
-            }
+        currentSequence = uppercase(reference.getRawSequence(currentSequenceName));
+        // check the first few characters and verify they are not garbage
+        string validBases = "ACGTURYKMSWBDHVN-";
+        size_t found = currentSequence.substr(0, 100).find_first_not_of(validBases);
+        if (found != string::npos) {
+            ERROR("Found non-DNA character " << currentSequence.at(found)
+                  << " at position " << found << " in " << seqname << endl
+                  << "Is your reference compressed or corrupted? "
+                  << "freebayes requires an uncompressed reference sequence.");
+            exit(1);
         }
+        currentSequence = reference.getSequence(currentSequenceName);
     }
 }
 
@@ -2193,9 +2193,9 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                     allelePos -= 1;
                     reflen = len + 2;
                     alleleSequence =
-                        uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos, 1))
+                        reference.getSubSequence(currentVariant->sequenceName, allelePos, 1)
                         + alleleSequence
-                        + uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos+1+len, 1));
+                        + reference.getSubSequence(currentVariant->sequenceName, allelePos+1+len, 1);
                     cigar = "1M" + convert(len) + "D" + "1M";
                 } else {
                     // we always include the flanking bases for these elsewhere, so here too in order to be consistent and trigger use
@@ -2203,9 +2203,9 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                     // add previous base and post base to match format typically used for calling
                     allelePos -= 1;
                     alleleSequence =
-                        uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos, 1))
+                        reference.getSubSequence(currentVariant->sequenceName, allelePos, 1)
                         + alleleSequence
-                        + uppercase(reference.getSubSequence(currentVariant->sequenceName, allelePos+1, 1));
+                        + reference.getSubSequence(currentVariant->sequenceName, allelePos+1, 1);
                     len = variant.alt.size() - var.ref.size();
                     cigar = "1M" + convert(len) + "I" + "1M";
                     reflen = 2;
@@ -2324,9 +2324,9 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                             allelePos -= 1;
                             reflen = len + 2;
                             alleleSequence =
-                                uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
+                                reference.getSubSequence(currentSequenceName, allelePos, 1)
                                 + alleleSequence
-                                + uppercase(reference.getSubSequence(currentSequenceName, allelePos+1+len, 1));
+                                + reference.getSubSequence(currentSequenceName, allelePos+1+len, 1);
                             cigar = "1M" + convert(len) + "D" + "1M";
                         } else {
                             // we always include the flanking bases for these elsewhere, so here too in order to be consistent and trigger use
@@ -2334,9 +2334,9 @@ void AlleleParser::updateInputVariants(long int pos, int referenceLength) {
                             // add previous base and post base to match format typically used for calling
                             allelePos -= 1;
                             alleleSequence =
-                                uppercase(reference.getSubSequence(currentSequenceName, allelePos, 1))
+                                reference.getSubSequence(currentSequenceName, allelePos, 1)
                                 + alleleSequence
-                                + uppercase(reference.getSubSequence(currentSequenceName, allelePos+1, 1));
+                                + reference.getSubSequence(currentSequenceName, allelePos+1, 1);
                             len = variant.alt.size() - var.ref.size();
                             cigar = "1M" + convert(len) + "I" + "1M";
                             reflen = 2;
@@ -3245,7 +3245,7 @@ void AlleleParser::buildHaplotypeAlleles(
         */
 
         Allele refAllele = genotypeAllele(ALLELE_REFERENCE,
-                                          uppercase(reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength)),
+                                          reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength),
                                           haplotypeLength,
                                           convert(haplotypeLength)+"M",
                                           haplotypeLength,
@@ -3720,7 +3720,7 @@ vector<Allele> AlleleParser::genotypeAlleles(
                 if (haplotypeLength == 1) {
                     altseq = currentReferenceBase;
                 } else {
-                    altseq = uppercase(reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength));
+                    altseq = reference.getSubSequence(currentSequenceName, currentPosition, haplotypeLength);
                 }
             }
             unfilteredAlleles.push_back(make_pair(genotypeAllele(allele.type,
