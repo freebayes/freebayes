@@ -13,3 +13,6 @@
 [submodule "vcflib"]
 	path = vcflib
 	url = https://github.com/vcflib/vcflib.git
+[submodule "SeqLib"]
+	path = SeqLib
+	url = https://github.com/walaj/SeqLib.git

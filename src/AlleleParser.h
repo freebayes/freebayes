@@ -15,7 +15,7 @@
 #include <cmath>
 #include "split.h"
 #include "join.h"
-#include "api/BamReader.h"
+
 #include "BedReader.h"
 #include "Parameters.h"
 #include "Utility.h"
@@ -23,7 +23,7 @@
 #include "Sample.h"
 #include "Fasta.h"
 #include "TryCatch.h"
-#include "api/BamMultiReader.h"
+
 #include "Genotype.h"
 #include "CNV.h"
 #include "Result.h"
@@ -39,7 +39,6 @@
 #define CACHED_BASIS_HAPLOTYPE_WINDOW 1000
 
 using namespace std;
-using namespace BamTools;
 
 // a structure holding information about our parameters
 
@@ -60,19 +59,19 @@ public:
     int alleleTypes;
     Parameters parameters;
 
-    RegisteredAlignment(BamAlignment& alignment, Parameters parameters)
+    RegisteredAlignment(BAMALIGN& alignment, Parameters parameters)
         //: alignment(alignment)
-        : start(alignment.Position)
-        , end(alignment.GetEndPosition())
-        , refid(alignment.RefID)
-        , name(alignment.Name)
+        : start(alignment.POSITION)
+        , end(alignment.ENDPOSITION)
+        , refid(alignment.REFID)
+        , name(alignment.QNAME)
         , mismatches(0)
         , snpCount(0)
         , indelCount(0)
         , alleleTypes(0)
         , parameters(parameters)
     {
-        alignment.GetTag("RG", readgroup);
+      FILLREADGROUP(readgroup, alignment);
     }
 
     void addAllele(Allele allele, bool mergeComplex = true,
@@ -121,8 +120,7 @@ public:
 
 bool operator<(const AllelicPrimitive& a, const AllelicPrimitive& b);
 
-void capBaseQuality(BamAlignment& alignment, int baseQualityCap);
-
+void capBaseQuality(BAMALIGN& alignment, int baseQualityCap);
 
 class AlleleParser {
 
@@ -157,7 +155,7 @@ public:
     bool inTarget(void);
 
     // bamreader
-    BamMultiReader bamMultiReader;
+    BAMREADER bamMultiReader;
 
     // bed reader
     BedReader bedReader;
@@ -187,7 +185,7 @@ public:
 		      int basesRight,
 		      string& readSequence,
 		      string& sampleName,
-		      BamAlignment& alignment,
+		      BAMALIGN& alignment,
 		      string& sequencingTech,
 		      long double qual,
 		      string& qualstr);
@@ -205,7 +203,7 @@ public:
     map<string, map<long int, map<Allele, int> > > inputAlleleCounts; // drawn from input VCF
     Sample* nullSample;
 
-    bool loadNextPositionWithAlignmentOrInputVariant(BamAlignment& currentAlignment);
+    bool loadNextPositionWithAlignmentOrInputVariant(BAMALIGN& currentAlignment);
     bool loadNextPositionWithInputVariant(void);
     bool hasMoreInputVariants(void);
 
@@ -215,7 +213,7 @@ public:
     void getInputAlleleCounts(vector<Allele>& genotypeAlleles, map<string, int>& inputAFs);
 
     // reference names indexed by id
-    vector<RefData> referenceSequences;
+    REFVEC referenceSequences;
     // ^^ vector of objects containing:
     //RefName;          //!< Name of reference sequence
     //RefLength;        //!< Length of reference sequence
@@ -234,7 +232,7 @@ public:
     vector<int> currentPloidies(Samples& samples);
     void loadBamReferenceSequenceNames(void);
     void loadFastaReference(void);
-    void loadReferenceSequence(BamAlignment& alignment);
+    void loadReferenceSequence(BAMALIGN& alignment);
     void loadReferenceSequence(string& seqname);
     string referenceSubstr(long int position, unsigned int length);
     void loadTargets(void);
@@ -242,7 +240,7 @@ public:
     bool getFirstVariant(void);
     void loadTargetsFromBams(void);
     void initializeOutputFiles(void);
-    RegisteredAlignment& registerAlignment(BamAlignment& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
+    RegisteredAlignment& registerAlignment(BAMALIGN& alignment, RegisteredAlignment& ra, string& sampleName, string& sequencingTech);
     void clearRegisteredAlignments(void);
     void updateAlignmentQueue(long int position, vector<Allele*>& newAlleles, bool gettingPartials = false);
     void updateInputVariants(long int pos, int referenceLength);
@@ -263,12 +261,12 @@ public:
     bool loadTarget(BedTarget*);
     bool toFirstTargetPosition(void);
     bool toNextPosition(void);
-    bool getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations);
-    bool getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials);
+    void getCompleteObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& haplotypeObservations);
+    void getPartialObservationsOfHaplotype(Samples& samples, int haplotypeLength, vector<Allele*>& partials);
     bool dummyProcessNextTarget(void);
     bool toNextTarget(void);
     void setPosition(long unsigned int);
-    int currentSequencePosition(const BamAlignment& alignment);
+    int currentSequencePosition(const BAMALIGN& alignment);
     int currentSequencePosition();
     void unsetAllProcessedFlags(void);
     bool getNextAlleles(Samples& allelesBySample, int allowedAlleleTypes);
@@ -347,7 +345,7 @@ private:
     int basesAfterCurrentTarget;  // ........................................  after ...................
 
     int currentRefID;
-    BamAlignment currentAlignment;
+    BAMALIGN currentAlignment;
     vcflib::Variant* currentVariant;
 
 };

@@ -1303,7 +1303,7 @@ void addAllHomozygousCombos(
             }
         }
         if (allSameAndHomozygous) {
-            allelesWithHomozygousCombos[genotype->front().allele] == true;
+            allelesWithHomozygousCombos[genotype->front().allele] = true;
         }
     }
 

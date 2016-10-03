@@ -13,10 +13,13 @@
 #include <assert.h>
 #include "Utility.h"
 #include "convert.h"
-#include "api/BamAlignment.h"
+
+//#ifdef HAVE_BAMTOOLS
+//#include "api/BamAlignment.h"
+//using namespace BamTools;
+//#endif
 
 using namespace std;
-using namespace BamTools;
 
 class Allele;
 

@@ -22,12 +22,13 @@
 //
 // In practice, we must call this function until the alignment is stabilized.
 //
-bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
+bool leftAlign(BAMALIGN& alignment, string& referenceSequence, bool debug) {
+    string alignmentAlignedBases = alignment.QUERYBASES;
+  const string alignmentSequence = alignment.QUERYBASES;
 
     int arsOffset = 0; // pointer to insertion point in aligned reference sequence
     string alignedReferenceSequence = referenceSequence;
     int aabOffset = 0;
-    string alignmentAlignedBases = alignment.QueryBases;
 
     // store information about the indels
     vector<FBIndelAllele> indels;
@@ -39,10 +40,11 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     string softEnd;
 
     stringstream cigar_before, cigar_after;
-    for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
-        c != alignment.CigarData.end(); ++c) {
-        unsigned int l = c->Length;
-        char t = c->Type;
+    CIGAR cigar = alignment.GETCIGAR;
+    for (CIGAR::const_iterator c = cigar.begin();
+        c != cigar.end(); ++c) {
+        unsigned int l = c->CIGLEN;
+        char t = c->CIGTYPE;
         cigar_before << l << t;
         if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             sp += l;
@@ -58,7 +60,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             aabOffset += l;
             sp += l;  // update reference sequence position
         } else if (t == 'I') { // insertion
-            indels.push_back(FBIndelAllele(true, l, sp, rp, alignment.QueryBases.substr(rp, l), false));
+            indels.push_back(FBIndelAllele(true, l, sp, rp, alignmentSequence.substr(rp, l), false));
             alignedReferenceSequence.insert(sp + softBegin.size() + arsOffset, string(l, '-'));
             arsOffset += l;
             rp += l;
@@ -116,7 +118,7 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             if (debug) {
                 if (steppos >= 0 && readsteppos >= 0) {
                     cerr << referenceSequence.substr(steppos, indel.length) << endl;
-                    cerr << alignment.QueryBases.substr(readsteppos, indel.length) << endl;
+                    cerr << alignmentSequence.substr(readsteppos, indel.length) << endl;
                     cerr << indel.sequence << endl;
                 }
             }
@@ -124,7 +126,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
             while (steppos >= 0 && readsteppos >= 0
                    && !indel.splice
                    && indel.sequence == referenceSequence.substr(steppos, indel.length)
-                   && indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
+                   && indel.sequence == alignmentSequence.substr(readsteppos, indel.length)
+                   //&& indel.sequence == alignment.QueryBases.substr(readsteppos, indel.length)
                    && (id == indels.begin()
                        || (previous->insertion && steppos >= previous->position)
                        || (!previous->insertion && steppos >= previous->position + previous->length))) {
@@ -156,8 +159,10 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         steppos = indel.position - 1;
         readsteppos = indel.readPosition - 1;
         while (steppos >= 0 && readsteppos >= 0
-               && alignment.QueryBases.at(readsteppos) == referenceSequence.at(steppos)
-               && alignment.QueryBases.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
+               //&& alignment.QueryBases.at(readsteppos) == referenceSequence.at(steppos)
+               //&& alignment.QueryBases.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
+               && alignmentSequence.at(readsteppos) == referenceSequence.at(steppos)
+               && alignmentSequence.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
                && (id == indels.begin()
                    || (previous->insertion && indel.position - 1 >= previous->position)
                    || (!previous->insertion && indel.position - 1 >= previous->position + previous->length))) {
@@ -196,7 +201,8 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
                         ))) {
                 if (previous->homopolymer()) {
                     string seq = referenceSequence.substr(prev_end_ref, indel.position - prev_end_ref);
-                    string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
+                    //string readseq = alignment.QueryBases.substr(prev_end_read, indel.position - prev_end_ref);
+                    string readseq = alignmentSequence.substr(prev_end_read, indel.position - prev_end_ref);
                     LEFTALIGN_DEBUG("seq: " << seq << endl << "readseq: " << readseq << endl);
                     if (previous->sequence.at(0) == seq.at(0)
                             && FBhomopolymer(seq)
@@ -237,23 +243,23 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     //
     // and simultaneously reconstruct the cigar
 
-    vector<CigarOp> newCigar;
+    CIGAR newCigar;
 
     if (!softBegin.empty()) {
-        newCigar.push_back(CigarOp('S', softBegin.size()));
+      newCigar.ADDCIGAR(CIGOP('S', softBegin.size()));
     }
 
     vector<FBIndelAllele>::iterator id = indels.begin();
     FBIndelAllele last = *id++;
     if (last.position > 0) {
-        newCigar.push_back(CigarOp('M', last.position));
+        newCigar.ADDCIGAR(CIGOP('M', last.position));
     }
     if (last.insertion) {
-        newCigar.push_back(CigarOp('I', last.length));
+        newCigar.ADDCIGAR(CIGOP('I', last.length));
     } else if (last.splice) {
-        newCigar.push_back(CigarOp('N', last.length));
+        newCigar.ADDCIGAR(CIGOP('N', last.length));
     } else {
-        newCigar.push_back(CigarOp('D', last.length));
+        newCigar.ADDCIGAR(CIGOP('D', last.length));
     }
     int lastend = last.insertion ? last.position : (last.position + last.length);
     LEFTALIGN_DEBUG(last << ",");
@@ -262,20 +268,25 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
         FBIndelAllele& indel = *id;
         LEFTALIGN_DEBUG(indel << ",");
         if (indel.position < lastend) {
-            cerr << "impossibility?: indel realigned left of another indel" << endl << alignment.Name
-                << " " << alignment.Position << endl << alignment.QueryBases << endl;
+            cerr << "impossibility?: indel realigned left of another indel" << endl << alignment.QNAME
+                << " " << alignment.POSITION << endl << alignment.QUERYBASES << endl;
             exit(1);
+
         } else if (indel.position == lastend && indel.insertion == last.insertion) {
-            CigarOp& op = newCigar.back();
+            CIGOP& op = newCigar.back();
+#ifdef HAVE_BAMTOOLS
             op.Length += indel.length;
+#else
+	    op = SeqLib::CigarField(op.Type(), op.Length() + indel.length);
+#endif
         } else if (indel.position >= lastend) {  // also catches differential indels, but with the same position
-            newCigar.push_back(CigarOp('M', indel.position - lastend));
+	    newCigar.ADDCIGAR(CIGOP('M', indel.position - lastend));
             if (indel.insertion) {
-                newCigar.push_back(CigarOp('I', indel.length));
+                newCigar.ADDCIGAR(CIGOP('I', indel.length));
             } else if (indel.splice) {
-                newCigar.push_back(CigarOp('N', indel.length));
+                newCigar.ADDCIGAR(CIGOP('N', indel.length));
             } else { // deletion
-                newCigar.push_back(CigarOp('D', indel.length));
+                newCigar.ADDCIGAR(CIGOP('D', indel.length));
             }
 
         }
@@ -284,34 +295,40 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
     }
     
     if (lastend < alignedLength) {
-        newCigar.push_back(CigarOp('M', alignedLength - lastend));
+        newCigar.ADDCIGAR(CIGOP('M', alignedLength - lastend));
     }
 
     if (!softEnd.empty()) {
-        newCigar.push_back(CigarOp('S', softEnd.size()));
+        newCigar.ADDCIGAR(CIGOP('S', softEnd.size()));
     }
 
     LEFTALIGN_DEBUG(endl);
 
 #ifdef VERBOSE_DEBUG
     if (debug) {
-        for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
-            c != alignment.CigarData.end(); ++c) {
-            unsigned int l = c->Length;
-            char t = c->Type;
+      CIGAR cigar = alignment.GETCIGAR;
+        for (CIGAR::const_iterator c = cigar.begin();
+            c != cigar.end(); ++c) {
+            unsigned int l = c->CIGLEN;
+            char t = c->CIGTYPE;
             cerr << l << t;
         }
         cerr << endl;
     }
 #endif
 
+#ifdef HAVE_BAMTOOLS
     alignment.CigarData = newCigar;
+#else
+    alignment.SetCigar(newCigar);
+#endif
 
-    for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
-        c != alignment.CigarData.end(); ++c) {
-        unsigned int l = c->Length;
-        char t = c->Type;
-        cigar_after << l << t;
+    cigar = alignment.GETCIGAR;
+    for (CIGAR::const_iterator c = cigar.begin();
+	 c != cigar.end(); ++c) {
+      unsigned int l = c->CIGLEN;
+      char t = c->CIGTYPE;
+      cigar_after << l << t;
     }
     LEFTALIGN_DEBUG(cigar_after.str() << endl);
 
@@ -324,18 +341,22 @@ bool leftAlign(BamAlignment& alignment, string& referenceSequence, bool debug) {
 
 }
 
-int countMismatches(BamAlignment& alignment, string referenceSequence) {
+int countMismatches(BAMALIGN& alignment, string referenceSequence) {
+  const string alignmentSequence = alignment.QUERYBASES;
 
     int mismatches = 0;
     int sp = 0;
     int rp = 0;
-    for (vector<CigarOp>::const_iterator c = alignment.CigarData.begin();
-        c != alignment.CigarData.end(); ++c) {
-        unsigned int l = c->Length;
-        char t = c->Type;
+      CIGAR cigar = alignment.GETCIGAR;
+        for (CIGAR::const_iterator c = cigar.begin();
+            c != cigar.end(); ++c) {
+        unsigned int l = c->CIGLEN;
+        char t = c->CIGTYPE;
+
         if (t == 'M' || t == 'X' || t == '=') { // match or mismatch
             for (int i = 0; i < l; ++i) {
-                if (alignment.QueryBases.at(rp) != referenceSequence.at(sp))
+	      //if (alignment.QueryBases.at(rp) != referenceSequence.at(sp))
+                if (alignmentSequence.at(rp) != referenceSequence.at(sp))
                     ++mismatches;
                 ++sp;
                 ++rp;
@@ -360,15 +381,13 @@ int countMismatches(BamAlignment& alignment, string referenceSequence) {
 // realignment.  Returns true on realignment success or non-realignment.
 // Returns false if we exceed the maximum number of realignment iterations.
 //
-bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxiterations, bool debug) {
+    bool stablyLeftAlign(BAMALIGN& alignment, string referenceSequence, int maxiterations, bool debug) {
 
 #ifdef VERBOSE_DEBUG
     int mismatchesBefore = countMismatches(alignment, referenceSequence);
 #endif
 
     if (!leftAlign(alignment, referenceSequence, debug)) {
-
-        LEFTALIGN_DEBUG("did not realign" << endl);
         return true;
 
     } else {
@@ -381,7 +400,7 @@ bool stablyLeftAlign(BamAlignment& alignment, string referenceSequence, int maxi
         int mismatchesAfter = countMismatches(alignment, referenceSequence);
 
         if (mismatchesBefore != mismatchesAfter) {
-            cerr << alignment.Name << endl;
+            cerr << alignment.QNAME << endl;
             cerr << "ERROR: found " << mismatchesBefore << " mismatches before, but " << mismatchesAfter << " after left realignment!" << endl;
             exit(1);
         }
