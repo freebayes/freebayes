@@ -445,8 +445,8 @@ string AlleleParser::vcfHeader() {
         << "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1]\">" << endl
 
         // observation counts
-        << "##INFO=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observation count, with partial observations recorded fractionally\">" << endl
-        << "##INFO=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observations, with partial observations recorded fractionally\">" << endl
+        << "##INFO=<ID=RO,Number=1,Type=Integer,Description=\"Count of full observations of the reference haplotype.\">" << endl
+        << "##INFO=<ID=AO,Number=A,Type=Integer,Description=\"Count of full observations of this alternate haplotype.\">" << endl
         << "##INFO=<ID=PRO,Number=1,Type=Float,Description=\"Reference allele observation count, with partial observations recorded fractionally\">" << endl
         << "##INFO=<ID=PAO,Number=A,Type=Float,Description=\"Alternate allele observations, with partial observations recorded fractionally\">" << endl
 
