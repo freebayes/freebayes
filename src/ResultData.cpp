@@ -76,7 +76,7 @@ vcflib::Variant& Results::vcf(
     if (parameters.calculateMarginals) var.format.push_back("GQ");
     // XXX
     var.format.push_back("DP");
-    var.format.push_back("DPR");
+    var.format.push_back("AD");
     var.format.push_back("RO");
     var.format.push_back("QR");
     var.format.push_back("AO");
@@ -519,7 +519,7 @@ vcflib::Variant& Results::vcf(
             }
 
             sampleOutput["DP"].push_back(convert(sample.observationCount()));
-            sampleOutput["DPR"].push_back(convert(sample.observationCount()));
+            sampleOutput["AD"].push_back(convert(sample.observationCount(refbase)));
             sampleOutput["RO"].push_back(convert(sample.observationCount(refbase)));
             sampleOutput["QR"].push_back(convert(sample.qualSum(refbase)));
 
@@ -527,7 +527,7 @@ vcflib::Variant& Results::vcf(
                 Allele& altAllele = *aa;
                 string altbase = altAllele.base();
                 sampleOutput["AO"].push_back(convert(sample.observationCount(altbase)));
-                sampleOutput["DPR"].push_back(convert(sample.observationCount(altbase)));
+                sampleOutput["AD"].push_back(convert(sample.observationCount(altbase)));
                 sampleOutput["QA"].push_back(convert(sample.qualSum(altbase)));
             }
 
