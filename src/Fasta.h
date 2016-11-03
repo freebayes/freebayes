@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include "LargeFileSupport.h"
+#include "Utility.h"
 #include <sys/stat.h>
 #include "split.h"
 #include <stdlib.h>
@@ -62,9 +63,11 @@ class FastaReference {
         FILE* file;
         FastaIndex* index;
         vector<FastaIndexEntry> findSequencesStartingWith(string seqnameStart);
+        string getRawSequence(string seqname);
         string getSequence(string seqname);
         // potentially useful for performance, investigate
         // void getSequence(string seqname, string& sequence);
+        string getRawSubSequence(string seqname, int start, int length);
         string getSubSequence(string seqname, int start, int length);
         string sequenceNameStartingWith(string seqnameStart);
         long unsigned int sequenceLength(string seqname);

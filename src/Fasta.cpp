@@ -245,7 +245,17 @@ FastaReference::~FastaReference(void) {
     delete index;
 }
 
-string FastaReference::getSequence(string seqname) {
+string removeIupacBases(string& str) {
+    const string validBases = "ATGCN";
+    size_t found = str.find_first_not_of(validBases);
+    while (found != string::npos) {
+        str[found] = 'N';
+        found = str.find_first_not_of(validBases, found + 1);
+    }
+    return str;
+}
+
+string FastaReference::getRawSequence(string seqname) {
     FastaIndexEntry entry = index->entry(seqname);
     int newlines_in_sequence = entry.length / entry.line_blen;
     int seqlen = newlines_in_sequence  + entry.length;
@@ -263,6 +273,11 @@ string FastaReference::getSequence(string seqname) {
     return s;
 }
 
+string FastaReference::getSequence(string seqname) {
+    string u = uppercase(getRawSequence(seqname));
+    return removeIupacBases(u);
+}
+
 // TODO cleanup; odd function.  use a map
 string FastaReference::sequenceNameStartingWith(string seqnameStart) {
     try {
@@ -273,7 +288,7 @@ string FastaReference::sequenceNameStartingWith(string seqnameStart) {
     }
 }
 
-string FastaReference::getSubSequence(string seqname, int start, int length) {
+string FastaReference::getRawSubSequence(string seqname, int start, int length) {
     FastaIndexEntry entry = index->entry(seqname);
     length = min(length, entry.length - start);
     if (start < 0 || length < 1) {
@@ -299,6 +314,11 @@ string FastaReference::getSubSequence(string seqname, int start, int length) {
     free(seq);
     s.resize((pend - pbegin)/sizeof(char));
     return s;
+}
+
+string FastaReference::getSubSequence(string seqname, int start, int length) {
+    string u = uppercase(getRawSubSequence(seqname, start, length));
+    return removeIupacBases(u);
 }
 
 long unsigned int FastaReference::sequenceLength(string seqname) {
