@@ -180,6 +180,7 @@ const short Allele::currentQuality(void) const {
             return quality;
             break;
     }
+    return 0;
 }
 
 const long double Allele::lncurrentQuality(void) const {

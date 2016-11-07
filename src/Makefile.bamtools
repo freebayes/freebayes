@@ -8,24 +8,18 @@
 CXX=g++
 C=gcc
 
-export CXXFLAGS
-export C
-export CC
-export CXX
-export LDFLAGS
-export LIBFLAGS
-
 # Compiler flags
 CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
+BAMTOOLS_ROOT=../bamtools
 SEQLIB_ROOT=../SeqLib
 VCFLIB_ROOT=../vcflib
 TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
 HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
 LIBS = -lz -lm -lpthread
-INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
+INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
@@ -43,6 +37,9 @@ gprof:
 
 .PHONY: all static debug profiling gprof
 
+# builds bamtools static lib, and copies into root
+$(BAMTOOLS_ROOT)/lib/libbamtools.a:
+	cd $(BAMTOOLS_ROOT) && mkdir -p build && cd build && cmake .. && $(MAKE)
 $(HTSLIB_ROOT)/libhts.a:
 	cd $(HTSLIB_ROOT) && make
 
@@ -81,6 +78,7 @@ OBJECTS=BedReader.o \
 		../vcflib/smithwaterman/Repeats.o \
 		../vcflib/smithwaterman/IndelAllele.o \
 		Variant.o \
+		$(BAMTOOLS_ROOT)/lib/libbamtools.a \
 			$(SEQLIB_ROOT)/src/libseqlib.a	\
 			$(SEQLIB_ROOT)/bwa/libbwa.a	\
 			$(SEQLIB_ROOT)/fermi-lite/libfml.a	\
@@ -99,10 +97,10 @@ alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
-bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CXX) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
+bamleftalign ../bin/bamleftalign: $(BAMTOOLS_ROOT)/lib/libbamtools.a $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
+	$(CXX) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o $(BAMTOOLS_ROOT)/lib/libbamtools.a $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
 
-bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
+bamfiltertech ../bin/bamfiltertech: $(BAMTOOLS_ROOT)/lib/libbamtools.a $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
@@ -117,7 +115,7 @@ alleles.o: alleles.cpp AlleleParser.o Allele.o
 dummy.o: dummy.cpp AlleleParser.o Allele.o
 	$(CXX) $(CFLAGS) $(INCLUDE) -c dummy.cpp
 
-freebayes.o: freebayes.cpp TryCatch.h $(HTSLIB_ROOT)/libhts.a 
+freebayes.o: freebayes.cpp TryCatch.h $(HTSLIB_ROOT)/libhts.a $(BAMTOOLS_ROOT)/lib/libbamtools.a
 	$(CXX) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
@@ -138,7 +136,7 @@ Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
 Ewens.o: Ewens.cpp Ewens.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c Ewens.cpp
 
-AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(HTSLIB_ROOT)/libhts.a
+AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(BAMTOOLS_ROOT)/lib/libbamtools.a $(HTSLIB_ROOT)/libhts.a
 	$(CXX) $(CFLAGS) $(INCLUDE) -c AlleleParser.cpp
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h
@@ -186,7 +184,7 @@ bamleftalign.o: bamleftalign.cpp LeftAlign.cpp
 bamfiltertech.o: bamfiltertech.cpp
 	$(CXX) $(CFLAGS) $(INCLUDE) -c bamfiltertech.cpp
 
-LeftAlign.o: LeftAlign.h LeftAlign.cpp $(HTSLIB_ROOT)/libhts.a
+LeftAlign.o: LeftAlign.h LeftAlign.cpp $(BAMTOOLS_ROOT)/lib/libbamtools.a $(HTSLIB_ROOT)/libhts.a
 	$(CXX) $(CFLAGS) $(INCLUDE) -c LeftAlign.cpp
 
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
@@ -277,6 +275,6 @@ autoversion:
 
 clean:
 	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles ../vcflib/*.o ../vcflib/tabixpp/*.{o,a}
+	cd $(BAMTOOLS_ROOT)/build && make clean
 	cd ../vcflib/smithwaterman && make clean
-	cd ../SeqLib && make clean
 

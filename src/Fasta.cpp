@@ -87,6 +87,7 @@ ostream& operator<<(ostream& output, FastaIndex& fastaIndex) {
     for( vector<FastaIndexEntry>::iterator fit = sortedIndex.begin(); fit != sortedIndex.end(); ++fit) {
         output << *fit << endl;
     }
+    return output;
 }
 
 void FastaIndex::indexReference(string refname) {
