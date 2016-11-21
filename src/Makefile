@@ -30,16 +30,16 @@ INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/sm
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
 static:
-	$(MAKE) CFLAGS="$(CFLAGS) -static" all
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -static" all
 
 debug:
-	$(MAKE) CFLAGS="$(CFLAGS) -D VERBOSE_DEBUG -g -rdynamic" all
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -D VERBOSE_DEBUG -g -rdynamic" all
 
 profiling:
 	$(MAKE) CFLAGS="$(CFLAGS) -g" all
 
 gprof:
-	$(MAKE) CFLAGS="$(CFLAGS) -pg" all
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -pg" all
 
 .PHONY: all static debug profiling gprof
 
@@ -91,109 +91,109 @@ HEADERS=multichoose.h version_git.h
 # executables
 
 freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
-	$(CXX) $(CFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
 alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
-	$(CXX) $(CFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
 
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
-	$(CXX) $(CFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
 bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CXX) $(CFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
-	$(CXX) $(CFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
 # objects
 
 Fasta.o: Fasta.cpp Utility.o
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Fasta.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Fasta.cpp
 
 alleles.o: alleles.cpp AlleleParser.o Allele.o
-	$(CXX) $(CFLAGS) $(INCLUDE) -c alleles.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c alleles.cpp
 
 dummy.o: dummy.cpp AlleleParser.o Allele.o
-	$(CXX) $(CFLAGS) $(INCLUDE) -c dummy.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c dummy.cpp
 
 freebayes.o: freebayes.cpp TryCatch.h $(HTSLIB_ROOT)/libhts.a 
-	$(CXX) $(CFLAGS) $(INCLUDE) -c freebayes.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
 	$(C) $(CFLAGS) $(INCLUDE) -c fastlz.c	
 
 Parameters.o: Parameters.cpp Parameters.h Version.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Parameters.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Parameters.cpp
 
 Allele.o: Allele.cpp Allele.h multichoose.h Genotype.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Allele.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Allele.cpp
 
 Sample.o: Sample.cpp Sample.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Sample.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Sample.cpp
 
 Genotype.o: Genotype.cpp Genotype.h Allele.h multipermute.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Genotype.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Genotype.cpp
 
 Ewens.o: Ewens.cpp Ewens.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Ewens.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Ewens.cpp
 
 AlleleParser.o: AlleleParser.cpp AlleleParser.h multichoose.h Parameters.h $(HTSLIB_ROOT)/libhts.a
-	$(CXX) $(CFLAGS) $(INCLUDE) -c AlleleParser.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c AlleleParser.cpp
 
 Utility.o: Utility.cpp Utility.h Sum.h Product.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Utility.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Utility.cpp
 
 SegfaultHandler.o: SegfaultHandler.cpp SegfaultHandler.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c SegfaultHandler.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c SegfaultHandler.cpp
 
 Dirichlet.o: Dirichlet.h Dirichlet.cpp Sum.h Product.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Dirichlet.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Dirichlet.cpp
 
 Multinomial.o: Multinomial.h Multinomial.cpp Sum.h Product.h Utility.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Multinomial.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Multinomial.cpp
 
 DataLikelihood.o: DataLikelihood.cpp DataLikelihood.h Sum.h Product.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c DataLikelihood.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c DataLikelihood.cpp
 
 Marginals.o: Marginals.cpp Marginals.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Marginals.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Marginals.cpp
 
 ResultData.o: ResultData.cpp ResultData.h Result.h Result.cpp Allele.h Utility.h Genotype.h AlleleParser.h Version.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c ResultData.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c ResultData.cpp
 
 Result.o: Result.cpp Result.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Result.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Result.cpp
 
 NonCall.o: NonCall.cpp NonCall.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c NonCall.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c NonCall.cpp
 
 BedReader.o: BedReader.cpp BedReader.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c BedReader.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c BedReader.cpp
 
 CNV.o: CNV.cpp CNV.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c CNV.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c CNV.cpp
 
 Bias.o: Bias.cpp Bias.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c Bias.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c Bias.cpp
 
 split.o: split.h split.cpp
-	$(CXX) $(CFLAGS) $(INCLUDE) -c split.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c split.cpp
 
 bamleftalign.o: bamleftalign.cpp LeftAlign.cpp
-	$(CXX) $(CFLAGS) $(INCLUDE) -c bamleftalign.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c bamleftalign.cpp
 
 bamfiltertech.o: bamfiltertech.cpp
-	$(CXX) $(CFLAGS) $(INCLUDE) -c bamfiltertech.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c bamfiltertech.cpp
 
 LeftAlign.o: LeftAlign.h LeftAlign.cpp $(HTSLIB_ROOT)/libhts.a
-	$(CXX) $(CFLAGS) $(INCLUDE) -c LeftAlign.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c LeftAlign.cpp
 
 IndelAllele.o: IndelAllele.cpp IndelAllele.h
-	$(CXX) $(CFLAGS) $(INCLUDE) -c IndelAllele.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c IndelAllele.cpp
 
 Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
-	$(CXX) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o:
 	cd $(TABIX_ROOT)/ && make
