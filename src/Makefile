@@ -275,6 +275,5 @@ autoversion:
 
 clean:
 	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles ../vcflib/*.o ../vcflib/tabixpp/*.{o,a}
-	cd $(BAMTOOLS_ROOT)/build && make clean
-	cd ../vcflib/smithwaterman && make clean
-
+	if [ -d $(BAMTOOLS_ROOT)/build ]; then make -C $(BAMTOOLS_ROOT)/build clean; fi
+	make -C $(VCFLIB_ROOT)/smithwaterman clean
