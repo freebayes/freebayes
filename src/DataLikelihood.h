@@ -26,25 +26,21 @@ long double
 probObservedAllelesGivenGenotype(
         Sample& sample,
         Genotype& genotype,
-        double dependenceFactor,
-        bool useMapQ,
         Bias& observationBias,
-        bool standardGLs,
         vector<Allele>& genotypeAlleles,
         Contamination& contaminations,
-        map<string, double>& freqs);
+        map<string, double>& freqs,
+        Parameters& parameters);
 
 vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
         vector<Genotype*>& genotypes,
-        double dependenceFactor,
-        bool useMapQ,
         Bias& observationBias,
-        bool standardGLs,
         vector<Allele>& genotypeAlleles,
         Contamination& contaminations,
-        map<string, double>& freqs);
+        map<string, double>& freqs,
+        Parameters& parameters);
 
 void
 calculateSampleDataLikelihoods(

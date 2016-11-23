@@ -40,24 +40,7 @@
 #include "Bias.h"
 #include "Contamination.h"
 #include "NonCall.h"
-
-
-// local helper debugging macros to improve code readability
-#define DEBUG(msg) \
-     if (parameters.debug) { cerr << msg << endl; }
-
-// lower-priority messages
-#ifdef VERBOSE_DEBUG
-#define DEBUG2(msg) \
-    if (parameters.debug2) { cerr << msg << endl; }
-#else
-#define DEBUG2(msg)
-#endif
-
-// must-see error messages
-#define ERROR(msg) \
-    cerr << msg << endl;
-
+#include "Logging.h"
 
 using namespace std;
 

@@ -4,26 +4,7 @@
                          // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
                          // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
 #include "multipermute.h"
-
-// local helper debugging macros to improve code readability
-#define DEBUG(msg) \
-    if (parameters.debug) { cerr << msg << endl; }
-
-// lower-priority messages
-#ifdef VERBOSE_DEBUG
-#define DEBUG2(msg) \
-    if (parameters.debug2) { cerr << msg << endl; }
-#else
-#define DEBUG2(msg)
-#endif
-
-// must-see error messages
-#define ERROR(msg) \
-    cerr << "ERROR(freebayes): " << msg << endl;
-
-// must-see warning messages
-#define WARNING(msg) \
-    cerr << "WARNING(freebayes): " << msg << endl;
+#include "Logging.h"
 
 using namespace std;
 
@@ -1988,12 +1969,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
         ra.alleles.pop_back();
     }
 
-#ifdef VERBOSE_DEBUG
-    if (parameters.debug2) {
-        cerr << "alleles:\n" << join(ra.alleles, "\n");
-        cerr << endl;
-    }
-#endif
+    DEBUG2("alleles:" << endl << join(ra.alleles, "\n"));
 
     /*
       cerr << "ra.alleles.size() = " << ra.alleles.size() << endl;
