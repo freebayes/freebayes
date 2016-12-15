@@ -1,6 +1,9 @@
 all: vcflib/Makefile log
 	cd src && $(MAKE)
 
+wbamtools: vcflib/Makefile log
+	cd src && $(MAKE) -f Makefile.bamtools
+
 log: src/version_git.h
 	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
 

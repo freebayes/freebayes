@@ -93,7 +93,6 @@ Luckily, if you have access to https:// on port 443, then you can use this
 ## Compilation
 
 FreeBayes requires g++ and the standard C and C++ development libraries.
-Additionally, cmake is required for building the BamTools API.
 
     make
 
@@ -106,6 +105,9 @@ accomplished via
 
     sudo make install
 
+Users can optionally build with [BamTools](https://github.com/pezmaster31/bamtools) instead of [SeqLib](https://github.com/walaj/SeqLib). Building with BamTools requires CMake.
+
+    make wbamtools
 
 ## Usage
 
