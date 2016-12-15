@@ -152,6 +152,7 @@ int main(int argc, char** argv) {
         cerr << "could not open stdout for writing" << endl;
         exit(1);
     }
+    writer.WriteHeader();
 #endif
 
     // store the names of all the reference sequences in the BAM file
