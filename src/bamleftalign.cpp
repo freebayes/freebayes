@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
     }
 #else
 
-    SeqLib::BamWriter writer(isuncompressed ? SeqLib::SAM : SeqLib::BAM);
+    SeqLib::BamWriter writer(SeqLib::BAM);
     SeqLib::BamHeader hdr = reader.Header();
     if (hdr.isEmpty()) {
       cerr << "could not open header for input" << endl;
