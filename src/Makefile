@@ -9,7 +9,7 @@ CXX=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
+CFLAGS=-std=c++11 -O3 -D_FILE_OFFSET_BITS=64 -g
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 BAMTOOLS_ROOT=../bamtools
@@ -19,7 +19,7 @@ TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
 HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
 LIBS = -lz -lm -lpthread
-INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
+INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(VCFLIB_ROOT)/fastahack/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
