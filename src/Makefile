@@ -9,7 +9,7 @@ CXX=g++
 C=gcc
 
 # Compiler flags
-CFLAGS=-std=c++11 -O3 -D_FILE_OFFSET_BITS=64 -g
+CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 BAMTOOLS_ROOT=../bamtools
@@ -191,7 +191,7 @@ IndelAllele.o: IndelAllele.cpp IndelAllele.h
 	$(CXX) $(CFLAGS) $(INCLUDE) -c IndelAllele.cpp
 
 Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
-	$(CXX) $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
+	$(CXX) -std=c++11 $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o:
 	cd $(TABIX_ROOT)/ && make
