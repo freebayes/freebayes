@@ -101,6 +101,11 @@ Will build the executable freebayes, as well as the utilities bamfiltertech and
 bamleftalign.  These executables can be found in the `bin/` directory in the 
 repository.
 
+If you are planning to run freebayes in a NodeJS environment, Bamtools should be
+compiled with NodeJS support.
+
+    make BAMTOOLS_ARGS="-DEnableNodeJS=true"
+
 Users may wish to install to e.g. /usr/local/bin (default), which is 
 accomplished via
 
