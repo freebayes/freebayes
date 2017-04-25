@@ -27,6 +27,7 @@ HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
 LIBS = -lz -lm -lpthread
 INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
+#INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(VCFLIB_ROOT)/fastahack/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
@@ -195,6 +196,7 @@ IndelAllele.o: IndelAllele.cpp IndelAllele.h
 
 Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
+#	$(CXX) -std=c++11 $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o:
 	cd $(TABIX_ROOT)/ && make
