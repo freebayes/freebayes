@@ -7,7 +7,7 @@ PATH=../bin:$PATH # for freebayes
 PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 19
+plan tests 20
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -102,6 +102,8 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 
 
 #is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
 
+# check input can hand colons in name like the HLA contigs in GRCh38
+is $(freebayes -f tiny/hla.fa -@ tiny/hla.vcf.gz -r HLA-DRB1*16:02:01:1-10000 tiny/NA12878.chr22.tiny.hla.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input even with : in contig names"
 
 is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam | grep ^1 | wc -l) 1 "freebayes can handle spliced reads"
 
