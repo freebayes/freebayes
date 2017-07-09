@@ -1415,9 +1415,9 @@ int referenceLengthFromCigar(string& cigar) {
         case 'M':
         case 'X':
         case 'D':
-        case 'N':
             r += c->first;
             break;
+        case 'N':
         case 'I':
         default:
             break;
@@ -1434,9 +1434,9 @@ int Allele::referenceLengthFromCigar(void) {
         case 'M':
         case 'X':
         case 'D':
-        case 'N':
             r += c->first;
             break;
+        case 'N':
         case 'I':
         default:
             break;
@@ -1448,30 +1448,21 @@ int Allele::referenceLengthFromCigar(void) {
 
 // combines the two alleles into a complex variant, updates important data
 void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
-    //cout << stringForAllele(*this) << endl << stringForAllele(newAllele) << endl;
+    //cerr << stringForAllele(*this) << endl << stringForAllele(newAllele) << endl;
     type = newType;
     alternateSequence += newAllele.alternateSequence;
     length += newAllele.length; // hmmm
     basesRight = newAllele.basesRight;
     baseQualities.insert(baseQualities.end(), newAllele.baseQualities.begin(), newAllele.baseQualities.end());
     currentBase = base();
-    // XXX note that we don't add Q values for intermingled gaps in combined alleles
-    if (newAllele.type != ALLELE_REFERENCE) {
-        quality = min(newAllele.quality, quality);
-        lnquality = max(newAllele.lnquality, lnquality);
-        //quality = minQuality(baseQualities);
-        //lnquality = log(quality);
-    } else {
-        quality = averageQuality(baseQualities);
-        lnquality = log(quality);
-        basesRight += newAllele.referenceLength;
-    }
+    quality = averageQuality(baseQualities);
+    lnquality = phred2ln(quality);
+    basesRight += newAllele.referenceLength;
     if (newAllele.type != ALLELE_REFERENCE) {
         repeatRightBoundary = newAllele.repeatRightBoundary;
     }
     cigar = mergeCigar(cigar, newAllele.cigar);
     referenceLength = referenceLengthFromCigar();
-    //cout << stringForAllele(*this) << endl << endl;
 }
 
 void Allele::squash(void) {

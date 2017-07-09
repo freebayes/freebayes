@@ -17,7 +17,8 @@ by_region=$((for region in \
     q:1811-1825 \
     q:1911-1922 \
     q:2344-2355 \
-    q:3257-3268 \
+    q:2630-2635 \
+    q:3250-3268 \
     q:4443-4454 \
     q:5003-5014 \
     q:5074-5085 \
@@ -45,7 +46,8 @@ q	1002	1013
 q	1811	1825
 q	1911	1922
 q	2344	2355
-q	3257	3268
+q	2630	2635
+q	3250	3268
 q	4443	4454
 q	5003	5014
 q	5074	5085
@@ -105,7 +107,7 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 
 # check input can hand colons in name like the HLA contigs in GRCh38
 is $(freebayes -f tiny/hla.fa -@ tiny/hla.vcf.gz -r HLA-DRB1*16:02:01:1-10000 tiny/NA12878.chr22.tiny.hla.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input even with : in contig names"
 
-is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam | grep ^1 | wc -l) 1 "freebayes can handle spliced reads"
+is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam -F 0.05 -C 1 | grep ^1 | wc -l) 3 "freebayes can handle spliced reads"
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
 
