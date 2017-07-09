@@ -9,7 +9,7 @@ plan tests 7
 
 ref=$(basename $0).ref
 
-trap 'rm -f ${ref}* $(basename $0)*.bam*' EXIT
+#trap 'rm -f ${ref}* $(basename $0)*.bam*' EXIT
 
 cat >${ref} <<REF
 >ref
@@ -20,7 +20,7 @@ samtools faidx ${ref}
 function run_freebayes() {
     freebayes "$@" \
               --haplotype-length 0 --min-alternate-count 1 \
-              --min-alternate-fraction 0 --pooled-continuous --report-monomorphic \
+              --min-alternate-fraction 0 --pooled-continuous  \
               --ploidy 1 \
               -f $ref $bam \
               2>&1 \
@@ -39,7 +39,7 @@ function make_bam() {
 @HD	VN:1.5	SO:coordinate
 @SQ	SN:ref	LN:9
 @RG	ID:${id}	SM:${sm}	PL:${pl}
-alt	0	ref	1	30	1=1X1=2X1=1X1=1X	*	0	0	A${first_snp}TTAGGTT	*	RG:Z:${id}
+alt	0	ref	1	30	1=1X1=2X1=1X1=1X	*	0	0	A${first_snp}TTAGGTT	AAAAAAAAA	RG:Z:${id}
 SAM
     samtools index ${bam}
     echo ${bam}

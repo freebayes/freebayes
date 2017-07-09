@@ -36,7 +36,7 @@ ALT
 samtools view -S -b - >$bam <<SAM
 @HD	VN:1.5	SO:coordinate
 @SQ	SN:ref	LN:11
-alt	0	ref	1	30	1X1=2X1=1X1=1X2=1X	*	0	0	GTTAGGTTAAC	*
+alt	0	ref	1	30	1X1=2X1=1X1=1X2=1X	*	0	0	GTTAGGTTAAC	IIIIIIIIIII
 SAM
 samtools index $bam
 
@@ -70,7 +70,7 @@ PS4='\n+ '
 function run_freebayes() {
     ($root/bin/freebayes "$@" \
         --haplotype-length 0 --min-alternate-count 1 \
-        --min-alternate-fraction 0 --pooled-continuous --report-monomorphic \
+        --min-alternate-fraction 0 --pooled-continuous \
         --ploidy 1 \
         -f $ref $bam \
         | grep -vE "^#" | cut -f1-5)

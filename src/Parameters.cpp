@@ -202,7 +202,7 @@ void Parameters::usage(char** argv) {
         << "   -E --max-complex-gap N" << endl
         << "      --haplotype-length N" << endl
         << "                   Allow haplotype calls with contiguous embedded matches of up" << endl
-        << "                   to this length.  (default: 3)" << endl
+        << "                   to this length. Set N=-1 to disable clumping. (default: 3)" << endl
         << "   --min-repeat-size N" << endl
         << "                   When assembling observations across repeats, require the total repeat" << endl
         << "                   length at least this many bp.  (default: 5)" << endl

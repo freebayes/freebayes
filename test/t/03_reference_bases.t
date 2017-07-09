@@ -24,13 +24,13 @@ REF
 samtools view -S -b - >${bam} <<SAM
 @HD	VN:1.5	SO:coordinate
 @SQ	SN:ref	LN:31
-alt	0	ref	1	30	13=1X1=12X1=1X1=1X	*	0	0	CCCCCCCCCCCCAGTTAAAAAAAAAAAGGTT	*
+alt	0	ref	1	30	13=1X1=12X1=1X1=1X	*	0	0	CCCCCCCCCCCCAGTTAAAAAAAAAAAGGTT	AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 SAM
 samtools index ${bam}
 
 function run_freebayes() {
     freebayes --haplotype-length 0 --min-alternate-count 1 \
-              --min-alternate-fraction 0 --pooled-continuous --report-monomorphic \
+              --min-alternate-fraction 0 --pooled-continuous \
               --ploidy 1 \
               -f $ref $bam \
               2>&1 \

@@ -77,6 +77,7 @@ public:
     void addAllele(Allele allele, bool mergeComplex = true,
                    int maxComplexGap = 0, bool boundIndels = false);
     bool fitHaplotype(int pos, int haplotypeLength, Allele*& aptr, bool allowPartials = false);
+    void clumpAlleles(bool mergeComplex = true, int maxComplexGap = 0, bool boundIndels = false);
 
 };
 

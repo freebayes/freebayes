@@ -305,7 +305,8 @@ int main (int argc, char *argv[]) {
         string referenceBase = parser->currentReferenceHaplotype();
 
 
-        /* for debugging
+        // for debugging
+        /*
         for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
             string sampleName = s->first;
             Sample& sample = s->second;

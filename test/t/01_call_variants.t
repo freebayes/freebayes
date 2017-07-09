@@ -17,7 +17,8 @@ by_region=$((for region in \
     q:1811-1825 \
     q:1911-1922 \
     q:2344-2355 \
-    q:3257-3268 \
+    q:2630-2635 \
+    q:3250-3268 \
     q:4443-4454 \
     q:5003-5014 \
     q:5074-5085 \
@@ -45,7 +46,8 @@ q	1002	1013
 q	1811	1825
 q	1911	1922
 q	2344	2355
-q	3257	3268
+q	2630	2635
+q	3250	3268
 q	4443	4454
 q	5003	5014
 q	5074	5085
@@ -103,7 +105,7 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 
 #is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
 
 
-is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam | grep ^1 | wc -l) 1 "freebayes can handle spliced reads"
+is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam -F 0.05 -C 1 | grep ^1 | wc -l) 3 "freebayes can handle spliced reads"
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
 
