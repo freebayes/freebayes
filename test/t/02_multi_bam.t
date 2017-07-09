@@ -9,7 +9,7 @@ plan tests 7
 
 ref=$(basename $0).ref
 
-#trap 'rm -f ${ref}* $(basename $0)*.bam*' EXIT
+trap 'rm -f ${ref}* $(basename $0)*.bam*' EXIT
 
 cat >${ref} <<REF
 >ref
