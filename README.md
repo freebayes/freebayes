@@ -92,7 +92,8 @@ Luckily, if you have access to https:// on port 443, then you can use this
 
 ## Compilation
 
-FreeBayes requires g++ and the standard C and C++ development libraries.
+FreeBayes requires g++ and the standard C and C++ development libraries, as
+well as zlib.
 Additionally, cmake is required for building the BamTools API.
 
     make
