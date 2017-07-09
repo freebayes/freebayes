@@ -92,7 +92,8 @@ Luckily, if you have access to https:// on port 443, then you can use this
 
 ## Compilation
 
-FreeBayes requires g++ and the standard C and C++ development libraries.
+FreeBayes requires g++ and the standard C and C++ development libraries, as
+well as zlib.
 Additionally, cmake is required for building the BamTools API.
 
     make
@@ -106,6 +107,8 @@ accomplished via
 
     sudo make install
 
+Note that the freebayes-parallel script and the programs on which it depends are
+not installed by this command.
 
 ## Usage
 
@@ -179,7 +182,7 @@ Note that any of the above examples can be made parallel by using the
 scripts/freebayes-parallel script.  If you find freebayes to be slow, you
 should probably be running it in parallel using this script to run on a single
 host, or generating a series of scripts, one per region, and run them on a
-cluster.
+cluster. Be aware that the freebayes-parallel script contains calls to other programs  using relative paths from the scripts subdirectory; the easiest way to ensure a successful run is to invoke the freebayes-parallel script from within the scripts subdirectory.
 
 
 ## Calling variants: from fastq to VCF

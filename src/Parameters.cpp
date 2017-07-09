@@ -787,7 +787,7 @@ Parameters::Parameters(int argc, char** argv) {
             // -m --min-mapping-quality
         case 'm':
             if (!convert(optarg, MQL0)) {
-                cerr << "could not parse min-base-quality" << endl;
+                cerr << "could not parse min-mapping-quality" << endl;
                 exit(1);
             }
             break;

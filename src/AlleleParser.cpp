@@ -733,28 +733,28 @@ void AlleleParser::loadTargets(void) {
         int startPos;
         int stopPos;
 
-        size_t foundFirstColon = region.find(":");
+        size_t foundLastColon = region.rfind(":");
 
         // we only have a single string, use the whole sequence as the target
-        if (foundFirstColon == string::npos) {
+        if (foundLastColon == string::npos) {
             startSeq = region;
             startPos = 0;
             stopPos = -1;
         } else {
-            startSeq = region.substr(0, foundFirstColon);
+            startSeq = region.substr(0, foundLastColon);
             string sep = "..";
-            size_t foundRangeSep = region.find(sep, foundFirstColon);
+            size_t foundRangeSep = region.find(sep, foundLastColon);
             if (foundRangeSep == string::npos) {
                 sep = "-";
-                foundRangeSep = region.find(sep, foundFirstColon);
+                foundRangeSep = region.find(sep, foundLastColon);
             }
             if (foundRangeSep == string::npos) {
-                startPos = stringToInt(region.substr(foundFirstColon + 1));
+                startPos = stringToInt(region.substr(foundLastColon + 1));
                 // differ from bamtools in this regard, in that we process only
                 // the specified position if a range isn't given
                 stopPos = startPos + 1;
             } else {
-                startPos = stringToInt(region.substr(foundFirstColon + 1, foundRangeSep - foundFirstColon).c_str());
+                startPos = stringToInt(region.substr(foundLastColon + 1, foundRangeSep - foundLastColon).c_str());
                 // if we have range sep specified, but no second number, read to the end of sequence
                 if (foundRangeSep + sep.size() != region.size()) {
                     stopPos = stringToInt(region.substr(foundRangeSep + sep.size()).c_str()); // end-exclusive, bed-format

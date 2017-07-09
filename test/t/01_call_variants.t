@@ -104,6 +104,8 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 
 
 #is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
 
+# check input can hand colons in name like the HLA contigs in GRCh38
+is $(freebayes -f tiny/hla.fa -@ tiny/hla.vcf.gz -r HLA-DRB1*16:02:01:1-10000 tiny/NA12878.chr22.tiny.hla.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input even with : in contig names"
 
 is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam -F 0.05 -C 1 | grep ^1 | wc -l) 3 "freebayes can handle spliced reads"
 
