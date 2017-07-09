@@ -113,8 +113,6 @@ is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | w
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 50 | grep '<\*>' | wc -l) 245 "freebayes produces the expected number of lines of gVCF output"
 
-
-samtools view -h tiny/NA12878.chr22.tiny.bam | sed s/NA12878D_HiSeqX_R1.fastq.gz/222.NA12878D_HiSeqX_R1.fastq.gz/ | sed s/SM:1/SM:2/ | samtools view -b - >x.bam
-samtools index x.bam
-is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam x.bam -A <(echo 1 8; echo 2 13) | grep 'AN=21' | wc -l) 19 "the CNV map may be used to specify per-sample copy numbers"
-rm -f x.bam x.bam.bai
+samtools view -h tiny/NA12878.chr22.tiny.bam | sed s/NA12878D_HiSeqX_R1.fastq.gz/222.NA12878D_HiSeqX_R1.fastq.gz/ | sed s/SM:1/SM:2/ >x.sam
+is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam x.sam -A <(echo 1 8; echo 2 13) | grep 'AN=21' | wc -l) 19 "the CNV map may be used to specify per-sample copy numbers"
+rm -f x.sam
