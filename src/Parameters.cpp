@@ -125,7 +125,9 @@ void Parameters::usage(char** argv) {
         << "                   will then be partitioned on the basis of the populations." << endl
         << "   -A --cnv-map FILE" << endl
         << "                   Read a copy number map from the BED file FILE, which has" << endl
-        << "                   the format:" << endl
+        << "                   either a sample-level ploidy:" << endl
+        << "                      sample name, copy number" << endl
+        << "                   or a region-specific format:" << endl
         << "                      reference sequence, start, end, sample name, copy number" << endl
         << "                   ... for each region in each sample which does not have the" << endl
         << "                   default copy number as set by --ploidy." << endl
