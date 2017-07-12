@@ -96,10 +96,10 @@ class Allele {
     friend ostream &operator<<(ostream &out, Allele &a);
     friend ostream &operator<<(ostream &out, Allele* &a);
 
-    friend string json(vector<Allele*> &alleles, long int &position);
-    friend string json(vector<Allele*> &alleles);
-    friend string json(Allele &allele, long int &position);
-    friend string json(Allele* &allele);
+    friend string tojson(vector<Allele*> &alleles, long int &position);
+    friend string tojson(vector<Allele*> &alleles);
+    friend string tojson(Allele &allele, long int &position);
+    friend string tojson(Allele* &allele);
 
 public:
 
@@ -262,7 +262,7 @@ public:
                                     //  this is used to update cached data in the allele prior to presenting the allele for analysis
                                     //  for the current base, just use allele.currentBase
 
-    string json(void);
+    string tojson(void);
     unsigned int getLengthOnReference(void);
     int referenceLengthFromCigar(void);
 

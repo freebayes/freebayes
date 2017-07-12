@@ -333,19 +333,19 @@ string stringForAlleles(vector<Allele> &alleles) {
     return out.str();
 }
 
-string json(vector<Allele*> &alleles) {
+string tojson(vector<Allele*> &alleles) {
     stringstream out;
     vector<Allele*>::iterator a = alleles.begin();
-    out << "[" << (*a)->json(); ++a;
+    out << "[" << (*a)->tojson(); ++a;
     for (; a != alleles.end(); ++a)
-        out << "," << (*a)->json();
+        out << "," << (*a)->tojson();
     out << "]";
     return out.str();
 }
 
-string json(Allele*& allele) { return allele->json(); }
+string tojson(Allele*& allele) { return allele->tojson(); }
 
-string Allele::json(void) {
+string Allele::tojson(void) {
     stringstream out;
     if (!genotypeAllele) {
         out << "{\"id\":\"" << readID << "\""

@@ -89,7 +89,7 @@ public:
 
     int baseCount(string base, AlleleStrand strand);
 
-    string json(void);
+    string tojson(void);
 
 };
 
