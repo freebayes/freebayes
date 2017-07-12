@@ -142,7 +142,7 @@ double Samples::observationCountInclPartials(void) {
 }
 
 int Samples::qualSum(Allele& allele) {
-    qualSum(allele.currentBase);
+    return qualSum(allele.currentBase);
 }
 
 int Samples::qualSum(const string& base) {
@@ -154,7 +154,7 @@ int Samples::qualSum(const string& base) {
 }
 
 double Samples::partialQualSum(Allele& allele) {
-    partialQualSum(allele.currentBase);
+    return partialQualSum(allele.currentBase);
 }
 
 double Samples::partialQualSum(const string& base) {

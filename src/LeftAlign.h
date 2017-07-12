@@ -94,7 +94,7 @@ using namespace BamTools;
 #define CIGTYPE Type()
 #define ADDCIGAR add
 #define CIGOP SeqLib::CigarField
-#define FILLREADGROUP(rg, align) (rg) = (align).GetZTag("RG")
+#define FILLREADGROUP(rg, align) (align).GetZTag("RG", rg)
 #define GETHEADERTEXT HeaderConcat()
 #include "SeqLib/BamReader.h"
 #include "SeqLib/BamWriter.h"
