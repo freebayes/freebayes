@@ -256,7 +256,7 @@ int Sample::baseCount(string base, AlleleStrand strand) {
 }
 
 
-string Sample::json(void) {
+string Sample::tojson(void) {
     stringstream out;
     out << "[";
     bool first = true;

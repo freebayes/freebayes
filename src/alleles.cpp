@@ -76,7 +76,7 @@ int main (int argc, char *argv[]) {
 
             cout << "\"" << sample->first << "\":{"
                 << "\"coverage\":" << sample->second.size()
-                << ",\"alleles\":" << json(sample->second)
+                << ",\"alleles\":" << tojson(sample->second)
                 << "}";
 
         }

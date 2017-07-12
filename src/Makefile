@@ -91,19 +91,19 @@ HEADERS=multichoose.h version_git.h
 
 # executables
 
-freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
+freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
-alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
+alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
 
-dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
+dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
-bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CXX) $(CXXFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
+bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
+	$(CXX) $(CXXFLAGS) $(INCLUDE) $(OBJECTS) bamleftalign.o -o ../bin/bamleftalign $(LIBS)
 
-bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
+bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
