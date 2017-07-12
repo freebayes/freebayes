@@ -23,10 +23,10 @@ CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 SEQLIB_ROOT=../SeqLib
 VCFLIB_ROOT=../vcflib
 TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
-HTSLIB_ROOT=$(TABIX_ROOT)/htslib
+HTSLIB_ROOT=$(SEQLIB_ROOT)/htslib
 
-LIBS = -lz -lm -lpthread
-INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
+LIBS = -lz -llzma -lbz2 -lm -lpthread
+INCLUDE = -I../src -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(VCFLIB_ROOT)/fastahack/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) 
 #INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(VCFLIB_ROOT)/fastahack/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
@@ -76,17 +76,16 @@ OBJECTS=BedReader.o \
 		NonCall.o \
 		SegfaultHandler.o \
 		../vcflib/tabixpp/tabix.o \
-		../vcflib/tabixpp/htslib/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
 		../vcflib/smithwaterman/disorder.cpp \
 		../vcflib/smithwaterman/LeftAlign.o \
 		../vcflib/smithwaterman/Repeats.o \
 		../vcflib/smithwaterman/IndelAllele.o \
 		Variant.o \
-			$(SEQLIB_ROOT)/src/libseqlib.a	\
-			$(SEQLIB_ROOT)/bwa/libbwa.a	\
-			$(SEQLIB_ROOT)/fermi-lite/libfml.a	\
-			$(SEQLIB_ROOT)/htslib/libhts.a
+		$(SEQLIB_ROOT)/src/libseqlib.a	\
+		$(SEQLIB_ROOT)/bwa/libbwa.a	\
+		$(SEQLIB_ROOT)/fermi-lite/libfml.a	\
+		$(SEQLIB_ROOT)/htslib/libhts.a
 
 HEADERS=multichoose.h version_git.h
 
@@ -119,7 +118,7 @@ alleles.o: alleles.cpp AlleleParser.o Allele.o
 dummy.o: dummy.cpp AlleleParser.o Allele.o
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -c dummy.cpp
 
-freebayes.o: freebayes.cpp TryCatch.h $(HTSLIB_ROOT)/libhts.a 
+freebayes.o: freebayes.cpp TryCatch.h $(HTSLIB_ROOT)/libhts.a ../vcflib/tabixpp/tabix.o
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -c freebayes.cpp
 
 fastlz.o: fastlz.c fastlz.h
@@ -199,9 +198,7 @@ Variant.o: $(VCFLIB_ROOT)/src/Variant.h $(VCFLIB_ROOT)/src/Variant.cpp
 #	$(CXX) -std=c++11 $(CFLAGS) $(INCLUDE) -c $(VCFLIB_ROOT)/src/Variant.cpp
 
 ../vcflib/tabixpp/tabix.o:
-	cd $(TABIX_ROOT)/ && make
-../vcflib/tabixpp/htslib/bgzf.o: ../vcflib/tabixpp/htslib/bgzf.c ../vcflib/tabixpp/htslib/htslib/bgzf.h
-	cd ../vcflib/tabixpp && $(MAKE)
+	cd $(TABIX_ROOT)/ && $(MAKE) && cp tabix.hpp ../../src/
 
 ../vcflib/smithwaterman/SmithWatermanGotoh.o: ../vcflib/smithwaterman/SmithWatermanGotoh.h ../vcflib/smithwaterman/SmithWatermanGotoh.cpp
 	cd ../vcflib/smithwaterman && $(MAKE)
@@ -279,6 +276,6 @@ autoversion:
 
 
 clean:
-	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles ../vcflib/*.o ../vcflib/tabixpp/*.{o,a}
+	rm -rf *.o *.cgh *~ freebayes alleles ../bin/freebayes ../bin/alleles ../vcflib/*.o ../vcflib/tabixpp/*.{o,a} tabix.hpp
 	if [ -d $(BAMTOOLS_ROOT)/build ]; then make -C $(BAMTOOLS_ROOT)/build clean; fi
 	make -C $(VCFLIB_ROOT)/smithwaterman clean

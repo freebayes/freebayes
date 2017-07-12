@@ -264,7 +264,7 @@ string Sample::json(void) {
         vector<Allele*>& alleles = g->second;
         for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
             if (!first) { out << ","; } else { first = false; }
-            out << (*a)->json();
+            out << (*a)->tojson();
         }
     }
     out << "]";
