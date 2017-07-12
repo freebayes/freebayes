@@ -48,6 +48,9 @@ gprof:
 $(HTSLIB_ROOT)/libhts.a:
 	cd $(HTSLIB_ROOT) && make
 
+$(SEQLIB_ROOT)/htslib/libhts.a:
+	cd $(SEQLIB_ROOT)/htslib && make
+
 $(SEQLIB_ROOT)/src/libseqlib.a:
 	cd $(SEQLIB_ROOT) && ./configure && make 
 
