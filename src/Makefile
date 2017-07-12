@@ -25,7 +25,7 @@ VCFLIB_ROOT=../vcflib
 TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
 HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
-LIBS = -lz -lm -lpthread
+LIBS = -lseqlib -lhts -lz -lbz2 -lm -lpthread
 INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 #INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(VCFLIB_ROOT)/fastahack/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
@@ -76,35 +76,35 @@ OBJECTS=BedReader.o \
 		NonCall.o \
 		SegfaultHandler.o \
 		../vcflib/tabixpp/tabix.o \
-		../vcflib/tabixpp/htslib/bgzf.o \
 		../vcflib/smithwaterman/SmithWatermanGotoh.o \
 		../vcflib/smithwaterman/disorder.cpp \
 		../vcflib/smithwaterman/LeftAlign.o \
 		../vcflib/smithwaterman/Repeats.o \
 		../vcflib/smithwaterman/IndelAllele.o \
-		Variant.o \
-			$(SEQLIB_ROOT)/src/libseqlib.a	\
-			$(SEQLIB_ROOT)/bwa/libbwa.a	\
-			$(SEQLIB_ROOT)/fermi-lite/libfml.a	\
-			$(SEQLIB_ROOT)/htslib/libhts.a
+		Variant.o
+
+seqlib=$(SEQLIB_ROOT)/src/libseqlib.a \
+	$(SEQLIB_ROOT)/bwa/libbwa.a \
+	$(SEQLIB_ROOT)/fermi-lite/libfml.a \
+	$(SEQLIB_ROOT)/htslib/libhts.a
 
 HEADERS=multichoose.h version_git.h
 
 # executables
 
-freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS)
+freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
-alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS)
+alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) alleles.o $(OBJECTS) -o ../bin/alleles $(LIBS)
 
-dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS)
+dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
-bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
+bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a -o ../bin/bamleftalign $(LIBS)
 
-bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
+bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
 
 
