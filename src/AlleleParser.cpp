@@ -1963,7 +1963,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
 #ifdef HAVE_BAMTOOLS	    
             if (!currentAlignment.GetTag("RG", readGroup)) {
 #else
-	    readGroup = currentAlignment.GetZTag("RG");
+	      currentAlignment.GetZTag("RG", readGroup);
 	    if (readGroup.empty()) {
 #endif
                 if (!oneSampleAnalysis) {
