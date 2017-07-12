@@ -25,8 +25,8 @@ VCFLIB_ROOT=../vcflib
 TABIX_ROOT=$(VCFLIB_ROOT)/tabixpp
 HTSLIB_ROOT=$(TABIX_ROOT)/htslib
 
-LIBS = -lseqlib -lhts -lz -lbz2 -lm -lpthread
-INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib -L$(SEQLIB_ROOT)/src -L$(SEQLIB_ROOT)/htslib
+LIBS = -lseqlib -lz -lbz2 -llzma -lm -lpthread
+INCLUDE = -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib -L$(SEQLIB_ROOT)/src
 #INCLUDE = -I../ttmath -I$(BAMTOOLS_ROOT)/src/ -I$(VCFLIB_ROOT)/src/ -I$(TABIX_ROOT)/ -I$(VCFLIB_ROOT)/smithwaterman/ -I$(VCFLIB_ROOT)/multichoose/ -I$(VCFLIB_ROOT)/filevercmp/ -I$(VCFLIB_ROOT)/fastahack/ -I$(HTSLIB_ROOT) -I$(SEQLIB_ROOT) -I$(SEQLIB_ROOT)/htslib
 
 all: autoversion ../bin/freebayes ../bin/bamleftalign
@@ -81,12 +81,12 @@ OBJECTS=BedReader.o \
 		../vcflib/smithwaterman/LeftAlign.o \
 		../vcflib/smithwaterman/Repeats.o \
 		../vcflib/smithwaterman/IndelAllele.o \
-		Variant.o
+		Variant.o \
+		$(SEQLIB_ROOT)/htslib/libhts.a
 
 seqlib=$(SEQLIB_ROOT)/src/libseqlib.a \
 	$(SEQLIB_ROOT)/bwa/libbwa.a \
-	$(SEQLIB_ROOT)/fermi-lite/libfml.a \
-	$(SEQLIB_ROOT)/htslib/libhts.a
+	$(SEQLIB_ROOT)/fermi-lite/libfml.a
 
 HEADERS=multichoose.h version_git.h
 
@@ -102,7 +102,7 @@ dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
 bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(seqlib)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) bamleftalign.o Fasta.o Utility.o LeftAlign.o IndelAllele.o split.o -o ../bin/bamleftalign $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) $(OBJECTS) bamleftalign.o -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(SEQLIB_ROOT)/htslib/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
