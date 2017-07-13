@@ -101,7 +101,7 @@ dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
 bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
-	$(CXX) $(CXXFLAGS) $(INCLUDE) $(OBJECTS) bamleftalign.o -o ../bin/bamleftalign $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) bamleftalign.o $(OBJECTS) -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) bamfiltertech.o $(OBJECTS) -o ../bin/bamfiltertech $(LIBS)
