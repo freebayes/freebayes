@@ -2520,10 +2520,10 @@ void AlleleParser::removeFilteredAlleles(vector<Allele*>& alleles) {
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 }
 
-void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles) {
+void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles, long int position) {
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele* allele = *a;
-        if (*a != NULL && allele->position + allele->referenceLength < currentPosition) {
+        if (*a != NULL && allele->position + allele->referenceLength < position) {
             allele->processed = true;
             *a = NULL;
         }
@@ -2759,9 +2759,9 @@ bool AlleleParser::toNextPosition(void) {
     if (parameters.useStdin || targets.empty()) {
         // here we loop over unaligned reads at the beginning of a target
         // we need to get to a mapped read to figure out where we are
-      while (hasMoreAlignments && !currentAlignment.ISMAPPED) {
-	hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment);
-    }
+        while (hasMoreAlignments && !currentAlignment.ISMAPPED) {
+            hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment);
+        }
         // determine if we have more alignments or not
         if (!hasMoreAlignments) {
             if (hasMoreInputVariants()) {
@@ -2832,16 +2832,33 @@ bool AlleleParser::toNextPosition(void) {
 
     // remove past registered alleles
     DEBUG2("marking previous alleles as processed and removing from registered alleles");
-    removePreviousAlleles(registeredAlleles);
+    removePreviousAlleles(registeredAlleles, currentPosition);
     sort(registeredAlleles.begin(), registeredAlleles.end());
     registeredAlleles.erase(unique(registeredAlleles.begin(), registeredAlleles.end()), registeredAlleles.end());
 
     // if we have alignments which ended at the previous base, erase them and their alleles
     DEBUG2("erasing old registered alignments");
     map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.begin();
+    set<long unsigned int> positionsToErase;
+    set<Allele*> allelesToErase;
     while (f != registeredAlignments.end()
            && f->first < currentPosition - lastHaplotypeLength) {
-        registeredAlignments.erase(f++);
+        for (deque<RegisteredAlignment>::iterator d = f->second.begin(); d != f->second.end(); ++d) {
+            for (vector<Allele>::iterator a = d->alleles.begin(); a != d->alleles.end(); ++a) {
+                allelesToErase.insert(&*a);
+            }
+        }
+        positionsToErase.insert(f->first);
+        ++f;
+    }
+    for (vector<Allele*>::iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
+        if (allelesToErase.count(*a)) {
+            *a = NULL;
+        }
+    }
+    registeredAlleles.erase(remove(registeredAlleles.begin(), registeredAlleles.end(), (Allele*)NULL), registeredAlleles.end());
+    for (set<long unsigned int>::iterator p = positionsToErase.begin(); p != positionsToErase.end(); ++p) {
+        registeredAlignments.erase(*p);
     }
 
     // and do the same for the variants from the input VCF
@@ -3446,7 +3463,7 @@ void AlleleParser::buildHaplotypeAlleles(
     // redundant?
 
     // remove alleles which should no longer be considered
-    removePreviousAlleles(registeredAlleles);
+    //removePreviousAlleles(registeredAlleles, currentPosition);
 
     lastHaplotypeLength = haplotypeLength;
 
