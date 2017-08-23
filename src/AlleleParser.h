@@ -250,7 +250,7 @@ public:
     void removeNonOverlappingAlleles(vector<Allele*>& alleles,
                                      int haplotypeLength = 1,
                                      bool getAllAllelesInHaplotype = false);
-    void removePreviousAlleles(vector<Allele*>& alleles);
+    void removePreviousAlleles(vector<Allele*>& alleles, long int position);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void removeDuplicateAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups,
                                 int allowedAlleleTypes, int haplotypeLength, Allele& refallele);
