@@ -129,7 +129,7 @@ long double minQuality(const std::string& qualstr) {
 }
 
 short minQuality(const std::vector<short>& qualities) {
-    short m = 0;
+    short m = 999; //0;
     for (vector<short>::const_iterator q = qualities.begin(); q != qualities.end(); ++q) {
         if (*q < m) m = *q;
     }
