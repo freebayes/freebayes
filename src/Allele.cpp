@@ -162,7 +162,7 @@ const short Allele::currentQuality(void) const {
             // should check a different way... this is wrong
             // it will catch it all the time,
             if (currentBase.size() > 1) {
-                return averageQuality(baseQualities);
+	      return minQuality(baseQualities); //averageQuality(baseQualities);
             } else {
                 int off = referenceOffset();
                 if (off < 0 || off > baseQualities.size()) {
@@ -1456,7 +1456,7 @@ void Allele::mergeAllele(const Allele& newAllele, AlleleType newType) {
     basesRight = newAllele.basesRight;
     baseQualities.insert(baseQualities.end(), newAllele.baseQualities.begin(), newAllele.baseQualities.end());
     currentBase = base();
-    quality = averageQuality(baseQualities);
+    quality = minQuality(baseQualities); //averageQuality(baseQualities);
     lnquality = phred2ln(quality);
     basesRight += newAllele.referenceLength;
     if (newAllele.type != ALLELE_REFERENCE) {
