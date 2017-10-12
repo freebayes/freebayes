@@ -1,22 +1,20 @@
 #include "DataLikelihood.h"
 #include "multichoose.h"
 #include "multipermute.h"
-
+#include "Logging.h"
 
 long double
 probObservedAllelesGivenGenotype(
         Sample& sample,
         Genotype& genotype,
-        double dependenceFactor,
-        bool useMapQ,
         Bias& observationBias,
-        bool standardGLs,
         vector<Allele>& genotypeAlleles,
         Contamination& contaminations,
-        map<string, double>& freqs
+        map<string, double>& freqs,
+        Parameters& parameters
     ) {
 
-    //cerr << "P(" << genotype << " given" << endl <<  sample;
+    DEBUG2("P(" << genotype << " given" << endl <<  sample);
 
     int observationCount = sample.observationCount();
     vector<long double> alleleProbs = genotype.alleleProbabilities(observationBias);
@@ -26,12 +24,12 @@ probObservedAllelesGivenGenotype(
     long double prodQout = 0;  // the probability that the reads not in the genotype are all wrong
     long double prodSample = 0;
     
-    if (standardGLs) {
+    if (parameters.standardGLs) {
         for (Sample::iterator s = sample.begin(); s != sample.end(); ++s) {
             const string& base = s->first;
             if (!genotype.containsAllele(base)) {
                 vector<Allele*>& alleles = s->second;
-                if (useMapQ) {
+                if (parameters.useMappingQuality) {
                     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                         // take the lesser of mapping quality and base quality (in log space)
                         prodQout += max((*a)->lnquality, (*a)->lnmapQuality);
@@ -71,7 +69,7 @@ probObservedAllelesGivenGenotype(
                     }
                 }
                 Allele& obs = **a;
-                //cerr << "observation: " << obs << endl;
+                DEBUG2("observation: " << obs);
                 long double probi = 0;
                 ContaminationEstimate& contamination = contaminations.of(obs.readGroupID);
                 double scale = 1;
@@ -86,10 +84,12 @@ probObservedAllelesGivenGenotype(
                             cerr << "partial " << *a << " has empty reverse" << endl;
                             exit(1);
                         }
-                        //cerr << "partial " << *a << " supports potentially " << sample.reversePartials[*a].size() << " alleles : " << endl;
-                        //for (set<Allele*>::iterator m = sample.reversePartials[*a].begin();
-                        //m != sample.reversePartials[*a].end(); ++m) cerr << **m << " ";
-                        //cerr << endl;
+
+                        DEBUG2("partial " << *a << " supports potentially " << sample.reversePartials[*a].size() << " alleles : ");
+                        for (set<Allele*>::iterator m = sample.reversePartials[*a].begin();
+                             m != sample.reversePartials[*a].end(); ++m)
+                            DEBUG2(**m << " ");
+
                         scale = (double)1/(double)sample.reversePartials[*a].size();
                         qual *= scale;
                     }
@@ -143,10 +143,10 @@ probObservedAllelesGivenGenotype(
     }
 
     // read dependence factor, asymptotically downgrade quality values of
-    // successive reads to dependenceFactor * quality
-    if (standardGLs) {
+    // successive reads to parameters.RDF * quality
+    if (parameters.standardGLs) {
         if (countOut > 1) {
-            prodQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+            prodQout *= (1 + (countOut - 1) * parameters.RDF) / countOut;
         }
 
         if (sum(observationCounts) == 0) {
@@ -158,7 +158,7 @@ probObservedAllelesGivenGenotype(
         }
     } else {
         if (countOut > 1) {
-            prodQout *= (1 + (countOut - 1) * dependenceFactor) / countOut;
+            prodQout *= (1 + (countOut - 1) * parameters.RDF) / countOut;
         }
         long double probObsGivenGt = prodQout + prodSample;
         return isinf(probObsGivenGt) ? 0 : probObsGivenGt;
@@ -171,13 +171,11 @@ vector<pair<Genotype*, long double> >
 probObservedAllelesGivenGenotypes(
         Sample& sample,
         vector<Genotype*>& genotypes,
-        double dependenceFactor,
-        bool useMapQ,
         Bias& observationBias,
-        bool standardGLs,
         vector<Allele>& genotypeAlleles,
         Contamination& contaminations,
-        map<string, double>& freqs
+        map<string, double>& freqs,
+        Parameters& parameters
     ) {
     vector<pair<Genotype*, long double> > results;
     for (vector<Genotype*>::iterator g = genotypes.begin(); g != genotypes.end(); ++g) {
@@ -187,13 +185,11 @@ probObservedAllelesGivenGenotypes(
                   probObservedAllelesGivenGenotype(
                       sample,
                       **g,
-                      dependenceFactor,
-                      useMapQ,
                       observationBias,
-                      standardGLs,
                       genotypeAlleles,
                       contaminations,
-                      freqs)));
+                      freqs,
+                      parameters)));
     }
     return results;
 }
@@ -252,21 +248,18 @@ calculateSampleDataLikelihoods(
         }
 
         vector<pair<Genotype*, long double> > probs
-            = probObservedAllelesGivenGenotypes(sample, genotypesWithObs,
-                                                parameters.RDF, parameters.useMappingQuality,
-                                                observationBias, parameters.standardGLs,
+            = probObservedAllelesGivenGenotypes(sample,
+                                                genotypesWithObs,
+                                                observationBias,
                                                 genotypeAlleles,
                                                 contaminationEstimates,
-                                                estimatedAlleleFrequencies);
+                                                estimatedAlleleFrequencies,
+                                                parameters);
             
-#ifdef VERBOSE_DEBUG
-        if (parameters.debug2) {
-            for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
-                cerr << parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
-                     << sampleName << ",likelihood," << *(p->first) << "," << p->second << endl;
-            }
+        for (vector<pair<Genotype*, long double> >::iterator p = probs.begin(); p != probs.end(); ++p) {
+            DEBUG2(parser->currentSequenceName << "," << (long unsigned int) parser->currentPosition + 1 << ","
+                   << sampleName << ",likelihood," << *(p->first) << "," << p->second);
         }
-#endif
 
         Result& sampleData = results[sampleName];
         sampleData.name = sampleName;
