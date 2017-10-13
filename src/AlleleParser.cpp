@@ -1435,13 +1435,11 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                 try {
                     sb = currentSequence.at(csp);
                 } catch (std::out_of_range outOfRange) {
-		  cerr << "Exception: Unable to read reference sequence base past end of current cached sequence." << endl
-                         << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
-		       << alignment.POSITION << "-" << alignment.ENDPOSITION << endl
-		    //<< "alignment: " << alignment.AlignedBases << endl
-		       << "currentSequence: " << currentSequence << endl
-		       << "currentSequence matching: " << currentSequence.substr(csp, alignment.ALIGNEDBASES) << endl;
-		  //abort();
+                    cerr << "Exception: Alignment reports a match past the end of the current reference sequence." << endl
+                         << "This suggests alignment corruption or a mismatch between this reference and the alignments." << endl
+                         << "Are you sure that you are calling against the same reference you aligned to?" << endl
+                         << "Sequence: " << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
+                         << "Alignment: " << alignment.QNAME << " @ " << alignment.POSITION << "-" << alignment.ENDPOSITION << endl;
                     break;
                 }
 
