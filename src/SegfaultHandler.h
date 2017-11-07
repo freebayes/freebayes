@@ -2,7 +2,9 @@
 #define SEGFAULTHANDLER_H
 
 #include <stdio.h>
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
 

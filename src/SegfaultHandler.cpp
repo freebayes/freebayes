@@ -4,6 +4,7 @@
 // many thanks to tgamblin
 
 void segfaultHandler(int sig) {
+#ifndef __CYGWIN__
     void *array[10];
     size_t size;
 
@@ -13,5 +14,6 @@ void segfaultHandler(int sig) {
     // print out all the frames to stderr
     fprintf(stderr, "Error: signal %d:\n", sig);
     backtrace_symbols_fd(array, size, 2);
+#endif
     exit(1);
 }
