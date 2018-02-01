@@ -134,10 +134,10 @@ int main (int argc, char *argv[]) {
             nonCalls.clear();
         }
 
-        // don't process non-ATGC's in the reference
+        // don't process non-ATGCN's in the reference
         string cb = parser->currentReferenceBaseString();
-        if (cb != "A" && cb != "T" && cb != "C" && cb != "G") {
-            DEBUG2("current reference base is N");
+        if (cb != "A" && cb != "T" && cb != "C" && cb != "G" && cb != "N") {
+            DEBUG2("current reference base is not in { A T G C N }");
             continue;
         }
 
