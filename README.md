@@ -409,7 +409,7 @@ As freebayes is haplotype-based, left-alignment is necessary only for the
 determination of candidate polymorphic loci.  Once such loci are determined, 
 haplotype observations are extracted from reads where:
 
-1. putative variants lie within `--haplotype-window` bases of each other 
+1. putative variants lie within `--haplotype-length` bases of each other 
 (default 3bp),
 2. the reference sequence has repeats (e.g. microsatellites or STRs are called 
 as one haplotype),
@@ -449,7 +449,7 @@ detection window.  We can then use these as "basis alleles" for the observation
 of haplotypes, considering all other putative variants supported by the 
 alignment to be sequencing errors:
 
-    freebayes -f ref.fa --haplotype-window 500 \
+    freebayes -f ref.fa --haplotype-length 500 \
         --haplotype-basis-alleles vars.vcf aln.bam >haps.vcf
 
 These steps should allow us to read long haplotypes directly from input data 
@@ -459,7 +459,7 @@ The high error rate means that beyond a small window each read will contain a
 completely different literal haplotype.  To a point, this property improves our 
 signal to noise ratio and can effectively filter out sequencing errors at the 
 point of the input filters, but it also decreases the effective observation 
-depth will prevent the generation of any calls if a long `--haplotype-window` 
+depth will prevent the generation of any calls if a long `--haplotype-length` 
 is combined with high a sequencing error rate.
 
 
