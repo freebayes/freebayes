@@ -3130,8 +3130,7 @@ void AlleleParser::buildHaplotypeAlleles(
         do {
             oldHaplotypeLength = haplotypeLength;
 
-            // rebuild everything...
-            registeredAlleles.clear();
+            // rebuild samples
             samples.clear();
 
             long int maxAlignmentEnd = registeredAlignments.rbegin()->first;
@@ -3157,7 +3156,6 @@ void AlleleParser::buildHaplotypeAlleles(
             alleles = genotypeAlleles(alleleGroups, samples, parameters.onlyUseInputAlleles);
             for (vector<Allele>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
                 Allele& allele = *a;
-                //cerr << "genotype allele, in haplotype length determination " << allele << endl;
                 if (!allele.isReference()) {
                     long int alleleend = (allele.position + allele.referenceLength);
                     // this adjustment forces reference observations to overlap the ends of the indels
