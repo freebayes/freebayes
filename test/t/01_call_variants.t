@@ -33,10 +33,10 @@ by_region=$((for region in \
     q:11530-11541 \
     q:12119-12130;
 do
-    freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -r $region | grep -v "^#"
+    freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam -r $region | grep -v "^#"
 done) |wc -l)
 
-at_once=$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l)
+at_once=$(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l)
 
 is $by_region $at_once "freebayes produces the same number of calls if targeted per site or called without targets"
 
@@ -63,7 +63,7 @@ q	11530	11541
 q	12119	12130
 EOF
 
-is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -t targets.bed | grep -v "^#" | wc -l) $by_region "a targets bed file can be used with the same effect as running by region"
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam -t targets.bed | grep -v "^#" | wc -l) $by_region "a targets bed file can be used with the same effect as running by region"
 rm targets.bed
 
 
@@ -73,14 +73,14 @@ is $(samtools view -u tiny/NA12878.chr22.tiny.bam | freebayes -f tiny/q.fa --std
 is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in input"
 
 # ensure targeting works even when there are no reads
-is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 19 "freebayes correctly handles variant input"
+is $(freebayes -f tiny/q.fa -l@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 16 "freebayes correctly handles variant input"
 
 # ensure that positions at which no variants exist get put in the out vcf
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes puts required variants in output"
 
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes limits calls to input variants correctly"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz -l tiny/1read.bam | grep -v "^#" | wc -l) 20 "freebayes reports all input variants even when there is no input data"
+is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz -l tiny/1read.bam | grep -v "^#" | wc -l) 16 "freebayes reports all input variants even when there is no input data"
 
 # check variant input with region specified
 is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input"
@@ -109,10 +109,10 @@ is $(freebayes -f tiny/hla.fa -@ tiny/hla.vcf.gz -r HLA-DRB1*16:02:01:1-10000 ti
 
 is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam -F 0.05 -C 1 | grep ^1 | wc -l) 3 "freebayes can handle spliced reads"
 
-is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
 
-is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 50 | grep '<\*>' | wc -l) 245 "freebayes produces the expected number of lines of gVCF output"
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 50 | grep '<\*>' | wc -l) 245 "freebayes produces the expected number of lines of gVCF output"
 
 samtools view -h tiny/NA12878.chr22.tiny.bam | sed s/NA12878D_HiSeqX_R1.fastq.gz/222.NA12878D_HiSeqX_R1.fastq.gz/ | sed s/SM:1/SM:2/ >x.sam
-is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam x.sam -A <(echo 1 8; echo 2 13) | grep 'AN=21' | wc -l) 19 "the CNV map may be used to specify per-sample copy numbers"
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam x.sam -A <(echo 1 8; echo 2 13) | grep 'AN=21' | wc -l) 19 "the CNV map may be used to specify per-sample copy numbers"
 rm -f x.sam
