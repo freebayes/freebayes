@@ -210,7 +210,7 @@ void Parameters::usage(char** argv) {
         << "                   length at least this many bp.  (default: 5)" << endl
         << "   --min-repeat-entropy N" << endl
         << "                   To detect interrupted repeats, build across sequence until it has" << endl
-        << "                   entropy > N bits per bp.  (default: 0, off)" << endl
+        << "                   entropy > N bits per bp. Set to 0 to turn off. (default: 1)" << endl
         << "   --no-partial-observations" << endl
         << "                   Exclude observations which do not fully span the dynamically-determined" << endl
         << "                   detection window.  (default, use all observations, dividing partial" << endl
@@ -261,7 +261,7 @@ void Parameters::usage(char** argv) {
         << "   -F --min-alternate-fraction N" << endl
         << "                   Require at least this fraction of observations supporting" << endl
         << "                   an alternate allele within a single individual in the" << endl
-        << "                   in order to evaluate the position.  default: 0.2" << endl
+        << "                   in order to evaluate the position.  default: 0.05" << endl
         << "   -C --min-alternate-count N" << endl
         << "                   Require at least this count of observations supporting" << endl
         << "                   an alternate allele within a single individual in order" << endl
@@ -406,7 +406,7 @@ Parameters::Parameters(int argc, char** argv) {
     maxComplexGap = 3;
     //maxHaplotypeLength = 100;
     minRepeatSize = 5;
-    minRepeatEntropy = 0;
+    minRepeatEntropy = 1;
     usePartialObservations = true;
     pooledDiscrete = false;                 // -J --pooled
     pooledContinuous = false;
@@ -453,7 +453,7 @@ Parameters::Parameters(int argc, char** argv) {
     TB = 3;
     posteriorIntegrationDepth = 0;
     calculateMarginals = false;
-    minAltFraction = 0.2;  // require 20% of reads from sample to be supporting the same alternate to consider
+    minAltFraction = 0.05;  // require 5% of reads from sample to be supporting the same alternate to consider
     minAltCount = 2; // require 2 reads in same sample call
     minAltTotal = 1;
     minAltQSum = 0;
