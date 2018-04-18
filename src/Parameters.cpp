@@ -196,7 +196,7 @@ void Parameters::usage(char** argv) {
         << endl
         << "   -I --no-snps    Ignore SNP alleles." << endl
         << "   -i --no-indels  Ignore insertion and deletion alleles." << endl
-        << "   -X --no-mnps    Ignore multi-nuceotide polymorphisms, MNPs." << endl
+        << "   -X --no-mnps    Ignore multi-nucleotide polymorphisms, MNPs." << endl
         << "   -u --no-complex Ignore complex events (composites of other classes)." << endl
         << "   -n --use-best-n-alleles N" << endl
         << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
