@@ -19,7 +19,7 @@ then
     echo "Generate regions that are equal in terms of data content, and thus have lower variance"
     echo "in runtime.  This will yield better resource utilization."
     echo
-    echo "    bamtools coverage -in aln.bam | coverage_to_regions.py ref.fa 500 >ref.fa.500.regions"
+    echo "    bamtools coverage -in aln.bam | coverage_to_regions.py ref.fa.fai 500 >ref.fa.500.regions"
     echo "    freebayes-parallel ref.fa.500.regions 36 -f ref.fa aln.bam >out.vcf"
     echo
     exit
