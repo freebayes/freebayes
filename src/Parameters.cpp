@@ -194,10 +194,6 @@ void Parameters::usage(char** argv) {
         << endl
         << "allele scope:" << endl
         << endl
-        << "   -I --no-snps    Ignore SNP alleles." << endl
-        << "   -i --no-indels  Ignore insertion and deletion alleles." << endl
-        << "   -X --no-mnps    Ignore multi-nuceotide polymorphisms, MNPs." << endl
-        << "   -u --no-complex Ignore complex events (composites of other classes)." << endl
         << "   -n --use-best-n-alleles N" << endl
         << "                   Evaluate only the best N SNP alleles, ranked by sum of" << endl
         << "                   supporting quality scores.  (Set to 0 to use all; default: all)" << endl
@@ -215,6 +211,23 @@ void Parameters::usage(char** argv) {
         << "                   Exclude observations which do not fully span the dynamically-determined" << endl
         << "                   detection window.  (default, use all observations, dividing partial" << endl
         << "                   support across matching haplotypes when generating haplotypes.)" << endl
+        << endl
+        << "  These flags are meant for testing." << endl
+        << "  They are not meant for filtering the output." << endl
+        << "  They actually filter the input to the algorithm by throwing away alignments." << endl
+        << "  This hurts performance by hiding information from the Bayesian model." << endl
+        << "  Do not use them unless you can validate that they improve results!" << endl
+        << endl
+        << "   -I --throw-away-snp-obs     Remove SNP observations from input." << endl
+        << "   -i --throw-away-indels-obs  Remove indel observations from input." << endl
+        << "   -X --throw-away-mnp-obs     Remove MNP observations from input." << endl
+        << "   -u --throw-away-complex-obs Remove complex allele observations from input." << endl
+        << endl
+        << "  If you need to break apart haplotype calls to obtain one class of alleles," << endl
+        << "  run the call with default parameters, then normalize and subset the VCF:" << endl
+        << "    freebayes ... | vcfallelicprimitives -kg >calls.vcf" << endl
+        << "  For example, this would retain only biallelic SNPs." << endl
+        << "    <calls.vcf vcfsnps | vcfbiallelic >biallelic_snp_calls.vcf" << endl
         << endl
         << "indel realignment:" << endl
         << endl
@@ -507,15 +520,15 @@ Parameters::Parameters(int argc, char** argv) {
             {"read-max-mismatch-fraction", required_argument, 0, 'z'},
             {"read-snp-limit", required_argument, 0, '$'},
             {"read-indel-limit", required_argument, 0, 'e'},
-            {"no-indels", no_argument, 0, 'i'},
+            {"throw-away-indel-obs", no_argument, 0, 'i'},
             {"dont-left-align-indels", no_argument, 0, 'O'},
-            {"no-mnps", no_argument, 0, 'X'},
-            {"no-complex", no_argument, 0, 'u'},
+            {"throw-away-mnps-obs", no_argument, 0, 'X'},
+            {"throw-away-complex-obs", no_argument, 0, 'u'},
             {"max-complex-gap", required_argument, 0, 'E'},
             {"haplotype-length", required_argument, 0, 'E'},
             {"min-repeat-size", required_argument, 0, 'E'},
             {"min-repeat-entropy", required_argument, 0, 'E'},
-            {"no-snps", no_argument, 0, 'I'},
+            {"throw-away-snp-obs", no_argument, 0, 'I'},
             {"indel-exclusion-window", required_argument, 0, 'x'},
             {"theta", required_argument, 0, 'T'},
             {"pvar", required_argument, 0, 'P'},

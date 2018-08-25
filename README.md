@@ -134,6 +134,26 @@ For a description of available command-line options and their defaults, run:
 
     freebayes --help
 
+## Getting the best results
+
+freebayes provides many options to configure its operation.
+These may be important in certain use cases, but they are not meant for standard use.
+It is strongly recommended that you run freebayes with parameters that are as close to default as possible unless you can validate that the chosen parameters improve performance.
+To achieve the desired tradeoff between sensitivity and specificity, the best approach is to filter the output using the `QUAL` field, which encodes the posterior estimate of the probability of variation.
+
+Filtering the input with the provided options demonstrably hurts performance where truth sets can be used to evaluate results.
+By removing information from the input, you can confuse the Bayesian model by making it appear that certain alleles frequently indicative of context specific error (such as indels in homopolymers) don't exist.
+
+Many users apply these filters to force freebayes to not make haplotype calls.
+This is almost always a mistake, as the haplotype calling process greatly improves the method's signal to noise ratio and normalizes differential alignment in complex regions.
+
+If you wish to obtain a VCF that does not contain haplotype calls or complex alleles, first call with default parameters and then decompose the output with tools in vcflib, vt, vcf-tools, bcftools, GATK, and Picard.
+Here we use a tool in vcflib that normalizes the haplotype calls into pointwise SNPs and indels:
+
+    freebayes ... | vcfallelicprimitives -kg >calls.vcf
+
+Note that this is not done by default as it makes it difficult to determine which variant calls freebayes completed.
+The raw output faithfully describes exactly the calls that were made.
 
 ## Examples
 
