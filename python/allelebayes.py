@@ -73,8 +73,16 @@ def alleles_quality_to_lnprob(alleles):
         allele['quality'] = phred.phred2ln(allele['quality'])
     return alleles
 
-def product(l):
-    return reduce(operator.mul, l)
+def fold(func, iterable, initial=None, reverse=False):
+    x=initial
+    if reverse:
+        iterable=reversed(iterable)
+    for e in iterable:
+        x=func(x,e) if x is not None else e
+    return x
+
+def product(listy):
+    return fold(operator.mul, listy)
 
 def observed_alleles_in_genotype(genotype, allele_groups):
     in_genotype = {}
@@ -271,7 +279,7 @@ def banded_genotype_combinations(sample_genotypes, bandwidth, band_depth):
                 yield [(sample, genotypes[index]) for index, (sample, genotypes) in zip(index_permutation, sample_genotypes)]
 
 def genotype_str(genotype):
-    return reduce(operator.add, [allele * count for allele, count in genotype])
+    return fold(operator.add, [allele * count for allele, count in genotype])
 
 if __name__ == '__main__':
 
