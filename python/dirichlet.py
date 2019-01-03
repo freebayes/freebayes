@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+from __future__ import division
 from scipy.special import gamma, gammaln
 import operator
 import math
