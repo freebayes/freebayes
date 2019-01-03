@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+from __future__ import print_function, division
 from dirichlet import multinomial, multinomialln, multinomial_coefficient, multinomial_coefficientln
 import math
 import operator
@@ -59,6 +61,6 @@ def inbreeding_coefficient(genotype, genotypes):
             observed = g[1]
             break
     if observed == 0:
-        print "error, no observations of genotype, cannot calculate inbreeding coefficient"
+        print("error, no observations of genotype, cannot calculate inbreeding coefficient")
         return 0
     return 1 - (observed / expected)
