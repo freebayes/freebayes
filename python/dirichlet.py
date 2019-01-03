@@ -6,8 +6,16 @@ import math
 from logsumexp import logsumexp
 from factorialln import factorialln
 
-def product(l):
-    return reduce(operator.mul, l)
+def fold(func, iterable, initial=None, reverse=False):
+    x=initial
+    if reverse:
+        iterable=reversed(iterable)
+    for e in iterable:
+        x=func(x,e) if x is not None else e
+    return x
+
+def product(listy):
+    return fold(operator.mul, listy)
 
 def beta(alphas):
     """Multivariate beta function"""
