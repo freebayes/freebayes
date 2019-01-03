@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # calculates data likelihoods for sets of alleles
-
+from __future__ import print_function, division
 import multiset
 import sys
 import cjson
@@ -125,12 +125,12 @@ def sampling_prob(genotype, alleles):
     genotype, follows the multinomial probability distribution."""
     allele_groups = group_alleles(alleles)
     multiplicity = sum([x[1] for x in genotype])
-    print genotype, multiplicity, alleles
+    print(genotype, multiplicity, alleles)
     for allele, count in genotype:
         if allele_groups.has_key(allele):
             print allele, count, math.pow(float(count) / multiplicity, len(allele_groups[allele]))
-    print product([math.factorial(len(obs)) for obs in allele_groups.values()])
-    print allele_groups.values()
+    print(product([math.factorial(len(obs)) for obs in allele_groups.values()]))
+    print(allele_groups.values())
     return float(math.factorial(len(alleles))) \
         / product([math.factorial(len(obs)) for obs in allele_groups.values()]) \
         * product([math.pow(float(count) / multiplicity, len(allele_groups[allele])) \
@@ -371,5 +371,5 @@ if __name__ == '__main__':
             sample['genotypes'] = sorted([[genotype_str(genotype), math.exp(prob)] for genotype, prob in sample['genotypes']], 
                                             key=lambda c: c[1], reverse=True)
 
-        print cjson.encode(position)
+        print(cjson.encode(position))
         #print position['position']
