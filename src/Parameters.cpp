@@ -126,11 +126,12 @@ void Parameters::usage(char** argv) {
         << "   -A --cnv-map FILE" << endl
         << "                   Read a copy number map from the BED file FILE, which has" << endl
         << "                   either a sample-level ploidy:" << endl
-        << "                      sample name, copy number" << endl
+        << "                      sample_name copy_number" << endl
         << "                   or a region-specific format:" << endl
-        << "                      reference sequence, start, end, sample name, copy number" << endl
+        << "                      seq_name start end sample_name copy_number" << endl
         << "                   ... for each region in each sample which does not have the" << endl
-        << "                   default copy number as set by --ploidy." << endl
+        << "                   default copy number as set by --ploidy. These fields can be delimited" << endl
+        << "                   by space or tab." << endl
         << endl
         << "output:" << endl
         << endl
