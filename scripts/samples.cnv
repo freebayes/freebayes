@@ -1,0 +1,9 @@
+chrX -1 -1 NA12878 2  # means NA12878 has copy number 2 in all of chrX
+chrX -1 -1 NA12879 1  # ... copy number 1
+chrX -1 -1 NA13469 2
+chrX -1 -1 NA21328 2
+chrX -1 -1 NA12970 2
+chrY -1 -1 NA12877 1
+chrX -1 -1 NA12877 1
+chr20 20000 30000 NA12877 1   # NA12877 has one copy of chr20:20000..30000
+chr20 20000 30000 NA12879 3   # NA12879 has four copies of chr20:20000..30000
