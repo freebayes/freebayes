@@ -37,6 +37,7 @@ public:
     string outputFile;
     bool gVCFout;    // -l --gvcf
     int gVCFchunk;
+    bool gVCFNoChunk;
     string variantPriorsFile;
     string haplotypeVariantFile;
     bool reportAllHaplotypeAlleles;

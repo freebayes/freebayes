@@ -121,14 +121,18 @@ int main (int argc, char *argv[]) {
 
         DEBUG2("at start of main loop");
 
-        // did we switch chromosomes or exceed our gVCF chunk size?
+        // did we switch chromosomes or exceed our gVCF chunk size, or do we not want to use chunks?
         // if so, we may need to output a gVCF record
         Results results;
-        if (parameters.gVCFout && !nonCalls.empty() &&
-            ( nonCalls.begin()->first != parser->currentSequenceName
-              || (parameters.gVCFchunk &&
-                  nonCalls.lastPos().second - nonCalls.firstPos().second
-                  > parameters.gVCFchunk))) {
+        if (parameters.gVCFout 
+               &&  !(nonCalls.empty()) 
+               &&  (  (parameters.gVCFNoChunk)
+                   || (nonCalls.begin()->first != parser->currentSequenceName)
+                   || (parameters.gVCFchunk 
+                       && nonCalls.lastPos().second - nonCalls.firstPos().second >= parameters.gVCFchunk
+                      )
+                  )
+            ){
             vcflib::Variant var(parser->variantCallFile);
             out << results.gvcf(var, nonCalls, parser) << endl;
             nonCalls.clear();
