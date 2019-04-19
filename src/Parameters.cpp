@@ -143,7 +143,7 @@ void Parameters::usage(char** argv) {
         << "   -& --gvcf-dont-use-chunk BOOL " << endl
         << "                   When writing the gVCF output emit a record for all bases if" << endl
         << "                   set to \"true\" , will also route an int to --gvcf-chunk" << endl
-        << "                   simmilar to --output-mode EMIT_ALL_SITES from GATK" << endl
+        << "                   similar to --output-mode EMIT_ALL_SITES from GATK" << endl
         << "   -@ --variant-input VCF" << endl
         << "                   Use variants reported in VCF file as input to the algorithm." << endl
         << "                   Variants in this file will included in the output even if" << endl
