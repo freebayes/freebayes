@@ -1,0 +1,18 @@
+[submodule "bamtools"]
+	path = bamtools
+	url = https://github.com/ekg/bamtools.git
+[submodule "intervaltree"]
+	path = intervaltree
+	url = https://github.com/ekg/intervaltree.git
+[submodule "test/test-simple-bash"]
+	path = test/test-simple-bash
+	url = https://github.com/ingydotnet/test-simple-bash.git
+[submodule "bash-tap"]
+	path = test/bash-tap
+	url = https://github.com/illusori/bash-tap.git
+[submodule "vcflib"]
+	path = vcflib
+	url = https://github.com/vcflib/vcflib.git
+[submodule "SeqLib"]
+	path = SeqLib
+	url = https://github.com/walaj/SeqLib.git
