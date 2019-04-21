@@ -656,7 +656,10 @@ vcflib::Variant& Results::gvcf(
         endPos = parser->currentPosition;
     }
     long numSites = endPos - startPos;
-    assert(numSites > 0);
+    if(numSites <= 0){
+        std::cerr << "Hit end of chr, but still attempted to call location !!! \n Breaking\n";
+        exit(1);
+     };
 
     // set up site call
     var.ref = parser->referenceSubstr(startPos, 1);
