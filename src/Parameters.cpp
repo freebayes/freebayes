@@ -140,6 +140,10 @@ void Parameters::usage(char** argv) {
         << "                   Write gVCF output, which indicates coverage in uncalled regions." << endl
         << "   --gvcf-chunk NUM" << endl
         << "                   When writing gVCF output emit a record for every NUM bases." << endl
+        << "   -& --gvcf-dont-use-chunk BOOL " << endl
+        << "                   When writing the gVCF output emit a record for all bases if" << endl
+        << "                   set to \"true\" , will also route an int to --gvcf-chunk" << endl
+        << "                   similar to --output-mode EMIT_ALL_SITES from GATK" << endl
         << "   -@ --variant-input VCF" << endl
         << "                   Use variants reported in VCF file as input to the algorithm." << endl
         << "                   Variants in this file will included in the output even if" << endl
@@ -402,6 +406,7 @@ Parameters::Parameters(int argc, char** argv) {
     outputFile = "";
     gVCFout = false;
     gVCFchunk = 0;
+    gVCFNoChunk = false;         // --gvcf-no-chunk sets this to true
     alleleObservationBiasFile = "";
 
     // operation parameters
@@ -500,6 +505,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"vcf", required_argument, 0, 'v'},
             {"gvcf", no_argument, 0, '8'},
             {"gvcf-chunk", required_argument, 0, '&'},
+            {"gvcf-dont-use-chunk", required_argument, 0 , '&'},
             {"use-duplicate-reads", no_argument, 0, '4'},
             {"no-partial-observations", no_argument, 0, '['},
             {"use-best-n-alleles", required_argument, 0, 'n'},
@@ -649,8 +655,16 @@ Parameters::Parameters(int argc, char** argv) {
             gVCFout = true;
             break;
 
+            // -& BOOL/INT --gvcf-no-chunk BOOL/INT  --gvcf-chunk 
         case '&':
-            gVCFchunk = atoi(optarg);
+            //cerr << "optarg:\t" << optarg << endl;
+            if(optarg[0] == 't'){
+                gVCFNoChunk = true;
+            } else if (optarg[0] == 'f'){
+                gVCFNoChunk = false; 
+            } else {
+                gVCFchunk = atoi(optarg);  
+            }
             break;
 
             // -4 --use-duplicate-reads

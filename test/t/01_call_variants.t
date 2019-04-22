@@ -7,7 +7,7 @@ PATH=../bin:$PATH # for freebayes
 PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 21
+plan tests 22
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -111,7 +111,9 @@ is $(freebayes -f splice/1:883884-887618.fa splice/1:883884-887618.bam -F 0.05 -
 
 is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam --gvcf | grep '<\*>' | wc -l) 20 "freebayes produces the expected number of lines of gVCF output"
 
-is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 50 | grep '<\*>' | wc -l) 245 "freebayes produces the expected number of lines of gVCF output"
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-chunk 50 | grep '<\*>' | wc -l) 250 "freebayes produces the expected number of lines of gVCF output"
+
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam --gvcf --gvcf-dont-use-chunk true | grep '<\*>' | wc -l) 12250 "freebayes produces the expected number of lines of gVCF output"
 
 samtools view -h tiny/NA12878.chr22.tiny.bam | sed s/NA12878D_HiSeqX_R1.fastq.gz/222.NA12878D_HiSeqX_R1.fastq.gz/ | sed s/SM:1/SM:2/ >x.sam
 is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam x.sam -A <(echo 1 8; echo 2 13) | grep 'AN=21' | wc -l) 19 "the CNV map may be used to specify per-sample copy numbers"
