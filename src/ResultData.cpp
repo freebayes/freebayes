@@ -684,7 +684,7 @@ vcflib::Variant& Results::gvcf(
 
     /* This resets min depth to zero if nonCalls is less than numSites. */
 	
-    int minDepth = (numSites != nc.count) ?  0 : nc.minDepth;
+    int minDepth = (numSites != total.nCount) ?  0 : nc.minDepth;
 
     var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
     var.info["MIN_DP"].push_back(convert(minDepth));
@@ -709,7 +709,7 @@ vcflib::Variant& Results::gvcf(
 
       /* This resets min depth to zero if nonCalls is less than numSites. */
       
-        int minDepth = (numSites != nc.count) ?  0 : nc.minDepth;
+        int minDepth = (numSites != total.nCount) ?  0 : nc.minDepth;
       
 	    
         sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
@@ -717,7 +717,7 @@ vcflib::Variant& Results::gvcf(
         sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
 	sampleOutput["RO"].pushback(convert((nc.refCount/numSites));
         sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
-	sampleOutput["AO"].push_back(convert((nc.altCount/numsites));
+	sampleOutput["AO"].push_back(convert((nc.altCount/numSites));
     }
 
     return var;
