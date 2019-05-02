@@ -676,17 +676,15 @@ vcflib::Variant& Results::gvcf(
     var.format.push_back("DP");
     var.format.push_back("MIN_DP");
     var.format.push_back("QR");
+    var.format.push_back("RO");
     var.format.push_back("QA");
+    var.format.push_back("AO");
 
     NonCall total = nonCalls.aggregateAll();
 
     /* This resets min depth to zero if nonCalls is less than numSites. */
-
-    int minDepth = total.minDepth;
-
-    if(numSites != total.nCount){
-        minDepth = 0;
-    }
+	
+    int minDepth = (numSites != nc.count) ?  0 : nc.minDepth;
 
     var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
     var.info["MIN_DP"].push_back(convert(minDepth));
@@ -710,17 +708,16 @@ vcflib::Variant& Results::gvcf(
 
 
       /* This resets min depth to zero if nonCalls is less than numSites. */
-
-        int minDepth = nc.minDepth;
-
-        if(numSites != nc.nCount){
-            minDepth = 0;
-        }
-
+      
+        int minDepth = (numSites != nc.count) ?  0 : nc.minDepth;
+      
+	    
         sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
         sampleOutput["MIN_DP"].push_back(convert(minDepth));
         sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
+	sampleOutput["RO"].pushback(convert((nc.refCount/numSites));
         sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
+	sampleOutput["AO"].push_back(convert((nc.altCount/numsites));
     }
 
     return var;
