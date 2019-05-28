@@ -2025,26 +2025,34 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
                 deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.ENDPOSITION];
-
-                // and insert the registered alignment into that deque
-                rq.push_front(RegisteredAlignment(currentAlignment, parameters));
-                RegisteredAlignment& ra = rq.front();
-                registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
-                // backtracking if we have too many mismatches
-                // or if there are no recorded alleles
-                if (ra.alleles.empty()
-                    || ((float) ra.mismatches / (float) currentAlignment.SEQLEN) > parameters.readMaxMismatchFraction
-                    || ra.mismatches > parameters.RMU
-                    || ra.snpCount > parameters.readSnpLimit
-                    || ra.indelCount > parameters.readIndelLimit) {
-                    rq.pop_front(); // backtrack
-                } else {
-                    // push the alleles into our new alleles vector
-                    for (vector<Allele>::iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
-                        newAlleles.push_back(&*allele);
+                if (parameters.capCoverage && rq.size() < parameters.capCoverage
+                    && !coverageCappedPositions.count(currentAlignment.ENDPOSITION)) {
+                    // and insert the registered alignment into that deque
+                    rq.push_front(RegisteredAlignment(currentAlignment, parameters));
+                    RegisteredAlignment& ra = rq.front();
+                    registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
+                    // backtracking if we have too many mismatches
+                    // or if there are no recorded alleles
+                    if (ra.alleles.empty()
+                        || ((float) ra.mismatches / (float) currentAlignment.SEQLEN) > parameters.readMaxMismatchFraction
+                        || ra.mismatches > parameters.RMU
+                        || ra.snpCount > parameters.readSnpLimit
+                        || ra.indelCount > parameters.readIndelLimit) {
+                        rq.pop_front(); // backtrack
+                    } else {
+                        // push the alleles into our new alleles vector
+                        for (vector<Allele>::iterator allele = ra.alleles.begin(); allele != ra.alleles.end(); ++allele) {
+                            newAlleles.push_back(&*allele);
+                        }
                     }
+                } else {
+                    // remove our allele pointers
+                    removeCappedAlleles(registeredAlleles, currentAlignment.ENDPOSITION);
+                    // clear the site
+                    rq.clear();
+                    coverageCappedPositions.insert(currentAlignment.ENDPOSITION);
                 }
-	      }
+            }
 	    } while ((hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment))
                  && currentAlignment.POSITION <= position
                  && currentAlignment.REFID == currentRefID);
@@ -2505,6 +2513,17 @@ void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles, long int posi
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 }
 
+void AlleleParser::removeCappedAlleles(vector<Allele*>& alleles, long int position) {
+    for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
+        Allele* allele = *a;
+        if (*a != NULL && allele->alignmentEnd == position) {
+            allele->processed = true;
+            *a = NULL;
+        }
+    }
+    alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
+}
+
 // steps our position/beddata/reference pointers through all positions in all
 // targets, returns false when we are finished
 //
@@ -2859,6 +2878,12 @@ bool AlleleParser::toNextPosition(void) {
     map<long int, map<string, int> >::iterator rc = cachedRepeatCounts.begin();
     while (rc != cachedRepeatCounts.end() && rc->first < currentPosition) {
         cachedRepeatCounts.erase(rc++);
+    }
+
+    DEBUG2("erasing old coverage cap");
+    set<long int>::iterator cc = coverageCappedPositions.begin();
+    while (cc != coverageCappedPositions.end() && *cc < currentPosition) {
+        coverageCappedPositions.erase(cc);
     }
 
     return true;

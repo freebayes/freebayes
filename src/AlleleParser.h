@@ -195,6 +195,7 @@ public:
 
     vector<Allele*> registeredAlleles;
     map<long unsigned int, deque<RegisteredAlignment> > registeredAlignments;
+    set<long int> coverageCappedPositions;
     map<int, map<long int, vector<Allele> > > inputVariantAlleles; // all variants present in the input VCF, as 'genotype' alleles
     pair<int, long int> nextInputVariantPosition(void);
     void getInputVariantsInRegion(string& seq, long start = 0, long end = 0);
@@ -251,6 +252,7 @@ public:
                                      int haplotypeLength = 1,
                                      bool getAllAllelesInHaplotype = false);
     void removePreviousAlleles(vector<Allele*>& alleles, long int position);
+    void removeCappedAlleles(vector<Allele*>& alleles, long int position);
     void removeFilteredAlleles(vector<Allele*>& alleles);
     void removeDuplicateAlleles(Samples& samples, map<string, vector<Allele*> >& alleleGroups,
                                 int allowedAlleleTypes, int haplotypeLength, Allele& refallele);

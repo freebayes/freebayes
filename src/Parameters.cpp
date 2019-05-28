@@ -291,7 +291,13 @@ void Parameters::usage(char** argv) {
         << "   --min-coverage N" << endl
         << "                   Require at least this coverage to process a site. default: 0" << endl
         << "   --max-coverage N" << endl
-        << "                   Do not process sites with greater than this coverage. default: no limit" << endl
+        << "                   Downsample per-sample coverage to this level if greater than this coverage." << endl
+        << "                   default: no limit" << endl
+        << "   -g --cap-coverage N" << endl
+        << "                   Do not process alignments when we have already seen N previous alignments" << endl
+        << "                   with the same ending position. This implements an order-dependent heuristic" << endl
+        << "                   downsampling to limit memory usage in very high coverage regions." << endl
+        << "                   default: no limit" << endl
         << endl
         << "population priors:" << endl
         << endl
@@ -476,6 +482,7 @@ Parameters::Parameters(int argc, char** argv) {
     //minAltQSumTotal = 0;
     minCoverage = 0;
     maxCoverage = 0;
+    capCoverage = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -548,6 +555,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"min-alternate-qsum", required_argument, 0, '3'},
             {"min-coverage", required_argument, 0, '!'},
             {"max-coverage", required_argument, 0, '+'},
+            {"cap-coverage", required_argument, 0, 'g'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -573,7 +581,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:!:+:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:!:+:g:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -686,6 +694,14 @@ Parameters::Parameters(int argc, char** argv) {
         case '+':
             if (!convert(optarg, maxCoverage)) {
                 cerr << "could not parse max-coverage" << endl;
+                exit(1);
+            }
+            break;
+
+            // -g --cap-coverage
+        case 'g':
+            if (!convert(optarg, capCoverage)) {
+                cerr << "could not parse cap-coverage" << endl;
                 exit(1);
             }
             break;
