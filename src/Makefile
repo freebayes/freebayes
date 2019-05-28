@@ -32,7 +32,7 @@ INCLUDE = -I../src -I../ttmath -I$(VCFLIB_ROOT)/src/ -I$(VCFLIB_ROOT)/smithwater
 all: autoversion ../bin/freebayes ../bin/bamleftalign
 
 static:
-	$(MAKE) CXXFLAGS="$(CXXFLAGS) -static" all
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -static -static-libstdc++ -static-libgcc -Wl,--allow-multiple-definition" all
 
 debug:
 	$(MAKE) CXXFLAGS="$(CXXFLAGS) -D VERBOSE_DEBUG -g -rdynamic" all
