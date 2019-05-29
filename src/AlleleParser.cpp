@@ -2022,9 +2022,6 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 if (parameters.baseQualityCap != 0) {
                     capBaseQuality(currentAlignment, parameters.baseQualityCap);
                 }
-                // decomposes alignment into a set of alleles
-                // here we get the deque of alignments ending at this alignment's end position
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.ENDPOSITION];
                 // do we exceed coverage anywhere?
                 // do we touch anything where we had exceeded coverage?
                 // if so skip this read, and mark and remove processed alignments and registered alleles overlapping the coverage capped position
@@ -2047,7 +2044,9 @@ void AlleleParser::updateAlignmentQueue(long int position,
                         }
                     }
                 }
-                
+                // decomposes alignment into a set of alleles
+                // here we get the deque of alignments ending at this alignment's end position
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.ENDPOSITION];
                 //cerr << "parameters capcoverage " << parameters.capCoverage << " " << rq.size() << endl;
                 if (considerAlignment) {
                     // and insert the registered alignment into that deque
