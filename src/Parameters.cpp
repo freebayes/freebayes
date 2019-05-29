@@ -294,9 +294,7 @@ void Parameters::usage(char** argv) {
         << "                   Downsample per-sample coverage to this level if greater than this coverage." << endl
         << "                   default: no limit" << endl
         << "   -g --cap-coverage N" << endl
-        << "                   Do not process alignments when we have already seen N previous alignments" << endl
-        << "                   with the same ending position. This implements an order-dependent heuristic" << endl
-        << "                   downsampling to limit memory usage in very high coverage regions." << endl
+        << "                   Skip processing of alignments overlapping positions with coverage >N." << endl
         << "                   default: no limit" << endl
         << endl
         << "population priors:" << endl
