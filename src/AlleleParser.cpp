@@ -3639,11 +3639,12 @@ bool AlleleParser::getNextAlleles(Samples& samples, int allowedAlleleTypes) {
 void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
                               int haplotypeLength, bool getAllAllelesInHaplotype,
                               bool ignoreProcessedFlag) {
-
+    Samples gvcf_held; // make some samples that by bass filtering for gvcf lines
     DEBUG2("getting alleles");
-
-    for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
-        s->second.clear();
+    samples.clear();
+    // Commenting this out and replacinf with .clear() to relly empty it, it is more aloc, but no major change
+    //for (Samples::iterator s = samples.begin(); s != samples.end(); ++s)
+    //    s->second.clear();
     // TODO ^^^ this should be optimized for better scanning performance
 
     // if we have targets and are outside of the current target, don't return anything
@@ -3686,6 +3687,9 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
                   (allele.position == currentPosition)))
                 ) ) {
             allele.update(haplotypeLength);
+            if(parameters.gVCFout){
+                gvcf_held[allele.sampleID][allele.currentBase].push_back(*a); // store things incase
+            }
             if (allele.quality >= parameters.BQL0 && allele.currentBase != "N"
                 && (allele.isReference() || !allele.alternateSequence.empty())) { // filters haplotype construction chaff
                 //cerr << "keeping allele " << allele << endl;
@@ -3704,6 +3708,9 @@ void AlleleParser::getAlleles(Samples& samples, int allowedAlleleTypes,
                 }
             }
         }
+    }
+    if(samples.size() == 0 && parameters.gVCFout){
+        samples = gvcf_held;  // if there are no non reference vals try to recover any allined values for gvcf if doing gvcf output!!
     }
 
     vector<string> samplesToErase;

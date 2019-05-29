@@ -656,7 +656,10 @@ vcflib::Variant& Results::gvcf(
         endPos = parser->currentPosition;
     }
     long numSites = endPos - startPos;
-    assert(numSites > 0);
+    if(numSites <= 0){
+        std::cerr << "Hit end of chr, but still attempted to call location !!! \n Breaking\n";
+        exit(1);
+     };
 
     // set up site call
     var.ref = parser->referenceSubstr(startPos, 1);
@@ -673,17 +676,15 @@ vcflib::Variant& Results::gvcf(
     var.format.push_back("DP");
     var.format.push_back("MIN_DP");
     var.format.push_back("QR");
+    var.format.push_back("RO");
     var.format.push_back("QA");
+    var.format.push_back("AO");
 
     NonCall total = nonCalls.aggregateAll();
 
     /* This resets min depth to zero if nonCalls is less than numSites. */
-
-    int minDepth = total.minDepth;
-
-    if(numSites != total.nCount){
-        minDepth = 0;
-    }
+	
+    int minDepth = (numSites != total.nCount) ?  0 : total.minDepth;
 
     var.info["DP"].push_back(convert((total.refCount+total.altCount) / numSites));
     var.info["MIN_DP"].push_back(convert(minDepth));
@@ -707,17 +708,16 @@ vcflib::Variant& Results::gvcf(
 
 
       /* This resets min depth to zero if nonCalls is less than numSites. */
-
-        int minDepth = nc.minDepth;
-
-        if(numSites != nc.nCount){
-            minDepth = 0;
-        }
-
+      
+        int minDepth = (numSites != nc.nCount) ?  0 : nc.minDepth;
+      
+	    
         sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
         sampleOutput["MIN_DP"].push_back(convert(minDepth));
         sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
+	sampleOutput["RO"].push_back(convert((nc.refCount/numSites)));
         sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
+	sampleOutput["AO"].push_back(convert((nc.altCount/numSites)));
     }
 
     return var;
