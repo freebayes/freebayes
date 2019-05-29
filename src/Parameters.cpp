@@ -72,6 +72,9 @@ void Parameters::usage(char** argv) {
         << "    # require at least 5 supporting observations to consider a variant" << endl
         << "    freebayes -f ref.fa -C 5 aln.bam >var.vcf" << endl
         << endl
+        << "    # discard alignments overlapping positions where total read depth is greater than 200" << endl
+        << "    freebayes -f ref.fa -g 200 aln.bam >var.vcf" << endl
+        << endl
         << "    # use a different ploidy" << endl
         << "    freebayes -f ref.fa -p 4 aln.bam >var.vcf" << endl
         << endl
