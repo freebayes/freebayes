@@ -2025,8 +2025,29 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
                 deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.ENDPOSITION];
-                if (parameters.capCoverage && rq.size() < parameters.capCoverage
-                    && !coverageCappedPositions.count(currentAlignment.ENDPOSITION)) {
+                // do we exceed coverage anywhere?
+                // do we touch anything where we had exceeded coverage?
+                // if so skip this read, and mark and remove processed alignments and registered alleles overlapping the coverage capped position
+                bool considerAlignment = true;
+                for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment.ENDPOSITION; ++i) {
+                    unsigned long int x = ++coverage[i];
+                    if (x > parameters.capCoverage) {
+                        considerAlignment = false;
+                        // we're exceeding coverage at this position for the first time, so clean up
+                        if (!coverageCappedPositions.count(i)) {
+                            // clean up reads overlapping this position
+                            removeCappedAlleles(registeredAlleles, i);
+                            removeCappedAlleles(newAlleles, i);
+                            // remove the alignments overlapping this position
+                            removeRegisteredAlignmentsOverlappingPosition(i);
+                            // record that the position is capped
+                            coverageCappedPositions.insert(i);
+                        }
+                    }
+                }
+                
+                //cerr << "parameters capcoverage " << parameters.capCoverage << " " << rq.size() << endl;
+                if (considerAlignment) {
                     // and insert the registered alignment into that deque
                     rq.push_front(RegisteredAlignment(currentAlignment, parameters));
                     RegisteredAlignment& ra = rq.front();
@@ -2045,12 +2066,6 @@ void AlleleParser::updateAlignmentQueue(long int position,
                             newAlleles.push_back(&*allele);
                         }
                     }
-                } else {
-                    // remove our allele pointers
-                    removeCappedAlleles(registeredAlleles, currentAlignment.ENDPOSITION);
-                    // clear the site
-                    rq.clear();
-                    coverageCappedPositions.insert(currentAlignment.ENDPOSITION);
                 }
             }
 	    } while ((hasMoreAlignments = GETNEXT(bamMultiReader, currentAlignment))
@@ -2062,6 +2077,44 @@ void AlleleParser::updateAlignmentQueue(long int position,
 
 }
 
+void AlleleParser::removeRegisteredAlignmentsOverlappingPosition(long unsigned int pos) {
+    map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.begin();
+    map<long unsigned int, set<deque<RegisteredAlignment>::iterator> > alignmentsToErase;
+    set<Allele*> allelesToErase;
+    while (f != registeredAlignments.end()) {
+        for (deque<RegisteredAlignment>::iterator d = f->second.begin(); d != f->second.end(); ++d) {
+            if (d->start >= pos && d->end > pos) {
+                alignmentsToErase[f->first].insert(d);
+                for (vector<Allele>::iterator a = d->alleles.begin(); a != d->alleles.end(); ++a) {
+                    allelesToErase.insert(&*a);
+                }
+            }
+        }
+        ++f;
+    }
+    // clean up registered alleles--- maybe this should be done externally?
+    for (vector<Allele*>::iterator a = registeredAlleles.begin(); a != registeredAlleles.end(); ++a) {
+        if (allelesToErase.count(*a)) {
+            *a = NULL;
+        }
+    }
+    registeredAlleles.erase(remove(registeredAlleles.begin(), registeredAlleles.end(), (Allele*)NULL), registeredAlleles.end());
+    if (alignmentsToErase.size()) {
+        for (map<long unsigned int, set<deque<RegisteredAlignment>::iterator> >::iterator e = alignmentsToErase.begin();
+             e != alignmentsToErase.end(); ++e) {
+            deque<RegisteredAlignment> updated;
+            map<long unsigned int, deque<RegisteredAlignment> >::iterator f = registeredAlignments.find(e->first);
+            assert(f != registeredAlignments.end());
+            for (deque<RegisteredAlignment>::iterator d = f->second.begin(); d != f->second.end(); ++d) {
+                if (!e->second.count(d)) {
+                    updated.push_back(*d);
+                }
+            }
+            f->second = updated;
+        }
+    }
+}
+        
 void AlleleParser::addToRegisteredAlleles(vector<Allele*>& alleles) {
     registeredAlleles.insert(registeredAlleles.end(),
                              alleles.begin(),
@@ -2516,7 +2569,7 @@ void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles, long int posi
 void AlleleParser::removeCappedAlleles(vector<Allele*>& alleles, long int position) {
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele* allele = *a;
-        if (*a != NULL && allele->alignmentEnd == position) {
+        if (*a != NULL && allele->alignmentStart <= position && allele->alignmentEnd > position) {
             allele->processed = true;
             *a = NULL;
         }
@@ -2537,6 +2590,9 @@ bool AlleleParser::toNextTarget(void) {
     DEBUG("to next target");
 
     clearRegisteredAlignments();
+    coverageCappedPositions.clear();
+    cachedRepeatCounts.clear();
+    coverage.clear();
 
     // reset haplotype length; there is no last call in this sequence; it isn't relevant
     lastHaplotypeLength = 0;
@@ -2782,6 +2838,9 @@ bool AlleleParser::toNextPosition(void) {
                 || (registeredAlignments.empty() && currentRefID != currentAlignment.REFID)) {
                 DEBUG("at end of sequence");
                 clearRegisteredAlignments();
+                coverageCappedPositions.clear();
+                cachedRepeatCounts.clear();
+                coverage.clear();
                 loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
                 justSwitchedTargets = true;
             }
@@ -2817,11 +2876,6 @@ bool AlleleParser::toNextPosition(void) {
     DEBUG2("updating variants");
     // done typically at each new read, but this handles the case where there is no data for a while
     //updateInputVariants(currentPosition, 1);
-
-    //DEBUG2("updating registered alleles");
-    //updateRegisteredAlleles(); // this removes unused left-flanking sequence
-    //DEBUG2("updating prior variant alleles");
-    //updatePriorAlleles();
 
     // remove past registered alleles
     DEBUG2("marking previous alleles as processed and removing from registered alleles");
@@ -2881,9 +2935,14 @@ bool AlleleParser::toNextPosition(void) {
     }
 
     DEBUG2("erasing old coverage cap");
-    set<long int>::iterator cc = coverageCappedPositions.begin();
-    while (cc != coverageCappedPositions.end() && *cc < currentPosition) {
-        coverageCappedPositions.erase(cc);
+    while (coverageCappedPositions.size() && *coverageCappedPositions.begin() < currentPosition) {
+        coverageCappedPositions.erase(coverageCappedPositions.begin());
+    }
+
+    DEBUG2("erasing old coverage counts");
+    map<long unsigned int, long unsigned int>::iterator cov = coverage.begin();
+    while (cov != coverage.end() && cov->first < currentPosition) {
+        coverage.erase(cov++);
     }
 
     return true;

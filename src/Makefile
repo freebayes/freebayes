@@ -5,6 +5,8 @@
 ################################################################################
 
 # Compiler
+
+CXXFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 CXX=g++ ${CXXFLAGS}
 C=gcc
 
@@ -17,7 +19,6 @@ export LIBFLAGS
 
 # Compiler flags
 
-CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
 #CFLAGS=-O3 -static -D VERBOSE_DEBUG  # enables verbose debugging via --debug2
 
 SEQLIB_ROOT=../SeqLib
