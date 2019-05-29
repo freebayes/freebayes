@@ -1,3 +1,6 @@
+#CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
+#CXXFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
+
 all: vcflib/Makefile log
 	cd src && $(MAKE)
 

@@ -165,6 +165,10 @@ Require at least 5 supporting observations to consider a variant:
 
     freebayes -f ref.fa -C 5 aln.bam >var.vcf
 
+Skip over regions of high depth by discarding alignments overlapping positions where total read depth is greater than 200:
+
+    freebayes -f ref.fa -g 200 aln.bam >var.vcf
+
 Use a different ploidy:
 
     freebayes -f ref.fa -p 4 aln.bam >var.vcf
