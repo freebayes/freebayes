@@ -290,11 +290,12 @@ void Parameters::usage(char** argv) {
         << "                   to use the allele in analysis.  default: 1" << endl
         << "   --min-coverage N" << endl
         << "                   Require at least this coverage to process a site. default: 0" << endl
-        << "   --max-coverage N" << endl
+        << "   --limit-coverage N" << endl
         << "                   Downsample per-sample coverage to this level if greater than this coverage." << endl
         << "                   default: no limit" << endl
-        << "   -g --cap-coverage N" << endl
+        << "   -g --skip-coverage N" << endl
         << "                   Skip processing of alignments overlapping positions with coverage >N." << endl
+        << "                   This filters sites above this coverage, but will also reduce data nearby." << endl
         << "                   default: no limit" << endl
         << endl
         << "population priors:" << endl
@@ -479,8 +480,8 @@ Parameters::Parameters(int argc, char** argv) {
     probContamination = 10e-9;
     //minAltQSumTotal = 0;
     minCoverage = 0;
-    maxCoverage = 0;
-    capCoverage = 0;
+    limitCoverage = 0;
+    skipCoverage = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -552,7 +553,7 @@ Parameters::Parameters(int argc, char** argv) {
             //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
             {"min-alternate-qsum", required_argument, 0, '3'},
             {"min-coverage", required_argument, 0, '!'},
-            {"max-coverage", required_argument, 0, '+'},
+            {"limit-coverage", required_argument, 0, '+'},
             {"cap-coverage", required_argument, 0, 'g'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
@@ -688,18 +689,18 @@ Parameters::Parameters(int argc, char** argv) {
             }
             break;
 
-            // -+ --max-coverage
+            // -+ --limit-coverage
         case '+':
-            if (!convert(optarg, maxCoverage)) {
-                cerr << "could not parse max-coverage" << endl;
+            if (!convert(optarg, limitCoverage)) {
+                cerr << "could not parse limit-coverage" << endl;
                 exit(1);
             }
             break;
 
-            // -g --cap-coverage
+            // -g --skip-coverage
         case 'g':
-            if (!convert(optarg, capCoverage)) {
-                cerr << "could not parse cap-coverage" << endl;
+            if (!convert(optarg, skipCoverage)) {
+                cerr << "could not parse skip-coverage" << endl;
                 exit(1);
             }
             break;

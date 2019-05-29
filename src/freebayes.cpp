@@ -106,7 +106,7 @@ int main (int argc, char *argv[]) {
         out << parser->variantCallFile.header << endl;
     }
 
-    if (0 < parameters.maxCoverage) {
+    if (0 < parameters.limitCoverage) {
         srand(13);
     }
 
@@ -157,7 +157,7 @@ int main (int argc, char *argv[]) {
             } else if (parameters.onlyUseInputAlleles) {
                 DEBUG("no input alleles, but using only input alleles for analysis, skipping position");
                 skip = true;
-            } else if (0 < parameters.maxCoverage) {
+            } else if (0 < parameters.limitCoverage) {
                 // go through each sample
                 for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
                     string sampleName = s->first;
@@ -167,14 +167,14 @@ int main (int argc, char *argv[]) {
                     for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
                         sampleCoverage += sg->second.size();
                     }
-                    if (sampleCoverage <= parameters.maxCoverage) {
+                    if (sampleCoverage <= parameters.limitCoverage) {
                         continue;
                     }
 
-                    DEBUG("coverage " << sampleCoverage << " for sample " << sampleName << " was > " << parameters.maxCoverage << ", so we will remove " << (sampleCoverage - parameters.maxCoverage) << " genotypes");
+                    DEBUG("coverage " << sampleCoverage << " for sample " << sampleName << " was > " << parameters.limitCoverage << ", so we will remove " << (sampleCoverage - parameters.limitCoverage) << " genotypes");
                     vector<string> genotypesToErase;
                     do {
-                        double probRemove = (sampleCoverage - parameters.maxCoverage) / (double)sampleCoverage;
+                        double probRemove = (sampleCoverage - parameters.limitCoverage) / (double)sampleCoverage;
                         vector<string> genotypesToErase;
                         // iterate through the genotypes
                         for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
@@ -182,7 +182,7 @@ int main (int argc, char *argv[]) {
                             // iterate through each allele
                             for (int alleleIndex = 0; alleleIndex < sg->second.size(); alleleIndex++) {
                                 // only if we have more alleles to remove
-                                if (parameters.maxCoverage < sampleCoverage) {
+                                if (parameters.limitCoverage < sampleCoverage) {
                                     double r = rand() / (double)RAND_MAX;
                                     if (r < probRemove) { // skip over this allele
                                         sampleCoverage--;
@@ -205,7 +205,7 @@ int main (int argc, char *argv[]) {
                         for (vector<string>::iterator gt = genotypesToErase.begin(); gt != genotypesToErase.end(); ++gt) {
                             sample.erase(*gt);
                         }
-                    } while (parameters.maxCoverage < sampleCoverage);
+                    } while (parameters.limitCoverage < sampleCoverage);
                     sampleCoverage = 0;
                     for (Sample::iterator sg = sample.begin(); sg != sample.end(); ++sg) {
                         sampleCoverage += sg->second.size();

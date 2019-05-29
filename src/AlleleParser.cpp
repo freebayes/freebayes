@@ -2029,20 +2029,20 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // do we touch anything where we had exceeded coverage?
                 // if so skip this read, and mark and remove processed alignments and registered alleles overlapping the coverage capped position
                 bool considerAlignment = true;
-                if (parameters.capCoverage > 0) {
+                if (parameters.skipCoverage > 0) {
                     for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment.ENDPOSITION; ++i) {
                         unsigned long int x = ++coverage[i];
-                        if (x > parameters.capCoverage) {
+                        if (x > parameters.skipCoverage) {
                             considerAlignment = false;
                             // we're exceeding coverage at this position for the first time, so clean up
-                            if (!coverageCappedPositions.count(i)) {
+                            if (!coverageSkippedPositions.count(i)) {
                                 // clean up reads overlapping this position
-                                removeCappedAlleles(registeredAlleles, i);
-                                removeCappedAlleles(newAlleles, i);
+                                removeCoverageSkippedAlleles(registeredAlleles, i);
+                                removeCoverageSkippedAlleles(newAlleles, i);
                                 // remove the alignments overlapping this position
                                 removeRegisteredAlignmentsOverlappingPosition(i);
                                 // record that the position is capped
-                                coverageCappedPositions.insert(i);
+                                coverageSkippedPositions.insert(i);
                             }
                         }
                     }
@@ -2568,7 +2568,7 @@ void AlleleParser::removePreviousAlleles(vector<Allele*>& alleles, long int posi
     alleles.erase(remove(alleles.begin(), alleles.end(), (Allele*)NULL), alleles.end());
 }
 
-void AlleleParser::removeCappedAlleles(vector<Allele*>& alleles, long int position) {
+void AlleleParser::removeCoverageSkippedAlleles(vector<Allele*>& alleles, long int position) {
     for (vector<Allele*>::iterator a = alleles.begin(); a != alleles.end(); ++a) {
         Allele* allele = *a;
         if (*a != NULL && allele->alignmentStart <= position && allele->alignmentEnd > position) {
@@ -2592,7 +2592,7 @@ bool AlleleParser::toNextTarget(void) {
     DEBUG("to next target");
 
     clearRegisteredAlignments();
-    coverageCappedPositions.clear();
+    coverageSkippedPositions.clear();
     cachedRepeatCounts.clear();
     coverage.clear();
 
@@ -2840,7 +2840,7 @@ bool AlleleParser::toNextPosition(void) {
                 || (registeredAlignments.empty() && currentRefID != currentAlignment.REFID)) {
                 DEBUG("at end of sequence");
                 clearRegisteredAlignments();
-                coverageCappedPositions.clear();
+                coverageSkippedPositions.clear();
                 cachedRepeatCounts.clear();
                 coverage.clear();
                 loadNextPositionWithAlignmentOrInputVariant(currentAlignment);
@@ -2937,8 +2937,8 @@ bool AlleleParser::toNextPosition(void) {
     }
 
     DEBUG2("erasing old coverage cap");
-    while (coverageCappedPositions.size() && *coverageCappedPositions.begin() < currentPosition) {
-        coverageCappedPositions.erase(coverageCappedPositions.begin());
+    while (coverageSkippedPositions.size() && *coverageSkippedPositions.begin() < currentPosition) {
+        coverageSkippedPositions.erase(coverageSkippedPositions.begin());
     }
 
     DEBUG2("erasing old coverage counts");
