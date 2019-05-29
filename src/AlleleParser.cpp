@@ -2029,19 +2029,21 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // do we touch anything where we had exceeded coverage?
                 // if so skip this read, and mark and remove processed alignments and registered alleles overlapping the coverage capped position
                 bool considerAlignment = true;
-                for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment.ENDPOSITION; ++i) {
-                    unsigned long int x = ++coverage[i];
-                    if (x > parameters.capCoverage) {
-                        considerAlignment = false;
-                        // we're exceeding coverage at this position for the first time, so clean up
-                        if (!coverageCappedPositions.count(i)) {
-                            // clean up reads overlapping this position
-                            removeCappedAlleles(registeredAlleles, i);
-                            removeCappedAlleles(newAlleles, i);
-                            // remove the alignments overlapping this position
-                            removeRegisteredAlignmentsOverlappingPosition(i);
-                            // record that the position is capped
-                            coverageCappedPositions.insert(i);
+                if (parameters.capCoverage > 0) {
+                    for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment.ENDPOSITION; ++i) {
+                        unsigned long int x = ++coverage[i];
+                        if (x > parameters.capCoverage) {
+                            considerAlignment = false;
+                            // we're exceeding coverage at this position for the first time, so clean up
+                            if (!coverageCappedPositions.count(i)) {
+                                // clean up reads overlapping this position
+                                removeCappedAlleles(registeredAlleles, i);
+                                removeCappedAlleles(newAlleles, i);
+                                // remove the alignments overlapping this position
+                                removeRegisteredAlignmentsOverlappingPosition(i);
+                                // record that the position is capped
+                                coverageCappedPositions.insert(i);
+                            }
                         }
                     }
                 }
