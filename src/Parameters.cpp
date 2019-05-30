@@ -563,7 +563,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"min-alternate-qsum", required_argument, 0, '3'},
             {"min-coverage", required_argument, 0, '!'},
             {"limit-coverage", required_argument, 0, '+'},
-            {"cap-coverage", required_argument, 0, 'g'},
+            {"skip-coverage", required_argument, 0, 'g'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
