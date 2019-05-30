@@ -1992,9 +1992,9 @@ void AlleleParser::updateAlignmentQueue(long int position,
             }
 
             if (!gettingPartials && currentAlignment.ENDPOSITION < position) {
-	      cerr << currentAlignment.QNAME << " at " << currentSequenceName << ":" << currentAlignment.POSITION << " is out of order!"
-		   << " expected after " << position << endl;
-	      continue;
+                cerr << currentAlignment.QNAME << " at " << currentSequenceName << ":" << currentAlignment.POSITION << " is out of order!"
+                     << " expected after " << position << endl;
+                continue;
             }
 
             // otherwise, get the sample name and register the alignment to generate a sequence of alleles
@@ -2029,7 +2029,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 if (parameters.skipCoverage > 0) {
                     for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment.ENDPOSITION; ++i) {
                         unsigned long int x = ++coverage[i];
-                        if (x > parameters.skipCoverage) {
+                        if (x > parameters.skipCoverage && !gettingPartials) {
                             considerAlignment = false;
                             // we're exceeding coverage at this position for the first time, so clean up
                             if (!coverageSkippedPositions.count(i)) {
@@ -3224,7 +3224,7 @@ void AlleleParser::buildHaplotypeAlleles(
                 for (deque<RegisteredAlignment>::iterator r = ras.begin(); r != ras.end(); ++r) {
                     RegisteredAlignment& ra = *r;
                     if ((ra.start > currentPosition && ra.start < currentPosition + haplotypeLength)
-			 || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
+                        || (ra.end > currentPosition && ra.end < currentPosition + haplotypeLength)) {
                         Allele* aptr;
                         bool allowPartials = true;
                         ra.fitHaplotype(currentPosition, haplotypeLength, aptr, allowPartials);
