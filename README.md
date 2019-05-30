@@ -24,8 +24,7 @@ alignments.  This method avoids one of the core problems with alignment-based
 variant detection--- that identical sequences may have multiple possible 
 alignments:
 
-<img src="http://hypervolu.me/freebayes/figures/haplotype_calling.png" 
-width=500/>
+<img src="https://github.com/ekg/freebayes/raw/v1.3.0/paper/haplotype_calling.png" width=500/>
 
 *FreeBayes* uses short-read alignments 
 ([BAM](http://samtools.sourceforge.net/SAMv1.pdf) files with 
