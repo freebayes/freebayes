@@ -57,10 +57,8 @@ public:
     int snpCount;
     int indelCount;
     int alleleTypes;
-    Parameters parameters;
 
-    RegisteredAlignment(BAMALIGN& alignment, Parameters parameters)
-        //: alignment(alignment)
+    RegisteredAlignment(BAMALIGN& alignment)
         : start(alignment.POSITION)
         , end(alignment.ENDPOSITION)
         , refid(alignment.REFID)
@@ -69,7 +67,6 @@ public:
         , snpCount(0)
         , indelCount(0)
         , alleleTypes(0)
-        , parameters(parameters)
     {
       FILLREADGROUP(readgroup, alignment);
     }

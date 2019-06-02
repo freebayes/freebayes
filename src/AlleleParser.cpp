@@ -2050,7 +2050,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 //cerr << "parameters capcoverage " << parameters.capCoverage << " " << rq.size() << endl;
                 if (considerAlignment) {
                     // and insert the registered alignment into that deque
-                    rq.push_front(RegisteredAlignment(currentAlignment, parameters));
+                    rq.push_front(RegisteredAlignment(currentAlignment));
                     RegisteredAlignment& ra = rq.front();
                     registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
                     // backtracking if we have too many mismatches
