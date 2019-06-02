@@ -2084,7 +2084,7 @@ void AlleleParser::removeRegisteredAlignmentsOverlappingPosition(long unsigned i
     set<Allele*> allelesToErase;
     while (f != registeredAlignments.end()) {
         for (deque<RegisteredAlignment>::iterator d = f->second.begin(); d != f->second.end(); ++d) {
-            if (d->start >= pos && d->end > pos) {
+            if (d->start <= pos && d->end > pos) {
                 alignmentsToErase[f->first].insert(d);
                 for (vector<Allele>::iterator a = d->alleles.begin(); a != d->alleles.end(); ++a) {
                     allelesToErase.insert(&*a);
