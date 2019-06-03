@@ -1266,19 +1266,16 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
         // a dangerous game
         int start = pos - currentSequenceStart;
         double minEntropy = parameters.minRepeatEntropy;
-        // check first that' wer'e actually ina repeat... TODO
-        //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, " << endl;
         while (minEntropy > 0 && // ignore if turned off
-               repeatRightBoundary - currentSequenceStart < currentSequence.size() && //guard
+               // don't run off the end of the current sequence
+               repeatRightBoundary - currentSequenceStart < currentSequence.size() &&
+               // there is no point in going past the alignment end
+               // because we won't make a haplotype call unless we have a covering observation from a read
+               repeatRightBoundary < alignment.ENDPOSITION &&
                entropy(currentSequence.substr(start, repeatRightBoundary - pos)) < minEntropy) {
-            //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, ";
-            //cerr << "increasing rought boundary to ";
             ++repeatRightBoundary;
-            //cerr << repeatRightBoundary << endl;
         }
 
-        // now we
-        //cachedRepeatCounts[pos] = repeatCounts(pos - currentSequenceStart, currentSequence, 12);
         // edge case, the indel is an insertion and matches the reference to the right
         // this means there is a repeat structure in the read, but not the ref
         if (currentSequence.substr(pos - currentSequenceStart, length) == readSequence) {
