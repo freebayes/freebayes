@@ -119,5 +119,5 @@ samtools view -h tiny/NA12878.chr22.tiny.bam | sed s/NA12878D_HiSeqX_R1.fastq.gz
 is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam x.sam -A <(echo 1 8; echo 2 13) | grep 'AN=21' | wc -l) 19 "the CNV map may be used to specify per-sample copy numbers"
 rm -f x.sam
 
-is $(freebayes -f tiny/q.fa --skip-coverage 30 tiny/NA12878.chr22.tiny.bam | grep -v '^#' | wc -l) 27 "freebayes makes the expected number of calls when capping coverage"
-is $(freebayes -f tiny/q.fa -g 30 tiny/NA12878.chr22.tiny.bam | vcfkeepinfo - DP | vcf2tsv | cut -f 8 | tail -n+2 | awk '$1 <= 30 { print }' | wc -l) 27 "all coverage capped calls are below the coverage threshold"
+is $(freebayes -f tiny/q.fa --skip-coverage 30 tiny/NA12878.chr22.tiny.bam | grep -v '^#' | wc -l) 22 "freebayes makes the expected number of calls when capping coverage"
+is $(freebayes -f tiny/q.fa -g 30 tiny/NA12878.chr22.tiny.bam | vcfkeepinfo - DP | vcf2tsv | cut -f 8 | tail -n+2 | awk '$1 <= 30 { print }' | wc -l) 22 "all coverage capped calls are below the coverage threshold"
