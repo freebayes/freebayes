@@ -1266,19 +1266,16 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
         // a dangerous game
         int start = pos - currentSequenceStart;
         double minEntropy = parameters.minRepeatEntropy;
-        // check first that' wer'e actually ina repeat... TODO
-        //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, " << endl;
         while (minEntropy > 0 && // ignore if turned off
-               repeatRightBoundary - currentSequenceStart < currentSequence.size() && //guard
+               // don't run off the end of the current sequence
+               repeatRightBoundary - currentSequenceStart < currentSequence.size() &&
+               // there is no point in going past the alignment end
+               // because we won't make a haplotype call unless we have a covering observation from a read
+               repeatRightBoundary < alignment.ENDPOSITION &&
                entropy(currentSequence.substr(start, repeatRightBoundary - pos)) < minEntropy) {
-            //cerr << "entropy of " << entropy(currentSequence.substr(start, repeatRightBoundary - pos)) << " is too low, ";
-            //cerr << "increasing rought boundary to ";
             ++repeatRightBoundary;
-            //cerr << repeatRightBoundary << endl;
         }
 
-        // now we
-        //cachedRepeatCounts[pos] = repeatCounts(pos - currentSequenceStart, currentSequence, 12);
         // edge case, the indel is an insertion and matches the reference to the right
         // this means there is a repeat structure in the read, but not the ref
         if (currentSequence.substr(pos - currentSequenceStart, length) == readSequence) {
@@ -2050,7 +2047,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 //cerr << "parameters capcoverage " << parameters.capCoverage << " " << rq.size() << endl;
                 if (considerAlignment) {
                     // and insert the registered alignment into that deque
-                    rq.push_front(RegisteredAlignment(currentAlignment, parameters));
+                    rq.push_front(RegisteredAlignment(currentAlignment));
                     RegisteredAlignment& ra = rq.front();
                     registerAlignment(currentAlignment, ra, sampleName, sequencingTech);
                     // backtracking if we have too many mismatches
@@ -2084,7 +2081,7 @@ void AlleleParser::removeRegisteredAlignmentsOverlappingPosition(long unsigned i
     set<Allele*> allelesToErase;
     while (f != registeredAlignments.end()) {
         for (deque<RegisteredAlignment>::iterator d = f->second.begin(); d != f->second.end(); ++d) {
-            if (d->start >= pos && d->end > pos) {
+            if (d->start <= pos && d->end > pos) {
                 alignmentsToErase[f->first].insert(d);
                 for (vector<Allele>::iterator a = d->alleles.begin(); a != d->alleles.end(); ++a) {
                     allelesToErase.insert(&*a);
