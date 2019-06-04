@@ -17,7 +17,7 @@ void Parameters::simpleUsage(char ** argv) {
         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
         << endl
-        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2014" << endl
+        << "author:   Erik Garrison <erik.garrison@gmail.com>" << endl
         << "version:  " << VERSION_GIT << endl;
 
 }
@@ -381,7 +381,7 @@ void Parameters::usage(char** argv) {
         << "   -dd             Print more verbose debugging output (requires \"make DEBUG\")" << endl
         << endl
         << endl
-        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2014" << endl
+        << "author:   Erik Garrison <erik.garrison@gmail.com>" << endl
         << "version:  " << VERSION_GIT << endl;
 
 }
