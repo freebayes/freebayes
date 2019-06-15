@@ -17,7 +17,7 @@ void Parameters::simpleUsage(char ** argv) {
         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
         << endl
-        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2014" << endl
+        << "author:   Erik Garrison <erik.garrison@gmail.com>" << endl
         << "version:  " << VERSION_GIT << endl;
 
 }
@@ -71,6 +71,9 @@ void Parameters::usage(char** argv) {
         << endl
         << "    # require at least 5 supporting observations to consider a variant" << endl
         << "    freebayes -f ref.fa -C 5 aln.bam >var.vcf" << endl
+        << endl
+        << "    # discard alignments overlapping positions where total read depth is greater than 200" << endl
+        << "    freebayes -f ref.fa -g 200 aln.bam >var.vcf" << endl
         << endl
         << "    # use a different ploidy" << endl
         << "    freebayes -f ref.fa -p 4 aln.bam >var.vcf" << endl
@@ -294,8 +297,13 @@ void Parameters::usage(char** argv) {
         << "                   to use the allele in analysis.  default: 1" << endl
         << "   --min-coverage N" << endl
         << "                   Require at least this coverage to process a site. default: 0" << endl
-        << "   --max-coverage N" << endl
-        << "                   Do not process sites with greater than this coverage. default: no limit" << endl
+        << "   --limit-coverage N" << endl
+        << "                   Downsample per-sample coverage to this level if greater than this coverage." << endl
+        << "                   default: no limit" << endl
+        << "   -g --skip-coverage N" << endl
+        << "                   Skip processing of alignments overlapping positions with coverage >N." << endl
+        << "                   This filters sites above this coverage, but will also reduce data nearby." << endl
+        << "                   default: no limit" << endl
         << endl
         << "population priors:" << endl
         << endl
@@ -373,7 +381,7 @@ void Parameters::usage(char** argv) {
         << "   -dd             Print more verbose debugging output (requires \"make DEBUG\")" << endl
         << endl
         << endl
-        << "author:   Erik Garrison <erik.garrison@bc.edu>, Marth Lab, Boston College, 2010-2014" << endl
+        << "author:   Erik Garrison <erik.garrison@gmail.com>" << endl
         << "version:  " << VERSION_GIT << endl;
 
 }
@@ -480,7 +488,8 @@ Parameters::Parameters(int argc, char** argv) {
     probContamination = 10e-9;
     //minAltQSumTotal = 0;
     minCoverage = 0;
-    maxCoverage = 0;
+    limitCoverage = 0;
+    skipCoverage = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -553,7 +562,8 @@ Parameters::Parameters(int argc, char** argv) {
             //{"min-alternate-mean-mapq", required_argument, 0, 'k'},
             {"min-alternate-qsum", required_argument, 0, '3'},
             {"min-coverage", required_argument, 0, '!'},
-            {"max-coverage", required_argument, 0, '+'},
+            {"limit-coverage", required_argument, 0, '+'},
+            {"skip-coverage", required_argument, 0, 'g'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -579,7 +589,7 @@ Parameters::Parameters(int argc, char** argv) {
     while (true) {
 
         int option_index = 0;
-        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:!:+:",
+        c = getopt_long(argc, argv, "hcO4ZKjH[0diN5a)Ik=wl6#uVXJY:b:G:M:x:@:A:f:t:r:s:v:n:B:p:m:q:R:Q:U:$:e:T:P:D:^:S:W:F:C:&:L:8z:1:3:E:7:2:9:%:_:,:(:!:+:g:",
                         long_options, &option_index);
 
         if (c == -1) // end of options
@@ -696,10 +706,18 @@ Parameters::Parameters(int argc, char** argv) {
             }
             break;
 
-            // -+ --max-coverage
+            // -+ --limit-coverage
         case '+':
-            if (!convert(optarg, maxCoverage)) {
-                cerr << "could not parse max-coverage" << endl;
+            if (!convert(optarg, limitCoverage)) {
+                cerr << "could not parse limit-coverage" << endl;
+                exit(1);
+            }
+            break;
+
+            // -g --skip-coverage
+        case 'g':
+            if (!convert(optarg, skipCoverage)) {
+                cerr << "could not parse skip-coverage" << endl;
                 exit(1);
             }
             break;

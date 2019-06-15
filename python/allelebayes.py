@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # calculates data likelihoods for sets of alleles
-
+from __future__ import print_function, division
 import multiset
 import sys
 import cjson
@@ -73,8 +73,16 @@ def alleles_quality_to_lnprob(alleles):
         allele['quality'] = phred.phred2ln(allele['quality'])
     return alleles
 
-def product(l):
-    return reduce(operator.mul, l)
+def fold(func, iterable, initial=None, reverse=False):
+    x=initial
+    if reverse:
+        iterable=reversed(iterable)
+    for e in iterable:
+        x=func(x,e) if x is not None else e
+    return x
+
+def product(listy):
+    return fold(operator.mul, listy)
 
 def observed_alleles_in_genotype(genotype, allele_groups):
     in_genotype = {}
@@ -125,12 +133,12 @@ def sampling_prob(genotype, alleles):
     genotype, follows the multinomial probability distribution."""
     allele_groups = group_alleles(alleles)
     multiplicity = sum([x[1] for x in genotype])
-    print genotype, multiplicity, alleles
+    print(genotype, multiplicity, alleles)
     for allele, count in genotype:
         if allele_groups.has_key(allele):
             print allele, count, math.pow(float(count) / multiplicity, len(allele_groups[allele]))
-    print product([math.factorial(len(obs)) for obs in allele_groups.values()])
-    print allele_groups.values()
+    print(product([math.factorial(len(obs)) for obs in allele_groups.values()]))
+    print(allele_groups.values())
     return float(math.factorial(len(alleles))) \
         / product([math.factorial(len(obs)) for obs in allele_groups.values()]) \
         * product([math.pow(float(count) / multiplicity, len(allele_groups[allele])) \
@@ -271,7 +279,7 @@ def banded_genotype_combinations(sample_genotypes, bandwidth, band_depth):
                 yield [(sample, genotypes[index]) for index, (sample, genotypes) in zip(index_permutation, sample_genotypes)]
 
 def genotype_str(genotype):
-    return reduce(operator.add, [allele * count for allele, count in genotype])
+    return fold(operator.add, [allele * count for allele, count in genotype])
 
 if __name__ == '__main__':
 
@@ -371,5 +379,5 @@ if __name__ == '__main__':
             sample['genotypes'] = sorted([[genotype_str(genotype), math.exp(prob)] for genotype, prob in sample['genotypes']], 
                                             key=lambda c: c[1], reverse=True)
 
-        print cjson.encode(position)
+        print(cjson.encode(position))
         #print position['position']

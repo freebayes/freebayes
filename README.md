@@ -2,7 +2,6 @@
 ## user manual and guide
 
 [![Build Status](https://travis-ci.org/ekg/freebayes.svg)](https://travis-ci.org/ekg/freebayes)
-[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/ekg/freebayes?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 --------
 
@@ -24,8 +23,7 @@ alignments.  This method avoids one of the core problems with alignment-based
 variant detection--- that identical sequences may have multiple possible 
 alignments:
 
-<img src="http://hypervolu.me/freebayes/figures/haplotype_calling.png" 
-width=500/>
+<img src="https://github.com/ekg/freebayes/raw/v1.3.0/paper/haplotype_calling.png" width=500/>
 
 *FreeBayes* uses short-read alignments 
 ([BAM](http://samtools.sourceforge.net/SAMv1.pdf) files with 
@@ -164,6 +162,10 @@ Call variants assuming a diploid sample:
 Require at least 5 supporting observations to consider a variant:
 
     freebayes -f ref.fa -C 5 aln.bam >var.vcf
+
+Skip over regions of high depth by discarding alignments overlapping positions where total read depth is greater than 200:
+
+    freebayes -f ref.fa -g 200 aln.bam >var.vcf
 
 Use a different ploidy:
 
