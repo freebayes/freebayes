@@ -521,7 +521,9 @@ string AlleleParser::vcfHeader() {
     string gqType = "Float";
     if (parameters.strictVCF)
         gqType = "Integer";
-
+    string Qtype = "Integer";
+    if(parameters.gVCFout && !parameters.strictVCF)
+        Qtype = "Float";
         // format fields for genotypes
     headerss << "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << endl
         << "##FORMAT=<ID=GQ,Number=1,Type=" << gqType << ",Description=\"Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype\">" << endl
@@ -531,9 +533,9 @@ string AlleleParser::vcfHeader() {
         << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" << endl
         << "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Number of observation for each allele\">" << endl
         << "##FORMAT=<ID=RO,Number=1,Type=Integer,Description=\"Reference allele observation count\">" << endl
-        << "##FORMAT=<ID=QR,Number=1,Type=Integer,Description=\"Sum of quality of the reference observations\">" << endl
+        << "##FORMAT=<ID=QR,Number=1,Type="<< Qtype << ",Description=\"Sum of quality of the reference observations\">" << endl
         << "##FORMAT=<ID=AO,Number=A,Type=Integer,Description=\"Alternate allele observation count\">" << endl
-        << "##FORMAT=<ID=QA,Number=A,Type=Integer,Description=\"Sum of quality of the alternate observations\">" << endl
+        << "##FORMAT=<ID=QA,Number=A,Type="<< Qtype << ",Description=\"Sum of quality of the alternate observations\">" << endl
         << "##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description=\"Minimum depth in gVCF output block.\">" << endl
         //<< "##FORMAT=<ID=SRF,Number=1,Type=Integer,Description=\"Number of reference observations on the forward strand\">" << endl
         //<< "##FORMAT=<ID=SRR,Number=1,Type=Integer,Description=\"Number of reference observations on the reverse strand\">" << endl
