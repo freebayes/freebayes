@@ -1,6 +1,16 @@
+#!/usr/bin/env python
+from __future__ import print_function, division
 from dirichlet import multinomial, multinomialln, multinomial_coefficient, multinomial_coefficientln
 import math
 import operator
+
+def fold(func, iterable, initial=None, reverse=False):
+    x=initial
+    if reverse:
+        iterable=reversed(iterable)
+    for e in iterable:
+        x=func(x,e) if x is not None else e
+    return x
 
 def hwe_expectation(genotype, allele_counts):
     """@genotype is counts of A,B,C etc. alleles, e.g. (2,0) is AA and (1,1) is AB
@@ -9,7 +19,7 @@ def hwe_expectation(genotype, allele_counts):
     ploidy = sum(genotype)
     genotype_coeff = multinomial_coefficient(ploidy, genotype)
     allele_frequencies = [count / float(population_total_alleles) for count in allele_counts]
-    genotype_expected_frequency = genotype_coeff * reduce(operator.mul, [math.pow(freq, p) for freq, p in zip(allele_frequencies, genotype)])
+    genotype_expected_frequency = genotype_coeff * fold(operator.mul, [math.pow(freq, p) for freq, p in zip(allele_frequencies, genotype)])
     return genotype_expected_frequency
 
 
@@ -28,7 +38,7 @@ def hwe_sampling_probln(genotype, genotypes, ploidy):
              population as suggested by the genotype counts, given HWE"""
     population_total_alleles = sum([sum(g[0]) * g[1] for g in genotypes])
     #print "population_total_alleles", population_total_alleles
-    allele_counts = reduce(add_tuple, [[a * g[1] for a in g[0]] for g in genotypes])
+    allele_counts = fold(add_tuple, [[a * g[1] for a in g[0]] for g in genotypes])
     #print "allele_counts", allele_counts
     genotype_counts = [g[1] for g in genotypes]
     #print "genotype_counts", genotype_counts
@@ -49,7 +59,7 @@ def hwe_sampling_probln(genotype, genotypes, ploidy):
 
 def inbreeding_coefficient(genotype, genotypes):
     population_total_alleles = sum([sum(g[0]) * g[1] for g in genotypes])
-    allele_counts = reduce(add_tuple, [[a * g[1] for a in g[0]] for g in genotypes])
+    allele_counts = fold(add_tuple, [[a * g[1] for a in g[0]] for g in genotypes])
     genotype_counts = [g[1] for g in genotypes]
     population_total_genotypes = sum([gtc[1] for gtc in genotypes])
     expected = hwe_expectation(genotype, allele_counts) * population_total_genotypes
@@ -59,6 +69,6 @@ def inbreeding_coefficient(genotype, genotypes):
             observed = g[1]
             break
     if observed == 0:
-        print "error, no observations of genotype, cannot calculate inbreeding coefficient"
+        print("error, no observations of genotype, cannot calculate inbreeding coefficient")
         return 0
     return 1 - (observed / expected)

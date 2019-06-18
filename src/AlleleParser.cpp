@@ -1317,6 +1317,13 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
 
     string rDna = alignment.QUERYBASES;
     string rQual = alignment.QUALITIES;
+    if (qualityChar2LongDouble(rQual.at(0)) == -1) {
+        // force rQual to be 0
+        char q0 = qualityInt2Char(0);
+        for (size_t i = 0; i < rQual.size(); ++i) {
+            rQual[i] = q0;
+        }
+    }
     int rp = 0;  // read position, 0-based relative to read
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
     int sp = alignment.POSITION;  // sequence position
@@ -1979,12 +1986,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
             }
 
             // skip alignments which are non-primary
-#ifdef HAVE_BAMTOOLS
-            if (!currentAlignment.IsPrimaryAlignment()) {
-#else
             if (currentAlignment.SecondaryFlag()) {
-#endif
-                //DEBUG("skipping alignment " << currentAlignment.Name << " because it is not marked primary");
+                DEBUG("skipping alignment " << currentAlignment.QNAME << " because it is not marked primary");
                 continue;
             }
 
@@ -3341,10 +3344,13 @@ void AlleleParser::buildHaplotypeAlleles(
         groupAlleles(samples, alleleGroups);
 
         /*
-        for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
-            cerr << s->first << endl;
-            for (Sample::iterator t = s->second.begin(); t != s->second.end(); ++t) {
-                cerr << t->first << " " << t->second << endl << endl;
+        if (parameters.debug) {
+            DEBUG("after re-grouping alleles");
+            for (Samples::iterator s = samples.begin(); s != samples.end(); ++s) {
+                cerr << s->first << endl;
+                for (Sample::iterator t = s->second.begin(); t != s->second.end(); ++t) {
+                    cerr << t->first << " " << t->second << endl << endl;
+                }
             }
         }
         */
