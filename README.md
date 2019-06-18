@@ -7,7 +7,7 @@
 
 ## Overview
 
-[*FreeBayes*](http://arxiv.org/abs/1207.3907) is a 
+[*freebayes*](http://arxiv.org/abs/1207.3907) is a 
 [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) genetic variant 
 detector designed to find small polymorphisms, specifically SNPs 
 (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs 
@@ -15,7 +15,7 @@ detector designed to find small polymorphisms, specifically SNPs
 substitution events) smaller than the length of a short-read sequencing 
 alignment.
 
-*FreeBayes* is haplotype-based, in the sense that it calls variants based on 
+*freebayes* is haplotype-based, in the sense that it calls variants based on 
 the literal sequences of reads aligned to a particular target, not their 
 precise alignment.  This model is a straightforward generalization of previous 
 ones (e.g. PolyBayes, samtools, GATK) which detect or report variants based on 
@@ -25,7 +25,7 @@ alignments:
 
 <img src="https://github.com/ekg/freebayes/raw/v1.3.0/paper/haplotype_calling.png" width=500/>
 
-*FreeBayes* uses short-read alignments 
+*freebayes* uses short-read alignments 
 ([BAM](http://samtools.sourceforge.net/SAMv1.pdf) files with 
 [Phred+33](http://en.wikipedia.org/wiki/Phred_quality_score) encoded quality 
 scores, now standard) for any number of individuals from a population and a 
@@ -41,92 +41,52 @@ variation across the samples under analysis.
 
 ## Citing freebayes
 
-A preprint [Haplotype-based variant detection from short-read 
-sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the 
-statistical models
-used in FreeBayes.  We ask that you cite this paper if you use FreeBayes in
-work that leads to publication.
+A preprint [Haplotype-based variant detection from short-read sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the 
+statistical models used in freebayes.
+We ask that you cite this paper if you use freebayes in work that leads to publication.
+This preprint is used for documentation and citation.
+freebayes was never submitted for review, but has been used in over 1000 publications.
 
 Please use this citation format:
 
-Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing.
-*arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
+Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing. *arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
 
-If possible, please also refer to the version number provided by freebayes when 
-it is run without arguments or with the `--help` option.  For example, you 
-should see something like this:
+If possible, please also refer to the version number provided by freebayes when it is run without arguments or with the `--help` option.
+For example, you should see something like this:
 
     version:  v1.3.1-1-g5eb71a3-dirty
 
-This provides both a point release number and a git commit id, which will 
-ensure precise reproducibility of results.
+This provides both a point release number and a git commit id, which will ensure precise reproducibility of results.
 
+## Download
 
-## Obtaining
+Precompiled static binaries are available for [freebayes relases](https://github.com/ekg/freebayes/releases).
+Most users should simply download these and run them.
 
-To download FreeBayes, please use git to download the most recent development
-tree.  Currently, the tree is hosted on github, and can be obtained via:
+Other packages are available from various sources, including conda and Debian, but these are relatively old (at least as of 2019) and do not include important updates from the past few years.
 
-    git clone --recursive git://github.com/ekg/freebayes.git
+## Support
 
-Note the use of --recursive.  This is required in order to download all 
-nested git submodules for external repositories.
-
-### Resolving proxy issues with git
-
-Depending on your local network configuration, you may have problems obtaining
-freebayes via git.  If you see something like this you may be behind a proxy
-that blocks access to standard git:// port (9418).
-
-    $ git clone --recursive git://github.com/ekg/freebayes.git
-    Cloning into 'freebayes'...
-    fatal: Unable to look up github.com (port 9418) (Name or service not known)
-
-Luckily, if you have access to https:// on port 443, then you can use this
-'magic' command as a workaround to enable download of the submodules:
-
-    git config --global url.https://github.com/.insteadOf git://github.com/
-
-
-## Compilation
-
-FreeBayes requires g++ and the standard C and C++ development libraries.
-
-    make
-
-Will build the executable freebayes, as well as the utilities bamfiltertech and 
-bamleftalign.  These executables can be found in the `bin/` directory in the 
-repository.
-
-Users may wish to install to e.g. /usr/local/bin (default), which is 
-accomplished via
-
-    sudo make install
-
-Note that the freebayes-parallel script and the programs on which it depends are
-not installed by this command.
-
-Users can optionally build with [BamTools](https://github.com/pezmaster31/bamtools) instead of [SeqLib](https://github.com/walaj/SeqLib). Building with BamTools requires CMake.
-
-    make wbamtools
+Please report any issues or questions to the [freebayes mailing list](https://groups.google.com/forum/#!forum/freebayes), [freebayes issue tracker](https://github.com/ekg/freebayes/issues), or by email to <erik.garrison@gmail.com>.
 
 ## Usage
 
-In its simplest operation, freebayes requires only two inputs: a FASTA reference
-sequence, and a BAM-format alignment file sorted by reference position.  For
-instance:
+In its simplest operation, freebayes requires only two inputs: a FASTA reference sequence, and a BAM-format alignment file sorted by reference position.
+For instance:
 
-    freebayes --fasta-reference h.sapiens.fasta NA20504.bam
+    freebayes -f ref.fa aln.bam >var.vcf
 
-... produce (on standard output) a VCF file on standard out describing
-all SNPs, INDELs, MNPs, and Complex events between the reference and the
-alignments in NA20504.bam.  In order to produce correct output, the reference
-supplied must be the reference to which NA20504.bam was aligned.
+... will produce a VCF file describing all SNPs, INDELs, and haplotype variants between the reference and aln.bam.
 
-Users may specify any number of BAM files on the command line.  FreeBayes uses 
-the [BamTools API](http://github.com/pezmaster31/bamtools) to open and parse 
-these files in parallel, virtually merging them at runtime into one logical 
-file with a merged header.
+Multiple BAM files may be given for joint calling.
+
+Typically, we might consider two additional parameters.
+GVCF output allows us to have coverage information about non-called sites, and we can enable it with `--gcvcf`.
+For performance reasons we may want to skip regions of extremely high coverage in the reference using the `--skip-limit` parameter `-g`.
+These can greatly increase runtime but do not produce meaningful results.
+For instance, if we wanted to exclude regions of 1000X coverage, we would run:
+
+    freebayes -f ref.fa --gvcf -g 1000 >var.vcf
 
 For a description of available command-line options and their defaults, run:
 
@@ -221,7 +181,7 @@ observation count (AO).
 * (possibly, **Iterate** the variant detection process in response to insight 
 gained from your interpretation)
 
-FreeBayes emits a standard VCF 4.1 output stream.  This format is designed for the
+freebayes emits a standard VCF 4.1 output stream.  This format is designed for the
 probabilistic description of allelic variants within a population of samples,
 but it is equally suited to describing the probability of variation in a single
 sample.
@@ -255,7 +215,7 @@ can also be done by filtering on the DP flag.
 
 ## Calling variants in a population
 
-FreeBayes is designed to be run on many individuals from the same population
+freebayes is designed to be run on many individuals from the same population
 (e.g. many human individuals) simultaneously.  The algorithm exploits a neutral
 model of allele diffusion to impute most-confident genotypings
 across the entire population.  In practice, the discriminant power of the 
@@ -313,31 +273,26 @@ more flexible than setting a hard count on the number of observations.
 ## Observation filters and qualities
 
 ### Input filters
-FreeBayes filters its input so as to ignore low-confidence alignments and
-alleles which are only supported by low-quality sequencing observations (see
-`--min-mapping-quality` and `--min-base-quality`).  It also will only evaluate a
-position if at least one read has mapping quality of
-`--min-supporting-mapping-quality` and one allele has quality of at least
-`--min-supporting-base-quality`.
 
-Reads with more than a fixed number of high-quality mismatches can be excluded
-by specifying `--read-mismatch-limit`.  This is meant as a workaround when 
-mapping quality estimates are not appropriately calibrated.
+By default, freebayes doesn't 
 
-Reads marked as duplicates in the BAM file are ignored, but this can be 
-disabled for testing purposes by providing `--use-duplicate-reads`.  FreeBayes 
-does not mark duplicates on its own, you must use another process to do this.
+freebayes may be configured to filter its input so as to ignore low-confidence alignments and alleles which are only supported by low-quality sequencing observations (see `--min-mapping-quality` and `--min-base-quality`).
+It also will only evaluate a position if at least one read has mapping quality of `--min-supporting-mapping-quality` and one allele has quality of at least `--min-supporting-base-quality`.
+
+Reads with more than a fixed number of high-quality mismatches can be excluded by specifying `--read-mismatch-limit`.
+This is meant as a workaround when mapping quality estimates are not appropriately calibrated.
+
+Reads marked as duplicates in the BAM file are ignored, but this can be disabled for testing purposes by providing `--use-duplicate-reads`.
+freebayes does not mark duplicates on its own, you must use another process to do this, such as that in [sambamba](https://github.com/biod/sambamba).
 
 ### Observation thresholds
-As a guard against spurious variation caused by sequencing artifacts, positions
-are skipped when no more than `--min-alternate-count` or 
-`--min-alternate-fraction`
-non-clonal observations of an alternate are found in one sample.  These default 
-to 2 and 0.2 respectively.  The default setting of `--min-alternate-fraction 
-0.2` is suitable for diploid samples but should be changed for ploidy > 2.
+
+As a guard against spurious variation caused by sequencing artifacts, positions are skipped when no more than `--min-alternate-count` or `--min-alternate-fraction` non-clonal observations of an alternate are found in one sample.
+These default to 2 and 0.05 respectively.
+The default setting of `--min-alternate-fraction 0.05` is suitable for diploid samples but may need to be changed for higher ploidy.
 
 ### Allele type exclusion
-FreeBayes provides a few methods to ignore certain classes of allele, e.g. 
+freebayes provides a few methods to ignore certain classes of allele, e.g. 
 `--throw-away-indels-obs` and `--throw-awary-mnps-obs`.  Users are *strongly cautioned against using 
 these*, because removing this information is very likely to reduce detection 
 power.  To generate a report only including SNPs, use vcffilter post-call as 
@@ -357,7 +312,7 @@ The raw output faithfully describes exactly the calls that were made.
 
 ### Observation qualities
 
-FreeBayes estimates observation quality using several simple heuristics based 
+freebayes estimates observation quality using several simple heuristics based 
 on manipulations of the phred-scaled base qualities:
 
 * For single-base observations, *mismatches* and *reference observations*: the 
@@ -369,21 +324,13 @@ deleted sequence.
 * For *haplotypes*: the mean quality of allele observations within the 
 haplotype.
 
-### Effective base depth
-
-By default, filters are left completely open.
-Use `--experimental-gls` if you would like to integrate both base and mapping 
-quality are into the reported site quality (QUAL in the VCF) and 
-genotype quality (GQ, when supplying `--genotype-qualities`).  This integration 
-is driven by the "Effective Base Depth" metric first developed in 
-[snpTools](http://www.hgsc.bcm.edu/software/snptools), which scales observation 
-quality by mapping quality.  When `--experimental-gls` is given, *P(Obs|Genotype) ~ 
-P(MappedCorrectly(Obs))P(SequencedCorrectly(Obs))*.
-
+By default, both base and mapping quality are into the reported site quality (QUAL in the VCF) and genotype quality (GQ, when supplying `--genotype-qualities`).
+This integration is driven by the "Effective Base Depth" metric first developed in [snpTools](http://www.hgsc.bcm.edu/software/snptools), which scales observation quality by mapping quality: *P(Obs|Genotype) ~ P(MappedCorrectly(Obs))P(SequencedCorrectly(Obs))*.
+Set `--standard-gls` to use the model described in the freebayes preprint.
 
 ## Stream processing
 
-FreeBayes can read BAM from standard input `--stdin` instead of directly from
+freebayes can read BAM from standard input `--stdin` instead of directly from
 files.  This allows the application of any number of streaming BAM filters and
 calibrators to its input.
 
@@ -483,67 +430,58 @@ is combined with high a sequencing error rate.
 
 ## Best practices and design philosophy
 
-FreeBayes follows the patterns suggested by the [Unix 
-philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), which promotes the 
-development of simple, modular systems that perform a single function, and can 
-be combined into more complex systems using stream processing of common 
-interchange formats.
+freebayes follows the patterns suggested by the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), which promotes the development of simple, modular systems that perform a single function, and can be combined into more complex systems using stream processing of common interchange formats.
 
-FreeBayes incorporates a number of features in order to reduce the complexity 
-of variant detection for researchers and developers:
+freebayes incorporates a number of features in order to reduce the complexity of variant detection for researchers and developers:
 
-* **Indel realignment is accomplished internally** using a read-independent 
-method, and issues resulting from discordant alignments are dramatically 
-reducedy through the direct detection of haplotypes.
-* The need for **base quality recalibration is avoided** through the direct 
-detection of haplotypes. Sequencing platform errors tend to cluster (e.g. at 
-the ends of reads), and generate unique, non-repeating haplotypes at a given 
-locus.
-* **Variant quality recalibration is avoided** by incorporating a number of 
-metrics, such as read placement bias and allele balance, directly into the 
-Bayesian model.  (Our upcoming publication will discuss this in more detail.)
+* **Indel realignment is accomplished internally** using a read-independent method, and issues resulting from discordant alignments are dramatically reducedy through the direct detection of haplotypes.
+* The need for **base quality recalibration is avoided** through the direct detection of haplotypes. Sequencing platform errors tend to cluster (e.g. at the ends of reads), and generate unique, non-repeating haplotypes at a given locus.
+* **Variant quality recalibration is avoided** by incorporating a number of metrics, such as read placement bias and allele balance, directly into the Bayesian model.  (Our upcoming publication will discuss this in more detail.)
 
-A minimal pre-processing pipeline similar to that described in "Calling 
-variants" should be sufficient for most uses.  For more information, please 
-refer to a recent post by Brad Chapman [on minimal BAM preprocessing 
-methods](http://bcbio.wordpress.com/2013/10/21/updated-comparison-of-variant-detection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
+A minimal pre-processing pipeline similar to that described in "Calling variants" should be sufficient for most uses.
+For more information, please refer to a recent post by Brad Chapman [on minimal BAM preprocessing methods](http://bcbio.wordpress.com/2013/10/21/updated-comparison-of-variant-detection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
 
-For a push-button solution to variant detection, from reads to variant calls, 
-look no further than the [gkno genome analysis platform](http://gkno.me/).
+## Development
 
-## Contributors
+To download freebayes, please use git to download the most recent development tree:
 
-FreeBayes is made by:
+    git clone --recursive git://github.com/ekg/freebayes.git
 
-- Erik Garrison 
-- Thomas Sibley 
-- Dillon Lee 
-- Patrick Marks 
-- Noah Spies 
-- Joshua Randall 
-- Jeremy Anderson
+Note the use of --recursive.  This is required in order to download all nested git submodules for external repositories.
 
-## Support
+### Resolving proxy issues with git
 
-### email
+Depending on your local network configuration, you may have problems obtaining freebayes via git.
+If you see something like this you may be behind a proxy that blocks access to standard git:// port (9418).
 
-Please report any issues or questions to the [freebayes mailing 
-list](https://groups.google.com/forum/#!forum/freebayes), [freebayes issue 
-tracker](https://github.com/ekg/freebayes/issues), or by email to 
-<erik.garrison@gmail.com>.
+    $ git clone --recursive git://github.com/ekg/freebayes.git
+    Cloning into 'freebayes'...
+    fatal: Unable to look up github.com (port 9418) (Name or service not known)
 
-### IRC
+Luckily, if you have access to https:// on port 443, then you can use this
+'magic' command as a workaround to enable download of the submodules:
 
-If you would like to chat real-time about freebayes, join #freebayes on
-freenode. A gittr.im chat is also available.
+    git config --global url.https://github.com/.insteadOf git://github.com/
 
-### reversion
 
-Note that if you encounter issues with the development HEAD and you would like 
-a quick workaround for an issue that is likely to have been reintroduced 
-recently, you can use `git checkout` to step back a few revisions.
+## Compilation
 
-    git checkout [git-commit-id]
+freebayes requires g++ and the standard C and C++ development libraries.
 
-It will also help with debugging to know if a problem has arisen in recent 
-commits!
+    make
+
+Will build the executable freebayes, as well as the utilities bamfiltertech and 
+bamleftalign.  These executables can be found in the `bin/` directory in the 
+repository.
+
+Users may wish to install to e.g. /usr/local/bin (default), which is 
+accomplished via
+
+    sudo make install
+
+Note that the freebayes-parallel script and the programs on which it depends are
+not installed by this command.
+
+Users can optionally build with [BamTools](https://github.com/pezmaster31/bamtools) instead of [SeqLib](https://github.com/walaj/SeqLib). Building with BamTools requires CMake.
+
+    make wbamtools
