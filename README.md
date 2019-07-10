@@ -167,10 +167,8 @@ samples.  You can use freebayes to detect the variants, following these steps:
 * Ensure your alignments have **read groups** attached so their sample may be 
 identified by freebayes.  Aligners allow you to do this, but you can also use 
 [bamaddrg](http://github.com/ekg/bamaddrg) to do so post-alignment.
-* **Sort** the alignments (e.g. bamtools sort).
-* **Mark duplicates**, for instance with [samtools 
-rmdup](http://samtools.sourceforge.net/) (if PCR was used in the preparation of 
-your sequencing library)
+* **Sort** the alignments (e.g. [sambamba sort](https://github.com/biod/sambamba)).
+* **Mark duplicates**, for instance with [sambamba markdup](https://github.com/biod/sambamba) (if PCR was used in the preparation of your sequencing library)
 * ***Run freebayes*** on all your alignment data simultaneously, generating a 
 VCF.  The default settings should work for most use cases, but if your samples 
 are not diploid, set the `--ploidy` and adjust the `--min-alternate-fraction` 
