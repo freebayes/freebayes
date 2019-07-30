@@ -1,6 +1,7 @@
 #include "Genotype.h"
 #include "multichoose.h"
 #include "multipermute.h"
+#include <ctime>
 
 
 vector<Allele*> Genotype::uniqueAlleles(void) {
@@ -1143,6 +1144,11 @@ convergentGenotypeComboSearch(
     // set best position, which is updated during the EM step
     GenotypeCombo bestCombo = comboKing;
 
+    // setup timeout
+    int timeoutSeconds = 120;
+    std::time_t start = std::time(0);
+    std::time_t stop = start + timeoutSeconds;
+
     int i = 0;
     for (; i < maxiterations; ++i) {
 
@@ -1238,6 +1244,10 @@ convergentGenotypeComboSearch(
             bestCombo = combos.front();
         }
 
+        if (std::time(0) > stop) {
+            //cerr << "reached timeout" << endl;
+            break;
+        }
     }
 
     //cout << i << " iterations" << "\t" << variantSampleDataLikelihoods.size() << " varying samples"
