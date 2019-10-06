@@ -2881,8 +2881,6 @@ bool AlleleParser::toNextPosition(void) {
     // remove past registered alleles
     DEBUG2("marking previous alleles as processed and removing from registered alleles");
     removePreviousAlleles(registeredAlleles, currentPosition);
-    sort(registeredAlleles.begin(), registeredAlleles.end());
-    registeredAlleles.erase(unique(registeredAlleles.begin(), registeredAlleles.end()), registeredAlleles.end());
 
     // if we have alignments which ended at the previous base, erase them and their alleles
     DEBUG2("erasing old registered alignments");
