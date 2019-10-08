@@ -176,17 +176,18 @@ public:
     bool allowedHaplotypeBasisAllele(long int pos, string& ref, string& alt);
 
     Allele makeAllele(RegisteredAlignment& ra,
-		      AlleleType type,
-		      long int pos,
-		      int length,
-		      int basesLeft,
-		      int basesRight,
-		      string& readSequence,
-		      string& sampleName,
-		      BAMALIGN& alignment,
-		      string& sequencingTech,
-		      long double qual,
-		      string& qualstr);
+                      AlleleType type,
+                      long int pos,
+                      long int endpos,
+                      int length,
+                      int basesLeft,
+                      int basesRight,
+                      string& readSequence,
+                      string& sampleName,
+                      BAMALIGN& alignment,
+                      string& sequencingTech,
+                      long double qual,
+                      string& qualstr);
 
 
 
