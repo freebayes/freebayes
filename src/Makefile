@@ -92,7 +92,7 @@ HEADERS=multichoose.h version_git.h
 
 # executables
 
-freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS) $(seqlib)
+freebayes ../bin/freebayes: freebayes.o $(OBJECTS) $(HEADERS) $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a
 	$(CXX) $(CXXFLAGS) $(INCLUDE) freebayes.o $(OBJECTS) -o ../bin/freebayes $(LIBS)
 
 alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS) $(seqlib)
