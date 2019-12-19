@@ -6,7 +6,7 @@
 
 # Compiler
 
-CXXFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g -ggdb
+CXXFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g -ggdb -std=c++11
 CXX=g++ ${CXXFLAGS}
 C=gcc
 
