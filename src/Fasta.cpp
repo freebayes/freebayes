@@ -262,7 +262,7 @@ string FastaReference::getRawSequence(string seqname) {
     int seqlen = newlines_in_sequence  + entry.length;
     char* seq = (char*) calloc (seqlen + 1, sizeof(char));
     fseek64(file, entry.offset, SEEK_SET);
-    fread(seq, sizeof(char), seqlen, file);
+    size_t x = fread(seq, sizeof(char), seqlen, file);
     seq[seqlen] = '\0';
     char* pbegin = seq;
     char* pend = seq + (seqlen/sizeof(char));
@@ -305,7 +305,7 @@ string FastaReference::getRawSubSequence(string seqname, int start, int length) 
     int seqlen = length + newlines_inside;
     char* seq = (char*) calloc (seqlen + 1, sizeof(char));
     fseek64(file, (off_t) (entry.offset + newlines_before + start), SEEK_SET);
-    fread(seq, sizeof(char), (off_t) seqlen, file);
+    size_t x = fread(seq, sizeof(char), (off_t) seqlen, file);
     seq[seqlen] = '\0';
     char* pbegin = seq;
     char* pend = seq + (seqlen/sizeof(char));
