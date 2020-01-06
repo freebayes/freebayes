@@ -207,6 +207,9 @@ $(VCFLIB_ROOT)/lib/libvcflib.a: $(VCFLIB_ROOT)/src/*.h $(VCFLIB_ROOT)/src/*.cpp
 	cd $(TABIX_ROOT)/ && $(MAKE)
 
 ../vcflib/smithwaterman/SmithWatermanGotoh.o: ../vcflib/smithwaterman/SmithWatermanGotoh.h ../vcflib/smithwaterman/SmithWatermanGotoh.cpp
+../vcflib/smithwaterman/IndelAllele.o:
+../vcflib/smithwaterman/Repeats.o:
+../vcflib/smithwaterman/LeftAlign.o:
 	cd ../vcflib/smithwaterman && $(MAKE)
 
 
