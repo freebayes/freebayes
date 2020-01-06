@@ -47,10 +47,10 @@ gprof:
 .PHONY: all static debug profiling gprof
 
 $(HTSLIB_ROOT)/libhts.a:
-	cd $(HTSLIB_ROOT) && make
+	cd $(HTSLIB_ROOT) && $(MAKE)
 
 $(SEQLIB_ROOT)/src/libseqlib.a:
-	cd $(SEQLIB_ROOT) && ./configure --disable-dependency-tracking && make
+	cd $(SEQLIB_ROOT) && ./configure && $(MAKE)
 
 OBJECTS=BedReader.o \
 		CNV.o \
