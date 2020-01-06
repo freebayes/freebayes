@@ -101,7 +101,7 @@ alleles ../bin/alleles: alleles.o $(OBJECTS) $(HEADERS) $(seqlib)
 dummy ../bin/dummy: dummy.o $(OBJECTS) $(HEADERS) $(seqlib)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) dummy.o $(OBJECTS) -o ../bin/dummy $(LIBS)
 
-bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o
+bamleftalign ../bin/bamleftalign: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamleftalign.o Fasta.o LeftAlign.o IndelAllele.o split.o $(OBJECTS) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) bamleftalign.o $(OBJECTS) -o ../bin/bamleftalign $(LIBS)
 
 bamfiltertech ../bin/bamfiltertech: $(SEQLIB_ROOT)/src/libseqlib.a $(HTSLIB_ROOT)/libhts.a bamfiltertech.o $(OBJECTS) $(HEADERS)
