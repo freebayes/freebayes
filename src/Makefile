@@ -47,10 +47,14 @@ gprof:
 .PHONY: all static debug profiling gprof
 
 $(HTSLIB_ROOT)/libhts.a:
-	cd $(HTSLIB_ROOT) && make
+	cd $(HTSLIB_ROOT) && $(MAKE)
 
 $(SEQLIB_ROOT)/src/libseqlib.a:
-	cd $(SEQLIB_ROOT) && ./configure && make 
+$(SEQLIB_ROOT)/src/libseqlib.a:
+$(SEQLIB_ROOT)/bwa/libbwa.a:
+$(SEQLIB_ROOT)/fermi-lite/libfml.a:
+$(SEQLIB_ROOT)/htslib/libhts.a:
+	cd $(SEQLIB_ROOT) && ./configure && $(MAKE)
 
 OBJECTS=BedReader.o \
 		CNV.o \
