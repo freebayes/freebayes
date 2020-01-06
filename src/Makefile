@@ -50,6 +50,10 @@ $(HTSLIB_ROOT)/libhts.a:
 	cd $(HTSLIB_ROOT) && $(MAKE)
 
 $(SEQLIB_ROOT)/src/libseqlib.a:
+$(SEQLIB_ROOT)/src/libseqlib.a:
+$(SEQLIB_ROOT)/bwa/libbwa.a:
+$(SEQLIB_ROOT)/fermi-lite/libfml.a:
+$(SEQLIB_ROOT)/htslib/libhts.a:
 	cd $(SEQLIB_ROOT) && ./configure && $(MAKE)
 
 OBJECTS=BedReader.o \
