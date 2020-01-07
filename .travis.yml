@@ -11,4 +11,4 @@ before_install:
   - gcc --version && g++ --version
   - sudo apt-get install -qq bc samtools parallel
 script:
-  - make -j4 && make -j4 test
+  - make -j2 && make -j2 test
