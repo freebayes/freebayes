@@ -464,22 +464,21 @@ Luckily, if you have access to https:// on port 443, then you can use this
 
 ## Compilation
 
-freebayes requires g++ and the standard C and C++ development libraries.
+freebayes requires g++, camke, the standard C and C++ development libraries, liblzma, pthread, and libbzip2.
+To build, users can just run:
 
-    make
+    make -j4
 
-Will build the executable freebayes, as well as the utilities bamfiltertech and 
-bamleftalign.  These executables can be found in the `bin/` directory in the 
-repository.
+... to build the executable freebayes, as well as the bamleftalign indel realignment utility (`-j4` tells make to use 4 threads).
 
-Users may wish to install to e.g. /usr/local/bin (default), which is 
-accomplished via
+These executables can be found in the `bin/` directory in the repository.
+Other useful scripts, including the freebayes-parallel script are located in `scripts/`.
 
-    sudo make install
+`make test` runs basic integration tests to make sure that everything is working.
+This depends on samtools and a few other system utilities.
 
-Note that the freebayes-parallel script and the programs on which it depends are
-not installed by this command.
+Internally, freebayes uses cmake for its build process.
+So it's also possible to directly build with cmake:
 
-Users can optionally build with [BamTools](https://github.com/pezmaster31/bamtools) instead of [SeqLib](https://github.com/walaj/SeqLib). Building with BamTools requires CMake.
+    cmake -H. -Bbuild && cmake --build build -- -j4
 
-    make wbamtools

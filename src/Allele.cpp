@@ -291,9 +291,9 @@ const string Allele::base(void) const { // the base of this allele
     case ALLELE_NULL:
         return "N:" + convert(position) + ":" + alternateSequence;
     default:
+        return "";
         break;
     }
-
 }
 
 string stringForAllele(const Allele &allele) {

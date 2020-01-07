@@ -1,39 +1,32 @@
-#CFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
-#CXXFLAGS=-O3 -D_FILE_OFFSET_BITS=64 -g
+# convenience wrapper for make
 
-all: vcflib/Makefile log
-	cd src && $(MAKE)
+all: log freebayes vcflib/CMakeLists.txt
 
-wbamtools: vcflib/Makefile log
-	cd src && $(MAKE) -f Makefile.bamtools
+freebayes:
+	cmake -H. -Bbuild && cmake --build build -- $(MAKEFLAGS)
 
 log: src/version_git.h
 	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
 
 src/version_git.h:
-	cd src && $(MAKE) autoversion
-	touch src/version_git.h
+	./scripts/update_version.sh ./
 
-vcflib/Makefile:
+vcflib/CMakeLists.txt:
+SeqLib/configure:
 	@echo "To build freebayes you must use git to also download its submodules."
 	@echo "Do so by downloading freebayes again using this command (note --recursive flag):"
 	@echo "    git clone --recursive git://github.com/ekg/freebayes.git"
 	@error
 
-debug:
-	cd src && $(MAKE) debug
+vcflib/bin/vcfuniq:
+	cd vcflib && $(MAKE)
 
-install:
-	cp bin/freebayes bin/bamleftalign /usr/local/bin/
-
-uninstall:
-	rm /usr/local/bin/freebayes /usr/local/bin/bamleftalign
-
-test:
-	cd test && make test
+test: freebayes vcflib/bin/vcfuniq
+	cd test && prove -v t
 
 clean:
-	cd src && $(MAKE) clean
+	cd vcflib && $(MAKE) clean
+	rm -rf build
 	rm -fr bin/*
 
-.PHONY: all install uninstall clean test
+.PHONY: all clean test freebayes vcflib/bin/vcfuniq
