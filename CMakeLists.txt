@@ -37,7 +37,7 @@ set(vcflib_LIB "${SOURCE_DIR}/lib")
 
 ExternalProject_Add(seqlib
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/SeqLib
-  BUILD_IN_SOURCE 1
+  BUILD_IN_SOURCE 1 # why do we have to build in source?
   CONFIGURE_COMMAND ./configure
   BUILD_COMMAND $(MAKE) CXXFLAGS='-std=c++14'
   INSTALL_COMMAND $(MAKE) install)
@@ -78,7 +78,13 @@ add_library(freebayes_OBJS OBJECT
 set(freebayes_DEPS 
   vcflib
   seqlib)
-add_dependencies(freebayes_OBJS ${freebayes_DEPS})
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/version_git.txt
+  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/update_version.sh ${CMAKE_CURRENT_SOURCE_DIR})
+add_custom_target(SetVersion ALL
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/version_git.txt)
+
+add_dependencies(freebayes_OBJS ${freebayes_DEPS} SetVersion)
 
 set(freebayes_INCLUDES
   "${CMAKE_SOURCE_DIR}/src"
@@ -112,6 +118,7 @@ add_executable(bamleftalign
 target_include_directories(bamleftalign PUBLIC ${freebayes_INCLUDES})
 target_link_libraries(bamleftalign ${freebayes_LIBS})
 set_target_properties(bamleftalign PROPERTIES OUTPUT_NAME "bamleftalign")
+
 
 if (APPLE)
 elseif (TRUE)
