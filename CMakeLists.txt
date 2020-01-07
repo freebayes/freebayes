@@ -29,11 +29,10 @@ include(FindThreads)
 
 ExternalProject_Add(vcflib
   SOURCE_DIR "${CMAKE_SOURCE_DIR}/vcflib"
-  CMAKE_ARGS "${CMAKE_ARGS};-DBUILD_ONLY_LIB=1"
-  INSTALL_COMMAND "")
-ExternalProject_Get_property(vcflib SOURCE_DIR)
-set(vcflib_INCLUDE "${SOURCE_DIR}/include")
-set(vcflib_LIB "${SOURCE_DIR}/lib")
+  CMAKE_ARGS "${CMAKE_ARGS};-DBUILD_ONLY_LIB=1;-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>")
+ExternalProject_Get_property(vcflib INSTALL_DIR)
+set(vcflib_INCLUDE "${INSTALL_DIR}/include")
+set(vcflib_LIB "${INSTALL_DIR}/lib")
 
 ExternalProject_Add(seqlib
   SOURCE_DIR ${CMAKE_SOURCE_DIR}/SeqLib

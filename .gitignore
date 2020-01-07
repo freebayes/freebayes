@@ -3,6 +3,7 @@ paper/main.rtf
 bugs/
 bin/
 build/
+test/build/
 src/version_git.h
 *~
 \#*

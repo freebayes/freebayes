@@ -1,7 +1,7 @@
 .PHONY: all clean
 
 freebayes=../bin/freebayes
-vcfuniq=../vcflib/bin/vcfuniq
+vcfuniq=build/vcfuniq
 
 all: test
 
@@ -12,4 +12,4 @@ $(freebayes):
 	cd .. && $(MAKE)
 
 $(vcfuniq):
-	cd ../vcflib && make clean && make
+	cmake -H. -Bbuild -S ../vcflib && cmake --build build -- -j4

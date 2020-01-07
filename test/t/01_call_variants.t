@@ -5,7 +5,7 @@ BASH_TAP_ROOT=bash-tap
 
 PATH=../bin:$PATH # for freebayes
 PATH=../scripts:$PATH # for freebayes-parallel
-PATH=../vcflib/bin:$PATH # for vcf binaries used by freebayes-parallel
+PATH=build:$PATH # for vcf binaries used by freebayes-parallel
 
 plan tests 24
 
