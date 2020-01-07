@@ -11,7 +11,10 @@ test: $(freebayes) $(vcfuniq)
 $(freebayes):
 	cd .. && $(MAKE)
 
-$(vcfuniq):
+build:
+	mkdir -p build
+
+$(vcfuniq): build
 	cmake -H. -Bbuild -S ../vcflib && cmake --build build -- -j4
 
 clean:
