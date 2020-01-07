@@ -13,3 +13,6 @@ $(freebayes):
 
 $(vcfuniq):
 	cmake -H. -Bbuild -S ../vcflib && cmake --build build -- -j4
+
+clean:
+	rm -rf build

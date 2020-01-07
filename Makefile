@@ -19,8 +19,8 @@ test:
 	cd test && $(MAKE) test
 
 clean:
-	rm -rf test/build
 	rm -rf build
+	rm -rf test/build
 	rm -fr bin/*
 
 .PHONY: all clean test freebayes
