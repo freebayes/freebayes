@@ -118,6 +118,8 @@ target_include_directories(bamleftalign PUBLIC ${freebayes_INCLUDES})
 target_link_libraries(bamleftalign ${freebayes_LIBS})
 set_target_properties(bamleftalign PROPERTIES OUTPUT_NAME "bamleftalign")
 
+install(TARGETS freebayes DESTINATION bin)
+install(TARGETS bamleftalign DESTINATION bin)
 
 if (APPLE)
 elseif (TRUE)
