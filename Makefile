@@ -8,6 +8,9 @@ freebayes:
 log: src/version_git.h
 	wget -q http://hypervolu.me/freebayes/build/$(shell cat src/version_git.h | grep v | cut -f 3 -d\  | sed s/\"//g) &
 
+src/version_git.h:
+	./scripts/update_version.sh ./
+
 vcflib/CMakeLists.txt:
 SeqLib/configure:
 	@echo "To build freebayes you must use git to also download its submodules."
