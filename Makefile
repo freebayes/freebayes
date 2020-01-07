@@ -18,12 +18,15 @@ SeqLib/configure:
 	@echo "    git clone --recursive git://github.com/ekg/freebayes.git"
 	@error
 
-test:
-	cd test && $(MAKE) test
+vcflib/bin/vcfuniq:
+	cd vcflib && $(MAKE)
+
+test: freebayes vcflib/bin/vcfuniq
+	cd test && prove -v t
 
 clean:
+	cd vcflib && $(MAKE) clean
 	rm -rf build
-	rm -rf test/build
 	rm -fr bin/*
 
-.PHONY: all clean test freebayes
+.PHONY: all clean test freebayes vcflib/bin/vcfuniq
