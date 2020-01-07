@@ -388,18 +388,18 @@ ostream &operator<<(ostream &out, vector<Allele*> &alleles) {
 }
 
 ostream &operator<<(ostream &out, vector<Allele> &alleles) {
-    vector<Allele>::iterator a = alleles.begin();
-    out << *a++;
-    while (a != alleles.end())
-        out << "|" << *a++;
+    int i = 0;
+    for (auto& allele : alleles) {
+        out << (i++ ? "|" : "") << allele;
+    }
     return out;
 }
 
 ostream &operator<<(ostream &out, list<Allele*> &alleles) {
-    list<Allele*>::iterator a = alleles.begin();
-    out << **a++;
-    while (a != alleles.end())
-        out << "|" << **a++;
+    int i = 0;
+    for (auto& allele : alleles) {
+        out << (i++ ? "|" : "") << allele;
+    }
     return out;
 }
 

@@ -998,9 +998,9 @@ void RegisteredAlignment::addAllele(Allele newAllele, bool mergeComplex, int max
 }
 
 void RegisteredAlignment::clumpAlleles(bool mergeComplex, int maxComplexGap, bool boundIndels) {
-    // remove any empty alleles
-    //cerr << "got alleles " << alleles << endl;
+    // remove any empty alleles, and skip if we go totally empty
     alleles.erase(remove_if(alleles.begin(), alleles.end(), isEmptyAllele), alleles.end());
+    if (!alleles.size()) return;
     vector<bool> toMerge(alleles.size());
     if (maxComplexGap >= 0) {
         for (int i = 1; i < alleles.size()-1; ++i) {
