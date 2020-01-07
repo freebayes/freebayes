@@ -2,4 +2,6 @@ paper/main.log
 paper/main.rtf
 bugs/
 bin/
+build/
 src/version_git.h
+*~
