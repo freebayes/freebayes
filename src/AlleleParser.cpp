@@ -2177,13 +2177,13 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
     if (!seq.empty()) {
         variantCallInputFile.setRegion(seq, start, end);
     }
-    bool ok = true;
+    bool ok;
     while ((ok = variantCallInputFile.getNextVariant(*currentVariant))) {
 
         long int pos = currentVariant->position - 1;
         // get alternate alleles
         bool includePreviousBaseForIndels = true;
-        map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->parsedAlternates(includePreviousBaseForIndels);
+        map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->parsedAlternates();
         // TODO this would be a nice option: why does it not work?
         //map<string, vector<vcflib::VariantAllele> > variantAlleles = currentVariant->flatAlternates();
         vector< vector<vcflib::VariantAllele> > orderedVariantAlleles;
@@ -2224,6 +2224,7 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                     // but this is technically incorrect, so this hack should be noted
                     len = variant.ref.size();
                     reflen = len;
+                    //alleleSequence = alleleSequence.at(0); // take only the first base
                     type = ALLELE_REFERENCE;
                     cigar = convert(len) + "M";
                 } else if (variant.ref.size() == variant.alt.size()) {
@@ -2238,23 +2239,36 @@ void AlleleParser::getInputVariantsInRegion(string& seq, long start, long end) {
                 } else if (variant.ref.size() > variant.alt.size()) {
                     type = ALLELE_DELETION;
                     len = variant.ref.size() - variant.alt.size();
-                    reflen = variant.ref.size();
-                    cigar = "1M" + convert(len) + "D";
+                    allelePos -= 1;
+                    reflen = len + 2;
+                    alleleSequence =
+                        reference.getSubSequence(currentVariant->sequenceName, allelePos, 1)
+                        + alleleSequence
+                        + reference.getSubSequence(currentVariant->sequenceName, allelePos+1+len, 1);
+                    cigar = "1M" + convert(len) + "D" + "1M";
                 } else {
+                    // we always include the flanking bases for these elsewhere, so here too in order to be consistent and trigger use
                     type = ALLELE_INSERTION;
+                    // add previous base and post base to match format typically used for calling
+                    allelePos -= 1;
+                    alleleSequence =
+                        reference.getSubSequence(currentVariant->sequenceName, allelePos, 1)
+                        + alleleSequence
+                        + reference.getSubSequence(currentVariant->sequenceName, allelePos+1, 1);
                     len = variant.alt.size() - var.ref.size();
-                    reflen = variant.ref.size();
-                    cigar = "1M" + convert(len) + "I";
+                    cigar = "1M" + convert(len) + "I" + "1M";
+                    reflen = 2;
                 }
+                // TODO deal woth complex subs
 
                 Allele allele = genotypeAllele(type, alleleSequence, (unsigned int) len, cigar, (unsigned int) reflen, allelePos);
-                //DEBUG("input allele: " << allele.referenceName << " " << allele);
+                DEBUG("input allele: " << allele.referenceName << " " << allele);
+                //cerr << "input allele: " << allele.referenceName << " " << allele << endl;
 
                 //alleles.push_back(allele);
                 genotypeAlleles.push_back(allele);
 
                 if (allele.type != ALLELE_REFERENCE) {
-                    DEBUG("input allele: " << allele.referenceName << " " << allele);
                     inputVariantAlleles[bamMultiReader.GETREFID(currentVariant->sequenceName)][allele.position].push_back(allele);
                     alternatePositions.insert(allele.position);
                 }
@@ -3961,8 +3975,8 @@ vector<Allele> AlleleParser::genotypeAlleles(
     // this needs to be fixed in a big way
     // the alleles have to be put into the local haplotype structure
     if (inputVariantAlleles.find(currentRefID) != inputVariantAlleles.end()) {
-        map<long int, vector<Allele> >::iterator v = inputVariantAlleles[currentRefID].lower_bound(currentPosition);
-        while (v != inputVariantAlleles[currentRefID].end() && v->first >= currentPosition && v->first <= currentPosition + haplotypeLength) {
+        map<long int, vector<Allele> >::iterator v = inputVariantAlleles[currentRefID].find(currentPosition);
+        if (v != inputVariantAlleles[currentRefID].end()) {
             vector<Allele>& inputalleles = v->second;
             for (vector<Allele>::iterator a = inputalleles.begin(); a != inputalleles.end(); ++a) {
                 DEBUG("evaluating input allele " << *a);
@@ -3979,7 +3993,6 @@ vector<Allele> AlleleParser::genotypeAlleles(
                     resultAlleles.push_back(allele);
                 }
             }
-            ++v;
         }
     }
     // remove non-unique alleles after
