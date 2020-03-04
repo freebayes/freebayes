@@ -13,4 +13,4 @@ before_install:
   - gcc --version && g++ --version
   - sudo apt-get install -qq bc samtools parallel
 script:
-  - cmake -H. -Bbuild && cmake --build build -- -j 4 && cd vcflib && make -j 4 && cd ../test && prove -v t
+  - cmake -H. -Bbuild && cmake --build build -- -j 2 && cd vcflib && make -j 2 && cd ../test && prove -v t
