@@ -64,7 +64,7 @@ int CNVMap::ploidy(string const& sample, string const& seq, long int position) {
                 int copyNumber = i->second;
                 if (range.first <= position && range.second > position) {
                     return copyNumber;
-                } else if (position > range.first && position > range.second) {
+                } else if (position < range.first) {
                     // we've passed any potential matches in this sequence, and the map
                     // is sorted by pair, so we don't have any matching ranges
                     break;
