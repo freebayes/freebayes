@@ -38,7 +38,7 @@ void CNVMap::setSamplePloidy(const string& sample, int ploidy) {
 }
 
 void CNVMap::setPloidy(string const& sample, string const& seq, long int start, long int end, int ploidy) {
-    sampleSeqCNV[sample][seq][make_pair(start, end)] = ploidy;
+    sampleSeqCNV[sample][seq].push_back(make_tuple(start, end, ploidy));
 }
 
 int CNVMap::ploidy(string const& sample, string const& seq, long int position) {
@@ -54,23 +54,27 @@ int CNVMap::ploidy(string const& sample, string const& seq, long int position) {
     if (scnv == sampleSeqCNV.end()) {
         return basePloidy;
     } else {
-        map<string, map<pair<long int, long int>, int> >::iterator c = scnv->second.find(seq);
+        map<string, vector<tuple<long int, long int, int> > >::iterator c = scnv->second.find(seq);
         if (c == scnv->second.end()) {
             return basePloidy;
         } else {
-            map<pair<long int, long int>, int>& cnvs = c->second;
-            for (map<pair<long int, long int>, int>::iterator i = cnvs.begin(); i != cnvs.end(); ++i) {
-                pair<long int, long int> range = i->first;
-                int copyNumber = i->second;
-                if (range.first <= position && range.second > position) {
-                    return copyNumber;
-                } else if (position < range.first) {
-                    // we've passed any potential matches in this sequence, and the map
-                    // is sorted by pair, so we don't have any matching ranges
-                    break;
-                }
+            vector<tuple<long int, long int, int> >& cnvs = c->second;
+
+            vector<tuple<long int, long int, int> >::iterator i = upper_bound(cnvs.begin(), cnvs.end(),
+                position, [](long int position, tuple<long int, long int, int> const& element) {
+                    return position < get<1>(element);
+                });
+            if (i == cnvs.end()) {
+                return basePloidy;
             }
-            return basePloidy;
+
+            long int start = get<0>(*i);
+            int copyNumber = get<2>(*i);
+            if (start <= position) {
+                return copyNumber;
+            } else {
+                return basePloidy;
+            }
         }
     }
 
