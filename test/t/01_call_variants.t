@@ -8,7 +8,7 @@ PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin/:$PATH # for vcf binaries used by freebayes-parallel
 PATH=../vcflib/scripts:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 24
+plan tests 25
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -122,3 +122,12 @@ rm -f x.sam
 
 is $(freebayes -f tiny/q.fa --skip-coverage 30 tiny/NA12878.chr22.tiny.bam | grep -v '^#' | wc -l) 22 "freebayes makes the expected number of calls when capping coverage"
 is $(freebayes -f tiny/q.fa -g 30 tiny/NA12878.chr22.tiny.bam | vcfkeepinfo - DP | vcf2tsv | cut -f 8 | tail -n+2 | awk '$1 <= 30 { print }' | wc -l) 22 "all coverage capped calls are below the coverage threshold"
+
+> cnv-map.bed
+for i in {1..10}; do
+    echo -e "q\t$((i * 2000))\t$((i * 2000 + 2000))\t1\t$((2 + i))" >> cnv-map.bed
+done
+is $(freebayes -f tiny/q.fa -F 0.2 tiny/NA12878.chr22.tiny.bam -A cnv-map.bed | grep -v "^#" | cut -f2,10 | cut -f1 -d":" |
+    awk 'BEGIN{errors = 0} {cn = int($1 / 2000) + 2; obs = gsub(/\/|\|/, "", $2) + 1; if (cn != obs) errors += 1 } END {OFS=":"; print errors,NR}') "0:19" \
+    "freebayes correctly uses CNV map with multiple entries"
+rm cnv-map.bed
