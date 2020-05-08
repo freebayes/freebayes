@@ -1946,8 +1946,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
 #endif
                 if (!oneSampleAnalysis) {
                     ERROR("Couldn't find read group id (@RG tag) for BAM Alignment " <<
-                          currentAlignment.QNAME << " at position " << position
-                          << " in sequence " << currentSequence << " EXITING!");
+                          currentAlignment.QNAME << " at " << currentSequenceName << ":"
+                          << position + 1 << " EXITING!");
                     exit(1);
                 } else {
                     readGroup = "unknown";
@@ -1955,8 +1955,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
             } else {
                 if (oneSampleAnalysis) {
                     ERROR("No read groups specified in BAM header, but alignment " <<
-                          currentAlignment.QNAME << " at position " << position
-                          << " in sequence " << currentSequence << " has a read group.");
+                          currentAlignment.QNAME << " at " << currentSequenceName << ":"
+                          << position + 1 << " has a read group.");
                     exit(1);
                 }
             }
