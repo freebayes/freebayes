@@ -3990,7 +3990,36 @@ vector<Allele> AlleleParser::genotypeAlleles(
                     }
                 }
                 if (!alreadyPresent) {
-                    resultAlleles.push_back(allele);
+                    if (allele.position == currentPosition && allele.referenceLength == haplotypeLength) {
+                        resultAlleles.push_back(allele);
+                    } else {
+                        assert(currentPosition <= allele.position && haplotypeLength >= allele.referenceLength);
+                        string altseq = "";
+                        string cigar = "";
+                        long int extend_left = allele.position - currentPosition;
+                        long int extend_right = currentPosition + haplotypeLength
+                                - allele.position - allele.referenceLength;
+                        if (extend_left > 0) {
+                            altseq += currentSequence.substr(currentPosition - currentSequenceStart, extend_left);
+                            cigar += convert(extend_left) + "M";
+                        }
+                        altseq += allele.alternateSequence;
+                        cigar += allele.cigar;
+                        if (extend_right > 0) {
+                            altseq += currentSequence.substr(
+                                allele.position + allele.referenceLength - currentSequenceStart, extend_right);
+                            cigar += convert(extend_right) + "M";
+                        }
+                        Allele new_allele = genotypeAllele(allele.type,
+                                                           altseq,
+                                                           allele.length + extend_left + extend_right,
+                                                           cigar,
+                                                           haplotypeLength,
+                                                           currentPosition,
+                                                           allele.repeatRightBoundary);
+                        DEBUG("Extending input allele " << allele << " -> " << new_allele);
+                        resultAlleles.push_back(new_allele);
+                    }
                 }
             }
         }
