@@ -3990,10 +3990,9 @@ vector<Allele> AlleleParser::genotypeAlleles(
                     }
                 }
                 if (!alreadyPresent) {
-                    if (allele.position == currentPosition && allele.referenceLength == haplotypeLength) {
+                    if (allele.position <= currentPosition && allele.referenceLength >= haplotypeLength) {
                         resultAlleles.push_back(allele);
                     } else {
-                        assert(currentPosition <= allele.position && haplotypeLength >= allele.referenceLength);
                         string altseq = "";
                         string cigar = "";
                         long int extend_left = allele.position - currentPosition;
