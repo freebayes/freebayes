@@ -66,38 +66,50 @@ void AlleleParser::openBams(void) {
         }
     }
 
-#else 
+#else
+
     if (parameters.useStdin) {
         if (!bamMultiReader.Open("-")) {
             ERROR("Could not read BAM data from stdin");
             exit(1);
         }
     } else {
-      for (std::vector<std::string>::const_iterator i = parameters.bams.begin();
-           i != parameters.bams.end(); ++i) 
-        if (!bamMultiReader.Open(*i)) {
-	  ERROR("Could not open input BAM file: " + *i);
-	  exit(1);
-	}
-	else {
-	  /*if (!bamMultiReader.LocateIndexes()) {
-                ERROR("Opened BAM reader without index file, jumping is disabled.");
-                cerr << bamMultiReader.GetErrorString() << endl;
-                if (!targets.empty()) {
-                    ERROR("Targets specified but no BAM index file provided.");
-                    ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
-                    ERROR("Please generate a BAM index file eithe, e.g.:");
-                    ERROR("    \% bamtools index -in <bam_file>");
-                    ERROR("    \% samtools index <bam_file>");
-                    exit(1);
-                }
-		}*/
+      for (std::vector<std::string>::const_iterator i = parameters.bams.begin(); i != parameters.bams.end(); ++i){
+            string b = *i;
+            // set reference to supplied fasta if the alignment file ends with cram
+            if(b.substr(b.size()-4).compare("cram") == 0){
+                DEBUG("Setting cram reference for bam reader")
+                bamMultiReader.SetCramReference(parameters.fasta);
+            }else{
+                // reset the reference if this alignment file is no cram
+                DEBUG("Unsetting cram reference for bam reader")
+                bamMultiReader.SetCramReference("");
+            }
+
+            if (!bamMultiReader.Open(*i)) {
+                ERROR("Could not open input BAM file: " + *i);
+                exit(1);
+            }else {
+            /*if (!bamMultiReader.LocateIndexes()) {
+                    ERROR("Opened BAM reader without index file, jumping is disabled.");
+                    cerr << bamMultiReader.GetErrorString() << endl;
+                    if (!targets.empty()) {
+                        ERROR("Targets specified but no BAM index file provided.");
+                        ERROR("FreeBayes cannot jump through targets in BAM files without BAM index files, exiting.");
+                        ERROR("Please generate a BAM index file eithe, e.g.:");
+                        ERROR("    \% bamtools index -in <bam_file>");
+                        ERROR("    \% samtools index <bam_file>");
+                        exit(1);
+                    }
+            }*/
+            }
         }
         /*if (!bamMultiReader.SetExplicitMergeOrder(bamMultiReader.MergeByCoordinate)) {
             ERROR("could not set sort order to coordinate");
             cerr << bamMultiReader.GetErrorString() << endl;
             exit(1);
 	    }*/
+
     }
 #endif
 
@@ -412,7 +424,7 @@ string AlleleParser::vcfHeader() {
     for (REFVEC::const_iterator it = referenceSequences.begin();
 	 it != referenceSequences.end(); ++it)
       headerss << "##contig=<ID=" << it->REFNAME << ",length=" << it->REFLEN << ">" << endl;
-    
+
     headerss
         << "##phasing=none" << endl
         << "##commandline=\"" << parameters.commandline << "\"" << endl
@@ -654,7 +666,7 @@ bool AlleleParser::loadNextPositionWithInputVariant(void) {
 // alignment-based method for loading the first bit of our reference sequence
 void AlleleParser::loadReferenceSequence(BAMALIGN& alignment) {
   loadReferenceSequence(referenceIDToName[alignment.REFID]);
-  currentPosition = alignment.POSITION; 
+  currentPosition = alignment.POSITION;
 }
 
 void AlleleParser::loadReferenceSequence(string& seqname) {
@@ -818,7 +830,7 @@ void AlleleParser::loadSampleCNVMap(void) {
             sampleCNV.setPloidy(referenceSampleName, r->REFNAME, 0, r->REFLEN, 1);
         }
     }
-    
+
 }
 
 int AlleleParser::currentSamplePloidy(string const& sample) {
@@ -1387,7 +1399,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
      *
      */
 
-    /*    std::cerr << "********" << std::endl 
+    /*    std::cerr << "********" << std::endl
 	      << alignment.QueryBases << std::endl
 	      << alignment.AlignedBases << std::endl;
     vector<CigarOp>::const_iterator cigarIter2 = alignment.CigarData.begin();
@@ -1938,7 +1950,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
             DEBUG("alignment: " << currentAlignment.QNAME);
             // get read group, and map back to a sample name
             string readGroup;
-#ifdef HAVE_BAMTOOLS	    
+#ifdef HAVE_BAMTOOLS
             if (!currentAlignment.GetTag("RG", readGroup)) {
 #else
 	      currentAlignment.GetZTag("RG", readGroup);
@@ -2115,7 +2127,7 @@ void AlleleParser::removeRegisteredAlignmentsOverlappingPosition(long unsigned i
         }
     }
 }
-        
+
 void AlleleParser::addToRegisteredAlleles(vector<Allele*>& alleles) {
     registeredAlleles.insert(registeredAlleles.end(),
                              alleles.begin(),
@@ -2722,7 +2734,7 @@ bool AlleleParser::getFirstAlignment(void) {
       hasAlignments = false;
     } else {
       while (!currentAlignment.ISMAPPED) {
-	if (!GETNEXT(bamMultiReader, currentAlignment)) { 
+	if (!GETNEXT(bamMultiReader, currentAlignment)) {
 	  hasAlignments = false;
 	  break;
 	}
