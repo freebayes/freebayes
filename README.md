@@ -482,3 +482,17 @@ So it's also possible to directly build with cmake:
 
     cmake -H. -Bbuild && cmake --build build -- -j4
 
+### Compile in a Guix container
+
+After checking out the repo with git recursive create a Guix
+container with all the build tools with
+
+    guix environment -C -l guix.scm
+
+Next rebuild the CMake environment with
+
+    rm CMakeCache.txt ./vcflib-prefix/src/vcflib-build/CMakeCache.txt
+    make clean
+    make -j 4
+
+
