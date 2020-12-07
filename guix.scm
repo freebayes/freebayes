@@ -11,8 +11,13 @@
   (guix packages)
   (guix git-download)
   (guix build-system cmake)
-  (gnu packages bioinformatics)
+  (gnu packages base)
   (gnu packages compression)
+  (gnu packages bioinformatics)
+  (gnu packages build-tools)
+  (gnu packages curl)
+  (gnu packages ninja)
+  (gnu packages perl)
   (srfi srfi-1)
   (ice-9 popen)
   (ice-9 rdelim))
@@ -49,7 +54,18 @@
                #t))))
        #:tests? #f
        #:make-flags (list "CC=gcc")))
-    (native-inputs `())
-    (inputs `(("zlib" ,zlib)))))
+    (propagated-inputs
+     `(("perl" ,perl)         ; for testing
+       ("grep" ,grep)         ; for testing
+       ("samtools" ,samtools) ; for testing
+       ("which" ,which)       ; for version
+       ))
+    (inputs
+     `(
+       ("curl" ,curl)
+       ("meson" ,meson)
+       ("ninja" ,ninja)
+       ("zlib" ,zlib)
+       ))))
 
 freebayes-git
