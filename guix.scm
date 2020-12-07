@@ -18,6 +18,7 @@
   (gnu packages curl)
   (gnu packages ninja)
   (gnu packages perl)
+  (gnu packages pkg-config)
   (srfi srfi-1)
   (ice-9 popen)
   (ice-9 rdelim))
@@ -60,11 +61,15 @@
        ("samtools" ,samtools) ; for testing
        ("which" ,which)       ; for version
        ))
+    (native-inputs
+     `(
+       ("meson" ,meson)
+       ("ninja" ,ninja)
+       ("pkg-config" ,pkg-config)
+       ))
     (inputs
      `(
        ("curl" ,curl)
-       ("meson" ,meson)
-       ("ninja" ,ninja)
        ("zlib" ,zlib)
        ))))
 
