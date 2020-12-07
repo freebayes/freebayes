@@ -4,8 +4,11 @@ bugs/
 bin/
 build/
 test/build/
+CMakeFiles/
 src/version_git.h
 *~
 \#*
 .#*
 .gdb_history
+*.cmake
+CMakeCache.txt
