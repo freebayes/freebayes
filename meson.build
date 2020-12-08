@@ -1,10 +1,8 @@
-project('freebayes', language: ['cpp', 'c'],
+project('freebayes', ['cpp', 'c'],
         version : '1.0',
         default_options : ['warning_level=3', 'cpp_std=c++14'])
 
-zlib_dep = dependency(
-        'zlib', required : false)
-# conf.set10('HAVE_LIBZ', libz.found())
+zlib_dep = dependency('zlib', required: false)
 
 thread_dep = dependency('threads')
 
@@ -110,16 +108,22 @@ incdir = include_directories(
     'vcflib/multichoose',
     'vcflib/filevercmp')
 
+# Parsing pkg-config by hand because it does not get honoured
+pkgconfig_prog = find_program('pkg-config')
+r = run_command(pkgconfig_prog.path(), '--libs', 'zlib')
+
 executable('freebayes',
            freebayes_src,
            seqlib_src,
            vcflib_src,
            include_directories : incdir,
            cpp_args : '-Wfatal-errors',
-           link_args : '-Wl,-L/gnu/store/899vqdi2wxf50lzip42wfxqb588zri5p-profile/lib,-lz',
+           link_args : '-Wl,'+','.join(r.stdout().strip().split()),
            dependencies: [zlib_dep, thread_dep]
           )
 
-
-t = find_program('make')
-test('T0', t, args : ['check'])
+prove = find_program('prove')
+test('T00', prove, args : ['-e','bash','-v','../test/t/00_region_and_target_handling.t'])
+test('T01', prove, args : ['-e','bash','-v','../test/t/01_call_variants.t'])
+test('T02', prove, args : ['-e','bash','-v','../test/t/02_multi_bam.t'])
+test('T03', prove, args : ['-e','bash','-v','../test/t/03_reference_bases.t'])
