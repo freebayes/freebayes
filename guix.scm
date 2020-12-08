@@ -75,7 +75,7 @@
        ("coreutils" ,coreutils) ; for echo in test
        ("curl" ,curl)
        ("perl6-tap-harness" ,perl6-tap-harness)       ; for tests
-       ("vcflib" ,vcflib)       ; for tests
+       ;; ("vcflib" ,vcflib)       ; for tests
        ("zlib" ,zlib)
        ))))
 
