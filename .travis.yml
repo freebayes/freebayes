@@ -45,6 +45,10 @@ matrix:
 # install:
 #   - pip install meson ninja
 
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install meson ninja; fi
+
 script:
   - meson setup builddir
   - ninja -C builddir -j 4
