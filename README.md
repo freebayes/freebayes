@@ -443,7 +443,7 @@ For more information, please refer to a recent post by Brad Chapman [on minimal 
 
 To download freebayes, please use git to download the most recent development tree:
 
-    git clone --recursive git://github.com/ekg/freebayes.git
+    git clone --recursive https://github.com/ekg/freebayes.git
 
 Note the use of --recursive.  This is required in order to download all nested git submodules for external repositories.
 
