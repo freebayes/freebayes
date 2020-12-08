@@ -14,6 +14,7 @@ matrix:
             - bc
             - samtools
             - parallel
+            - meson
     - os: linux
       arch:
         - arm64
@@ -28,10 +29,15 @@ matrix:
             - parallel
     - os: osx
       compiler: clang
+      language: shell
+      python: 3.8
+      cache:
+        - directories:
+          - $HOME/Library/Caches/pip
 
-before_install:
-  - git submodule update --init --recursive
-  - gcc --version && g++ --version
+# before_install:
+#   - git submodule update --init --recursive
+#   - gcc --version && g++ --version
 
 install:
   - pip install meson ninja
