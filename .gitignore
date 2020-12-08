@@ -5,7 +5,6 @@ bin/
 build/
 test/build/
 CMakeFiles/
-src/version_git.h
 *~
 \#*
 .#*
