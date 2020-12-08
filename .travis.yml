@@ -46,7 +46,6 @@ matrix:
 #   - pip install meson ninja
 
 script:
-  - meson setup builddir
-  - ninja -C builddir -j 4 
+  - meson builddir
+  - ninja -C builddir -j 4
   - ninja -C builddir test
-
