@@ -11,6 +11,7 @@
   (guix packages)
   (guix git-download)
   (guix build-system cmake)
+  (gnu packages algebra)
   (gnu packages base)
   (gnu packages compression)
   (gnu packages bioinformatics)
@@ -69,6 +70,9 @@
        ))
     (inputs
      `(
+       ("bc" ,bc)               ; for tests
+       ("vcflib" ,vcflib)       ; for tests
+       ("coreutils" ,coreutils) ; for echo in test
        ("curl" ,curl)
        ("zlib" ,zlib)
        ))))

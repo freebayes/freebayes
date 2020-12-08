@@ -68,7 +68,7 @@ VCF
 PS4='\n+ '
 
 function run_freebayes() {
-    ($root/bin/freebayes "$@" \
+    (freebayes "$@" \
         --haplotype-length 0 --min-alternate-count 1 \
         --min-alternate-fraction 0 --pooled-continuous \
         --ploidy 1 \
