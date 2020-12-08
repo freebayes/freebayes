@@ -2,13 +2,18 @@
 
 os: linux
 language: python
-compiler: gcc
 sudo: required
 dist: bionic
 matrix:
   include:
-    - env: CC=gcc
-    - env: CC=clang
+    - os: linux
+      compiler: gcc
+    - os: linux
+      arch:
+        - arm64
+      compiler: gcc
+    - os: osx
+      compiler: clang
 
 before_install:
   - git submodule update --init --recursive
