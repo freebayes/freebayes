@@ -7,41 +7,41 @@
 
 ## Overview
 
-[*freebayes*](http://arxiv.org/abs/1207.3907) is a 
-[Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) genetic variant 
-detector designed to find small polymorphisms, specifically SNPs 
-(single-nucleotide polymorphisms), indels (insertions and deletions), MNPs 
-(multi-nucleotide polymorphisms), and complex events (composite insertion and 
-substitution events) smaller than the length of a short-read sequencing 
+[*freebayes*](http://arxiv.org/abs/1207.3907) is a
+[Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) genetic variant
+detector designed to find small polymorphisms, specifically SNPs
+(single-nucleotide polymorphisms), indels (insertions and deletions), MNPs
+(multi-nucleotide polymorphisms), and complex events (composite insertion and
+substitution events) smaller than the length of a short-read sequencing
 alignment.
 
-*freebayes* is haplotype-based, in the sense that it calls variants based on 
-the literal sequences of reads aligned to a particular target, not their 
-precise alignment.  This model is a straightforward generalization of previous 
-ones (e.g. PolyBayes, samtools, GATK) which detect or report variants based on 
-alignments.  This method avoids one of the core problems with alignment-based 
-variant detection--- that identical sequences may have multiple possible 
+*freebayes* is haplotype-based, in the sense that it calls variants based on
+the literal sequences of reads aligned to a particular target, not their
+precise alignment.  This model is a straightforward generalization of previous
+ones (e.g. PolyBayes, samtools, GATK) which detect or report variants based on
+alignments.  This method avoids one of the core problems with alignment-based
+variant detection--- that identical sequences may have multiple possible
 alignments:
 
 <img src="https://github.com/ekg/freebayes/raw/v1.3.0/paper/haplotype_calling.png" width=500/>
 
-*freebayes* uses short-read alignments 
-([BAM](http://samtools.sourceforge.net/SAMv1.pdf) files with 
-[Phred+33](http://en.wikipedia.org/wiki/Phred_quality_score) encoded quality 
-scores, now standard) for any number of individuals from a population and a 
-[reference genome](http://en.wikipedia.org/wiki/Reference_genome) (in 
+*freebayes* uses short-read alignments
+([BAM](http://samtools.sourceforge.net/SAMv1.pdf) files with
+[Phred+33](http://en.wikipedia.org/wiki/Phred_quality_score) encoded quality
+scores, now standard) for any number of individuals from a population and a
+[reference genome](http://en.wikipedia.org/wiki/Reference_genome) (in
 [FASTA](http://en.wikipedia.org/wiki/FASTA_format) format)
-to determine the most-likely combination of genotypes for the population at 
-each position in the reference.  It reports positions which it finds putatively 
-polymorphic in variant call file ([VCF](http://www.1000genomes.org/node/101)) 
-format.  It can also use an input set of variants (VCF) as a source of prior 
-information, and a copy number variant map (BED) to define non-uniform ploidy 
+to determine the most-likely combination of genotypes for the population at
+each position in the reference.  It reports positions which it finds putatively
+polymorphic in variant call file ([VCF](http://www.1000genomes.org/node/101))
+format.  It can also use an input set of variants (VCF) as a source of prior
+information, and a copy number variant map (BED) to define non-uniform ploidy
 variation across the samples under analysis.
 
 
 ## Citing freebayes
 
-A preprint [Haplotype-based variant detection from short-read sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the 
+A preprint [Haplotype-based variant detection from short-read sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the
 statistical models used in freebayes.
 We ask that you cite this paper if you use freebayes in work that leads to publication.
 This preprint is used for documentation and citation.
@@ -157,26 +157,26 @@ cluster. Be aware that the freebayes-parallel script contains calls to other pro
 
 ## Calling variants: from fastq to VCF
 
-You've sequenced some samples.  You have a reference genome or assembled set of 
-contigs, and you'd like to determine reference-relative variants in your 
+You've sequenced some samples.  You have a reference genome or assembled set of
+contigs, and you'd like to determine reference-relative variants in your
 samples.  You can use freebayes to detect the variants, following these steps:
 
-* **Align** your reads to a suitable reference (e.g. with 
-[bwa](http://bio-bwa.sourceforge.net/) or 
+* **Align** your reads to a suitable reference (e.g. with
+[bwa](http://bio-bwa.sourceforge.net/) or
 [MOSAIK](https://github.com/wanpinglee/MOSAIK))
-* Ensure your alignments have **read groups** attached so their sample may be 
-identified by freebayes.  Aligners allow you to do this, but you can also use 
+* Ensure your alignments have **read groups** attached so their sample may be
+identified by freebayes.  Aligners allow you to do this, but you can also use
 [bamaddrg](http://github.com/ekg/bamaddrg) to do so post-alignment.
 * **Sort** the alignments (e.g. [sambamba sort](https://github.com/biod/sambamba)).
 * **Mark duplicates**, for instance with [sambamba markdup](https://github.com/biod/sambamba) (if PCR was used in the preparation of your sequencing library)
-* ***Run freebayes*** on all your alignment data simultaneously, generating a 
-VCF.  The default settings should work for most use cases, but if your samples 
-are not diploid, set the `--ploidy` and adjust the `--min-alternate-fraction` 
+* ***Run freebayes*** on all your alignment data simultaneously, generating a
+VCF.  The default settings should work for most use cases, but if your samples
+are not diploid, set the `--ploidy` and adjust the `--min-alternate-fraction`
 suitably.
-* **Filter** the output e.g. using reported QUAL and/or depth (DP) or 
+* **Filter** the output e.g. using reported QUAL and/or depth (DP) or
 observation count (AO).
 * **Interpret** your results.
-* (possibly, **Iterate** the variant detection process in response to insight 
+* (possibly, **Iterate** the variant detection process in response to insight
 gained from your interpretation)
 
 freebayes emits a standard VCF 4.1 output stream.  This format is designed for the
@@ -192,22 +192,22 @@ results, rather than accepting anything output by freebayes as ground truth.
 
 By default, records are output even if they have very low probability of
 variation, in expectation that the VCF will be filtered using tools such as
-[vcffilter](http://github.com/ekg/vcflib#vcffilter) in 
-[vcflib](http://github.com/ekg/vcflib), which is also included in the 
+[vcffilter](http://github.com/ekg/vcflib#vcffilter) in
+[vcflib](http://github.com/ekg/vcflib), which is also included in the
 repository under `vcflib/`.  For instance,
 
     freebayes -f ref.fa aln.bam | vcffilter -f "QUAL > 20" >results.vcf
 
-removes any sites with estimated probability of not being polymorphic less than 
+removes any sites with estimated probability of not being polymorphic less than
 phred 20 (aka 0.01), or probability of polymorphism &gt; 0.99.
 
-In simulation, the [receiver-operator 
+In simulation, the [receiver-operator
 characteristic](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
- (ROC) tends to have a very sharp inflection between Q1 and Q30, depending on 
-input data characteristics, and a filter setting in this range should provide 
-decent performance.  Users are encouraged to examine their output and both 
-variants which are retained and those they filter out.  Most problems tend to 
-occur in low-depth areas, and so users may wish to remove these as well, which 
+ (ROC) tends to have a very sharp inflection between Q1 and Q30, depending on
+input data characteristics, and a filter setting in this range should provide
+decent performance.  Users are encouraged to examine their output and both
+variants which are retained and those they filter out.  Most problems tend to
+occur in low-depth areas, and so users may wish to remove these as well, which
 can also be done by filtering on the DP flag.
 
 
@@ -216,11 +216,11 @@ can also be done by filtering on the DP flag.
 freebayes is designed to be run on many individuals from the same population
 (e.g. many human individuals) simultaneously.  The algorithm exploits a neutral
 model of allele diffusion to impute most-confident genotypings
-across the entire population.  In practice, the discriminant power of the 
-method will improve if you run multiple samples simultaneously.  In other 
+across the entire population.  In practice, the discriminant power of the
+method will improve if you run multiple samples simultaneously.  In other
 words, if your
 study has multiple individuals, you should run freebayes against them at the
-same time.  This also ensures consistent reporting of information about 
+same time.  This also ensures consistent reporting of information about
 evidence for all samples at any locus where any are apparently polymorphic.
 
 To call variants in a population of samples, each alignment must have a read
@@ -234,7 +234,7 @@ a file in which multiple samples map to the same RG, the files are not suitable
 for use in population calling, and they must be modified.
 
 Users may add RG tags to BAM files which were generated without this
-information by using (as mentioned in "Calling variants" above) 
+information by using (as mentioned in "Calling variants" above)
 [bamaddrg](http://github.com/ekg/bamaddrg).
 If you have many files corresponding to
 many individuals, add a unique read group and sample name to each, and then
@@ -272,7 +272,7 @@ more flexible than setting a hard count on the number of observations.
 
 ### Input filters
 
-By default, freebayes doesn't 
+By default, freebayes doesn't
 
 freebayes may be configured to filter its input so as to ignore low-confidence alignments and alleles which are only supported by low-quality sequencing observations (see `--min-mapping-quality` and `--min-base-quality`).
 It also will only evaluate a position if at least one read has mapping quality of `--min-supporting-mapping-quality` and one allele has quality of at least `--min-supporting-base-quality`.
@@ -290,10 +290,10 @@ These default to 2 and 0.05 respectively.
 The default setting of `--min-alternate-fraction 0.05` is suitable for diploid samples but may need to be changed for higher ploidy.
 
 ### Allele type exclusion
-freebayes provides a few methods to ignore certain classes of allele, e.g. 
-`--throw-away-indels-obs` and `--throw-awary-mnps-obs`.  Users are *strongly cautioned against using 
-these*, because removing this information is very likely to reduce detection 
-power.  To generate a report only including SNPs, use vcffilter post-call as 
+freebayes provides a few methods to ignore certain classes of allele, e.g.
+`--throw-away-indels-obs` and `--throw-awary-mnps-obs`.  Users are *strongly cautioned against using
+these*, because removing this information is very likely to reduce detection
+power.  To generate a report only including SNPs, use vcffilter post-call as
 such:
 
     freebayes ... | vcffilter -f "TYPE = snp"
@@ -310,16 +310,16 @@ The raw output faithfully describes exactly the calls that were made.
 
 ### Observation qualities
 
-freebayes estimates observation quality using several simple heuristics based 
+freebayes estimates observation quality using several simple heuristics based
 on manipulations of the phred-scaled base qualities:
 
-* For single-base observations, *mismatches* and *reference observations*: the 
+* For single-base observations, *mismatches* and *reference observations*: the
 un-adjusted base quality provided in the BAM alignment record.
-* For *insertions*: the mean quality of the bases inside of the putatively 
+* For *insertions*: the mean quality of the bases inside of the putatively
 inserted sequence.
-* For *deletions*: the mean quality of the bases flanking the putatively 
+* For *deletions*: the mean quality of the bases flanking the putatively
 deleted sequence.
-* For *haplotypes*: the mean quality of allele observations within the 
+* For *haplotypes*: the mean quality of allele observations within the
 haplotype.
 
 By default, both base and mapping quality are into the reported site quality (QUAL in the VCF) and genotype quality (GQ, when supplying `--genotype-qualities`).
@@ -334,15 +334,15 @@ calibrators to its input.
 
     bam_merger.sh | streaming_filter_or_process.sh | freebayes --stdin ...
 
-This pattern allows the adjustment of alignments without rewriting BAM files, 
-which could be expensive depending on context and available storage.  A prime 
-example of this would be graph-based realignment of reads to known variants as 
+This pattern allows the adjustment of alignments without rewriting BAM files,
+which could be expensive depending on context and available storage.  A prime
+example of this would be graph-based realignment of reads to known variants as
 implemented in [glia](http://github.com/ekg/glia).
 
 Using this pattern, you can filter out reads with certain criteria using
 bamtools filter without having to modify the input BAM file.  You can also use
 the bamtools API to write your own custom filters in C++.  An example filter is
-bamfiltertech 
+bamfiltertech
 [src/bamfiltertech.cpp](http://github.com/ekg/freebayes/blob/master/src/bamfilte
 rtech.cpp), which could be used to filter out
 technologies which have characteristic errors which may frustrate certain types
@@ -351,78 +351,78 @@ of variant detection.
 ## INDELs
 
 In principle, any gapped aligner which is sensitive to indels will
-produce satisfactory input for use by freebayes.  Due to potential ambiguity, 
+produce satisfactory input for use by freebayes.  Due to potential ambiguity,
 indels are
 not parsed when they overlap the beginning or end of alignment boundaries.
 
 When calling indels, it is important to homogenize the positional distribution
-of insertions and deletions in the input by using left realignment.  This is 
-now done automatically by freebayes, but the behavior can be turned off via 
+of insertions and deletions in the input by using left realignment.  This is
+now done automatically by freebayes, but the behavior can be turned off via
 `--dont-left-align-indels` flag.  You probably don't want to do this.
 
 Left realignment will place all indels in homopolymer and microsatellite
 repeats at the same position, provided that doing so does not introduce
-mismatches between the read and reference other than the indel.  This method 
-computationally inexpensive and handles the most common classes of alignment 
+mismatches between the read and reference other than the indel.  This method
+computationally inexpensive and handles the most common classes of alignment
 inconsistency.
 
 ## Haplotype calls
 
-As freebayes is haplotype-based, left-alignment is necessary only for the 
-determination of candidate polymorphic loci.  Once such loci are determined, 
+As freebayes is haplotype-based, left-alignment is necessary only for the
+determination of candidate polymorphic loci.  Once such loci are determined,
 haplotype observations are extracted from reads where:
 
-1. putative variants lie within `--haplotype-length` bases of each other 
+1. putative variants lie within `--haplotype-length` bases of each other
 (default 3bp),
-2. the reference sequence has repeats (e.g. microsatellites or STRs are called 
+2. the reference sequence has repeats (e.g. microsatellites or STRs are called
 as one haplotype),
-3. the haplotype which is called has Shannon entropy less than 
-`--min-repeat-entropy`, which is off by default but can be set to ~1 for 
+3. the haplotype which is called has Shannon entropy less than
+`--min-repeat-entropy`, which is off by default but can be set to ~1 for
 optimal genotyping of indels in lower-complexity sequence.
 
-After a haplotype window is determined by greedily expanding the window across 
-overlapping haplotype observations, all reads overlapping the window are used 
-to establish data likelihoods, *P(Observations|Genotype)*, for all haplotypes 
+After a haplotype window is determined by greedily expanding the window across
+overlapping haplotype observations, all reads overlapping the window are used
+to establish data likelihoods, *P(Observations|Genotype)*, for all haplotypes
 which have sufficient support to pass the input filters.
 
-Partial observations are considered to support those haplotypes which they 
-could match exactly.  For expedience, only haplotypes which are contiguously 
-observed by the reads are considered as putative alleles in this process.  This 
-differs from other haplotype-based methods, such as 
-[Platypus](http://www.well.ox.ac.uk/platypus), which consider all possible 
-haplotypes composed of observed component alleles (SNPs, indels) in a given 
+Partial observations are considered to support those haplotypes which they
+could match exactly.  For expedience, only haplotypes which are contiguously
+observed by the reads are considered as putative alleles in this process.  This
+differs from other haplotype-based methods, such as
+[Platypus](http://www.well.ox.ac.uk/platypus), which consider all possible
+haplotypes composed of observed component alleles (SNPs, indels) in a given
 region when generating likelihoods.
 
-The primary adantages of this approach are conceptual simplicity and 
-performance, and it is primarily limited in the case of short reads, an issue 
-that is mitigated by increasing read lengths.  Also, a hybrid approach must be 
+The primary adantages of this approach are conceptual simplicity and
+performance, and it is primarily limited in the case of short reads, an issue
+that is mitigated by increasing read lengths.  Also, a hybrid approach must be
 used to call haplotypes from high-error rate long reads.
 
 ### Re-genotyping known variants and calling long haplotypes
 
-For longer reads with higher error rates, it is possible to generate long 
-haplotypes in two passes over the data.  For instance, if we had very long 
-reads (e.g. >10kb) at moderate depth and high error rate (>5%) such as might be 
+For longer reads with higher error rates, it is possible to generate long
+haplotypes in two passes over the data.  For instance, if we had very long
+reads (e.g. >10kb) at moderate depth and high error rate (>5%) such as might be
 produced by PacBio, we could do something like:
 
     freebayes -f ref.fa aln.bam | vcffilter -f "QUAL > 20" >vars.vcf
 
-... thus generating candidate variants of suitable quality using the default 
-detection window.  We can then use these as "basis alleles" for the observation 
-of haplotypes, considering all other putative variants supported by the 
+... thus generating candidate variants of suitable quality using the default
+detection window.  We can then use these as "basis alleles" for the observation
+of haplotypes, considering all other putative variants supported by the
 alignment to be sequencing errors:
 
     freebayes -f ref.fa --haplotype-length 500 \
         --haplotype-basis-alleles vars.vcf aln.bam >haps.vcf
 
-These steps should allow us to read long haplotypes directly from input data 
+These steps should allow us to read long haplotypes directly from input data
 with high error rates.
 
-The high error rate means that beyond a small window each read will contain a 
-completely different literal haplotype.  To a point, this property improves our 
-signal to noise ratio and can effectively filter out sequencing errors at the 
-point of the input filters, but it also decreases the effective observation 
-depth will prevent the generation of any calls if a long `--haplotype-length` 
+The high error rate means that beyond a small window each read will contain a
+completely different literal haplotype.  To a point, this property improves our
+signal to noise ratio and can effectively filter out sequencing errors at the
+point of the input filters, but it also decreases the effective observation
+depth will prevent the generation of any calls if a long `--haplotype-length`
 is combined with high a sequencing error rate.
 
 
@@ -489,10 +489,10 @@ container with all the build tools with
 
     guix environment -C -l guix.scm
 
-Next rebuild the CMake environment with
+Above CMake build should work.  Recently we added the meson build
+system which can be run with
 
-    rm CMakeCache.txt ./vcflib-prefix/src/vcflib-build/CMakeCache.txt
-    make clean
-    make -j 4
-
-
+    meson setup builddir
+    cd builddir
+    ninja -j 8
+    ninja test
