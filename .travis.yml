@@ -1,9 +1,15 @@
 # Control file for continuous integration testing at http://travis-ci.org/
 
-language: cpp
+os: linux
+language: python
 compiler: gcc
 sudo: required
 dist: bionic
+matrix:
+  include:
+    - env: CC=gcc
+    - env: CC=clang
+
 before_install:
   - git submodule update --init --recursive
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
@@ -12,5 +18,12 @@ before_install:
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
   - gcc --version && g++ --version
   - sudo apt-get install -qq bc samtools parallel
+
+install:
+  - pip install meson ninja
+
 script:
-  - make -j2 && make -j2 test
+  - meson builddir
+  - meson compile -C builddir
+  - meson test -C builddir
+
