@@ -15,7 +15,7 @@ matrix:
             - samtools
             - parallel
             - meson
-            - ninja
+            - ninja-build
     - os: linux
       arch:
         - arm64
@@ -29,7 +29,7 @@ matrix:
             - samtools
             - parallel
             - meson
-            - ninja
+            - ninja-build
     - os: osx
       compiler: clang
       language: shell
@@ -47,6 +47,6 @@ matrix:
 
 script:
   - meson setup builddir
-  - meson compile -C builddir
-  - meson test -C builddir
+  - ninja -C builddir -j 4 
+  - ninja -C builddir test
 
