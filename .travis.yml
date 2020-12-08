@@ -15,6 +15,7 @@ matrix:
             - samtools
             - parallel
             - meson
+            - ninja
     - os: linux
       arch:
         - arm64
@@ -27,6 +28,8 @@ matrix:
             - bc
             - samtools
             - parallel
+            - meson
+            - ninja
     - os: osx
       compiler: clang
       language: shell
@@ -39,8 +42,8 @@ matrix:
 #   - git submodule update --init --recursive
 #   - gcc --version && g++ --version
 
-install:
-  - pip install meson ninja
+# install:
+#   - pip install meson ninja
 
 script:
   - meson setup builddir
