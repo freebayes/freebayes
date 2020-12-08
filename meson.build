@@ -16,7 +16,6 @@ freebayes_src = [
     'src/AlleleParser.cpp',
     # 'src/alleles.cpp',
     # 'src/bamfiltertech.cpp',
-    # 'src/bamleftalign.cpp',
     'src/BedReader.cpp',
     'src/BGZF.cpp',
     'src/Bias.cpp',
@@ -45,6 +44,7 @@ freebayes_src = [
     'src/Utility.cpp'
 ]
 
+
 vcflib_src = [
     'SeqLib/htslib/tbx.c',      # used by vcflib
     'vcflib/tabixpp/tabix.cpp',
@@ -61,6 +61,12 @@ seqlib_src = [
     'SeqLib/src/BamRecord.cpp',
     'SeqLib/src/BamHeader.cpp',
     'SeqLib/src/GenomicRegion.cpp',
+    'SeqLib/src/ssw_cpp.cpp',
+    'SeqLib/src/ssw.c',
+
+]
+
+htslib_src = [
     'SeqLib/htslib/bgzf.c',
     'SeqLib/htslib/sam.c',
     'SeqLib/htslib/hts.c',
@@ -88,9 +94,23 @@ seqlib_src = [
     'SeqLib/htslib/cram/rANS_static.c',
     'SeqLib/htslib/cram/open_trace_file.c',
     'SeqLib/htslib/multipart.c',
+]
+
+bamleftalign_src = [
+    'src/bamleftalign.cpp',
+    'src/IndelAllele.cpp',
+    'SeqLib/src/BamReader.cpp',
+    'SeqLib/src/BamWriter.cpp',
+    'SeqLib/src/BamRecord.cpp',
+    'SeqLib/src/BamHeader.cpp',
+    'SeqLib/src/GenomicRegion.cpp',
     'SeqLib/src/ssw_cpp.cpp',
     'SeqLib/src/ssw.c',
-
+    'vcflib/fastahack/Fasta.cpp',
+    'vcflib/smithwaterman/LeftAlign.cpp',
+    'vcflib/src/split.cpp',
+    'src/LeftAlign.cpp',
+    'vcflib/smithwaterman/IndelAllele.cpp'
 ]
 
 # Include paths - there are some duplicates in there
@@ -116,6 +136,17 @@ executable('freebayes',
            freebayes_src,
            seqlib_src,
            vcflib_src,
+           htslib_src,
+           include_directories : incdir,
+           cpp_args : '-Wfatal-errors',
+           link_args : '-Wl,'+','.join(r.stdout().strip().split()),
+           dependencies: [zlib_dep, thread_dep]
+          )
+
+executable('bamleftalign',
+           bamleftalign_src,
+           vcflib_src,
+           htslib_src,
            include_directories : incdir,
            cpp_args : '-Wfatal-errors',
            link_args : '-Wl,'+','.join(r.stdout().strip().split()),

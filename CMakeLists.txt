@@ -74,7 +74,7 @@ add_library(freebayes_OBJS OBJECT
   ${CMAKE_SOURCE_DIR}/src/Parameters.cpp
   ${CMAKE_SOURCE_DIR}/src/BGZF.cpp)
 
-set(freebayes_DEPS 
+set(freebayes_DEPS
   vcflib
   seqlib)
 
