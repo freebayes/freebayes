@@ -19,6 +19,7 @@
   (gnu packages curl)
   (gnu packages ninja)
   (gnu packages perl)
+  (gnu packages perl6)
   (gnu packages pkg-config)
   (srfi srfi-1)
   (ice-9 popen)
@@ -71,9 +72,10 @@
     (inputs
      `(
        ("bc" ,bc)               ; for tests
-       ("vcflib" ,vcflib)       ; for tests
        ("coreutils" ,coreutils) ; for echo in test
        ("curl" ,curl)
+       ("perl6-tap-harness" ,perl6-tap-harness)       ; for tests
+       ("vcflib" ,vcflib)       ; for tests
        ("zlib" ,zlib)
        ))))
 

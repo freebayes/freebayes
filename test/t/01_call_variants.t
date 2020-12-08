@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 
-BASH_TAP_ROOT=bash-tap
-. ./bash-tap/bash-tap-bootstrap
+cd ../test # for meson
 
-PATH=../bin:$PATH # for freebayes
+BASH_TAP_ROOT=bash-tap
+. bash-tap/bash-tap-bootstrap
+
+PATH=../builddir:../bin:$PATH # for freebayes
 PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin/:$PATH # for vcf binaries used by freebayes-parallel
 PATH=../vcflib/scripts:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 24
+plan tests 23
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
