@@ -119,3 +119,7 @@ executable('freebayes',
            link_args : '-Wl,-L/gnu/store/899vqdi2wxf50lzip42wfxqb588zri5p-profile/lib,-lz',
            dependencies: [zlib_dep, thread_dep]
           )
+
+
+t = find_program('make')
+test('T0', t, args : ['check'])

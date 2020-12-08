@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 if [ $# -lt 3 ];
 then
