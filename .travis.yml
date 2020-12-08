@@ -1,34 +1,43 @@
 # Control file for continuous integration testing at http://travis-ci.org/
 
 os: linux
-language: python
-sudo: required
-dist: bionic
+language: C++
 matrix:
   include:
     - os: linux
       compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - bc
+            - samtools
+            - parallel
     - os: linux
       arch:
         - arm64
       compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - bc
+            - samtools
+            - parallel
     - os: osx
       compiler: clang
 
 before_install:
   - git submodule update --init --recursive
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq gcc-9 g++-9
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
   - gcc --version && g++ --version
-  - sudo apt-get install -qq bc samtools parallel
 
 install:
   - pip install meson ninja
 
 script:
-  - meson builddir
+  - meson setup builddir
   - meson compile -C builddir
   - meson test -C builddir
 
