@@ -5,10 +5,9 @@ cd ../test # for meson
 BASH_TAP_ROOT=bash-tap
 . bash-tap/bash-tap-bootstrap
 
-PATH=$root/build:$root/../build:$root/bin:$PATH
-PATH=../scripts:$PATH # for freebayes-parallel
-PATH=../vcflib/bin/:$PATH # for vcf binaries used by freebayes-parallel
-PATH=../vcflib/scripts:$PATH # for vcf binaries used by freebayes-parallel
+root=$(dirname $0)/../..
+
+PATH=../build:$root/build:$root/../build:$root/bin:$PATH
 
 plan tests 24
 
@@ -78,7 +77,7 @@ is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa
 is $(samtools view tiny/NA12878.chr22.tiny.cram | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.cram -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in CRAM input"
 
 # Add a regression test
-$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 > regression/NA12878.chr22.tiny.vcf)
+$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam 2>&1 |egrep -vi "source|filedate" > regression/NA12878.chr22.tiny.vcf)
 
 # ensure targeting works even when there are no reads
 is $(freebayes -f tiny/q.fa -l@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 16 "freebayes correctly handles variant input"

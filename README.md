@@ -441,7 +441,8 @@ To download freebayes, please use git to download the most recent development tr
 
     git clone --recursive https://github.com/ekg/freebayes.git
 
-Note the use of --recursive.  This is required in order to download all nested git submodules for external repositories.
+Build dependencies are listed in [guix.scm](./guix.scm). Builds have
+been tested with gcc 7 and clang 9.
 
 ## Compilation
 
@@ -450,14 +451,21 @@ Freebayes can target AMD64 and ARM64 (with Neon extensions).
 Recently we added the meson build system which can be run with
 
     meson build/ --buildtype debug
+
+or to setup with clang instead
+
+    env CXX=clang++ CC=clang CC_LD=lld meson build --buildtype debug
+
+Next compile and test in the ~build~ directory
+
     cd build
-    ninja -j 8
+    ninja
     ninja test
 
-Tests on ARM may be slow. If you get a TIMEOUT use the multiplier,
+Tests on ARM may be slow. If you get a TIMEOUT use a multiplier,
 e.g.
 
-    meson test -t 2 -C build/
+    meson test -t 4 -C build/
 
 
 ### Compile in a Guix container
