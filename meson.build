@@ -41,7 +41,6 @@ freebayes_src = [
 
 
 vcflib_src = [
-    'SeqLib/htslib/tbx.c',      # used by vcflib
     'vcflib/tabixpp/tabix.cpp',
     'vcflib/src/Variant.cpp',
     'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
@@ -52,60 +51,57 @@ vcflib_src = [
 ]
 
 seqlib_src = [
-    'SeqLib/src/BamReader.cpp',
-    'SeqLib/src/BamRecord.cpp',
-    'SeqLib/src/BamHeader.cpp',
-    'SeqLib/src/GenomicRegion.cpp',
-    'SeqLib/src/ssw_cpp.cpp',
-    'SeqLib/src/ssw.c',
-
+    'contrib/SeqLib/src/BamReader.cpp',
+    'contrib/SeqLib/src/BamRecord.cpp',
+    'contrib/SeqLib/src/BamHeader.cpp',
+    'contrib/SeqLib/src/GenomicRegion.cpp',
+    'contrib/SeqLib/src/ssw_cpp.cpp',
+    'contrib/SeqLib/src/ssw.c',
 ]
 
 htslib_src = [
-    'SeqLib/htslib/bgzf.c',
-    'SeqLib/htslib/sam.c',
-    'SeqLib/htslib/hts.c',
-    'SeqLib/htslib/hfile.c',
-    'SeqLib/htslib/hfile_net.c',
-    'SeqLib/htslib/knetfile.c',
-    'SeqLib/htslib/textutils.c',
-    'SeqLib/htslib/thread_pool.c',
-    'SeqLib/htslib/cram/cram_index.c',
-    'SeqLib/htslib/cram/cram_io.c',
-    'SeqLib/htslib/cram/sam_header.c',
-    'SeqLib/htslib/cram/pooled_alloc.c',
-    'SeqLib/htslib/cram/string_alloc.c',
-    'SeqLib/htslib/md5.c',
-    'SeqLib/htslib/cram/cram_encode.c',
-    'SeqLib/htslib/cram/cram_stats.c',
-    'SeqLib/htslib/cram/cram_codecs.c',
-    'SeqLib/htslib/cram/cram_decode.c',
-    'SeqLib/htslib/cram/cram_samtools.c',
-    'SeqLib/htslib/kstring.c',
-    'SeqLib/htslib/cram/cram_external.c',
-    'SeqLib/htslib/cram/files.c',
-    'SeqLib/htslib/cram/mFILE.c',
-    'SeqLib/htslib/faidx.c',
-    'SeqLib/htslib/cram/rANS_static.c',
-    'SeqLib/htslib/cram/open_trace_file.c',
-    'SeqLib/htslib/multipart.c',
+    'htslib/tbx.c',      # used by vcflib
+    'htslib/bgzf.c',
+    'htslib/sam.c',
+    'htslib/hts.c',
+    'htslib/hfile.c',
+    'htslib/hfile_net.c',
+    'htslib/knetfile.c',
+    'htslib/textutils.c',
+    'htslib/thread_pool.c',
+    'htslib/region.c',
+    'htslib/hts_os.c',
+    'htslib/cram/cram_index.c',
+    'htslib/cram/cram_io.c',
+    # the older 'htslib/cram/sam_header.c', was renamed to
+    'htslib/header.c',
+    'htslib/cram/pooled_alloc.c',
+    'htslib/cram/string_alloc.c',
+    'htslib/md5.c',
+    'htslib/cram/cram_encode.c',
+    'htslib/cram/cram_stats.c',
+    'htslib/cram/cram_codecs.c',
+    'htslib/cram/cram_decode.c',
+    'htslib/cram/cram_samtools.c',
+    'htslib/kstring.c',
+    'htslib/cram/cram_external.c',
+    # 'htslib/cram/files.c',
+    'htslib/cram/mFILE.c',
+    'htslib/faidx.c',
+    'htslib/cram/rANS_static.c',
+    'htslib/cram/open_trace_file.c',
+    'htslib/multipart.c',
 ]
 
 bamleftalign_src = [
     'src/bamleftalign.cpp',
     'src/IndelAllele.cpp',
-    'SeqLib/src/BamReader.cpp',
-    'SeqLib/src/BamWriter.cpp',
-    'SeqLib/src/BamRecord.cpp',
-    'SeqLib/src/BamHeader.cpp',
-    'SeqLib/src/GenomicRegion.cpp',
-    'SeqLib/src/ssw_cpp.cpp',
-    'SeqLib/src/ssw.c',
+    'contrib/SeqLib/src/BamWriter.cpp',
     'vcflib/fastahack/Fasta.cpp',
     'vcflib/smithwaterman/LeftAlign.cpp',
+    'vcflib/smithwaterman/IndelAllele.cpp',
     'vcflib/src/split.cpp',
     'src/LeftAlign.cpp',
-    'vcflib/smithwaterman/IndelAllele.cpp'
 ]
 
 # Include paths - there are some duplicates in there
@@ -114,9 +110,10 @@ incdir = include_directories(
     'bamtools/src/api',
     'bamtools/src',
     'ttmath',
-    'SeqLib',
-    'SeqLib/htslib/cram',
-    'SeqLib/htslib',
+    'contrib/SeqLib',
+    'htslib/cram',
+    'htslib/htslib',
+    'htslib',
     'vcflib/src',
     'vcflib/tabixpp',
     'vcflib/smithwaterman',
@@ -133,20 +130,21 @@ executable('freebayes',
            vcflib_src,
            htslib_src,
            include_directories : incdir,
-           cpp_args : '-Wfatal-errors',
+           cpp_args : ['-fpermissive','-w'],
            link_args : '-Wl,'+','.join(r.stdout().strip().split()),
            dependencies: [zlib_dep, thread_dep]
           )
 
-executable('bamleftalign',
-           bamleftalign_src,
-           vcflib_src,
-           htslib_src,
-           include_directories : incdir,
-           cpp_args : '-Wfatal-errors',
-           link_args : '-Wl,'+','.join(r.stdout().strip().split()),
-           dependencies: [zlib_dep, thread_dep]
-          )
+# executable('bamleftalign',
+#            bamleftalign_src,
+#            seqlib_src,
+#            vcflib_src,
+#            htslib_src,
+#            include_directories : incdir,
+#            cpp_args : '-fpermissive',
+#            link_args : '-Wl,'+','.join(r.stdout().strip().split()),
+#            dependencies: [zlib_dep, thread_dep]
+#           )
 
 prove = find_program('prove')
 test('T00', prove, args : ['-e','bash','-v','../test/t/00_region_and_target_handling.t'])

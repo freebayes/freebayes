@@ -3,6 +3,7 @@ paper/main.rtf
 bugs/
 bin/
 build/
+builddir/
 test/build/
 CMakeFiles/
 *~
@@ -13,3 +14,5 @@ CMakeFiles/
 CMakeCache.txt
 *.patch
 *.rej
+seqlib-prefix/
+vcflib-prefix/
