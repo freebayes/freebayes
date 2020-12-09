@@ -7,7 +7,7 @@ root=$(dirname $0)/../..
 source $test/test-simple-bash/lib/test-simple.bash \
     tests 11
 
-PATH=$root/builddir:$root/bin:$PATH
+PATH=$root/build:$root/../build:$root/bin:$PATH
 
 ref=$test/$(basename $0).ref
 alt=$test/$(basename $0).alt
