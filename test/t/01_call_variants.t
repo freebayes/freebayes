@@ -5,7 +5,7 @@ cd ../test # for meson
 BASH_TAP_ROOT=bash-tap
 . bash-tap/bash-tap-bootstrap
 
-PATH=../builddir:../bin:$PATH # for freebayes
+PATH=$root/build:$root/../build:$root/bin:$PATH
 PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin/:$PATH # for vcf binaries used by freebayes-parallel
 PATH=../vcflib/scripts:$PATH # for vcf binaries used by freebayes-parallel
