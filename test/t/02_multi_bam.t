@@ -5,7 +5,7 @@ cd ../test
 BASH_TAP_ROOT=bash-tap
 source ./bash-tap/bash-tap-bootstrap
 
-PATH=../builddir:../bin:$PATH # for freebayes
+PATH=$root/build:$root/../build:$root/bin:$PATH
 
 plan tests 7
 
