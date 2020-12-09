@@ -1,3 +1,5 @@
+Important: the freebayes repository contains a subset of SeqLib and a patch for building on ARM64
+
 [![Build Status](https://travis-ci.org/walaj/SeqLib.svg?branch=master)](https://travis-ci.org/walaj/SeqLib)
 [![Coverage Status](https://coveralls.io/repos/github/walaj/SeqLib/badge.svg?branch=master)](https://coveralls.io/github/walaj/SeqLib?branch=master)
 
@@ -41,7 +43,7 @@ make ## for c++11 (req. for AhoCorasick), run as: make CXXFLAGS='-std=c++11'
 make install
 make seqtools ## for the command line version
 ```
- 
+
 I have successfully compiled with GCC-4.5+ and Clang on Linux and OSX.
 
 SeqLib is compatible with c++98 and later.
@@ -65,11 +67,11 @@ To add support for reading BAMs, etc with HTTPS, FTP, S3, Google cloud, etc, you
 ```bash
 ## set hts to build with libcurl links and hfile_libcurl.c
 cd SeqLib/htslib
-./configure --enable-libcurl 
+./configure --enable-libcurl
 ## compile seqlib with libcurl support
 cd ../ # back to SeqLib main directory
 ./configure LDFLAGS="-lcurl -lcrypto"
-make 
+make
 make install
 ```
 Remember then to then link any projects made with SeqLib with the additional ``-lcurl -lcrypto`` flags.
@@ -77,7 +79,7 @@ Remember then to then link any projects made with SeqLib with the additional ``-
 Description
 -----------
 
-SeqLib is a C++ library for querying BAM/SAM/CRAM files, performing 
+SeqLib is a C++ library for querying BAM/SAM/CRAM files, performing
 BWA-MEM operations in memory, and performing sequence assembly. Core operations
 in SeqLib are peformed by:
 * [HTSlib][htslib]
@@ -86,25 +88,25 @@ in SeqLib are peformed by:
 
 The primary developer for these three projects is Heng Li.
 
-SeqLib also has support for storing and manipulating genomic intervals via ``GenomicRegion`` and ``GenomicRegionCollection``. 
+SeqLib also has support for storing and manipulating genomic intervals via ``GenomicRegion`` and ``GenomicRegionCollection``.
 It uses an [interval tree][int] (provided by Erik Garrison @ekg) to provide for rapid interval queries.
 
 SeqLib is built to be extendable. See [VariantBam][var] for examples of how to take advantage of C++
-class extensions to build off of the SeqLib base functionality. 
- 
+class extensions to build off of the SeqLib base functionality.
+
 Memory management
 -----------------
 SeqLib is built to automatically handle memory management of C code from BWA-MEM and HTSlib by using C++ smart
-pointers that handle freeing memory automatically. One of the 
+pointers that handle freeing memory automatically. One of the
 main motivations behind SeqLib is that all access to sequencing reads, BWA, etc should
 completely avoid ``malloc`` and ``free``. In SeqLib all the mallocs/frees are handled automatically in the constructors and
 destructors.
 
 Other C++ APIs
 ------------------------------
-There are overlaps between this project and [BamTools][BT] from Derek Barnett, [Gamgee][gam] 
-from the Broad Institute, and [SeqAn][seqan] from Freie Universitat Berlin. These projects 
-provide excellent and high quality APIs. SeqLib provides further performance enhancement and new capabilites for certain classes of 
+There are overlaps between this project and [BamTools][BT] from Derek Barnett, [Gamgee][gam]
+from the Broad Institute, and [SeqAn][seqan] from Freie Universitat Berlin. These projects
+provide excellent and high quality APIs. SeqLib provides further performance enhancement and new capabilites for certain classes of
 bioinformatics problems.
 
 Some differences:
@@ -114,7 +116,7 @@ Some differences:
 * SeqAn provide a substantial amount of additional capabilites not in SeqLib, including graph operations and an expanded suite of multi-sequence alignments.
 * SeqAn embeds multi-threading into some functionality like BAM IO to improve wall times.
 
-For your particular application, our hope is that SeqLib will provide a comprehensive and powerful envrionment to develop 
+For your particular application, our hope is that SeqLib will provide a comprehensive and powerful envrionment to develop
 bioinformatics tools, or to be used in conjuction with the capablities in SeqAn and BamTools. Feature requests and comments are welcomed.
 
 Command Line Usage
@@ -160,7 +162,7 @@ bwa.ConstructIndex(usv);
 std::string querySeq = "CAGCCTCACCCAGGAAAGCAGCTGGGGGTCCACTGGGCTCAGGGAAG";
 BamRecordVector results;
 // hardclip=false, secondary score cutoff=0.9, max secondary alignments=10
-bwa.AlignSequence(querySeq, "my_seq", results, false, 0.9, 10); 
+bwa.AlignSequence(querySeq, "my_seq", results, false, 0.9, 10);
 
 // print results to stdout
 for (auto& i : results)
@@ -182,7 +184,7 @@ BWAWrapper bwa;
 bwa.LoadIndex("hg19.fasta");
 
 // open the output BAM
-BamWriter writer; // or writer(SeqLib::SAM) or writer(SeqLib::CRAM) 
+BamWriter writer; // or writer(SeqLib::SAM) or writer(SeqLib::CRAM)
 writer.SetWriteHeader(bwa.HeaderFromIndex());
 writer.Open("out.bam");
 writer.WriteHeader();
@@ -217,10 +219,10 @@ br.Open("test_data/small.bam");
 BamRecord r;
 BamRecordVector brv;
 size_t count = 0;
-while(br.GetNextRead(r) && count++ < 20000) 
+while(br.GetNextRead(r) && count++ < 20000)
   brv.push_back(r);
 
-// add the reads and error correct them  
+// add the reads and error correct them
 f.AddReads(brv);
 f.CorrectReads();
 
@@ -261,16 +263,16 @@ Trimmed output from above (NA12878):
 ```
 CTATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTGTCCATCCATCCATCCATCCA
 CTATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTAT                    CATCCATCCATCCATCCATCCACCCATTCATCCATCCACCTATCCATCTATCAATCCATCCATCCATCCA
- TATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCA              
- TATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTGTCCATCCATCCATCCATC                        
- TATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCA              
-  ATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCAT             
+ TATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCA
+ TATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTGTCCATCCATCCATCCATC
+ TATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCA
+  ATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCAT
    TCTATCTATCTCTTCTTCTGTCCGCTCATGTGTCTGTCCATCTATCTATC                    GTCCATCCATCCATCCATCCATCCATCCACCCATTCATCCATCCACCTATCCATCTATCAATCCATCCATCCATCCATCCGTCTATCTTATGCATCACAGC
-   TCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATT                                                                  
-    CTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTC                                                                 
-    CTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTC                                                                 
-      ATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTCAT                                                               
-      ATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTCAT                                                               
+   TCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATT
+    CTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTC
+    CTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTC
+      ATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTCAT
+      ATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTATCTATCATCTAACTATCTG----TCCATCCATCCATCCATCCACCCATTCAT
 ```
 
 ##### Read simultaneously from a BAM, CRAM and SAM file and send to stdout
@@ -278,7 +280,7 @@ CTATCTATCTATCTCTTCTTCTGTCCGTTCATGTGTCTGTCCATCTATCTATCCATCTAT                    
 using namespace SeqLib;
 #include "SeqLib/BamReader.h"
 BamReader r;
-  
+
 // read from multiple streams coordinate-sorted order
 r.Open("test_data/small.bam");
 r.Open("test_data/small.cram");
@@ -290,7 +292,7 @@ w.SetHeader(r.Header());  // specify the header
 w.WriteHeader();          // write out the header
 
 BamRecord rec;
-while(r.GetNextRecord(rec)) 
+while(r.GetNextRecord(rec))
   w.WriteRecord(rec);
 w.Close();               // Optional. Will close on destruction
 ```
@@ -315,17 +317,17 @@ b.ErrorCorrect();
 UnalignedSequenceVector v;
 std::string name, seq;
 while (b.GetSequences(seq, name))
-  v.push_back({name, seq});      			   
+  v.push_back({name, seq});
 
 ```
 
 Support
 -------
-This project is being actively developed and maintained by Jeremiah Wala (jwala@broadinstitute.org). 
+This project is being actively developed and maintained by Jeremiah Wala (jwala@broadinstitute.org).
 
 Attributions
 ------------
-We would like to thank Heng Li (htslib/bwa/fermi), Erik Garrison (interval tree), Christopher Gilbert (aho corasick), 
+We would like to thank Heng Li (htslib/bwa/fermi), Erik Garrison (interval tree), Christopher Gilbert (aho corasick),
 and Mengyao Zhao (sw alignment), for providing open-source and robust bioinformatics solutions.
 
 Development, support, guidance, testing:

@@ -4,7 +4,7 @@
 ##reference=tiny/q.fa
 ##contig=<ID=q,length=12356>
 ##phasing=none
-##commandline="../builddir/freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam"
+##commandline="freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d"
 ##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of samples with data">
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total read depth at the locus">
 ##INFO=<ID=DPB,Number=1,Type=Float,Description="Total read depth per bp at the locus; bases in reads overlapping / bases in haplotype">
