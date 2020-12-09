@@ -11,3 +11,5 @@ CMakeFiles/
 .gdb_history
 *.cmake
 CMakeCache.txt
+*.patch
+*.rej
