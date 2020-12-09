@@ -76,7 +76,9 @@ For instance:
 
     freebayes -f ref.fa aln.bam >var.vcf
 
-... will produce a VCF file describing all SNPs, INDELs, and haplotype variants between the reference and aln.bam.
+... will produce a VCF file describing all SNPs, INDELs, and haplotype variants between the reference and aln.bam. The CRAM version is
+
+    freebayes -f ref.fa aln.cram >var.vcf
 
 Multiple BAM files may be given for joint calling.
 
@@ -86,7 +88,7 @@ For performance reasons we may want to skip regions of extremely high coverage i
 These can greatly increase runtime but do not produce meaningful results.
 For instance, if we wanted to exclude regions of 1000X coverage, we would run:
 
-    freebayes -f ref.fa --gvcf -g 1000 >var.vcf
+    freebayes -f ref.fa aln.bam --gvcf -g 1000 >var.vcf
 
 For a description of available command-line options and their defaults, run:
 
