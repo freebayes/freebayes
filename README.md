@@ -479,11 +479,12 @@ container with all the build tools with
 Above CMake build should work.  Recently we added the meson build
 system which can be run with
 
-    meson setup builddir
-    cd builddir
+    meson build/ --buildtype debug
+    cd build
     ninja -j 8
     ninja test
 
-Tests on ARM may be slow. Use a multiplier, e.g.
+Tests on ARM may be slow. If you get a TIMEOUT use the multiplier,
+e.g.
 
-    meson test -t 2
+    meson test -t 2 -C build/
