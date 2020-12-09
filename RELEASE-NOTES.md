@@ -11,6 +11,8 @@ This is a maintenance release of Freebayes:
   longer maintained
 + Made htslib a primary dependency of freebayes
 + Updated htslib to the latest version
++ Fixed clang build, requires a patch on htslib sent upstream with https://github.com/samtools/htslib/pull/1190
++ Updated travis-CI; passes new meson builds for gcc
 
 Some minor stuff:
 

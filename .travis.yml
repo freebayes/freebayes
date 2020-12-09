@@ -1,10 +1,9 @@
 # Control file for continuous integration testing at http://travis-ci.org/
 
-os: linux
-language: C++
 matrix:
   include:
     - os: linux
+      dist: focal
       compiler: gcc
       addons:
         apt:
@@ -17,6 +16,20 @@ matrix:
             - meson
             - ninja-build
     - os: linux
+      dist: focal
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - bc
+            - samtools
+            - parallel
+            - meson
+            - ninja-build
+    - os: linux
+      dist: focal
       arch:
         - arm64
       compiler: gcc
@@ -30,26 +43,16 @@ matrix:
             - parallel
             - meson
             - ninja-build
-    - os: osx
-      compiler: clang
-      language: shell
-      python: 3.8
-      cache:
-        - directories:
-          - $HOME/Library/Caches/pip
+#  The OSX brew version takes forever to install meson
+#    - os: osx
+#      compiler: clang
 
 # before_install:
-#   - git submodule update --init --recursive
-#   - gcc --version && g++ --version
-
-# install:
-#   - pip install meson ninja
-
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install meson ninja; fi
+#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install meson ninja; fi
 
 script:
-  - meson setup builddir
-  - ninja -C builddir -j 4
-  - ninja -C builddir test
+  - mkdir build
+  - meson build/
+  - ninja -C build/
+  - meson test -t 8 -C build/
+  - cat /home/travis/build/pjotrp/freebayes/build/meson-logs/testlog.txt

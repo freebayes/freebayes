@@ -5,7 +5,9 @@ cd ../test
 BASH_TAP_ROOT=bash-tap
 source ./bash-tap/bash-tap-bootstrap
 
-PATH=$root/build:$root/../build:$root/bin:$PATH
+root=$(dirname $0)/../..
+
+PATH=../build:$root/build:$root/../build:$root/bin:$PATH
 
 plan tests 3
 
