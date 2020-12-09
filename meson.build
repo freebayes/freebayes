@@ -149,7 +149,7 @@ executable('bamleftalign',
           )
 
 prove = find_program('prove')
-test('T00', prove, args : ['-e','bash','-v','test/t/00_region_and_target_handling.t'])
-test('T01', prove, args : ['-e','bash','-v','test/t/01_call_variants.t'])
-test('T02', prove, args : ['-e','bash','-v','test/t/02_multi_bam.t'])
-test('T03', prove, args : ['-e','bash','-v','test/t/03_reference_bases.t'])
+test('T00', prove, args : ['-e','bash','-v','../test/t/00_region_and_target_handling.t'])
+test('T01', prove, args : ['-e','bash','-v','../test/t/01_call_variants.t'])
+test('T02', prove, args : ['-e','bash','-v','../test/t/02_multi_bam.t'])
+test('T03', prove, args : ['-e','bash','-v','../test/t/03_reference_bases.t'])
