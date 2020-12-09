@@ -1,4 +1,7 @@
 # Specify the minimum version for CMake
+#
+# Note that the main build system has moved to meson (see meson.build).
+#
 
 cmake_minimum_required(VERSION 3.1)
 
