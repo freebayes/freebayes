@@ -1,5 +1,5 @@
 project('freebayes', ['cpp', 'c'],
-        version : '1.0',
+        version : '1.3.3',
         default_options : ['warning_level=3', 'cpp_std=c++14'])
 
 zlib_dep = dependency('zlib', required: false)
@@ -10,7 +10,6 @@ thread_dep = dependency('threads')
 # Sources
 #
 freebayes_src = [
-
     'src/freebayes.cpp',
     'src/Allele.cpp',
     'src/AlleleParser.cpp',
@@ -40,15 +39,6 @@ freebayes_src = [
 ]
 
 
-vcflib_src = [
-    'vcflib/tabixpp/tabix.cpp',
-    'vcflib/src/Variant.cpp',
-    'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
-    'vcflib/smithwaterman/disorder.cpp',
-    'vcflib/smithwaterman/Repeats.cpp',
-    'vcflib/smithwaterman/LeftAlign.cpp',
-    'vcflib/smithwaterman/IndelAllele.cpp',
-]
 
 seqlib_src = [
     'contrib/SeqLib/src/BamReader.cpp',
@@ -93,6 +83,16 @@ htslib_src = [
     'contrib/htslib/multipart.c',
 ]
 
+vcflib_src = [
+    'vcflib/tabixpp/tabix.cpp',
+    'vcflib/src/Variant.cpp',
+    'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
+    'vcflib/smithwaterman/disorder.cpp',
+    'vcflib/smithwaterman/Repeats.cpp',
+    'vcflib/smithwaterman/LeftAlign.cpp',
+    'vcflib/smithwaterman/IndelAllele.cpp',
+]
+
 bamleftalign_src = [
     'src/bamleftalign.cpp',
     'src/IndelAllele.cpp',
@@ -104,12 +104,13 @@ bamleftalign_src = [
     'src/LeftAlign.cpp',
 ]
 
-# Include paths - there are some duplicates in there
+# Include paths
 incdir = include_directories(
     'src',
     'bamtools/src/api',
     'bamtools/src',
     'ttmath',
+    'contrib',
     'contrib/SeqLib',
     'contrib/htslib_config',
     'contrib/htslib/cram',
