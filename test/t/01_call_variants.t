@@ -10,7 +10,7 @@ PATH=../scripts:$PATH # for freebayes-parallel
 PATH=../vcflib/bin/:$PATH # for vcf binaries used by freebayes-parallel
 PATH=../vcflib/scripts:$PATH # for vcf binaries used by freebayes-parallel
 
-plan tests 23
+plan tests 24
 
 is $(echo "$(comm -12 <(cat tiny/NA12878.chr22.tiny.giab.vcf | grep -v "^#" | cut -f 2 | sort) <(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f 2 | sort) | wc -l) >= 13" | bc) 1 "variant calling recovers most of the GiAB variants in a test region"
 
@@ -73,7 +73,9 @@ rm targets.bed
 is $(samtools view -u tiny/NA12878.chr22.tiny.bam | freebayes -f tiny/q.fa --stdin | grep -v "^#" | wc -l) \
     $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "reading from stdin or not makes no difference"
 
-is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in input"
+is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in BAM input"
+
+is $(samtools view tiny/NA12878.chr22.tiny.cram | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in CRAM input"
 
 # ensure targeting works even when there are no reads
 is $(freebayes -f tiny/q.fa -l@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 16 "freebayes correctly handles variant input"
