@@ -136,16 +136,16 @@ executable('freebayes',
            dependencies: [zlib_dep, thread_dep]
           )
 
-# executable('bamleftalign',
-#            bamleftalign_src,
-#            seqlib_src,
-#            vcflib_src,
-#            htslib_src,
-#            include_directories : incdir,
-#            cpp_args : '-fpermissive',
-#            link_args : '-Wl,'+','.join(r.stdout().strip().split()),
-#            dependencies: [zlib_dep, thread_dep]
-#           )
+executable('bamleftalign',
+           bamleftalign_src,
+           seqlib_src,
+           vcflib_src,
+           htslib_src,
+           include_directories : incdir,
+           cpp_args : ['-w','-fpermissive'],
+           link_args : '-Wl,'+','.join(r.stdout().strip().split()),
+           dependencies: [zlib_dep, thread_dep]
+          )
 
 prove = find_program('prove')
 test('T00', prove, args : ['-e','bash','-v','../test/t/00_region_and_target_handling.t'])
