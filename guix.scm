@@ -51,7 +51,15 @@
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (mkdir-p (string-append out "/bin"))
-               #t))))
+               #t)))
+         (replace 'check
+           (lambda* (#:key outputs #:allow-other-keys)
+             (with-directory-excursion "../source/test"
+               (invoke "prove" "-e" "bash" "t/00_region_and_target_handling.t")
+               (invoke "prove" "-e" "bash" "t/01_call_variants.t")
+               (invoke "prove" "-e" "bash" "t/02_multi_bam.t")
+               (invoke "prove" "-e" "bash" "t/03_reference_bases.t"))
+             #t)))
        #:tests? #t))
     (propagated-inputs
      `(("perl" ,perl)         ; for testing
