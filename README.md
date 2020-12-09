@@ -38,7 +38,6 @@ format.  It can also use an input set of variants (VCF) as a source of prior
 information, and a copy number variant map (BED) to define non-uniform ploidy
 variation across the samples under analysis.
 
-
 ## Citing freebayes
 
 A preprint [Haplotype-based variant detection from short-read sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the
@@ -52,11 +51,6 @@ Please use this citation format:
 Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing. *arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
 
 If possible, please also refer to the version number provided by freebayes when it is run without arguments or with the `--help` option.
-For example, you should see something like this:
-
-    version:  v1.3.1-1-g5eb71a3-dirty
-
-This provides both a point release number and a git commit id, which will ensure precise reproducibility of results.
 
 ## Download
 
@@ -67,7 +61,7 @@ Other packages are available from various sources, including conda and Debian, b
 
 ## Support
 
-Please report any issues or questions to the [freebayes mailing list](https://groups.google.com/forum/#!forum/freebayes), [freebayes issue tracker](https://github.com/ekg/freebayes/issues), or by email to <erik.garrison@gmail.com>.
+Please report any issues or questions to the [freebayes mailing list](https://groups.google.com/forum/#!forum/freebayes). Report bugs on the [freebayes issue tracker](https://github.com/ekg/freebayes/issues)
 
 ## Usage
 
@@ -439,7 +433,7 @@ freebayes incorporates a number of features in order to reduce the complexity of
 * **Variant quality recalibration is avoided** by incorporating a number of metrics, such as read placement bias and allele balance, directly into the Bayesian model.  (Our upcoming publication will discuss this in more detail.)
 
 A minimal pre-processing pipeline similar to that described in "Calling variants" should be sufficient for most uses.
-For more information, please refer to a recent post by Brad Chapman [on minimal BAM preprocessing methods](http://bcbio.wordpress.com/2013/10/21/updated-comparison-of-variant-detection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
+For more information, please refer to a post by Brad Chapman [on minimal BAM preprocessing methods](http://bcbio.wordpress.com/2013/10/21/updated-comparison-of-variant-detection-methods-ensemble-freebayes-and-minimal-bam-preparation-pipelines/).
 
 ## Development
 
@@ -451,33 +445,9 @@ Note the use of --recursive.  This is required in order to download all nested g
 
 ## Compilation
 
-freebayes requires g++, camke, the standard C and C++ development libraries, liblzma, pthread, and libbzip2.
-To build, users can just run:
+Freebayes can target AMD64 and ARM64 (with Neon extensions).
 
-    make -j4
-
-... to build the executable freebayes, as well as the bamleftalign indel realignment utility (`-j4` tells make to use 4 threads).
-
-These executables can be found in the `bin/` directory in the repository.
-Other useful scripts, including the freebayes-parallel script are located in `scripts/`.
-
-`make test` runs basic integration tests to make sure that everything is working.
-This depends on samtools and a few other system utilities.
-
-Internally, freebayes uses cmake for its build process.
-So it's also possible to directly build with cmake:
-
-    cmake -H. -Bbuild && cmake --build build -- -j4
-
-### Compile in a Guix container
-
-After checking out the repo with git recursive create a Guix
-container with all the build tools with
-
-    guix environment -C -l guix.scm
-
-Above CMake build should work.  Recently we added the meson build
-system which can be run with
+Recently we added the meson build system which can be run with
 
     meson build/ --buildtype debug
     cd build
@@ -488,3 +458,11 @@ Tests on ARM may be slow. If you get a TIMEOUT use the multiplier,
 e.g.
 
     meson test -t 2 -C build/
+
+
+### Compile in a Guix container
+
+After checking out the repo with git recursive create a Guix
+container with all the build tools with
+
+    guix environment -C -l guix.scm
