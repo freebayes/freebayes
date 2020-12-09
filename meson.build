@@ -134,7 +134,8 @@ executable('freebayes',
            include_directories : incdir,
            cpp_args : ['-fpermissive','-w'],
            link_args : '-Wl,'+','.join(r.stdout().strip().split()),
-           dependencies: [zlib_dep, thread_dep]
+           dependencies: [zlib_dep, thread_dep],
+           install: true
           )
 
 executable('bamleftalign',
@@ -145,7 +146,8 @@ executable('bamleftalign',
            include_directories : incdir,
            cpp_args : ['-w','-fpermissive'],
            link_args : '-Wl,'+','.join(r.stdout().strip().split()),
-           dependencies: [zlib_dep, thread_dep]
+           dependencies: [zlib_dep, thread_dep],
+           install: true
           )
 
 prove = find_program('prove')
