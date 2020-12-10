@@ -1,10 +1,10 @@
 #ifndef SEQLIB_BAM_HEADER_H__
 #define SEQLIB_BAM_HEADER_H__
 
-#include "htslib/htslib/hts.h"
-#include "htslib/htslib/sam.h"
-#include "htslib/htslib/bgzf.h"
-#include "htslib/htslib/kstring.h"
+#include "htslib/hts.h"
+#include "htslib/sam.h"
+#include "htslib/bgzf.h"
+#include "htslib/kstring.h"
 
 #include "SeqLib/SeqLibUtils.h"
 #include <string>

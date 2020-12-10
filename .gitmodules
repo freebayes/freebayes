@@ -13,6 +13,3 @@
 [submodule "vcflib"]
 	path = vcflib
 	url = https://github.com/vcflib/vcflib.git
-[submodule "contrib/htslib"]
-	path = contrib/htslib
-	url = https://github.com/samtools/htslib.git

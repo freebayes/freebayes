@@ -80,6 +80,7 @@
        ("bc" ,bc)               ; for tests
        ("coreutils" ,coreutils) ; for echo in test
        ("curl" ,curl)
+       ("htslib" ,htslib)
        ("perl6-tap-harness" ,perl6-tap-harness) ; for tests
        ;; ("vcflib" ,vcflib)       ; no longer for tests
        ("zlib" ,zlib)

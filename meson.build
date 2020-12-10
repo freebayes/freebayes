@@ -3,10 +3,7 @@ project('freebayes', ['cpp', 'c'],
         default_options : ['warning_level=3', 'cpp_std=c++14'])
 
 zlib_dep = dependency('zlib')
-lzma_dep = dependency('liblzma')
-# bzip2_dep = dependency('bz2lib', required: false)
-# curl_dep = dependency('libcurl', required: false)
-
+htslib_dep = dependency('htslib')
 thread_dep = dependency('threads')
 
 #
@@ -52,40 +49,6 @@ seqlib_src = [
     'contrib/SeqLib/src/ssw.c',
 ]
 
-htslib_src = [
-    'contrib/htslib/tbx.c',      # used by vcflib
-    'contrib/htslib/bgzf.c',
-    'contrib/htslib/sam.c',
-    'contrib/htslib/hts.c',
-    'contrib/htslib/hfile.c',
-    'contrib/htslib/hfile_net.c',
-    'contrib/htslib/knetfile.c',
-    'contrib/htslib/textutils.c',
-    'contrib/htslib/thread_pool.c',
-    'contrib/htslib/region.c',
-    'contrib/htslib/hts_os.c',
-    'contrib/htslib/cram/cram_index.c',
-    'contrib/htslib/cram/cram_io.c',
-    # the older 'contrib/htslib/cram/sam_header.c', was renamed to
-    'contrib/htslib/header.c',
-    'contrib/htslib/cram/pooled_alloc.c',
-    'contrib/htslib/cram/string_alloc.c',
-    'contrib/htslib/md5.c',
-    'contrib/htslib/cram/cram_encode.c',
-    'contrib/htslib/cram/cram_stats.c',
-    'contrib/htslib/cram/cram_codecs.c',
-    'contrib/htslib/cram/cram_decode.c',
-    'contrib/htslib/cram/cram_samtools.c',
-    'contrib/htslib/kstring.c',
-    'contrib/htslib/cram/cram_external.c',
-    # 'contrib/htslib/cram/files.c',
-    'contrib/htslib/cram/mFILE.c',
-    'contrib/htslib/faidx.c',
-    'contrib/htslib/cram/rANS_static.c',
-    'contrib/htslib/cram/open_trace_file.c',
-    'contrib/htslib/multipart.c',
-]
-
 vcflib_src = [
     'vcflib/tabixpp/tabix.cpp',
     'vcflib/src/Variant.cpp',
@@ -115,10 +78,6 @@ incdir = include_directories(
     'ttmath',
     'contrib',
     'contrib/SeqLib',
-    'contrib/htslib_config',
-    'contrib/htslib/cram',
-    'contrib/htslib/htslib',
-    'contrib/htslib',
     'vcflib/src',
     'vcflib/tabixpp',
     'vcflib/smithwaterman',
@@ -129,11 +88,11 @@ executable('freebayes',
            freebayes_src,
            seqlib_src,
            vcflib_src,
-           htslib_src,
+           # htslib_src,
            include_directories : incdir,
            cpp_args : ['-fpermissive','-w'],
            c_args : ['-fpermissive','-w'],
-           dependencies: [zlib_dep, lzma_dep, thread_dep],
+           dependencies: [zlib_dep, htslib_dep, thread_dep],
            install: true
           )
 
@@ -141,11 +100,11 @@ executable('bamleftalign',
            bamleftalign_src,
            seqlib_src,
            vcflib_src,
-           htslib_src,
+           # htslib_src,
            include_directories : incdir,
            cpp_args : ['-w','-fpermissive','-Wc++14-compat'],
            c_args : ['-w','-fpermissive'],
-           dependencies: [zlib_dep, lzma_dep, thread_dep],
+           dependencies: [zlib_dep, htslib_dep, thread_dep],
            install: true
           )
 
