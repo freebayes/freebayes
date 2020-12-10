@@ -2,7 +2,10 @@ project('freebayes', ['cpp', 'c'],
         version : '1.3.3',
         default_options : ['warning_level=3', 'cpp_std=c++14'])
 
-zlib_dep = dependency('zlib', required: false)
+zlib_dep = dependency('zlib')
+lzma_dep = dependency('liblzma')
+# bzip2_dep = dependency('bz2lib', required: false)
+# curl_dep = dependency('libcurl', required: false)
 
 thread_dep = dependency('threads')
 
@@ -122,10 +125,6 @@ incdir = include_directories(
     'vcflib/multichoose',
     'vcflib/filevercmp')
 
-# Parsing pkg-config by hand because it does not get honoured
-pkgconfig_prog = find_program('pkg-config')
-r = run_command(pkgconfig_prog.path(), '--libs', 'zlib')
-
 executable('freebayes',
            freebayes_src,
            seqlib_src,
@@ -134,8 +133,7 @@ executable('freebayes',
            include_directories : incdir,
            cpp_args : ['-fpermissive','-w'],
            c_args : ['-fpermissive','-w'],
-           link_args : '-Wl,'+','.join(r.stdout().strip().split()),
-           dependencies: [zlib_dep, thread_dep],
+           dependencies: [zlib_dep, lzma_dep, thread_dep],
            install: true
           )
 
@@ -147,8 +145,7 @@ executable('bamleftalign',
            include_directories : incdir,
            cpp_args : ['-w','-fpermissive','-Wc++14-compat'],
            c_args : ['-w','-fpermissive'],
-           link_args : '-Wl,'+','.join(r.stdout().strip().split()),
-           dependencies: [zlib_dep, thread_dep],
+           dependencies: [zlib_dep, lzma_dep, thread_dep],
            install: true
           )
 
