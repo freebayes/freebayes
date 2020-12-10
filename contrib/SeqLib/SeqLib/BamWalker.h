@@ -11,10 +11,12 @@
 #define INT32_MAX 0x7fffffffL
 #endif
 
+/*
 extern "C" {
 #include "htslib/cram/cram.h"
 #include "htslib/cram/cram_io.h"
 }
+*/
 
 struct idx_delete {
   void operator()(hts_idx_t* x) { if (x) hts_idx_destroy(x); }
