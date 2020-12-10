@@ -83,6 +83,9 @@
        ("perl6-tap-harness" ,perl6-tap-harness) ; for tests
        ;; ("vcflib" ,vcflib)       ; no longer for tests
        ("zlib" ,zlib)
+       ;; ("lz4" ,lz4) ; not used for CRAM
+       ("xz" ,xz) ; for liblzma
+       ("bzip2" ,bzip2) ; for libz2
        ))
      (synopsis "freebayes haplotype-based genetic variant caller")
      (description
