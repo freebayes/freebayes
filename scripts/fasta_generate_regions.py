@@ -3,7 +3,7 @@ from __future__ import print_function
 import sys
 
 if len(sys.argv) == 1:
-    print("usage: {} <fasta file or index file> <region size>").format(sys.argv[0])
+    print("usage: {} <fasta file or index file> <region size>".format(sys.argv[0]))
     print("generates a list of freebayes/bamtools region specifiers on stdout")
     print("intended for use in creating cluster jobs")
     exit(1)
