@@ -9,6 +9,10 @@ root=$(dirname $0)/../..
 
 PATH=../build:$root/build:$root/../build:$root/bin:$PATH
 
+echo "******************"
+echo `which freebayes`
+ldd `which freebayes`
+
 plan tests 3
 
 ref=$(basename $0).ref
