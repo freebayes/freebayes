@@ -93,7 +93,7 @@ void Parameters::usage(char** argv) {
         << endl
         << "    # naive variant calling: simply annotate observation counts of SNPs and indels" << endl
         << "    freebayes -f ref.fa --haplotype-length 0 --min-alternate-count 1 \\ " << endl
-        << "        --min-alternate-fraction 0 --pooled-continuous --report-monomorphic >var.vcf" << endl
+        << "        --min-alternate-fraction 0 --pooled-continuous --report-monomorphic aln.bam >var.vcf" << endl
         << endl
         << endl
         << "parameters:" << endl
