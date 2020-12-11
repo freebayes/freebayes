@@ -16,3 +16,4 @@ jobs:
           days-before-close: 5
           exempt-issue-labels: "bug,build,enhancement,help wanted,in progress"
           debug-only: false
+          operations-per-run: 500 	
