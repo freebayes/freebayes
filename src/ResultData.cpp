@@ -714,9 +714,9 @@ vcflib::Variant& Results::gvcf(
 	    
         sampleOutput["DP"].push_back(convert((nc.refCount+nc.altCount) / numSites));
         sampleOutput["MIN_DP"].push_back(convert(minDepth));
-        sampleOutput["QR"].push_back(convert(ln2phred(nc.reflnQ)));
+        sampleOutput["QR"].push_back(convert(llrintl(ln2phred(nc.reflnQ))));
 	sampleOutput["RO"].push_back(convert((nc.refCount/numSites)));
-        sampleOutput["QA"].push_back(convert(ln2phred(nc.altlnQ)));
+        sampleOutput["QA"].push_back(convert(llrintl(ln2phred(nc.altlnQ))));
 	sampleOutput["AO"].push_back(convert((nc.altCount/numSites)));
     }
 
