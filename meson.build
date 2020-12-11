@@ -3,7 +3,7 @@ project('freebayes', ['cpp', 'c'],
         default_options : ['warning_level=3', 'cpp_std=c++14'])
 
 zlib_dep = dependency('zlib')
-htslib_dep = dependency('htslib')
+htslib_dep = dependency('htslib', required : false)
 thread_dep = dependency('threads')
 
 #
@@ -108,8 +108,10 @@ executable('bamleftalign',
            install: true
           )
 
+testdir = meson.current_source_dir()+'/test'
+
 prove = find_program('prove')
-test('T00', prove, args : ['-e','bash','-v','../test/t/00_region_and_target_handling.t'])
-test('T01', prove, args : ['-e','bash','-v','../test/t/01_call_variants.t'])
-test('T02', prove, args : ['-e','bash','-v','../test/t/02_multi_bam.t'])
-test('T03', prove, args : ['-e','bash','-v','../test/t/03_reference_bases.t'])
+test('T00', prove, args : ['-e','bash','-v','t/00_region_and_target_handling.t'], workdir: testdir)
+# test('T01', prove, args : ['-e','bash','-v','../test/t/01_call_variants.t'])
+test('T02', prove, args : ['-e','bash','-v','t/02_multi_bam.t'], workdir : testdir )
+test('T03', prove, args : ['-e','bash','-v','t/03_reference_bases.t'], workdir: testdir )

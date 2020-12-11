@@ -4,42 +4,17 @@ matrix:
   include:
     - os: linux
       dist: focal
-      compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - bc
-            - samtools
-            - parallel
-            - meson
-            - ninja-build
-    - os: linux
-      dist: focal
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - bc
-            - samtools
-            - parallel
-            - meson
-            - ninja-build
-    - os: linux
-      dist: focal
       arch:
         - arm64
       compiler: gcc
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
+          #sources:
+          #  - ubuntu-toolchain-r-test
           packages:
             - bc
             - samtools
+            - libhts3
             - parallel
             - meson
             - ninja-build
@@ -51,6 +26,7 @@ matrix:
 #   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install meson ninja; fi
 
 script:
+  - apt-cache pkgnames|grep hts|grep lib
   - mkdir build
   - meson build/
   - ninja -C build/

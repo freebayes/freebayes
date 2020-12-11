@@ -39,11 +39,15 @@
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
     (arguments
-     `(#:phases
+     `(#:tests? #f ;; tests fail because the built freebayes does
+       #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'prepare-build
            (lambda _
              ;; Stash our build version in the executable.
+             (invoke "pkg-config" "--list-all")
+             (invoke "pkg-config" "--libs" "htslib")
+             (invoke "xxx")
              (substitute* "src/version_release.txt"
                (("v1.0.0") ,version))
              #t))
@@ -51,21 +55,14 @@
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (mkdir-p (string-append out "/bin"))
-               #t))))
-         ; (replace 'check
-         ;   (lambda* (#:key outputs #:allow-other-keys)
-         ;     (with-directory-excursion "../source/test"
-         ;       (invoke "prove" "-e" "bash" "t/00_region_and_target_handling.t")
-         ;      (invoke "prove" "-e" "bash" "t/01_call_variants.t")
-         ;      (invoke "prove" "-e" "bash" "t/02_multi_bam.t")
-         ;      (invoke "prove" "-e" "bash" "t/03_reference_bases.t"))
-         ;    #t)))
-       #:tests? #f))
+               #t)))
+         )))
     (propagated-inputs
      `(("perl" ,perl)         ; for testing
        ("grep" ,grep)         ; for testing
        ("samtools" ,samtools) ; for testing
        ("which" ,which)       ; for version
+       ("htslib" ,htslib)
        ))
     (native-inputs
      `(
@@ -80,13 +77,12 @@
        ("bc" ,bc)               ; for tests
        ("coreutils" ,coreutils) ; for echo in test
        ("curl" ,curl)
-       ("htslib" ,htslib)
        ("perl6-tap-harness" ,perl6-tap-harness) ; for tests
        ;; ("vcflib" ,vcflib)       ; no longer for tests
        ("zlib" ,zlib)
-       ;; ("lz4" ,lz4) ; not used for CRAM
-       ("xz" ,xz) ; for liblzma
-       ("bzip2" ,bzip2) ; for libz2
+       ;; ("lz4" ,lz4)     ; not used for CRAM
+       ;; ("xz" ,xz)       ;   liblzma part of htslib
+       ;; ("bzip2" ,bzip2) ; libz2 part of htslib
        ))
      (synopsis "freebayes haplotype-based genetic variant caller")
      (description
