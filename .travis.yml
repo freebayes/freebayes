@@ -2,6 +2,17 @@ matrix:
   include:
     - os: linux
       dist: focal
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - bc
+            - samtools
+            - parallel
+            - meson
+            - ninja-build
+    - os: linux
+      dist: focal
       arch:
         - arm64
       compiler: gcc
