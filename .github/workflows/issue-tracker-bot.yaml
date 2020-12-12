@@ -14,6 +14,6 @@ jobs:
           close-issue-message: 'This issue was closed for lack of activity. Feel free to re-open if someone feels like working on it.'
           days-before-stale: 120
           days-before-close: 5
-          exempt-issue-labels: "stale,bug,build,enhancement,help wanted,in progress"
+          exempt-issue-labels: "bug,build,enhancement,help wanted,in progress"
           debug-only: false
-          operations-per-run: 500 	
+          operations-per-run: 100 	
