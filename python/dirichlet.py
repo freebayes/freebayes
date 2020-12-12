@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from __future__ import division
+#!/usr/bin/python3
+
 from scipy.special import gamma, gammaln
 import operator
 import math
@@ -38,7 +38,7 @@ def dirichlet_maximum_likelihood_ratio(probs, obs, s=1):
     return dirichlet(probs, obs, s) / float(maximum_likelihood)
 
 def multinomial(probs, obs):
-    return math.factorial(sum(obs)) / product(map(math.factorial, obs)) * product([math.pow(p, x) for p,x in zip(probs, obs)])
+    return math.factorial(sum(obs)) / product(list(map(math.factorial, obs))) * product([math.pow(p, x) for p,x in zip(probs, obs)])
 
 def multinomialln(probs, obs):
     return factorialln(sum(obs)) - sum(map(factorialln, obs)) + sum([math.log(math.pow(p, x)) for p,x in zip(probs, obs)])

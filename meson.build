@@ -112,6 +112,6 @@ testdir = meson.current_source_dir()+'/test'
 
 prove = find_program('prove')
 test('T00', prove, args : ['-e','bash','-v','t/00_region_and_target_handling.t'], workdir: testdir)
-# test('T01', prove, args : ['-e','bash','-v','../test/t/01_call_variants.t'])
+test('T01', prove, args : ['-e','bash','-v','../test/t/01_call_variants.t'])
 test('T02', prove, args : ['-e','bash','-v','t/02_multi_bam.t'], workdir : testdir )
 test('T03', prove, args : ['-e','bash','-v','t/03_reference_bases.t'], workdir: testdir )

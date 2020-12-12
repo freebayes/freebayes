@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from __future__ import print_function, division
+#!/usr/bin/python3
+
 from dirichlet import multinomial, multinomialln, multinomial_coefficient, multinomial_coefficientln
 import math
 import operator

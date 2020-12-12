@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
 multiset.py  -- non-recursive n multichoose k and
@@ -99,8 +99,8 @@ class ListElement:
     def nth(self, n):
         o = self
         i = 0
-        while i < n and o.next is not None:
-            o = o.next
+        while i < n and o.__next__ is not None:
+            o = o.__next__
             i += 1
         return o
 
@@ -117,24 +117,24 @@ def __visit(h):
     l = []
     while o is not None:
         l.append(o.value)
-        o = o.next
+        o = o.__next__
     return l
 
 def permutations(multiset):
     """Generator providing all multiset permutations of a multiset."""
     h, i, j = __init(multiset)
     yield __visit(h)
-    while j.next is not None or j.value < h.value:
-        if j.next is not None and i.value >= j.next.value:
+    while j.__next__ is not None or j.value < h.value:
+        if j.__next__ is not None and i.value >= j.next.value:
             s = j
         else:
             s = i
-        t = s.next
-        s.next = t.next
+        t = s.__next__
+        s.next = t.__next__
         t.next = h
         if t.value < h.value:
             i = t
-        j = i.next
+        j = i.__next__
         h = t
         yield __visit(h)
 
