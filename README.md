@@ -1,7 +1,7 @@
 # *freebayes*, a haplotype-based variant detector
 ## user manual and guide
 
-[![Build Status](https://travis-ci.org/ekg/freebayes.svg)](https://travis-ci.org/ekg/freebayes)
+[![Build Status](https://travis-ci.org/freebayes/freebayes.svg)](https://travis-ci.org/freebayes/freebayes)
 
 --------
 
@@ -23,7 +23,7 @@ alignments.  This method avoids one of the core problems with alignment-based
 variant detection--- that identical sequences may have multiple possible
 alignments:
 
-<img src="https://github.com/ekg/freebayes/raw/v1.3.0/paper/haplotype_calling.png" width=500/>
+<img src="https://github.com/freebayes/freebayes/raw/v1.3.0/paper/haplotype_calling.png" width=500/>
 
 *freebayes* uses short-read alignments
 ([BAM](http://samtools.sourceforge.net/SAMv1.pdf) files with
@@ -54,14 +54,14 @@ If possible, please also refer to the version number provided by freebayes when 
 
 ## Download
 
-Precompiled static binaries are available for [freebayes relases](https://github.com/ekg/freebayes/releases).
+Precompiled static binaries are available for [freebayes relases](https://github.com/freebayes/freebayes/releases).
 Most users should simply download these and run them.
 
 Other packages are available from various sources, including conda and Debian, but these are relatively old (at least as of 2019) and do not include important updates from the past few years.
 
 ## Support
 
-Please report any issues or questions to the [freebayes mailing list](https://groups.google.com/forum/#!forum/freebayes). Report bugs on the [freebayes issue tracker](https://github.com/ekg/freebayes/issues)
+Please report any issues or questions to the [freebayes mailing list](https://groups.google.com/forum/#!forum/freebayes). Report bugs on the [freebayes issue tracker](https://github.com/freebayes/freebayes/issues)
 
 ## Usage
 
@@ -339,7 +339,7 @@ Using this pattern, you can filter out reads with certain criteria using
 bamtools filter without having to modify the input BAM file.  You can also use
 the bamtools API to write your own custom filters in C++.  An example filter is
 bamfiltertech
-[src/bamfiltertech.cpp](http://github.com/ekg/freebayes/blob/master/src/bamfilte
+[src/bamfiltertech.cpp](http://github.com/freebayes/freebayes/blob/master/src/bamfilte
 rtech.cpp), which could be used to filter out
 technologies which have characteristic errors which may frustrate certain types
 of variant detection.
@@ -439,7 +439,7 @@ For more information, please refer to a post by Brad Chapman [on minimal BAM pre
 
 To download freebayes, please use git to download the most recent development tree:
 
-    git clone --recursive https://github.com/ekg/freebayes.git
+    git clone --recursive https://github.com/freebayes/freebayes.git
 
 Build dependencies are listed in [guix.scm](./guix.scm). Builds have
 been tested with gcc 7 and clang 9.

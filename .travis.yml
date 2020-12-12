@@ -1,5 +1,3 @@
-# Control file for continuous integration testing at http://travis-ci.org/
-
 matrix:
   include:
     - os: linux
@@ -9,12 +7,9 @@ matrix:
       compiler: gcc
       addons:
         apt:
-          #sources:
-          #  - ubuntu-toolchain-r-test
           packages:
             - bc
             - samtools
-            - libhts3
             - parallel
             - meson
             - ninja-build
@@ -31,4 +26,3 @@ script:
   - meson build/
   - ninja -C build/
   - meson test -t 8 -C build/
-  - cat /home/travis/build/pjotrp/freebayes/build/meson-logs/testlog.txt

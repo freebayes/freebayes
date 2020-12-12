@@ -38,31 +38,12 @@
     (version (git-version "1.3.3" "HEAD" %git-commit))
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
-    (arguments
-     `(#:tests? #f ;; tests fail because the built freebayes does
-       #:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'prepare-build
-           (lambda _
-             ;; Stash our build version in the executable.
-             (invoke "pkg-config" "--list-all")
-             (invoke "pkg-config" "--libs" "htslib")
-             (invoke "xxx")
-             (substitute* "src/version_release.txt"
-               (("v1.0.0") ,version))
-             #t))
-         (add-before 'install 'patch-install-location
-           (lambda* (#:key outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-               (mkdir-p (string-append out "/bin"))
-               #t)))
-         )))
     (propagated-inputs
      `(("perl" ,perl)         ; for testing
        ("grep" ,grep)         ; for testing
        ("samtools" ,samtools) ; for testing
        ("which" ,which)       ; for version
-       ("htslib" ,htslib)
+       ;; ("htslib" ,htslib)
        ))
     (native-inputs
      `(
@@ -78,11 +59,9 @@
        ("coreutils" ,coreutils) ; for echo in test
        ("curl" ,curl)
        ("perl6-tap-harness" ,perl6-tap-harness) ; for tests
-       ;; ("vcflib" ,vcflib)       ; no longer for tests
        ("zlib" ,zlib)
-       ;; ("lz4" ,lz4)     ; not used for CRAM
-       ;; ("xz" ,xz)       ;   liblzma part of htslib
-       ;; ("bzip2" ,bzip2) ; libz2 part of htslib
+       ("xz" ,xz)          ; liblzma part of htslib
+       ("bzip2" ,bzip2)    ; libz2 part of htslib
        ))
      (synopsis "freebayes haplotype-based genetic variant caller")
      (description
@@ -91,7 +70,7 @@ polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels
 (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex
 events (composite insertion and substitution events) smaller than the length of
 a short-read sequencing alignment.")
-     (home-page "https://github.com/ekg/freebayes")
+     (home-page "https://github.com/freebayes/freebayes")
      (license license:expat)))
 
 freebayes-git
