@@ -20,6 +20,7 @@
   (gnu packages curl)
   (gnu packages llvm)
   (gnu packages ninja)
+  (gnu packages parallel)
   (gnu packages perl)
   (gnu packages perl6)
   (gnu packages pkg-config)
@@ -42,8 +43,9 @@
      `(("perl" ,perl)         ; for testing
        ("grep" ,grep)         ; for testing
        ("samtools" ,samtools) ; for testing
+       ("vcflib" ,vcflib)     ; for freebayes-parallel
        ("which" ,which)       ; for version
-       ;; ("htslib" ,htslib)
+       ;; ("htslib" ,htslib)  ; does work, but lacks codecs
        ))
     (native-inputs
      `(
@@ -56,13 +58,19 @@
        ;; ("clang" ,clang)      ; add this to test clang builds
        ;; ("lld" ,lld)          ; add this to test clang builds
        ("bc" ,bc)               ; for tests
-       ("coreutils" ,coreutils) ; for echo in test
+       ("coreutils" ,coreutils) ; for echo and env in tests
        ("curl" ,curl)
        ("perl6-tap-harness" ,perl6-tap-harness) ; for tests
+       ("parallel" ,parallel) ; for freebayes-parallel
        ("zlib" ,zlib)
        ("xz" ,xz)          ; liblzma part of htslib
        ("bzip2" ,bzip2)    ; libz2 part of htslib
        ))
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+       (replace 'check
+                (lambda _
+                 (invoke "meson" "test" "--timeout-multiplier" "5"))))))
      (synopsis "freebayes haplotype-based genetic variant caller")
      (description
       "freebayes is a Bayesian genetic variant detector designed to find small
