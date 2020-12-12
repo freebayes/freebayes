@@ -13,12 +13,6 @@ matrix:
             - parallel
             - meson
             - ninja-build
-#  The OSX brew version takes forever to install meson
-#    - os: osx
-#      compiler: clang
-
-# before_install:
-#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install meson ninja; fi
 
 script:
   - apt-cache pkgnames|grep hts|grep lib
