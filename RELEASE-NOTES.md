@@ -1,4 +1,4 @@
-## ChangeLog v1.3.3 (2020????)
+## ChangeLog v1.3.3 (20201213)
 
 This is a maintenance release of Freebayes:
 
@@ -20,7 +20,8 @@ This is a maintenance release of Freebayes:
   Debian does not include htslib headers, nor does it handle LZMA
   codecs for CRAM, so the source tree is pulled in for local
   builds. See #664.
-+ Updated travis-CI; passes new meson builds for gcc
++ Updated travis-CI: passes new meson builds for gcc
++ Added github-CI: passes
 
 Some minor stuff:
 
