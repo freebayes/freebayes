@@ -45,7 +45,7 @@
        ("samtools" ,samtools) ; for testing
        ("vcflib" ,vcflib)     ; for freebayes-parallel
        ("which" ,which)       ; for version
-       ;; ("htslib" ,htslib)  ; does work, but lacks codecs
+       ("htslib" ,htslib)  ; does work, but lacks codecs
        ))
     (native-inputs
      `(

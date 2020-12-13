@@ -30,4 +30,4 @@ script:
   - mkdir build
   - meson build/
   - ninja -C build/
-  - meson test -t 8 -C build/
+  - meson test --timeout-multiplier 8 -C build/

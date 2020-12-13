@@ -16,9 +16,10 @@ This is a maintenance release of Freebayes:
 + Updated htslib to the latest version
 + Fixed clang build, requires a patch on htslib sent upstream with https://github.com/samtools/htslib/pull/1190
 + Applied https://github.com/walaj/SeqLib/pull/53 (thanks @jmarshall)
-+ Freebayes builds against stock htslib and htslib sources are removed
-  from the tree! Moved them back in again for Debian builds and codecs
-  support
++ Freebayes builds against stock htslib for Debian etc. Unfortunately
+  Debian does not include htslib headers, nor does it handle LZMA
+  codecs for CRAM, so the source tree is pulled in for local
+  builds. See #664.
 + Updated travis-CI; passes new meson builds for gcc
 
 Some minor stuff:
