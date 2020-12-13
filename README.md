@@ -1,6 +1,8 @@
 # *freebayes*, a haplotype-based variant detector
 ## user manual and guide
 
+[![Github CI](https://github.com/freebayes/freebayes/workflows/CI/badge.svg?branch=master&event=push)
+
 [![Build Status](https://travis-ci.org/freebayes/freebayes.svg?branch=master)](https://travis-ci.org/freebayes/freebayes) [![AnacondaBadge](https://anaconda.org/bioconda/freebayes/badges/installer/conda.svg)](https://anaconda.org/bioconda/freebayes) [![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://www.gnu.org/software/guix/packages/F/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://packages.debian.org/testing/freebayes)
 
 --------

@@ -1,3 +1,8 @@
+# Meson build definition
+#
+# meson --buildtype [debug|release] [--default-library static] build/
+# meson test -C build /
+
 project('freebayes', ['cpp', 'c'],
         version : '1.3.3',
         default_options : ['warning_level=3', 'cpp_std=c++14'])
@@ -135,6 +140,9 @@ incdir = include_directories(
     'vcflib/multichoose',
     'vcflib/filevercmp')
 
+c_args = ['-fpermissive','-w']
+cpp_args = ['-fpermissive','-w','-Wc++14-compat']
+
 executable('freebayes',
            freebayes_src,
            seqlib_src,
@@ -142,8 +150,8 @@ executable('freebayes',
            htslib_src,
            # htslib_src,
            include_directories : incdir,
-           cpp_args : ['-fpermissive','-w'],
-           c_args : ['-fpermissive','-w'],
+           cpp_args : cpp_args,
+           c_args :   c_args,
            dependencies: [zlib_dep, lzma_dep, htslib_dep, thread_dep],
            install: true
           )
@@ -155,8 +163,8 @@ executable('bamleftalign',
            htslib_src,
            # htslib_src,
            include_directories : incdir,
-           cpp_args : ['-w','-fpermissive','-Wc++14-compat'],
-           c_args : ['-w','-fpermissive'],
+           cpp_args : cpp_args,
+           c_args :   c_args,
            dependencies: [zlib_dep, lzma_dep, htslib_dep, thread_dep],
            install: true
           )

@@ -1,0 +1,26 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  arch:
+    name: freebayes-CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.8]
+    steps:
+    - name: Install dependencies
+      run: sudo apt-get install samtools bc parallel libvcflib-tools vcftools
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - run: pip install meson ninja
+    - name: Configure
+      run: meson build/
+    - name: Compile
+      run: ninja -C build/
+    - name: Run tests
+      run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
