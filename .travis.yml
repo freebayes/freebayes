@@ -13,6 +13,17 @@ matrix:
             - ninja-build
     - os: linux
       dist: focal
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - bc
+            - samtools
+            - parallel
+            - meson
+            - ninja-build
+    - os: linux
+      dist: focal
       arch:
         - arm64
       compiler: gcc
@@ -31,3 +42,4 @@ script:
   - meson build/
   - ninja -C build/
   - meson test --timeout-multiplier 8 -C build/
+  - [ $? != 0 ] && cat /home/travis/build/freebayes/freebayes/build/meson-logs/testlog.txt

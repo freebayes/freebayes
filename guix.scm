@@ -68,6 +68,7 @@
        ))
     (arguments
      `(#:phases (modify-phases %standard-phases
+       ;; add timeout extension for slower processors
        (replace 'check
                 (lambda _
                  (invoke "meson" "test" "--timeout-multiplier" "5"))))))
