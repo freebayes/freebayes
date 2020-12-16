@@ -1,3 +1,7 @@
+## ChangeLog v1.3.4 (2020????)
+
++ Added support for --trim-complex-tail with #139 and 97735089a1bbf658862fb16f4514c0ad93195e0a (thanks @tsibley)
+
 ## ChangeLog v1.3.3 (20201213)
 
 This is a maintenance release of Freebayes:
