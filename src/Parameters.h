@@ -123,6 +123,7 @@ public:
     int minCoverage;             // -! --min-coverage
     int limitCoverage;           // -+ --limit-coverage
     int skipCoverage;            // -g --skip-coverage
+    int trimComplexTail;         // -. --trim-complex-tail
     int debuglevel;              // -d --debug increments
     bool debug; // set if debuglevel >=1
     bool debug2; // set if debuglevel >=2

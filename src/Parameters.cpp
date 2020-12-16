@@ -23,7 +23,7 @@ void Parameters::simpleUsage(char ** argv) {
 }
 
 void Parameters::usage(char** argv) {
-    cout 
+    cout
         << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
         << endl
         << "Bayesian haplotype-based polymorphism discovery." << endl
@@ -304,6 +304,8 @@ void Parameters::usage(char** argv) {
         << "                   Skip processing of alignments overlapping positions with coverage >N." << endl
         << "                   This filters sites above this coverage, but will also reduce data nearby." << endl
         << "                   default: no limit" << endl
+        << "   --trim-complex-tail" << endl
+        << "                   Trim complex tails." << endl
         << endl
         << "population priors:" << endl
         << endl
@@ -490,6 +492,7 @@ Parameters::Parameters(int argc, char** argv) {
     minCoverage = 0;
     limitCoverage = 0;
     skipCoverage = 0;
+    trimComplexTail = 0;
     debuglevel = 0;
     debug = false;
     debug2 = false;
@@ -564,6 +567,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"min-coverage", required_argument, 0, '!'},
             {"limit-coverage", required_argument, 0, '+'},
             {"skip-coverage", required_argument, 0, 'g'},
+            {"trim-complex-tail", no_argument, 0, '𝛃'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -665,15 +669,15 @@ Parameters::Parameters(int argc, char** argv) {
             gVCFout = true;
             break;
 
-            // -& BOOL/INT --gvcf-no-chunk BOOL/INT  --gvcf-chunk 
+            // -& BOOL/INT --gvcf-no-chunk BOOL/INT  --gvcf-chunk
         case '&':
             //cerr << "optarg:\t" << optarg << endl;
             if(optarg[0] == 't'){
                 gVCFNoChunk = true;
             } else if (optarg[0] == 'f'){
-                gVCFNoChunk = false; 
+                gVCFNoChunk = false;
             } else {
-                gVCFchunk = atoi(optarg);  
+                gVCFchunk = atoi(optarg);
             }
             break;
 
@@ -720,6 +724,11 @@ Parameters::Parameters(int argc, char** argv) {
                 cerr << "could not parse skip-coverage" << endl;
                 exit(1);
             }
+            break;
+
+            // --trim-complex-tail
+        case '𝛃':
+            trimComplexTail = true;
             break;
 
             // -n --use-best-n-alleles
@@ -1083,7 +1092,7 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
     case '#':
-        
+
         // --version
             cout << "version:  " << VERSION_GIT << endl;
         exit(0);
@@ -1093,7 +1102,7 @@ Parameters::Parameters(int argc, char** argv) {
             usage(argv);
             exit(0);
             break;
- 
+
             // either catch "long options" or
         case '?': // print a suggestion about the most-likely long option which the argument matches
         {
@@ -1120,7 +1129,7 @@ Parameters::Parameters(int argc, char** argv) {
         }
 
     }
- 
+
     // any remaining arguments are considered as bam files
     if (optind < argc) {
         if (useStdin) {

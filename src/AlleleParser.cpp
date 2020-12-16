@@ -1386,7 +1386,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
      * The cigar only records matches for sequences that have embedded
      * mismatches.
      *
-     * Also, we don't store the entire undelying sequence; just the subsequence
+     * Also, we don't store the entire underlying sequence; just the subsequence
      * that matches our current target region.
      *
      * As we step through a match sequence, we look for mismatches.  When we
@@ -1824,6 +1824,26 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
     if (ra.alleles.empty()) {
         DEBUG2("generated no alleles from read");
         return ra;
+    }
+
+    DEBUG2("registerAlignment: done registering alleles with addAllele");
+
+    if (parameters.trimComplexTail) {
+      // Simplify complex final alleles by splitting off any trailing reference matches
+      Allele& lastAllele = ra.alleles.back();
+      vector< pair<int, string> > lastCigar = splitCigar(lastAllele.cigar);
+      if (lastAllele.isComplex() && lastCigar.back().second == "M") {
+        DEBUG2("registerAlignment: trimming reference matches from end of final complex allele");
+        // FIXME TODO: The allele may not actually be complex
+        // anymore after splitting, in which case we should demote
+        // its type to SNP/MNP/INDEL.
+        // -trs, 23 Jan 2015
+        ra.alleles.push_back(lastAllele);
+        Allele& pAllele = ra.alleles.at(ra.alleles.size() - 2);
+        string seq; vector<pair<int, string> > cig; vector<short> quals;
+        pAllele.subtractFromEnd(lastCigar.back().first, seq, cig, quals);
+        ra.alleles.back().subtractFromStart(pAllele.referenceLength, seq, cig, quals);
+      }
     }
 
     // this deals with the case in which we have embedded Ns in the read
