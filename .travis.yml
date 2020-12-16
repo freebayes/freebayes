@@ -11,9 +11,35 @@ matrix:
             - parallel
             - meson
             - ninja-build
+    - os: linux
+      dist: focal
+      arch:
+        - arm64
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - bc
+            - samtools
+            - parallel
+            - meson
+            - ninja-build
+    - os: linux
+      dist: focal
+      arch:
+        - arm64
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - bc
+            - samtools
+            - parallel
+            - meson
+            - ninja-build
 script:
   - apt-cache pkgnames|grep hts|grep lib
   - mkdir build
   - meson build/
   - ninja -C build/
-  - meson test --timeout-multiplier 8 -C build/
+  - meson test --timeout-multiplier 8 --print-errorlogs -C build/
