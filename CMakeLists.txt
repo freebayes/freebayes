@@ -3,6 +3,10 @@
 # Note that the main build system has moved to meson (see meson.build).
 #
 
+message(FATAL_ERROR "+++ WARNING: CMake has been replaced with the meson/ninja build system +++")
+
+# If you want to use cmake make sure to align with upstream.
+
 cmake_minimum_required(VERSION 3.1)
 
 # Project's name
