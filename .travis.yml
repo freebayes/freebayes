@@ -11,11 +11,9 @@ matrix:
             - parallel
             - meson
             - ninja-build
-
 script:
   - apt-cache pkgnames|grep hts|grep lib
   - mkdir build
   - meson build/
   - ninja -C build/
   - meson test --timeout-multiplier 8 -C build/
-  - [ $? != 0 ] && cat /home/travis/build/freebayes/freebayes/build/meson-logs/testlog.txt
