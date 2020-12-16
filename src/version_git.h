@@ -1,4 +1,4 @@
 #ifndef VERSION_GIT_H
 #define VERSION_GIT_H
-#define VERSION_GIT "v1.3.3"
+#define VERSION_GIT "v1.3.4-pre1"
 #endif /* VERSION_GIT_H */
