@@ -9,22 +9,21 @@ project('freebayes', ['cpp', 'c'],
 
 zlib_dep = dependency('zlib')
 lzma_dep = dependency('liblzma')
-bzip2_dep = dependency('bz2lib', required: false)
-htslib_dep = dependency('htslib', required : false)
 thread_dep = dependency('threads')
 
-if htslib_dep.found()
-  htslib_includes = ''
-  htslib_src = []
-else
-  # build from source - necessary on some Debian systems
-  # note that the build version adds support for lzma and bzip2 in CRAM
-  htslib_includes = [
+htslib_dep = dependency('htslib', required : false)
+tabixpp_dep = meson.get_compiler('cpp').find_library('tabixpp', required : false)
+vcflib_dep = dependency('libvcflib', required : false)
+seqlib_dep = dependency('libseqlib', required : false)
+
+# optionally build from source
+# note that the build version adds support for lzma and bzip2 in CRAM
+htslib_inc = include_directories(
     'contrib/htslib',
     'contrib/htslib_config',
     'contrib/htslib/cram',
-    ]
-  htslib_src = [
+    )
+htslib_src = files(
     'contrib/htslib/tbx.c',      # used by vcflib
     'contrib/htslib/bgzf.c',
     'contrib/htslib/sam.c',
@@ -56,7 +55,69 @@ else
     'contrib/htslib/cram/rANS_static.c',
     'contrib/htslib/cram/open_trace_file.c',
     'contrib/htslib/multipart.c',
-]
+    )
+tabixpp_inc = include_directories('vcflib/tabixpp')
+tabixpp_src = files('vcflib/tabixpp/tabix.cpp')
+vcflib_inc = include_directories(
+    'vcflib/src',
+    'vcflib/smithwaterman',
+    'vcflib/multichoose',
+    'vcflib/filevercmp',
+    'vcflib/fastahack',
+    )
+vcflib_src = files(
+    'vcflib/src/Variant.cpp',
+    'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
+    'vcflib/smithwaterman/disorder.cpp',
+    'vcflib/smithwaterman/Repeats.cpp',
+    'vcflib/smithwaterman/LeftAlign.cpp',
+    'vcflib/smithwaterman/IndelAllele.cpp',
+    'vcflib/fastahack/Fasta.cpp',
+    'vcflib/smithwaterman/LeftAlign.cpp',
+    'vcflib/smithwaterman/IndelAllele.cpp',
+    'vcflib/src/split.cpp',
+    )
+seqlib_inc = include_directories(
+    'contrib',
+    'contrib/SeqLib',
+    )
+seqlib_src = files(
+    'contrib/SeqLib/src/BamReader.cpp',
+    'contrib/SeqLib/src/BamRecord.cpp',
+    'contrib/SeqLib/src/BamHeader.cpp',
+    'contrib/SeqLib/src/BamWriter.cpp',
+    'contrib/SeqLib/src/GenomicRegion.cpp',
+    'contrib/SeqLib/src/ssw_cpp.cpp',
+    'contrib/SeqLib/src/ssw.c',
+    )
+
+if not htslib_dep.found()
+    htslib_lib = static_library('custom_htslib',
+                                htslib_src,
+                                include_directories : htslib_inc)
+    htslib_dep = declare_dependency(link_with : htslib_lib,
+                                    include_directories : htslib_inc)
+endif
+if not tabixpp_dep.found()
+    tabixpp_lib = static_library('custom_tabixpp',
+                                 tabixpp_src,
+                                 include_directories : [tabixpp_inc, htslib_inc])
+    tabixpp_dep = declare_dependency(link_with : tabixpp_lib,
+                                     include_directories : tabixpp_inc)
+endif
+if not vcflib_dep.found()
+    vcflib_lib = static_library('custom_vcflib',
+                                vcflib_src,
+                                include_directories : [htslib_inc, tabixpp_inc, vcflib_inc])
+    vcflib_dep = declare_dependency(link_with : vcflib_lib,
+                                    include_directories : vcflib_inc)
+endif
+if not seqlib_dep.found()
+    seqlib_lib = static_library('custom_seqlib',
+                                seqlib_src,
+                                include_directories : [htslib_inc, vcflib_inc, seqlib_inc])
+    seqlib_dep = declare_dependency(link_with : seqlib_lib,
+                                    include_directories : seqlib_inc)
 endif
 
 
@@ -64,7 +125,7 @@ endif
 #
 # Sources
 #
-freebayes_src = [
+freebayes_src = files(
     'src/freebayes.cpp',
     'src/Allele.cpp',
     'src/AlleleParser.cpp',
@@ -90,82 +151,43 @@ freebayes_src = [
     'src/Sample.cpp',
     'src/SegfaultHandler.cpp',
     'src/split.cpp',
-    'src/Utility.cpp'
-]
+    'src/Utility.cpp',
+    )
 
-
-
-seqlib_src = [
-    'contrib/SeqLib/src/BamReader.cpp',
-    'contrib/SeqLib/src/BamRecord.cpp',
-    'contrib/SeqLib/src/BamHeader.cpp',
-    'contrib/SeqLib/src/GenomicRegion.cpp',
-    'contrib/SeqLib/src/ssw_cpp.cpp',
-    'contrib/SeqLib/src/ssw.c',
-]
-
-vcflib_src = [
-    'vcflib/tabixpp/tabix.cpp',
-    'vcflib/src/Variant.cpp',
-    'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
-    'vcflib/smithwaterman/disorder.cpp',
-    'vcflib/smithwaterman/Repeats.cpp',
-    'vcflib/smithwaterman/LeftAlign.cpp',
-    'vcflib/smithwaterman/IndelAllele.cpp',
-]
-
-bamleftalign_src = [
+bamleftalign_src = files(
     'src/bamleftalign.cpp',
     'src/IndelAllele.cpp',
-    'contrib/SeqLib/src/BamWriter.cpp',
-    'vcflib/fastahack/Fasta.cpp',
-    'vcflib/smithwaterman/LeftAlign.cpp',
-    'vcflib/smithwaterman/IndelAllele.cpp',
-    'vcflib/src/split.cpp',
     'src/LeftAlign.cpp',
-]
+    )
 
 # Include paths
 incdir = include_directories(
     'src',
-    htslib_includes,
     'bamtools/src/api',
     'bamtools/src',
     'ttmath',
-    'contrib',
-    'contrib/SeqLib',
-    'vcflib/src',
-    'vcflib/tabixpp',
-    'vcflib/smithwaterman',
-    'vcflib/multichoose',
-    'vcflib/filevercmp')
+    )
 
 c_args = ['-fpermissive','-w']
 cpp_args = ['-fpermissive','-w','-Wc++14-compat']
 
 executable('freebayes',
            freebayes_src,
-           seqlib_src,
-           vcflib_src,
-           htslib_src,
-           # htslib_src,
            include_directories : incdir,
            cpp_args : cpp_args,
            c_args :   c_args,
-           dependencies: [zlib_dep, lzma_dep, htslib_dep, thread_dep],
+           dependencies: [zlib_dep, lzma_dep, thread_dep,
+                          htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
            install: true
           )
 
 executable('bamleftalign',
            bamleftalign_src,
-           seqlib_src,
-           vcflib_src,
-           htslib_src,
-           # htslib_src,
            include_directories : incdir,
            cpp_args : cpp_args,
            c_args :   c_args,
-           dependencies: [zlib_dep, lzma_dep, htslib_dep, thread_dep],
+           dependencies: [zlib_dep, lzma_dep, thread_dep,
+                          htslib_dep, vcflib_dep, seqlib_dep],
            install: true
           )
 
