@@ -175,8 +175,6 @@ bamleftalign_src = files(
 # Include paths
 incdir = include_directories(
     'src',
-    'bamtools/src/api',
-    'bamtools/src',
     'ttmath',
     )
 

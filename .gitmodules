@@ -1,6 +1,3 @@
-[submodule "bamtools"]
-	path = bamtools
-	url = https://github.com/ekg/bamtools.git
 [submodule "intervaltree"]
 	path = intervaltree
 	url = https://github.com/ekg/intervaltree.git
