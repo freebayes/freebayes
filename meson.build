@@ -8,16 +8,21 @@
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.4',
-        default_options : ['warning_level=3', 'cpp_std=c++14'])
+        default_options : ['warning_level=1', 'cpp_std=c++14', 'optimization=3'])
+
+cc = meson.get_compiler('cpp')
 
 zlib_dep = dependency('zlib')
 lzma_dep = dependency('liblzma')
 thread_dep = dependency('threads')
 
 htslib_dep = dependency('htslib', required : false)
-tabixpp_dep = meson.get_compiler('cpp').find_library('tabixpp', required : false)
+tabixpp_dep = cc.find_library('tabixpp', required : false)
 vcflib_dep = dependency('libvcflib', required : false)
 seqlib_dep = dependency('libseqlib', required : false)
+
+# for setting a warning_level on the external code in custom_* targets below
+warn_quiet = ['warning_level=0']
 
 # optionally build from source
 # note that the build version adds support for lzma and bzip2 in CRAM
@@ -62,7 +67,8 @@ if not htslib_dep.found()
     )
     htslib_lib = static_library('custom_htslib',
                                 htslib_src,
-                                include_directories : htslib_inc)
+                                include_directories : htslib_inc,
+                                override_options : warn_quiet)
     htslib_dep = declare_dependency(link_with : htslib_lib,
                                     include_directories : htslib_inc)
 else
@@ -75,7 +81,8 @@ if not tabixpp_dep.found()
     tabixpp_src = files('vcflib/tabixpp/tabix.cpp')
     tabixpp_lib = static_library('custom_tabixpp',
                                  tabixpp_src,
-                                 include_directories : [tabixpp_inc, htslib_inc])
+                                 include_directories : [tabixpp_inc, htslib_inc],
+                                 override_options : warn_quiet)
     tabixpp_dep = declare_dependency(link_with : tabixpp_lib,
                                      include_directories : tabixpp_inc)
 else
@@ -104,7 +111,8 @@ if not vcflib_dep.found()
     )
   vcflib_lib = static_library('custom_vcflib',
                               vcflib_src,
-                              include_directories : [htslib_inc, tabixpp_inc, vcflib_inc])
+                              include_directories : [htslib_inc, tabixpp_inc, vcflib_inc],
+                              override_options : warn_quiet)
   vcflib_dep = declare_dependency(link_with : vcflib_lib,
                                   include_directories : vcflib_inc)
 endif
@@ -128,7 +136,8 @@ if not seqlib_dep.found()
 
   seqlib_lib = static_library('custom_seqlib',
                               seqlib_src,
-                              include_directories : [htslib_inc, vcflib_inc, seqlib_inc])
+                              include_directories : [htslib_inc, vcflib_inc, seqlib_inc],
+                              override_options : warn_quiet)
   seqlib_dep = declare_dependency(link_with : seqlib_lib,
                                   include_directories : seqlib_inc)
 endif
@@ -137,8 +146,7 @@ endif
 #
 # Sources
 #
-freebayes_src = files(
-    'src/freebayes.cpp',
+freebayes_common_src = files(
     'src/Allele.cpp',
     'src/AlleleParser.cpp',
     'src/BedReader.cpp',
@@ -150,7 +158,6 @@ freebayes_src = files(
     'src/Dirichlet.cpp',
     'src/Ewens.cpp',
     'src/Fasta.cpp',
-    'src/freebayes.cpp',
     'src/Genotype.cpp',
     'src/IndelAllele.cpp',
     'src/LeftAlign.cpp',
@@ -165,12 +172,8 @@ freebayes_src = files(
     'src/split.cpp',
     'src/Utility.cpp',
     )
-
-bamleftalign_src = files(
-    'src/bamleftalign.cpp',
-    'src/IndelAllele.cpp',
-    'src/LeftAlign.cpp',
-    )
+freebayes_src = files('src/freebayes.cpp')
+bamleftalign_src = files('src/bamleftalign.cpp')
 
 # Include paths
 incdir = include_directories(
@@ -178,26 +181,41 @@ incdir = include_directories(
     'ttmath',
     )
 
-c_args = ['-fpermissive','-w']
-cpp_args = ['-fpermissive','-w','-Wc++14-compat']
+extra_cpp_args = cc.get_supported_arguments(
+    '-fpermissive',
+    '-Wno-reorder',
+    '-Wno-sign-compare',
+    '-Wno-unused-variable',
+    '-Wno-unused-but-set-variable',
+    )
+
+freebayes_lib = static_library(
+    'freebayes_common',
+    freebayes_common_src,
+    include_directories : incdir,
+    cpp_args : extra_cpp_args,
+    dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
+                    vcflib_dep, seqlib_dep],
+    install : false,
+    )
 
 executable('freebayes',
            freebayes_src,
            include_directories : incdir,
-           cpp_args : cpp_args,
-           c_args :   c_args,
+           cpp_args : extra_cpp_args,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
+           link_with : freebayes_lib,
            install: true
           )
 
 executable('bamleftalign',
            bamleftalign_src,
            include_directories : incdir,
-           cpp_args : cpp_args,
-           c_args :   c_args,
+           cpp_args : extra_cpp_args,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, vcflib_dep, seqlib_dep],
+           link_with : freebayes_lib,
            install: true
           )
 
