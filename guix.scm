@@ -5,6 +5,11 @@
 ;; To get a development container
 ;;
 ;;   guix environment -C -l guix.scm
+;;
+;; For the tests you need /usr/bin/env. In a container create it with
+;;
+;;   mkdir -p /usr/bin
+;;   ln -s $GUIX_ENVIRONMENT/bin/env /usr/bin/env
 
 (use-modules
   ((guix licenses) #:prefix license:)
@@ -36,7 +41,7 @@
 (define-public freebayes-git
   (package
     (name "freebayes-git")
-    (version (git-version "1.3.3" "HEAD" %git-commit))
+    (version (git-version "1.3.4" "HEAD" %git-commit))
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
     (propagated-inputs
@@ -45,8 +50,9 @@
        ("samtools" ,samtools) ; for testing
        ("vcflib" ,vcflib)     ; for freebayes-parallel
        ("which" ,which)       ; for version
-       ("htslib" ,htslib)  ; does work, but lacks codecs
-       ))
+       ("htslib" ,htslib)     ; does work, but lacks codecs
+       ("tabixpp" ,tabixpp)
+        ))
     (native-inputs
      `(
        ("meson" ,meson)
