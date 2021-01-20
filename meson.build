@@ -146,8 +146,7 @@ endif
 #
 # Sources
 #
-freebayes_src = files(
-    'src/freebayes.cpp',
+freebayes_common_src = files(
     'src/Allele.cpp',
     'src/AlleleParser.cpp',
     'src/BedReader.cpp',
@@ -159,7 +158,6 @@ freebayes_src = files(
     'src/Dirichlet.cpp',
     'src/Ewens.cpp',
     'src/Fasta.cpp',
-    'src/freebayes.cpp',
     'src/Genotype.cpp',
     'src/IndelAllele.cpp',
     'src/LeftAlign.cpp',
@@ -174,12 +172,8 @@ freebayes_src = files(
     'src/split.cpp',
     'src/Utility.cpp',
     )
-
-bamleftalign_src = files(
-    'src/bamleftalign.cpp',
-    'src/IndelAllele.cpp',
-    'src/LeftAlign.cpp',
-    )
+freebayes_src = files('src/freebayes.cpp')
+bamleftalign_src = files('src/bamleftalign.cpp')
 
 # Include paths
 incdir = include_directories(
@@ -197,12 +191,23 @@ extra_cpp_args = cc.get_supported_arguments(
     '-Wno-unused-but-set-variable',
     )
 
+freebayes_lib = static_library(
+    'freebayes_common',
+    freebayes_common_src,
+    include_directories : incdir,
+    cpp_args : extra_cpp_args,
+    dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
+                    vcflib_dep, seqlib_dep],
+    install : false,
+    )
+
 executable('freebayes',
            freebayes_src,
            include_directories : incdir,
            cpp_args : extra_cpp_args,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
+           link_with : freebayes_lib,
            install: true
           )
 
@@ -212,6 +217,7 @@ executable('bamleftalign',
            cpp_args : extra_cpp_args,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, vcflib_dep, seqlib_dep],
+           link_with : freebayes_lib,
            install: true
           )
 
