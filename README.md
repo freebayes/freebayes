@@ -444,8 +444,18 @@ To download freebayes, please use git to download the most recent development tr
 
     git clone --recursive https://github.com/freebayes/freebayes.git
 
-Build dependencies are listed in [guix.scm](./guix.scm). Builds have
-been tested with gcc 7 and clang 9.
+On Debian you'll need a gcc compiler and want packages:
+
+- bc
+- samtools
+- parallel
+- meson
+- ninja-build
+- libvcflib-tools
+- vcftools
+
+Build dependencies are listed in [guix.scm](./guix.scm) and
+[travis](.travis.yml). Builds have been tested with gcc 7 and clang 9.
 
 ## Compilation
 
