@@ -29,7 +29,6 @@ matrix:
             - libvcflib-tools 
             - vcftools
     - os: linux
-    - os: linux
       dist: focal
       arch:
         - arm64
@@ -44,7 +43,6 @@ matrix:
             - ninja-build
             - libvcflib-tools 
             - vcftools
-    - os: linux
 script:
   - mkdir build
   - meson build/
