@@ -11,6 +11,8 @@ matrix:
             - parallel
             - meson
             - ninja-build
+            - libvcflib-tools 
+            - vcftools
     - os: linux
       dist: focal
       arch:
@@ -24,6 +26,9 @@ matrix:
             - parallel
             - meson
             - ninja-build
+            - libvcflib-tools 
+            - vcftools
+    - os: linux
     - os: linux
       dist: focal
       arch:
@@ -37,8 +42,10 @@ matrix:
             - parallel
             - meson
             - ninja-build
+            - libvcflib-tools 
+            - vcftools
+    - os: linux
 script:
-  - apt-cache pkgnames|grep hts|grep lib
   - mkdir build
   - meson build/
   - ninja -C build/
