@@ -4,7 +4,7 @@
 # meson test -C build /
 
 project('freebayes', ['cpp', 'c'],
-        version : '1.3.3',
+        version : '1.3.4',
         default_options : ['warning_level=3', 'cpp_std=c++14'])
 
 zlib_dep = dependency('zlib')
@@ -18,12 +18,13 @@ seqlib_dep = dependency('libseqlib', required : false)
 
 # optionally build from source
 # note that the build version adds support for lzma and bzip2 in CRAM
-htslib_inc = include_directories(
+if not htslib_dep.found()
+  htslib_inc = include_directories(
     'contrib/htslib',
     'contrib/htslib_config',
     'contrib/htslib/cram',
     )
-htslib_src = files(
+  htslib_src = files(
     'contrib/htslib/tbx.c',      # used by vcflib
     'contrib/htslib/bgzf.c',
     'contrib/htslib/sam.c',
@@ -56,16 +57,37 @@ htslib_src = files(
     'contrib/htslib/cram/open_trace_file.c',
     'contrib/htslib/multipart.c',
     )
-tabixpp_inc = include_directories('vcflib/tabixpp')
-tabixpp_src = files('vcflib/tabixpp/tabix.cpp')
-vcflib_inc = include_directories(
+    htslib_lib = static_library('custom_htslib',
+                                htslib_src,
+                                include_directories : htslib_inc)
+    htslib_dep = declare_dependency(link_with : htslib_lib,
+                                    include_directories : htslib_inc)
+else
+    htslib_inc = []
+endif
+
+
+if not tabixpp_dep.found()
+    tabixpp_inc = include_directories('vcflib/tabixpp')
+    tabixpp_src = files('vcflib/tabixpp/tabix.cpp')
+    tabixpp_lib = static_library('custom_tabixpp',
+                                 tabixpp_src,
+                                 include_directories : [tabixpp_inc, htslib_inc])
+    tabixpp_dep = declare_dependency(link_with : tabixpp_lib,
+                                     include_directories : tabixpp_inc)
+else
+    tabixpp_inc = []
+endif
+
+if not vcflib_dep.found()
+  vcflib_inc = include_directories(
     'vcflib/src',
     'vcflib/smithwaterman',
     'vcflib/multichoose',
     'vcflib/filevercmp',
     'vcflib/fastahack',
     )
-vcflib_src = files(
+  vcflib_src = files(
     'vcflib/src/Variant.cpp',
     'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
     'vcflib/smithwaterman/disorder.cpp',
@@ -77,11 +99,21 @@ vcflib_src = files(
     'vcflib/smithwaterman/IndelAllele.cpp',
     'vcflib/src/split.cpp',
     )
-seqlib_inc = include_directories(
+  vcflib_lib = static_library('custom_vcflib',
+                              vcflib_src,
+                              include_directories : [htslib_inc, tabixpp_inc, vcflib_inc])
+  vcflib_dep = declare_dependency(link_with : vcflib_lib,
+                                  include_directories : vcflib_inc)
+endif
+
+
+if not seqlib_dep.found()
+
+  seqlib_inc = include_directories(
     'contrib',
     'contrib/SeqLib',
     )
-seqlib_src = files(
+  seqlib_src = files(
     'contrib/SeqLib/src/BamReader.cpp',
     'contrib/SeqLib/src/BamRecord.cpp',
     'contrib/SeqLib/src/BamHeader.cpp',
@@ -91,35 +123,12 @@ seqlib_src = files(
     'contrib/SeqLib/src/ssw.c',
     )
 
-if not htslib_dep.found()
-    htslib_lib = static_library('custom_htslib',
-                                htslib_src,
-                                include_directories : htslib_inc)
-    htslib_dep = declare_dependency(link_with : htslib_lib,
-                                    include_directories : htslib_inc)
+  seqlib_lib = static_library('custom_seqlib',
+                              seqlib_src,
+                              include_directories : [htslib_inc, vcflib_inc, seqlib_inc])
+  seqlib_dep = declare_dependency(link_with : seqlib_lib,
+                                  include_directories : seqlib_inc)
 endif
-if not tabixpp_dep.found()
-    tabixpp_lib = static_library('custom_tabixpp',
-                                 tabixpp_src,
-                                 include_directories : [tabixpp_inc, htslib_inc])
-    tabixpp_dep = declare_dependency(link_with : tabixpp_lib,
-                                     include_directories : tabixpp_inc)
-endif
-if not vcflib_dep.found()
-    vcflib_lib = static_library('custom_vcflib',
-                                vcflib_src,
-                                include_directories : [htslib_inc, tabixpp_inc, vcflib_inc])
-    vcflib_dep = declare_dependency(link_with : vcflib_lib,
-                                    include_directories : vcflib_inc)
-endif
-if not seqlib_dep.found()
-    seqlib_lib = static_library('custom_seqlib',
-                                seqlib_src,
-                                include_directories : [htslib_inc, vcflib_inc, seqlib_inc])
-    seqlib_dep = declare_dependency(link_with : seqlib_lib,
-                                    include_directories : seqlib_inc)
-endif
-
 
 
 #
