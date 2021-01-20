@@ -52,7 +52,7 @@
        ("which" ,which)       ; for version
        ("htslib" ,htslib)     ; does work, but lacks codecs
        ("tabixpp" ,tabixpp)
-        ))
+       ))
     (native-inputs
      `(
        ("meson" ,meson)

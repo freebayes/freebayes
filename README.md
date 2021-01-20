@@ -53,12 +53,12 @@ Garrison E, Marth G. Haplotype-based variant detection from short-read sequencin
 
 If possible, please also refer to the version number provided by freebayes when it is run without arguments or with the `--help` option.
 
-## Download
+## Install
 
-Precompiled static binaries are available for [freebayes relases](https://github.com/freebayes/freebayes/releases).
-Most users should simply download these and run them.
+Precompiled static binaries are available for [freebayes releases](https://github.com/freebayes/freebayes/releases).
+Simply download these and run them.
 
-Other packages are available from various sources, including conda and Debian, but these are relatively old (at least as of 2019) and do not include important updates from the past few years.
+Debian and Conda packages should work too, see the badges at the top of this page.
 
 See the [development](#Development) section below to build freebayes from source.
 
