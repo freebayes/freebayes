@@ -60,6 +60,8 @@ Most users should simply download these and run them.
 
 Other packages are available from various sources, including conda and Debian, but these are relatively old (at least as of 2019) and do not include important updates from the past few years.
 
+See the [development](#Development) section below to build freebayes from source.
+
 ## Support
 
 Please report any issues or questions to the [freebayes mailing list](https://groups.google.com/forum/#!forum/freebayes). Report bugs on the [freebayes issue tracker](https://github.com/freebayes/freebayes/issues)
@@ -475,3 +477,5 @@ After checking out the repo with git recursive create a Guix
 container with all the build tools with
 
     guix environment -C -l guix.scm
+
+See also [guix.scm](./guix.scm).
