@@ -51,8 +51,7 @@
        ("vcflib" ,vcflib)     ; for freebayes-parallel
        ("which" ,which)       ; for version
        ("htslib" ,htslib)     ; does work, but lacks codecs
-       ("tabixpp" ,tabixpp)
-       ))
+       ("tabixpp" ,tabixpp)))
     (native-inputs
      `(
        ("meson" ,meson)

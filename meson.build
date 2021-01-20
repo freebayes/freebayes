@@ -2,6 +2,9 @@
 #
 # meson --buildtype [debug|release] [--default-library static] build/
 # meson test -C build /
+#
+# Meson builds with locally installed htslib, vcflib, tabixpp and seqlib.
+# If one is missing it should pick up the sources from git submodules.
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.4',
