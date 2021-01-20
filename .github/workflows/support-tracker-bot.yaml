@@ -1,0 +1,20 @@
+name: "Close support issues"
+on:
+  schedule:
+    - cron: "0 1 * * *"
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: 'This issue is marked stale because it has been open 120 days with no activity. Remove stale label or comment or this will be closed in 5 days'
+          close-issue-message: 'This issue was closed for lack of activity. Feel free to re-open if someone feels like working on it.'
+          days-before-stale: 30
+          days-before-close: 5
+          only-labels: "please file bugs only - use google groups instead"
+          exempt-issue-labels: "build,enhancement,help wanted,in progress"
+          debug-only: false
+          operations-per-run: 100 	
