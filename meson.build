@@ -8,7 +8,7 @@
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.4',
-        default_options : ['warning_level=1', 'cpp_std=c++14'])
+        default_options : ['warning_level=1', 'cpp_std=c++14', 'optimization=3'])
 
 cc = meson.get_compiler('cpp')
 
