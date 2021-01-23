@@ -567,7 +567,7 @@ Parameters::Parameters(int argc, char** argv) {
             {"min-coverage", required_argument, 0, '!'},
             {"limit-coverage", required_argument, 0, '+'},
             {"skip-coverage", required_argument, 0, 'g'},
-            {"trim-complex-tail", no_argument, 0, '𝛃'},
+            {"trim-complex-tail", no_argument, 0, ']'},
             {"genotype-qualities", no_argument, 0, '='},
             {"variant-input", required_argument, 0, '@'},
             {"only-use-input-alleles", no_argument, 0, 'l'},
@@ -727,7 +727,7 @@ Parameters::Parameters(int argc, char** argv) {
             break;
 
             // --trim-complex-tail
-        case '𝛃':
+        case ']':
             trimComplexTail = true;
             break;
 
