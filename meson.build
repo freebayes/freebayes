@@ -150,7 +150,6 @@ freebayes_common_src = files(
     'src/Allele.cpp',
     'src/AlleleParser.cpp',
     'src/BedReader.cpp',
-    'src/BGZF.cpp',
     'src/Bias.cpp',
     'src/CNV.cpp',
     'src/Contamination.cpp',
