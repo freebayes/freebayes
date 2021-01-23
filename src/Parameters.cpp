@@ -501,7 +501,7 @@ Parameters::Parameters(int argc, char** argv) {
 
     int c; // counter for getopt
 
-    static struct option long_options[] =
+    static const struct option long_options[] =
         {
             {"help", no_argument, 0, 'h'},
             {"version", no_argument, 0, '#'},
@@ -1107,8 +1107,8 @@ Parameters::Parameters(int argc, char** argv) {
         case '?': // print a suggestion about the most-likely long option which the argument matches
         {
             string bad_arg(argv[optind - 1]);
-            option* opt = &long_options[0];
-            option* closest_opt = opt;
+            const option* opt = &long_options[0];
+            const option* closest_opt = opt;
             int shortest_distance = levenshteinDistance(opt->name, bad_arg);
             ++opt;
             while (opt->name != 0) {
