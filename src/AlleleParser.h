@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <cmath>
 #include "split.h"
+#include <list> // XXX workaround for a missing include in vcflib's join.h
 #include "join.h"
 
 #include "BedReader.h"

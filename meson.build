@@ -168,7 +168,6 @@ freebayes_common_src = files(
     'src/ResultData.cpp',
     'src/Sample.cpp',
     'src/SegfaultHandler.cpp',
-    'src/split.cpp',
     'src/Utility.cpp',
     )
 freebayes_src = files('src/freebayes.cpp')
