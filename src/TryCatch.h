@@ -10,7 +10,7 @@
 #endif
 #ifndef CATCH
 #define CATCH \
-    catch (std::out_of_range outOfRange) { \
+    catch (const std::out_of_range& outOfRange) { \
         cerr << "exception: " << outOfRange.what() \
         << " at line " << __LINE__ \
         << " in file " << __FILE__ << endl; \

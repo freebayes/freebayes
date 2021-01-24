@@ -1435,7 +1435,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                 string b;
                 try {
                     b = rDna.at(rp);
-                } catch (std::out_of_range outOfRange) {
+                } catch (const std::out_of_range& outOfRange) {
                     cerr << "Exception: Cannot read past the end of the alignment's sequence." << endl
                          << alignment.QNAME << endl
                          << currentSequenceName << ":" << (long unsigned int) currentPosition + 1 << endl
@@ -1452,7 +1452,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                 string sb;
                 try {
                     sb = currentSequence.at(csp);
-                } catch (std::out_of_range outOfRange) {
+                } catch (const std::out_of_range& outOfRange) {
                     cerr << "Exception: Alignment reports a match past the end of the current reference sequence." << endl
                          << "This suggests alignment corruption or a mismatch between this reference and the alignments." << endl
                          << "Are you sure that you are calling against the same reference you aligned to?" << endl
