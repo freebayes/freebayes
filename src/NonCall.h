@@ -1,5 +1,5 @@
-#ifndef __NONCALL_H
-#define __NONCALL_H
+#ifndef FREEBAYES_NONCALL_H
+#define FREEBAYES_NONCALL_H
 
 #include <string>
 #include <vector>

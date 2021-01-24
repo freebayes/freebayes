@@ -1,5 +1,5 @@
-#ifndef __PRODUCT_H
-#define __PRODUCT_H
+#ifndef FREEBAYES_PRODUCT_H
+#define FREEBAYES_PRODUCT_H
 
 #include <vector>
 

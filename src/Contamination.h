@@ -1,5 +1,5 @@
-#ifndef CONTAMINATION_H
-#define CONTAMINATION_H
+#ifndef FREEBAYES_CONTAMINATION_H
+#define FREEBAYES_CONTAMINATION_H
 
 #include <map>
 #include <iostream>

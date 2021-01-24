@@ -6,8 +6,8 @@
 // Last modified: 5 February 2010 (EG)
 // ---------------------------------------------------------------------------
 
-#ifndef _FASTA_H
-#define _FASTA_H
+#ifndef FREEBAYES_FASTA_H
+#define FREEBAYES_FASTA_H
 
 #include <map>
 #include <iostream>

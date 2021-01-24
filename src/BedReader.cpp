@@ -1,6 +1,3 @@
-#ifndef BEDREADER_CPP
-#define BEDREADER_CPP
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -72,5 +69,3 @@ vector<BedTarget*> BedReader::targetsOverlapping(BedTarget& target) {
     }
     return overlapping;
 }
-
-#endif

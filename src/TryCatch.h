@@ -1,3 +1,6 @@
+#ifndef FREEBAYES_TRYCATCH_H
+#define FREEBAYES_TRYCATCH_H
+
 #include <stdexcept> // out_of_range exception
 #include <stdlib.h> // abort
 
@@ -13,4 +16,6 @@
         << " in file " << __FILE__ << endl; \
         abort(); \
     }
+#endif
+
 #endif

@@ -1,5 +1,5 @@
-#ifndef BEDREADER_H
-#define BEDREADER_H
+#ifndef FREEBAYES_BEDREADER_H
+#define FREEBAYES_BEDREADER_H
 
 #include <iostream>
 #include <fstream>
@@ -72,4 +72,3 @@ public:
 };
 
 #endif
-

@@ -1,6 +1,3 @@
-#ifndef CONTAMINATION_CPP
-#define CONTAMINATION_CPP
-
 #include "Contamination.h"
 #include "convert.h"
 
@@ -72,5 +69,3 @@ ContaminationEstimate& Contamination::of(string& sample) {
         return defaultEstimate;
     }
 }
-
-#endif

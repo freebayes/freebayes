@@ -1,5 +1,5 @@
-#ifndef __LEFTALIGN_H
-#define __LEFTALIGN_H
+#ifndef FREEBAYES_LEFTALIGN_H
+#define FREEBAYES_LEFTALIGN_H
 
 #include <iostream>
 #include <getopt.h>

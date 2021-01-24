@@ -1,7 +1,7 @@
 // utility functions
 //
-#ifndef UTILITY_H
-#define UTILITY_H
+#ifndef FREEBAYES_UTILITY_H
+#define FREEBAYES_UTILITY_H
 
 #include <cmath>
 #include <vector>
@@ -56,7 +56,7 @@ string strip(string const& str, char const* separators = " \t");
 int binomialCoefficient(int n, int k);
 long double binomialCoefficientLn(int k, int n);
 long double binomialProb(int k, int n, long double p);
-long double __binomialProbln(int k, int n, long double p);
+long double impl_binomialProbln(int k, int n, long double p);
 long double binomialProbln(int k, int n, long double p);
 
 long double poissonpln(int observed, int expected);
@@ -66,7 +66,7 @@ long double poissonPvalLn(int a, int b);
 long double gammaln( long double x);
 long double factorial( int n);
 double factorialln( int n);
-long double __factorialln( int n);
+long double impl_factorialln( int n);
 
 #define MAX_FACTORIAL_CACHE_SIZE 100000
 
@@ -78,7 +78,7 @@ public:
             if (size() > MAX_FACTORIAL_CACHE_SIZE) {
                 clear();
             }
-            long double fln = __factorialln(n);
+            long double fln = impl_factorialln(n);
             insert(make_pair(n, fln));
             return fln;
         } else {
@@ -99,7 +99,7 @@ public:
             if (t.size() > MAX_BINOMIAL_CACHE_SIZE) {
                 t.clear();
             }
-            long double bln = __binomialProbln(k, n, p);
+            long double bln = impl_binomialProbln(k, n, p);
             t.insert(make_pair(kn, bln));
             return bln;
         } else {

@@ -202,7 +202,7 @@ long double binomialProb(int k, int n, long double p) {
     return factorial(n) / (factorial(k) * factorial(n - k)) * pow(p, k) * pow(1 - p, n - k);
 }
 
-long double __binomialProbln(int k, int n, long double p) {
+long double impl_binomialProbln(int k, int n, long double p) {
     return factorialln(n) - (factorialln(k) + factorialln(n - k)) + powln(log(p), k) + powln(log(1 - p), n - k);
 }
 
@@ -304,7 +304,7 @@ long double factorialln(int n) {
 }
 */
 
-long double __factorialln(
+long double impl_factorialln(
     int n
     ) {
     if (n < 0) {

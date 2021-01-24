@@ -1,5 +1,5 @@
-#ifndef _ALLELE_PARSER_H
-#define _ALLELE_PARSER_H
+#ifndef FREEBAYES_ALLELEPARSER_H
+#define FREEBAYES_ALLELEPARSER_H
 
 #include <iostream>
 #include <fstream>

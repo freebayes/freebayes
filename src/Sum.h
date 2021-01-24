@@ -1,5 +1,5 @@
-#ifndef __SUM_H
-#define __SUM_H
+#ifndef FREEBAYES_SUM_H
+#define FREEBAYES_SUM_H
 
 #include <vector>
 

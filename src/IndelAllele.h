@@ -1,5 +1,5 @@
-#ifndef __INDEL_ALLELE_H
-#define __INDEL_ALLELE_H
+#ifndef FREEBAYES_INDELALLELE_H
+#define FREEBAYES_INDELALLELE_H
 
 #include <string>
 #include <iostream>

@@ -1,5 +1,5 @@
-#ifndef __RESULT_H
-#define __RESULT_H
+#ifndef FREEBAYES_RESULT_H
+#define FREEBAYES_RESULT_H
 
 #include <vector>
 #include <string>
