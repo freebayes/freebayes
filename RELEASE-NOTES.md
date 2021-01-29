@@ -1,7 +1,10 @@
 ## ChangeLog v1.3.4 (20210129)
 
+This is a maintenance and bug-fix release of Freebayes:
+
 + Added support for --trim-complex-tail with #139 and 97735089a1bbf658862fb16f4514c0ad93195e0a (thanks @tsibley)
 + Fixed meson to not build dependencies if they are found to be installed. This should facilitate Debian builds (thanks @jnumm)
++ Cleanup and small fixes (thanks @jnumm!)
 + Tested running combinations of builds with installed libs and local builds (htslib, vcflib, tabixpp --- only seqlib needs confirmation)
 
 ## ChangeLog v1.3.3 (20201213)
