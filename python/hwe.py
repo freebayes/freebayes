@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 from dirichlet import multinomial, multinomialln, multinomial_coefficient, multinomial_coefficientln
 import math

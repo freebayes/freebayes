@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # calculates data likelihoods for sets of alleles
 from __future__ import print_function, division
