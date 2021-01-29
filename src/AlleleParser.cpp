@@ -880,7 +880,7 @@ bool AlleleParser::inTarget(void) {
 
 // initialization function
 // sets up environment so we can start registering alleles
-AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc, argv))
+AlleleParser::AlleleParser(int argc, char** argv) : parameters(Parameters(argc,argv))
 {
 
     oneSampleAnalysis = false;
@@ -1023,8 +1023,7 @@ void RegisteredAlignment::clumpAlleles(bool mergeComplex, int maxComplexGap, boo
             const Allele& nextAllele = alleles[i+1];
             if (lastAllele.isNull() || currAllele.isNull() || nextAllele.isNull()) continue;
             if (!lastAllele.isReference() && !nextAllele.isReference()
-                && (currAllele.isReference() && currAllele.referenceLength <= maxComplexGap
-                    || !currAllele.isReference())) {
+                && ((currAllele.isReference() && currAllele.referenceLength <= maxComplexGap) || !currAllele.isReference())) {
                 toMerge[i-1] = true;
                 toMerge[i] = true;
                 toMerge[i+1] = true;
