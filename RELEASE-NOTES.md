@@ -1,4 +1,4 @@
-## ChangeLog v1.3.4 (2021????)
+## ChangeLog v1.3.4 (20210129)
 
 + Added support for --trim-complex-tail with #139 and 97735089a1bbf658862fb16f4514c0ad93195e0a (thanks @tsibley)
 + Fixed meson to not build dependencies if they are found to be installed. This should facilitate Debian builds (thanks @jnumm)

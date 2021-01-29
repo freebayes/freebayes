@@ -55,12 +55,12 @@ If possible, please also refer to the version number provided by freebayes when 
 
 ## Install
 
-Precompiled static binaries are available for [freebayes releases](https://github.com/freebayes/freebayes/releases).
-Simply download these and run them.
+Debian and Conda packages should work too, see the badges at the top
+of this page.
 
-Debian and Conda packages should work too, see the badges at the top of this page.
-
-See the [development](#Development) section below to build freebayes from source.
+To build freebayes from source check the
+[development](#Development). It is important to get the full recursive
+git checkout and dependencies.
 
 ## Support
 
@@ -458,6 +458,9 @@ Build dependencies are listed in [guix.scm](./guix.scm) and
 [travis](.travis.yml). Builds have been tested with gcc 7 and clang 9.
 
 ## Compilation
+
+Make sure to have dependencies installed and checkout the tree
+with `--recursive`.
 
 Freebayes can target AMD64 and ARM64 (with Neon extensions).
 
