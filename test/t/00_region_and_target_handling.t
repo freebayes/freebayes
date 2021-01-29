@@ -5,7 +5,7 @@ test=$(dirname $0)/..
 root=$(dirname $0)/../..
 
 source $test/test-simple-bash/lib/test-simple.bash \
-    tests 11
+    tests 12
 
 PATH=$root/build:$root/../build:$root/bin:$PATH
 
@@ -140,6 +140,10 @@ ok [ "$output" == "$expected" ] "ref:1,0-" || echo "$output"
 output=$(run_freebayes --region ref:1,0-1,1)
 ok [ "$output" == "$expected" ] "ref:1,0-1,1" || echo "$output"
 
-expected="ERROR(freebayes): Target region coordinates (ref 1 20) outside of reference sequence bounds (ref 11) terminating."
+output=$(run_freebayes --region ref:0-1 2>&1)
+[[ $output =~ "ref	1	.	A	G" ]]
+    ok $? 'ref:0-1' || echo "Output: $output" >&2
+
 output=$(run_freebayes --region ref:1-20 2>&1)
-ok [ "$output" == "$expected" ] "region outside of bounds error" || echo "$output"
+[[ $output =~ "Target region coordinates (ref 1 20) outside of reference sequence bounds (ref 11)" ]]
+    ok $? 'region outside of bounds error' || echo "Output: $output" >&2
