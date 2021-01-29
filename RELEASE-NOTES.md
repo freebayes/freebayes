@@ -2,10 +2,12 @@
 
 This is a maintenance and bug-fix release of Freebayes:
 
++ 9 issues [closed](https://github.com/freebayes/freebayes/milestone/1?closed=1)
 + Added support for --trim-complex-tail with #139 and 97735089a1bbf658862fb16f4514c0ad93195e0a (thanks @tsibley)
 + Fixed meson to not build dependencies if they are found to be installed. This should facilitate Debian builds (thanks @jnumm)
-+ Cleanup and small fixes (thanks @jnumm!)
++ Cleanup and small fixes (thanks @jnumm)
 + Tested running combinations of builds with installed libs and local builds (htslib, vcflib, tabixpp --- only seqlib needs confirmation)
++ Updated scripts to use python3 (thanks @tillea)
 
 ## ChangeLog v1.3.3 (20201213)
 
