@@ -1,5 +1,6 @@
-#ifndef __MARGINALS_H
-#define __MARGINALS_H
+#ifndef FREEBAYES_MARGINALS_H
+#define FREEBAYES_MARGINALS_H
+
 #include <vector>
 #include <map>
 #include "Genotype.h"

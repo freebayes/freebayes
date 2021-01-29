@@ -1,5 +1,5 @@
-#ifndef BIAS_H
-#define BIAS_H
+#ifndef FREEBAYES_BIAS_H
+#define FREEBAYES_BIAS_H
 
 #include <map>
 #include <iostream>

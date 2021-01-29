@@ -1,5 +1,5 @@
-#ifndef __MULTINOMIAL_H
-#define __MULTINOMIAL_H
+#ifndef FREEBAYES_MULTINOMIAL_H
+#define FREEBAYES_MULTINOMIAL_H
 
 #include "Utility.h"
 #include <vector>

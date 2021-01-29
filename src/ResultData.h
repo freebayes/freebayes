@@ -1,5 +1,5 @@
-#ifndef __RESULT_DATA_H
-#define __RESULT_DATA_H
+#ifndef FREEBAYES_RESULTDATA_H
+#define FREEBAYES_RESULTDATA_H
 
 #include <vector>
 #include <ostream>
@@ -70,6 +70,5 @@ public:
 
 string dateStr(void);
 void vcfHeader(ostream& out, string referenceFileName, vector<string>& samples, Parameters& parameters, vector<string>& sequencingTechnologies);
-
 
 #endif

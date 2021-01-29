@@ -1,5 +1,5 @@
-#ifndef __SAMPLE_H
-#define __SAMPLE_H
+#ifndef FREEBAYES_SAMPLE_H
+#define FREEBAYES_SAMPLE_H
 
 #include <string>
 #include <vector>

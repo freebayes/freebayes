@@ -1,5 +1,5 @@
-#ifndef _PARAMETERS_H
-#define _PARAMETERS_H
+#ifndef FREEBAYES_PARAMETERS_H
+#define FREEBAYES_PARAMETERS_H
 
 #include <cstdio>
 #include <iostream>

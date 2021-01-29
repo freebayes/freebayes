@@ -1,5 +1,5 @@
-#ifndef __DATALIKELIHOOD_H
-#define __DATALIKELIHOOD_H
+#ifndef FREEBAYES_DATALIKELIHOOD_H
+#define FREEBAYES_DATALIKELIHOOD_H
 
 #include <iostream>
 #include <vector>

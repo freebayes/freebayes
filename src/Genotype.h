@@ -1,6 +1,5 @@
-#ifndef __GENOTYPE_H
-#define __GENOTYPE_H
-
+#ifndef FREEBAYES_GENOTYPE_H
+#define FREEBAYES_GENOTYPE_H
 
 #include <iostream>
 #include <vector>

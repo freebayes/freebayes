@@ -1,6 +1,3 @@
-#ifndef BIAS_CPP
-#define BIAS_CPP
-
 #include "Bias.h"
 #include "convert.h"
 
@@ -51,6 +48,3 @@ long double Bias::bias(int length) {
 bool Bias::empty(void) {
     return biases.empty();
 }
-
-
-#endif

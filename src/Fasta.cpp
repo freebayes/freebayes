@@ -283,7 +283,7 @@ string FastaReference::getSequence(string seqname) {
 string FastaReference::sequenceNameStartingWith(string seqnameStart) {
     try {
         return (*index)[seqnameStart].name;
-    } catch (exception& e) {
+    } catch (const exception& e) {
         cerr << e.what() << ": unable to find index entry for " << seqnameStart << endl;
         exit(1);
     }

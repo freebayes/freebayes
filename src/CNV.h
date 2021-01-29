@@ -1,5 +1,5 @@
-#ifndef __CNV_H
-#define __CNV_H
+#ifndef FREEBAYES_CNV_H
+#define FREEBAYES_CNV_H
 
 #include <map>
 #include <string>

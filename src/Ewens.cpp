@@ -29,7 +29,7 @@ long double alleleFrequencyProbabilityln(const map<int, int>& alleleFrequencyCou
 
 // Implements Ewens' Sampling Formula, which provides probability of a given
 // partition of alleles in a sample from a population
-long double __alleleFrequencyProbabilityln(const map<int, int>& alleleFrequencyCounts, long double theta) {
+long double impl_alleleFrequencyProbabilityln(const map<int, int>& alleleFrequencyCounts, long double theta) {
 
     int M = 0; // multiplicity of site
     long double p = 0;

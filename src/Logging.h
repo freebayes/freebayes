@@ -1,5 +1,5 @@
-#ifndef LOGGING_H
-#define LOGGING_H
+#ifndef FREEBAYES_LOGGING_H
+#define FREEBAYES_LOGGING_H
 
 // helper debugging macros to improve code readability
 #define DEBUG(msg) \
