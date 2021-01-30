@@ -1,4 +1,8 @@
-## ChangeLog v1.3.5 (2021????)
+For contributions
+see
+[contributors](https://github.com/freebayes/freebayes/graphs/contributors)
+and
+[commits](https://github.com/freebayes/freebayes/commits/master).
 
 
 ## ChangeLog v1.3.4 (20210129)

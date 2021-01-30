@@ -55,11 +55,13 @@ If possible, please also refer to the version number provided by freebayes when 
 
 ## Install
 
+freebayes is provided as a pre-built 64-bit static Linux binary as part of [releases](https://github.com/freebayes/freebayes/releases).
+
 Debian and Conda packages should work too, see the badges at the top
 of this page.
 
 To build freebayes from source check the
-[development](#Development). It is important to get the full recursive
+[development](#Development) section below. It is important to get the full recursive
 git checkout and dependencies.
 
 ## Support
