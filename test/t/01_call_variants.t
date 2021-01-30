@@ -78,7 +78,7 @@ is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 | grep ^alignment: | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.cram -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in CRAM input"
 
 # Add a regression test
-$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam 2>&1 |egrep -vi "source|filedate|RPPR=7.64277" > regression/NA12878.chr22.tiny.vcf)
+$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam 2>&1 |egrep -vi "source|filedate|RPPR=7.64277|11126|10515" > regression/NA12878.chr22.tiny.vcf)
 
 # ensure targeting works even when there are no reads
 is $(freebayes -f tiny/q.fa -l@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 16 "freebayes correctly handles variant input"
