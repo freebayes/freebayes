@@ -6,9 +6,9 @@
 // Last modified: 9 February 2010 (EG)
 // ---------------------------------------------------------------------------
 
-#include "Fasta.h"
+#include "FBFasta.h"
 
-FastaIndexEntry::FastaIndexEntry(string name, int length, long long offset, int line_blen, int line_len)
+FB::FastaIndexEntry::FastaIndexEntry(string name, int length, long long offset, int line_blen, int line_len)
     : name(name)
     , length(length)
     , offset(offset)
@@ -16,13 +16,13 @@ FastaIndexEntry::FastaIndexEntry(string name, int length, long long offset, int 
     , line_len(line_len)
 {}
 
-FastaIndexEntry::FastaIndexEntry(void) // empty constructor
+FB::FastaIndexEntry::FastaIndexEntry(void) // empty constructor
 { clear(); }
 
-FastaIndexEntry::~FastaIndexEntry(void)
+FB::FastaIndexEntry::~FastaIndexEntry(void)
 {}
 
-void FastaIndexEntry::clear(void)
+void FB::FastaIndexEntry::clear(void)
 {
     name = "";
     length = 0;
@@ -32,17 +32,17 @@ void FastaIndexEntry::clear(void)
     line_len = 0;
 }
 
-ostream& operator<<(ostream& output, const FastaIndexEntry& e) {
+ostream& FB::operator<<(ostream& output, const FastaIndexEntry& e) {
     // just write the first component of the name, for compliance with other tools
     output << split(e.name, ' ').at(0) << "\t" << e.length << "\t" << e.offset << "\t" <<
         e.line_blen << "\t" << e.line_len;
     return output;  // for multiple << operators.
 }
 
-FastaIndex::FastaIndex(void) 
+FB::FastaIndex::FastaIndex(void)
 {}
 
-void FastaIndex::readIndexFile(string fname) {
+void FB::FastaIndex::readIndexFile(string fname) {
     string line;
     long long linenum = 0;
     indexFile.open(fname.c_str(), ifstream::in);
@@ -75,9 +75,9 @@ void FastaIndex::readIndexFile(string fname) {
 }
 
 // for consistency this should be a class method
-bool fastaIndexEntryCompare ( FastaIndexEntry a, FastaIndexEntry b) { return (a.offset<b.offset); }
+bool fastaIndexEntryCompare ( FB::FastaIndexEntry a, FB::FastaIndexEntry b) { return (a.offset<b.offset); }
 
-ostream& operator<<(ostream& output, FastaIndex& fastaIndex) {
+ostream& FB::operator<<(ostream& output, FastaIndex& fastaIndex) {
     vector<FastaIndexEntry> sortedIndex;
     for(vector<string>::const_iterator it = fastaIndex.sequenceNames.begin(); it != fastaIndex.sequenceNames.end(); ++it)
     {
@@ -90,7 +90,7 @@ ostream& operator<<(ostream& output, FastaIndex& fastaIndex) {
     return output;
 }
 
-void FastaIndex::indexReference(string refname) {
+void FB::FastaIndex::indexReference(string refname) {
     // overview:
     //  for line in the reference fasta file
     //  track byte offset from the start of the file
@@ -180,7 +180,7 @@ void FastaIndex::indexReference(string refname) {
     }
 }
 
-void FastaIndex::flushEntryToIndex(FastaIndexEntry& entry) {
+void FB::FastaIndex::flushEntryToIndex(FastaIndexEntry& entry) {
     string name = split(entry.name, " \t").at(0);  // key by first token of name
     sequenceNames.push_back(name);
     this->insert(make_pair(name, FastaIndexEntry(entry.name, entry.length,
@@ -189,7 +189,7 @@ void FastaIndex::flushEntryToIndex(FastaIndexEntry& entry) {
 
 }
 
-void FastaIndex::writeIndexFile(string fname) {
+void FB::FastaIndex::writeIndexFile(string fname) {
     //cerr << "writing fasta index file " << fname << endl;
     ofstream file;
     file.open(fname.c_str()); 
@@ -201,11 +201,11 @@ void FastaIndex::writeIndexFile(string fname) {
     }
 }
 
-FastaIndex::~FastaIndex(void) {
+FB::FastaIndex::~FastaIndex(void) {
     indexFile.close();
 }
 
-FastaIndexEntry FastaIndex::entry(string name) {
+FB::FastaIndexEntry FB::FastaIndex::entry(string name) {
     FastaIndex::iterator e = this->find(name);
     if (e == this->end()) {
         cerr << "unable to find FASTA index entry for '" << name << "'" << endl;
@@ -215,14 +215,14 @@ FastaIndexEntry FastaIndex::entry(string name) {
     }
 }
 
-string FastaIndex::indexFileExtension() { return ".fai"; }
+string FB::FastaIndex::indexFileExtension() { return ".fai"; }
 
 /*
 FastaReference::FastaReference(string reffilename) {
 }
 */
 
-void FastaReference::open(string reffilename) {
+void FB::FastaReference::open(string reffilename) {
     filename = reffilename;
     if (!(file = fopen(filename.c_str(), "r"))) {
         cerr << "could not open " << filename << endl;
@@ -241,7 +241,7 @@ void FastaReference::open(string reffilename) {
     }
 }
 
-FastaReference::~FastaReference(void) {
+FB::FastaReference::~FastaReference(void) {
     fclose(file);
     delete index;
 }
@@ -256,7 +256,7 @@ string removeIupacBases(string& str) {
     return str;
 }
 
-string FastaReference::getRawSequence(string seqname) {
+string FB::FastaReference::getRawSequence(string seqname) {
     FastaIndexEntry entry = index->entry(seqname);
     int newlines_in_sequence = entry.length / entry.line_blen;
     int seqlen = newlines_in_sequence  + entry.length;
@@ -274,13 +274,13 @@ string FastaReference::getRawSequence(string seqname) {
     return s;
 }
 
-string FastaReference::getSequence(string seqname) {
+string FB::FastaReference::getSequence(string seqname) {
     string u = uppercase(getRawSequence(seqname));
     return removeIupacBases(u);
 }
 
 // TODO cleanup; odd function.  use a map
-string FastaReference::sequenceNameStartingWith(string seqnameStart) {
+string FB::FastaReference::sequenceNameStartingWith(string seqnameStart) {
     try {
         return (*index)[seqnameStart].name;
     } catch (const exception& e) {
@@ -289,7 +289,7 @@ string FastaReference::sequenceNameStartingWith(string seqnameStart) {
     }
 }
 
-string FastaReference::getRawSubSequence(string seqname, int start, int length) {
+string FB::FastaReference::getRawSubSequence(string seqname, int start, int length) {
     FastaIndexEntry entry = index->entry(seqname);
     length = min(length, entry.length - start);
     if (start < 0 || length < 1) {
@@ -317,12 +317,12 @@ string FastaReference::getRawSubSequence(string seqname, int start, int length) 
     return s;
 }
 
-string FastaReference::getSubSequence(string seqname, int start, int length) {
+string FB::FastaReference::getSubSequence(string seqname, int start, int length) {
     string u = uppercase(getRawSubSequence(seqname, start, length));
     return removeIupacBases(u);
 }
 
-long unsigned int FastaReference::sequenceLength(string seqname) {
+long unsigned int FB::FastaReference::sequenceLength(string seqname) {
     FastaIndexEntry entry = index->entry(seqname);
     return entry.length;
 }

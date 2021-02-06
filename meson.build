@@ -156,7 +156,7 @@ freebayes_common_src = files(
     'src/DataLikelihood.cpp',
     'src/Dirichlet.cpp',
     'src/Ewens.cpp',
-    'src/Fasta.cpp',
+    'src/FBFasta.cpp',
     'src/Genotype.cpp',
     'src/IndelAllele.cpp',
     'src/LeftAlign.cpp',
