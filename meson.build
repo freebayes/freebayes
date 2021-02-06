@@ -105,8 +105,6 @@ if not vcflib_dep.found()
     'vcflib/smithwaterman/LeftAlign.cpp',
     'vcflib/smithwaterman/IndelAllele.cpp',
     'vcflib/fastahack/Fasta.cpp',
-    'vcflib/smithwaterman/LeftAlign.cpp',
-    'vcflib/smithwaterman/IndelAllele.cpp',
     'vcflib/src/split.cpp',
     )
   vcflib_lib = static_library('custom_vcflib',
