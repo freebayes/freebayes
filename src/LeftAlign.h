@@ -13,8 +13,6 @@
 #include <map>
 #include <vector>
 
-#include "Fasta.h"
-
 #ifdef HAVE_BAMTOOLS
 #include "api/BamAlignment.h"
 #include "api/BamReader.h"

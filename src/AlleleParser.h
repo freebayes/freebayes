@@ -22,7 +22,7 @@
 #include "Utility.h"
 #include "Allele.h"
 #include "Sample.h"
-#include "Fasta.h"
+#include "FBFasta.h"
 #include "TryCatch.h"
 
 #include "Genotype.h"
@@ -142,7 +142,7 @@ public:
     CNVMap sampleCNV;
 
     // reference
-    FastaReference reference;
+    FB::FastaReference reference;
     vector<string> referenceSequenceNames;
     map<int, string> referenceIDToName;
     string referenceSampleName;

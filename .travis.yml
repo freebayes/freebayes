@@ -1,50 +1,26 @@
-matrix:
+language: cpp
+os: linux
+dist: focal
+addons:
+  apt:
+    packages:
+      - bc
+      - samtools
+      - parallel
+      - meson
+      - ninja-build
+      - libvcflib-tools
+      - vcftools
+jobs:
   include:
-    - os: linux
-      dist: focal
+    - arch: amd64
       compiler: gcc
-      addons:
-        apt:
-          packages:
-            - bc
-            - samtools
-            - parallel
-            - meson
-            - ninja-build
-            - libvcflib-tools 
-            - vcftools
-    - os: linux
-      dist: focal
-      arch:
-        - arm64
+    - arch: arm64
       compiler: gcc
-      addons:
-        apt:
-          packages:
-            - bc
-            - samtools
-            - parallel
-            - meson
-            - ninja-build
-            - libvcflib-tools 
-            - vcftools
-    - os: linux
-      dist: focal
-      arch:
-        - arm64
+    - arch: arm64
       compiler: clang
-      addons:
-        apt:
-          packages:
-            - bc
-            - samtools
-            - parallel
-            - meson
-            - ninja-build
-            - libvcflib-tools 
-            - vcftools
 script:
-  - mkdir build
-  - meson build/
+  - if [ "$TRAVIS_CPU_ARCH" = arm64 ]; then meson_opts="-Doptimization=0"; fi
+  - meson build/ $meson_opts
   - ninja -C build/
   - meson test --timeout-multiplier 8 --print-errorlogs -C build/

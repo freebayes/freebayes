@@ -22,7 +22,6 @@
 #ifdef HAVE_BAMTOOLS
 #include "api/BamReader.h"
 #endif
-#include "Fasta.h"
 #include "TryCatch.h"
 #include "Parameters.h"
 #include "Allele.h"

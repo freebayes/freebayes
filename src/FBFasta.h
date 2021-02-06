@@ -6,8 +6,8 @@
 // Last modified: 5 February 2010 (EG)
 // ---------------------------------------------------------------------------
 
-#ifndef FREEBAYES_FASTA_H
-#define FREEBAYES_FASTA_H
+#ifndef FREEBAYES_FBFASTA_H
+#define FREEBAYES_FBFASTA_H
 
 #include <map>
 #include <iostream>
@@ -26,6 +26,8 @@
 
 using namespace std;
 
+namespace FB {
+
 class FastaIndexEntry {
     friend ostream& operator<<(ostream& output, const FastaIndexEntry& e);
     public:
@@ -39,6 +41,8 @@ class FastaIndexEntry {
         int line_len;  // line length including newline
         void clear(void);
 };
+
+ostream& operator<<(ostream& output, const FastaIndexEntry& e);
 
 class FastaIndex : public map<string, FastaIndexEntry> {
     friend ostream& operator<<(ostream& output, FastaIndex& i);
@@ -54,6 +58,8 @@ class FastaIndex : public map<string, FastaIndexEntry> {
         void flushEntryToIndex(FastaIndexEntry& entry);
         string indexFileExtension(void);
 };
+
+ostream& operator<<(ostream& output, FastaIndex& i);
 
 class FastaReference {
     public:
@@ -72,5 +78,7 @@ class FastaReference {
         string sequenceNameStartingWith(string seqnameStart);
         long unsigned int sequenceLength(string seqname);
 };
+
+}  // namespace FB
 
 #endif

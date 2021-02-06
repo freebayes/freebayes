@@ -10,7 +10,7 @@
 #include <map>
 #include <vector>
 
-#include "Fasta.h"
+#include "FBFasta.h"
 
 #include "LeftAlign.h"
 
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 
     int c;
 
-    FastaReference reference;
+    FB::FastaReference reference;
     bool has_ref = false;
     bool suppress_output = false;
     bool debug = false;
