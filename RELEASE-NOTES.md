@@ -5,6 +5,14 @@ and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
 
+## ChangeLog v1.3.5 (20210210)
+
+This is a maintenance and bug-fix release of Freebayes:
+
++ Namespace Fasta* classes which has a build conflict with fastahack
+  https://github.com/freebayes/freebayes/commit/00594a1db84855f99c9fe2c23305b86fa542dff2
+  (thanks @jnumm)
+
 ## ChangeLog v1.3.4 (20210129)
 
 This is a maintenance and bug-fix release of Freebayes:
