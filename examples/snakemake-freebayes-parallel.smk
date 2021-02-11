@@ -3,10 +3,12 @@
 ## As snakemake automatically moves each cpu core to the next genome chunk, this works out faster
 ## than the freebayes-parallel wrapper and allows pooled sample calling. 
 ## This .smk file assumes we have a list of the bam files called bam.list
-## This .smk file splits the genome by chromosome, which of course, is not necessary. 
+## This .smk file splits the genome by chromosome, which of course, is not necessary.
+## One will want to edit the paths (for example, the path to bam files)
 import numpy as np 
 
 # these parameters should usually be stored in the snakemake configuration file (config.yaml) and accessed e.g. config['ref']
+samples = ['SampleA', 'SampleB', 'SampleC']
 reference = "path/to/reference"
 chroms = [1,2,3]
 nchunks = 9
@@ -25,7 +27,7 @@ rule GenomeIndex:
         "v0.69.0/bio/samtools/faidx"
 
 
-rule GenerateFreebayesParams:
+rule GenerateFreebayesRegions:
     input:
         ref_idx = reference,
         index = reference + ".fai",
@@ -33,14 +35,14 @@ rule GenerateFreebayesParams:
     output:
         regions = expand("resources/regions/genome.{chrom}.region.{i}.bed", chrom=chroms, i = chunks)
     log:
-        "logs/GenerateFreebayesParams.log"
+        "logs/GenerateFreebayesRegions.log"
     params:
         chroms = chroms
         chunks = chunks
     conda:
         "../envs/freebayes-env.yaml"
     script:
-        "../scripts/GenerateFreebayesParams.R"
+        "../scripts/GenerateFreebayesRegions.R" # This is located in the scripts/ directory of freebayes
 
 
 rule VariantCallingFreebayes:
