@@ -5,6 +5,10 @@ and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
 
+## ChangeLog v1.3.? (2021????)
+
++ Added parallel snakemake example and text (thanks @sanjaynagi)
+
 ## ChangeLog v1.3.5 (20210210)
 
 This is a maintenance and bug-fix release of Freebayes:
