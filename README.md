@@ -148,7 +148,7 @@ Naive variant calling: simply annotate observation counts of SNPs and indels:
 ## Parallelisation
 
 In general, freebayes can be parallelised by running multiple instances of freebayes on separate regions of the genome, and then concatenating the resulting output.
-The wrapper, [freebayes-parallel](https://github.com/ekg/freebayes/blob/master/scripts/freebayes-parallel) will perform this, using [GNU parallel](https://www.gnu.org/software/parallel/). 
+The wrapper, [freebayes-parallel](https://github.com/ekg/freebayes/blob/master/scripts/freebayes-parallel) will perform this, using [GNU parallel](https://www.gnu.org/software/parallel/).
 
 Example freebayes-parallel operation (use 36 cores in this case):
 
@@ -163,7 +163,7 @@ cluster. Be aware that the freebayes-parallel script contains calls to other pro
 
 A current limitation of the freebayes-parallel wrapper, is that due to variance in job memory and runtimes, some cores can go unused for long periods, as they will not move onto the next job unless all cores in use have completed their respective genome chunk. This can be partly avoided by calculating coverage of the input bam file, and splitting the genome into regions of equal coverage using the [coverage_to_regions.py script](https://github.com/freebayes/freebayes/blob/master/scripts/coverage_to_regions.py). An alternative script [split_ref_by_bai_datasize.py](https://github.com/freebayes/freebayes/blob/master/scripts/split_ref_by_bai_datasize.py) will determine target regions based on the data within multiple bam files, with the option of choosing a target data size. This is useful when submitting to Slurm and other cluster job managers, where use of resources needs to be controlled.
 
-Alternatively, users may wish to parallelise freebayes within the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/). As snakemake automatically dispatches jobs when a core becomes available, this avoids the above issue. An example [.smk file](https://github.com/freebayes/freebayes/blob/master/examples/snakemake-freebayes-parallel.smk), and associated [conda environment recipe](https://github.com/freebayes/freebayes/blob/master/examples/freebayes-env.yaml), can be found in the /examples directory. 
+Alternatively, users may wish to parallelise freebayes within the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/). As snakemake automatically dispatches jobs when a core becomes available, this avoids the above issue. An example [.smk file](https://github.com/freebayes/freebayes/blob/master/examples/snakemake-freebayes-parallel.smk), and associated [conda environment recipe](https://github.com/freebayes/freebayes/blob/master/examples/freebayes-env.yaml), can be found in the /examples directory.
 
 ## Calling variants: from fastq to VCF
 
@@ -488,6 +488,10 @@ Next compile and test in the ~build~ directory
     cd build
     ninja
     ninja test
+
+The freebayes binary should be in
+
+    build/freebayes
 
 Tests on ARM may be slow. If you get a TIMEOUT use a multiplier,
 e.g.
