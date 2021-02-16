@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from math import ceil
 
 
 def generate_regions(fasta_index_file, size, chunks=False, chromosomes=None, bed_files=None):
@@ -17,7 +18,7 @@ def generate_regions(fasta_index_file, size, chunks=False, chromosomes=None, bed
                 continue
             region_start = 0
             if chunks is True:
-                region_size = round(chrom_length / size)  # have to make sure this works
+                region_size = ceil(chrom_length / size)  # have to make sure this works
             else:
                 region_size = size
             while region_start < chrom_length:
@@ -27,7 +28,7 @@ def generate_regions(fasta_index_file, size, chunks=False, chromosomes=None, bed
                 start = str(region_start)
                 end = str(region_end)
                 if bed_files is not None:
-                    region = str(round(region_end / region_size))
+                    region = str(ceil(region_end / region_size))
                     file_path = f"{bed_files}.{chrom_name}.region.{region}.bed"
                     with open(file_path, "w") as f:
                         f.write("\t".join([chrom_name, start, end]))
