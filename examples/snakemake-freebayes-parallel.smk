@@ -1,7 +1,7 @@
 ## A simple example snakemake .smk file for parallelising freebayes
 ## Uses a fasta_generate_regions to split the genome into regions of equal size based on the .fai index
 ## As snakemake automatically moves each cpu core to the next genome chunk, this works out faster
-## than the freebayes-parallel wrapper and allows pooled sample calling. 
+## than the freebayes-parallel wrapper.
 ## This .smk file assumes we have a list of the bam files called bam.list
 ## This .smk file splits the genome by chromosome, which of course, is not necessary.
 ## One will want to edit the paths (for example, the path to bam files)
@@ -14,7 +14,7 @@ chroms = [1,2,3]
 nchunks = 9
 
 bamlist = "path/to/bam.list"
-chunks = [i for i in range(1,nchunks+1)]
+chunks = list(range(1,nchunks+1))
 
 rule GenomeIndex:
     input:
