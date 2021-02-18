@@ -16,10 +16,17 @@ zlib_dep = dependency('zlib')
 lzma_dep = dependency('liblzma')
 thread_dep = dependency('threads')
 
-htslib_dep = dependency('htslib', required : false)
-tabixpp_dep = cc.find_library('tabixpp', required : false)
-vcflib_dep = dependency('libvcflib', required : false)
-seqlib_dep = dependency('libseqlib', required : false)
+if get_option('prefer_system_deps')
+  htslib_dep = dependency('htslib', required : false)
+  tabixpp_dep = cc.find_library('tabixpp', required : false)
+  vcflib_dep = dependency('libvcflib', required : false)
+  seqlib_dep = dependency('libseqlib', required : false)
+else
+  htslib_dep = dependency('', required : false)
+  tabixpp_dep = dependency('', required : false)
+  vcflib_dep = dependency('', required : false)
+  seqlib_dep = dependency('', required : false)
+endif
 
 # for setting a warning_level on the external code in custom_* targets below
 warn_quiet = ['warning_level=0']
