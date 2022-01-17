@@ -40,7 +40,7 @@
 (define-public freebayes-git
   (package
     (name "freebayes-git")
-    (version (git-version "1.3.4" "HEAD" %git-commit))
+    (version (git-version "1.3.5" "HEAD" %git-commit))
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
     (propagated-inputs

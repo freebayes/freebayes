@@ -7,7 +7,7 @@
 # If one is missing it should pick up the sources from git submodules.
 
 project('freebayes', ['cpp', 'c'],
-        version : '1.3.4',
+        version : '1.3.5',
         default_options : ['warning_level=1', 'cpp_std=c++14', 'optimization=3'])
 
 cc = meson.get_compiler('cpp')
