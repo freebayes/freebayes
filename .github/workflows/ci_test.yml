@@ -12,7 +12,7 @@ jobs:
     - name: Update ubuntu
       run: sudo apt-get update
     - name: Install dependencies
-      run: sudo apt-get install samtools bc parallel libvcflib-tools vcftools
+      run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools vcftools
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v1
       with:
