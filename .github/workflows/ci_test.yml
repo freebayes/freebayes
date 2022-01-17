@@ -9,6 +9,8 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.8]
     steps:
+    - name: Update ubuntu
+      run: sudo apt-get update
     - name: Install dependencies
       run: sudo apt-get install samtools bc parallel libvcflib-tools vcftools
     - uses: actions/checkout@v2
