@@ -82,8 +82,8 @@ For instance:
 Multiple BAM files may be given for joint calling.
 
 Typically, we might consider two additional parameters.
-GVCF output allows us to have coverage information about non-called sites, and we can enable it with `--gcvcf`.
-For performance reasons we may want to skip regions of extremely high coverage in the reference using the `--skip-limit` parameter `-g`.
+GVCF output allows us to have coverage information about non-called sites, and we can enable it with `--gvcf`.
+For performance reasons we may want to skip regions of extremely high coverage in the reference using the `--skip-coverage` parameter or `-g`.
 These can greatly increase runtime but do not produce meaningful results.
 For instance, if we wanted to exclude regions of 1000X coverage, we would run:
 
