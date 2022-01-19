@@ -1,10 +1,14 @@
 # Meson build definition
 #
-# meson --buildtype [debug|release] [--default-library static] build/
-# meson test -C build /
+#     meson --buildtype [debug|release] [--default-library static] build/
+#     meson test -C build /
 #
 # Meson builds with locally installed htslib, vcflib, tabixpp and seqlib.
 # If one is missing it should pick up the sources from git submodules.
+#
+# to compile htslib instead, use
+#
+#     meson build -Dprefer_system_deps=false
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.4',
@@ -12,10 +16,13 @@ project('freebayes', ['cpp', 'c'],
 
 cc = meson.get_compiler('cpp')
 
-zlib_dep = dependency('zlib')
-lzma_dep = dependency('liblzma')
-thread_dep = dependency('threads')
+zlib_dep = dependency('zlib', static: true)
+lzma_dep = dependency('liblzma', static: true)
+thread_dep = dependency('threads', static: true)
+tabixpp_dep = cc.find_library('tabixpp', required : false)
 
+# to compile htslib use
+#   meson build -Dprefer_system_deps=false
 if get_option('prefer_system_deps')
   htslib_dep = dependency('htslib', required : false)
   tabixpp_dep = cc.find_library('tabixpp', required : false)
@@ -185,6 +192,7 @@ incdir = include_directories(
     )
 
 extra_cpp_args = cc.get_supported_arguments(
+    '-static',
     '-fpermissive',
     '-Wno-reorder',
     '-Wno-sign-compare',
@@ -206,6 +214,7 @@ executable('freebayes',
            freebayes_src,
            include_directories : incdir,
            cpp_args : extra_cpp_args,
+           link_args: '-static',
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
            link_with : freebayes_lib,
