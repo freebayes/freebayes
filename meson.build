@@ -11,7 +11,7 @@
 #     meson build -Dprefer_system_deps=false
 
 project('freebayes', ['cpp', 'c'],
-        version : '1.3.4',
+        version : '1.3.6',
         default_options : ['warning_level=1', 'cpp_std=c++14', 'optimization=3'])
 
 cc = meson.get_compiler('cpp')
