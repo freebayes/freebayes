@@ -4,9 +4,9 @@
 ;;
 ;; To get a development container
 ;;
-;;   guix environment -C -l guix.scm
+;;   guix shell -C -D -f guix.scm
 ;;
-;; For the tests you need /usr/bin/env. In a container create it with
+;; For the tests you need /usr/bin/env. Inside the container:
 ;;
 ;;   mkdir -p /usr/bin ; ln -s $GUIX_ENVIRONMENT/bin/env /usr/bin/env
 
