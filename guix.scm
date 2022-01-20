@@ -51,7 +51,7 @@
        ("which" ,which)        ; for version
        ("htslib" ,htslib)      ; does work, but lacks codecs
        ("tabixpp" ,tabixpp)    ; for htslib
-       ("xz" ,xz "static")     ; for lzma
+       ("xz" ,xz "static")     ; for static builds
        ("zlib" ,zlib "static")))
     (native-inputs
      `(
