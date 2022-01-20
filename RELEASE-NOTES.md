@@ -13,7 +13,7 @@ This is a maintenance release of Freebayes:
 + README fixes https://github.com/freebayes/freebayes/issues/726 (thanks @veghp)
 + Add option to force use of submodule deps (thanks @jnumm)
 + Using recent guix shell support for building freebayes
-+ Added static build update in build-static branch
++ Added static build support with meson+ninja
 + Added matrix channel badge to README
 
 ## ChangeLog v1.3.5 (20210210)

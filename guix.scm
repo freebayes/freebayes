@@ -44,13 +44,15 @@
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
     (propagated-inputs
-     `(("perl" ,perl)         ; for testing
-       ("grep" ,grep)         ; for testing
-       ("samtools" ,samtools) ; for testing
-       ("vcflib" ,vcflib)     ; for freebayes-parallel
-       ("which" ,which)       ; for version
-       ("htslib" ,htslib)     ; does work, but lacks codecs
-       ("tabixpp" ,tabixpp)))
+     `(("perl" ,perl)          ; for testing
+       ("grep" ,grep)          ; for testing
+       ("samtools" ,samtools)  ; for testing
+       ("vcflib" ,vcflib)      ; for freebayes-parallel
+       ("which" ,which)        ; for version
+       ("htslib" ,htslib)      ; does work, but lacks codecs
+       ("tabixpp" ,tabixpp)    ; for htslib
+       ("xz" ,xz "static")     ; for static builds
+       ("zlib" ,zlib "static")))
     (native-inputs
      `(
        ("meson" ,meson)

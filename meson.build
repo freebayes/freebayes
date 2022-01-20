@@ -1,27 +1,40 @@
 # Meson build definition
 #
-# meson --buildtype [debug|release] [--default-library static] build/
-# meson test -C build /
+#     meson --buildtype [debug|release] [--default-library static] build/
+#     meson test -C build /
 #
 # Meson builds with locally installed htslib, vcflib, tabixpp and seqlib.
 # If one is missing it should pick up the sources from git submodules.
+#
+# to compile htslib with local sources use
+#
+#     meson build -Dprefer_system_deps=false
+#
+# to build static binary for release
+#
+#     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.6',
         default_options : ['warning_level=1', 'cpp_std=c++14', 'optimization=3'])
+static_build = get_option('static')
 
 cc = meson.get_compiler('cpp')
 
-zlib_dep = dependency('zlib')
-lzma_dep = dependency('liblzma')
-thread_dep = dependency('threads')
+zlib_dep = dependency('zlib', static: static_build)
+lzma_dep = dependency('liblzma', static: static_build)
+thread_dep = dependency('threads', static: static_build)
+tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 
+# to compile htslib use
+#   meson build -Dprefer_system_deps=false
 if get_option('prefer_system_deps')
   htslib_dep = dependency('htslib', required : false)
   tabixpp_dep = cc.find_library('tabixpp', required : false)
   vcflib_dep = dependency('libvcflib', required : false)
   seqlib_dep = dependency('libseqlib', required : false)
 else
+  # uses the local git submodules
   htslib_dep = dependency('', required : false)
   tabixpp_dep = dependency('', required : false)
   vcflib_dep = dependency('', required : false)
@@ -202,10 +215,17 @@ freebayes_lib = static_library(
     install : false,
     )
 
+if static_build
+  link_arguments = '-static'
+else
+  link_arguments = ''
+endif
+
 executable('freebayes',
            freebayes_src,
            include_directories : incdir,
            cpp_args : extra_cpp_args,
+           link_args: link_arguments,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
            link_with : freebayes_lib,
@@ -216,6 +236,7 @@ executable('bamleftalign',
            bamleftalign_src,
            include_directories : incdir,
            cpp_args : extra_cpp_args,
+           link_args: link_arguments,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
                           htslib_dep, vcflib_dep, seqlib_dep],
            link_with : freebayes_lib,
