@@ -10,9 +10,9 @@
 #
 #     meson build -Dprefer_system_deps=false
 #
-# to build static binary
+# to build static binary for release
 #
-#     meson build -Dstatic=true -Dprefer_system_deps=false
+#     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.6',
