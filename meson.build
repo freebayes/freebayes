@@ -58,8 +58,8 @@ if not htslib_dep.found()
     'contrib/htslib/sam.c',
     'contrib/htslib/hts.c',
     'contrib/htslib/hfile.c',
-    'contrib/htslib/hfile_net.c',
-    'contrib/htslib/knetfile.c',
+    # 'contrib/htslib/hfile_net.c',
+    # 'contrib/htslib/knetfile.c',
     'contrib/htslib/textutils.c',
     'contrib/htslib/thread_pool.c',
     'contrib/htslib/region.c',
@@ -75,16 +75,25 @@ if not htslib_dep.found()
     'contrib/htslib/cram/cram_stats.c',
     'contrib/htslib/cram/cram_codecs.c',
     'contrib/htslib/cram/cram_decode.c',
-    'contrib/htslib/cram/cram_samtools.c',
+    # 'contrib/htslib/cram/cram_samtools.c',
     'contrib/htslib/kstring.c',
     'contrib/htslib/cram/cram_external.c',
     # 'contrib/htslib/cram/files.c',
     'contrib/htslib/cram/mFILE.c',
     'contrib/htslib/faidx.c',
-    'contrib/htslib/cram/rANS_static.c',
+    'contrib/htslib/hts_expr.c',
+    'contrib/htslib/htscodecs/htscodecs/rANS_static.c',
+    'contrib/htslib/htscodecs/htscodecs/arith_dynamic.c',
+    'contrib/htslib/htscodecs/htscodecs/fqzcomp_qual.c',
+    'contrib/htslib/htscodecs/htscodecs/htscodecs.c',
+    'contrib/htslib/htscodecs/htscodecs/rANS_static.c',
+    'contrib/htslib/htscodecs/htscodecs/tokenise_name3.c',
     'contrib/htslib/cram/open_trace_file.c',
     'contrib/htslib/multipart.c',
-    )
+    'contrib/htslib/htscodecs/htscodecs/rANS_static4x16pr.c',
+    'contrib/htslib/htscodecs/htscodecs/pack.c',
+    'contrib/htslib/htscodecs/htscodecs/rle.c',
+)
     htslib_lib = static_library('custom_htslib',
                                 htslib_src,
                                 include_directories : htslib_inc,
@@ -218,7 +227,7 @@ freebayes_lib = static_library(
 if static_build
   link_arguments = '-static'
 else
-  link_arguments = ''
+  link_arguments = []
 endif
 
 executable('freebayes',
