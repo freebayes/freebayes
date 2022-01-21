@@ -13,6 +13,8 @@ void Parameters::simpleUsage(char ** argv) {
         << endl
         << "   -h --help       For a complete description of options." << endl
         << endl
+        << "freebayes is maintained by Erik Garrison and Pjotr Prins." << endl
+        << endl
         << "citation: Erik Garrison, Gabor Marth" << endl
         << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
         << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
@@ -23,14 +25,8 @@ void Parameters::simpleUsage(char ** argv) {
 }
 
 void Parameters::usage(char** argv) {
+    simpleUsage(argv);
     cout
-        << "usage: " << argv[0] << " [OPTION] ... [BAM FILE] ... " << endl
-        << endl
-        << "Bayesian haplotype-based polymorphism discovery." << endl
-        << endl
-        << "citation: Erik Garrison, Gabor Marth" << endl
-        << "          \"Haplotype-based variant detection from short-read sequencing\"" << endl
-        << "          arXiv:1207.3907 (http://arxiv.org/abs/1207.3907)" << endl
         << endl
         << "overview:" << endl
         << endl

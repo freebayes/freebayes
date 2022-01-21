@@ -16,6 +16,7 @@ This is a maintenance release of Freebayes:
 + Using recent guix shell support for building freebayes
 + Added static build support with meson+ninja
 + Added matrix channel badge to README
++ Added Pjotr Prins as maintainer in README and banner
 
 ## ChangeLog v1.3.5 (20210210)
 

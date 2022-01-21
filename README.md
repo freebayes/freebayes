@@ -38,6 +38,8 @@ format.  It can also use an input set of variants (VCF) as a source of prior
 information, and a copy number variant map (BED) to define non-uniform ploidy
 variation across the samples under analysis.
 
+freebayes is maintained by Erik Garrison and Pjotr Prins. See also [RELEASE-NOTES](./RELEASE-NOTES.md).
+
 ## Citing freebayes
 
 A preprint [Haplotype-based variant detection from short-read sequencing](http://arxiv.org/abs/1207.3907) provides an overview of the
@@ -497,12 +499,13 @@ e.g.
 
     meson test -t 4 -C build/
 
+See [meson.build](./meson.build) for more information.
 
 ### Compile in a Guix container
 
 After checking out the repo with git recursive create a Guix
 container with all the build tools with
 
-    guix environment -C -l guix.scm
+    guix shell -C -D -f guix.scm
 
 See also [guix.scm](./guix.scm).
