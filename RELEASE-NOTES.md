@@ -5,11 +5,12 @@ and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
 
-## ChangeLog v1.3.6 (20220119)
+## ChangeLog v1.3.6 (20220121)
 
 This is a maintenance release of Freebayes:
 
 + Added parallel snakemake example and text (thanks @sanjaynagi)
++ Updated packaged htslib build to release 1.14
 + README fixes https://github.com/freebayes/freebayes/issues/726 (thanks @veghp)
 + Add option to force use of submodule deps (thanks @jnumm)
 + Using recent guix shell support for building freebayes
