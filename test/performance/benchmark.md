@@ -48,3 +48,5 @@ sys     0m0.444s
 ```
 
 1.3.0 and 1.3.6 give the same results.  The speed difference between 1.3.0 to 1.3.6 is due to htslib improvements.
+
+The clang (9.0.1) + llvm (13.0.0) build has a similar runtime.

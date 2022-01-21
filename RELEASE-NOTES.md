@@ -15,6 +15,7 @@ This is a maintenance release of Freebayes:
 + Add option to force use of submodule deps (thanks @jnumm)
 + Using recent guix shell support for building freebayes
 + Added static build support with meson+ninja
++ Started tracking freebayes performance in ./test/performance/benchmark.md
 + Added matrix channel badge to README
 + Added Pjotr Prins as maintainer in README and banner
 
