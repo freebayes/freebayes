@@ -19,6 +19,12 @@ This is a maintenance release of Freebayes:
 + Added matrix channel badge to README
 + Added Pjotr Prins as maintainer in README and banner
 
+The provided static binary is built against gcc 10.3.0 and htslib 1.12.
+
+Note that at this point the static builds only work with the system libs:
+
+    meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
+
 ## ChangeLog v1.3.5 (20210210)
 
 This is a maintenance and bug-fix release of Freebayes:
