@@ -29,10 +29,10 @@ tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 # to compile htslib use
 #   meson build -Dprefer_system_deps=false
 if get_option('prefer_system_deps')
-  htslib_dep = dependency('htslib', required : false)
-  tabixpp_dep = cc.find_library('tabixpp', required : false)
-  vcflib_dep = dependency('libvcflib', required : false)
-  seqlib_dep = dependency('libseqlib', required : false)
+  htslib_dep = dependency('htslib', static: static_build, required: false)
+  tabixpp_dep = cc.find_library('tabixpp', static: static_build, required: false)
+  vcflib_dep = dependency('libvcflib', static: static_build, required: false)
+  seqlib_dep = dependency('libseqlib', static: static_build, required: false)
 else
   # uses the local git submodules
   htslib_dep = dependency('', required : false)
