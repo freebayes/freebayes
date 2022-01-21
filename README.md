@@ -456,6 +456,10 @@ To download freebayes, please use git to download the most recent development tr
 
     git clone --recursive https://github.com/freebayes/freebayes.git
 
+If you have a repo, update the submodules with
+
+    git submodule update --init --recursive --progress
+
 On Debian you'll need a gcc compiler and want packages:
 
 - bc

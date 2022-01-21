@@ -21,7 +21,7 @@ This is a maintenance release of Freebayes:
 
 The provided static binary is built against gcc 10.3.0 and htslib 1.12.
 
-Note that at this point the static builds only work with the system libs:
+Note that at this point the static binary builds with:
 
     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
 
