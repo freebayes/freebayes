@@ -51,8 +51,9 @@
        ("which" ,which)        ; for version
        ("htslib" ,htslib)      ; does work, but lacks codecs
        ("tabixpp" ,tabixpp)    ; for htslib
-       ("xz" ,xz "static")     ; for static builds
-       ("zlib" ,zlib "static")))
+       ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
+       ("xz-static" ,xz "static")     ; for static builds
+       ("zlib-static" ,zlib "static")))
     (native-inputs
      `(
        ("meson" ,meson)
