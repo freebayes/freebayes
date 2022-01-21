@@ -28,6 +28,7 @@ tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 
 # to compile htslib use
 #   meson build -Dprefer_system_deps=false
+# otherwise it tries to pick up the local system libs
 if get_option('prefer_system_deps')
   htslib_dep = dependency('htslib', static: static_build, required: false)
   tabixpp_dep = cc.find_library('tabixpp', static: static_build, required: false)
