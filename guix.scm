@@ -22,6 +22,7 @@
   (gnu packages bioinformatics)
   (gnu packages build-tools)
   (gnu packages curl)
+  (gnu packages gcc)
   (gnu packages llvm)
   (gnu packages ninja)
   (gnu packages parallel)
@@ -64,6 +65,7 @@
      `(
        ;; ("clang" ,clang)      ; add this to test clang builds
        ;; ("lld" ,lld)          ; add this to test clang builds
+       ("gcc" ,gcc-11)
        ("bc" ,bc)               ; for tests
        ("coreutils" ,coreutils) ; for echo and env in tests
        ("curl" ,curl)
