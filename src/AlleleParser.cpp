@@ -1172,6 +1172,7 @@ bool AlleleParser::allowedHaplotypeBasisAllele(long int pos, string& ref, string
 Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
                                 AlleleType type,
                                 long int pos,
+                                long int alignment_end_pos,
                                 int length,
                                 int basesLeft,
                                 int basesRight,
@@ -1284,7 +1285,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
                repeatRightBoundary - currentSequenceStart < currentSequence.size() &&
                // there is no point in going past the alignment end
                // because we won't make a haplotype call unless we have a covering observation from a read
-               repeatRightBoundary < alignment.ENDPOSITION &&
+               repeatRightBoundary < alignment_end_pos &&
                entropy(currentSequence.substr(start, repeatRightBoundary - pos)) < minEntropy) {
             ++repeatRightBoundary;
         }
@@ -1322,7 +1323,7 @@ Allele AlleleParser::makeAllele(RegisteredAlignment& ra,
                   cigar,
                   &ra.alleles,
                   alignment.POSITION,
-                  alignment.ENDPOSITION);
+                  alignment_end_pos);
 
 }
 
@@ -1340,6 +1341,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
     int rp = 0;  // read position, 0-based relative to read
     int csp = currentSequencePosition(alignment); // current sequence position, 0-based relative to currentSequence
     int sp = alignment.POSITION;  // sequence position
+    size_t alignment_end_position = alignment.ENDPOSITION;
     if (usingHaplotypeBasisAlleles) {
         updateHaplotypeBasisAlleles(sp, alignment.ALIGNEDBASES);
     }
@@ -1361,7 +1363,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
 
         stringstream cigarss;
         int alignedLength = 0;
-	CIGAR cig = alignment.GETCIGAR;
+        CIGAR cig = alignment.GETCIGAR;
         for (CIGAR::const_iterator c = cig.begin(); c != cig.end(); ++c) {
             cigarss << c->CIGTYPE << c->CIGLEN;
             if (c->CIGTYPE == 'D')
@@ -1472,6 +1474,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                                 makeAllele(ra,
                                            ALLELE_REFERENCE,
                                            sp - length,
+                                           alignment_end_position,
                                            length,
                                            rp, // bases left (for first base in ref allele)
                                            alignment.SEQLEN - rp, // bases right (for first base in ref allele)
@@ -1515,6 +1518,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                                 makeAllele(ra,
                                            ALLELE_SNP,
                                            sp - length + j,
+                                           alignment_end_position,
                                            1,
                                            rp - length - j, // bases left
                                            alignment.SEQLEN - rp + j, // bases right
@@ -1531,6 +1535,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                                 makeAllele(ra,
                                            ALLELE_NULL,
                                            sp - length + j,
+                                           alignment_end_position,
                                            1,
                                            rp - length - j, // bases left
                                            alignment.SEQLEN - rp + j, // bases right
@@ -1565,6 +1570,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                             makeAllele(ra,
                                        ALLELE_SNP,
                                        sp - length + j,
+                                       alignment_end_position,
                                        1,
                                        rp - length - j, // bases left
                                        alignment.SEQLEN - rp + j, // bases right
@@ -1581,6 +1587,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                             makeAllele(ra,
                                        ALLELE_NULL,
                                        sp - length + j,
+                                       alignment_end_position,
                                        1,
                                        rp - length - j, // bases left
                                        alignment.SEQLEN - rp + j, // bases right
@@ -1604,6 +1611,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                         makeAllele(ra,
                                    ALLELE_REFERENCE,
                                    sp - length,
+                                   alignment_end_position,
                                    length,
                                    rp, // bases left (for first base in ref allele)
                                    alignment.SEQLEN - rp, // bases right (for first base in ref allele)
@@ -1672,13 +1680,14 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
             // that these deletions are real, so we ignore them here.
 	      CIGAR cigar = alignment.GETCIGAR;
 	      if (cigarIter != cigar.begin()      // guard against deletion at beginning
-		  && (cigarIter+1) != cigar.end() // and against deletion at end
-                && allATGC(refseq)) {
+              && (cigarIter+1) != cigar.end() // and against deletion at end
+              && allATGC(refseq)) {
                 string nullstr;
                 ra.addAllele(
                     makeAllele(ra,
                                ALLELE_DELETION,
                                sp,
+                               alignment_end_position,
                                l,
                                rp, // bases left (for first base in ref allele)
                                alignment.SEQLEN - rp, // bases right (for first base in ref allele)
@@ -1748,6 +1757,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                     makeAllele(ra,
                                ALLELE_INSERTION,
                                sp,
+                               alignment_end_position,
                                l,
                                rp - l, // bases left (for first base in ref allele)
                                alignment.SEQLEN - rp, // bases right (for first base in ref allele)
@@ -1775,6 +1785,7 @@ RegisteredAlignment& AlleleParser::registerAlignment(BAMALIGN& alignment, Regist
                     makeAllele(ra,
                                ALLELE_NULL,
                                sp,
+                               alignment_end_position,
                                l,
                                rp, // bases left (for first base in ref allele)
                                alignment.SEQLEN - rp, // bases right
@@ -1963,6 +1974,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
            << " .. + currentSequence.size() == " << currentSequenceStart + currentSequence.size()
         );
 
+    uint64_t currentAlignment_end_position = 0;
+
     if (hasMoreAlignments
         && currentAlignment.POSITION <= position
         && currentAlignment.REFID == currentRefID) {
@@ -2024,7 +2037,8 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 continue;
             }
 
-            if (!gettingPartials && currentAlignment.ENDPOSITION < position) {
+            currentAlignment_end_position = currentAlignment.ENDPOSITION; // cache, as this is dynamically computed
+            if (!gettingPartials && currentAlignment_end_position < position) {
                 cerr << currentAlignment.QNAME << " at " << currentSequenceName << ":" << currentAlignment.POSITION << " is out of order!"
                      << " expected after " << position << endl;
                 continue;
@@ -2040,7 +2054,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 //extendReferenceSequence(currentAlignment);
                 // left realign indels
                 if (parameters.leftAlignIndels) {
-                    int length = currentAlignment.ENDPOSITION - currentAlignment.POSITION + 1;
+                    int length = currentAlignment_end_position - currentAlignment.POSITION + 1;
                     stablyLeftAlign(currentAlignment,
                                     currentSequence.substr(currentSequencePosition(currentAlignment), length));
                 }
@@ -2060,7 +2074,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 // if so skip this read, and mark and remove processed alignments and registered alleles overlapping the coverage capped position
                 bool considerAlignment = true;
                 if (parameters.skipCoverage > 0) {
-                    for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment.ENDPOSITION; ++i) {
+                    for (unsigned long int i =  currentAlignment.POSITION; i < currentAlignment_end_position; ++i) {
                         unsigned long int x = ++coverage[i];
                         if (x > parameters.skipCoverage && !gettingPartials) {
                             considerAlignment = false;
@@ -2079,7 +2093,7 @@ void AlleleParser::updateAlignmentQueue(long int position,
                 }
                 // decomposes alignment into a set of alleles
                 // here we get the deque of alignments ending at this alignment's end position
-                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment.ENDPOSITION];
+                deque<RegisteredAlignment>& rq = registeredAlignments[currentAlignment_end_position];
                 //cerr << "parameters capcoverage " << parameters.capCoverage << " " << rq.size() << endl;
                 if (considerAlignment) {
                     // and insert the registered alignment into that deque
