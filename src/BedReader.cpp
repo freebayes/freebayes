@@ -10,6 +10,7 @@
 #include "split.h"
 #include "Utility.h"
 #include "BedReader.h"
+#include "Logging.h"
 #include "../intervaltree/IntervalTree.h"
 
 using namespace std;
@@ -30,6 +31,9 @@ vector<BedTarget> BedReader::entries(void) {
         // coordinates used internally should be in the latter, and coordinates
         // from the user in the former should be converted immediately to the
         // internal format.
+        if (line.at(0)=='#'){
+            continue;
+        }
         vector<string> fields = split(line, " \t");
         BedTarget entry(strip(fields[0]),
                         atoi(strip(fields[1]).c_str()),
