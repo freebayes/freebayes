@@ -26,3 +26,37 @@ jobs:
       run: ninja -C build/
     - name: Run tests
       run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
+
+
+  build-aarch64:
+    name: freebayes-CI aarch64
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Build
+      uses: uraimo/run-on-arch-action@v2
+      with:
+        arch: aarch64
+        distro: ubuntu20.04
+        githubToken: ${{ github.token }}
+        dockerRunArgs: |
+          --volume "${PWD}:/freebayes"
+        install: |
+          apt-get update -q -y
+          apt-get install -q -y gcc g++ python3.8 python3-pip samtools bc parallel libvcflib-tools vcftools
+          pip install meson ninja
+        run: |
+          set -x
+          cd /freebayes
+          # CONFIGURE
+          meson build/
+          #COMPILE
+          ninja -C build/
+          # TEST
+          meson test --timeout-multiplier 4 --print-errorlogs -C build/
+          
