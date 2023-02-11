@@ -29,6 +29,7 @@
   (gnu packages perl)
   (gnu packages perl6)
   (gnu packages pkg-config)
+  (gnu packages python)
   (srfi srfi-1)
   (ice-9 popen)
   (ice-9 rdelim))
@@ -46,9 +47,10 @@
     (build-system meson-build-system)
     (propagated-inputs
      `(("perl" ,perl)          ; for testing
+       ("python" ,python)          ; for testing
        ("grep" ,grep)          ; for testing
        ("samtools" ,samtools)  ; for testing
-       ("vcflib" ,vcflib)      ; for freebayes-parallel
+       ;; ("vcflib" ,vcflib)      ; for testing freebayes-parallel
        ("which" ,which)        ; for version
        ("htslib" ,htslib)      ; does work, but lacks codecs
        ("tabixpp" ,tabixpp)    ; for htslib
