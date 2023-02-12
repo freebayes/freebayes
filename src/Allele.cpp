@@ -4,7 +4,7 @@
 
 
 int Allele::referenceOffset(void) const {
-    /*cout << readID << " offset checked " << referencePosition - position << " against position " << position 
+    /*cout << readID << " offset checked " << referencePosition - position << " against position " << position
         << " allele length " << length << " str length " << referenceSequence.size() << " qstr size " << qualityString.size() << endl;
         */
     return *currentReferencePosition - position;
@@ -179,6 +179,9 @@ const short Allele::currentQuality(void) const {
         case ALLELE_COMPLEX:
             return quality;
             break;
+        case ALLELE_GENOTYPE:
+        case ALLELE_NULL:
+            break;
     }
     return 0;
 }
@@ -301,7 +304,7 @@ string stringForAllele(const Allele &allele) {
     stringstream out;
     if (!allele.genotypeAllele) {
         out.precision(1);
-        out 
+        out
             << allele.sampleID << ":"
             << allele.readID << ":"
             << allele.typeStr() << ":"
@@ -351,7 +354,7 @@ string Allele::tojson(void) {
         out << "{\"id\":\"" << readID << "\""
             << ",\"type\":\"" << typeStr() << "\""
             << ",\"length\":" << ((type == ALLELE_REFERENCE) ? 1 : length)
-            << ",\"position\":" << position 
+            << ",\"position\":" << position
             << ",\"strand\":\"" << (strand == STRAND_FORWARD ? "+" : "-") << "\"";
         if (type == ALLELE_REFERENCE ) {
             out << ",\"base\":\"" << alternateSequence.at(referenceOffset()) << "\""
@@ -371,7 +374,7 @@ string Allele::tojson(void) {
                 out << "}";
                 break;
             default:
-                out << "\",\"length\":" << length 
+                out << "\",\"length\":" << length
                     << ",\"alt\":\"" << alternateSequence << "\"}";
                 break;
         }
@@ -412,14 +415,14 @@ ostream &operator<<(ostream &out, Allele &allele) {
 
     if (!allele.genotypeAllele) {
         int prec = out.precision();
-        // << &allele << ":" 
+        // << &allele << ":"
         out.precision(1);
         out << allele.sampleID
-            << ":" << allele.readID 
-            << ":" << allele.typeStr() 
-            << ":" << allele.length 
+            << ":" << allele.readID
+            << ":" << allele.typeStr()
+            << ":" << allele.length
             << ":" << allele.referenceLength
-            << ":" << scientific << fixed << allele.position 
+            << ":" << scientific << fixed << allele.position
             << ":" << (allele.strand == STRAND_FORWARD ? "+" : "-")
             << ":" << allele.alternateSequence
             //<< ":" << allele.referenceSequence
@@ -429,10 +432,10 @@ ostream &operator<<(ostream &out, Allele &allele) {
             << ":" << allele.lnquality;
         out.precision(prec);
     } else {
-        out << allele.typeStr() 
+        out << allele.typeStr()
             << ":" << allele.cigar
             << ":" << scientific << fixed << allele.position
-            << ":" << allele.length 
+            << ":" << allele.length
             << ":" << (string) allele.alternateSequence;
     }
     out.precision(5);
@@ -476,7 +479,7 @@ bool Allele::equivalent(Allele &b) {
                     return true;
                 break;
             case ALLELE_INSERTION:
-                if (length == b.length 
+                if (length == b.length
                     && alternateSequence == b.alternateSequence)
                     return true;
                 break;
@@ -623,7 +626,7 @@ void homogenizeAlleles(map<string, vector<Allele*> >& alleleGroups, string& refs
         }
         equivs[allele.alternateSequence][g->first]++;
     }
-    // 
+    //
     for (map<string, map<string, int> >::iterator e = equivs.begin(); e != equivs.end(); ++e) {
         string altseq = e->first;
         map<string, int>& group = e->second;
@@ -952,7 +955,7 @@ int baseCount(vector<Allele*>& alleles, string base, AlleleStrand strand) {
 
 pair<pair<int, int>, pair<int, int> >
 baseCount(vector<Allele*>& alleles, string refbase, string altbase) {
-    
+
     int forwardRef = 0;
     int reverseRef = 0;
     int forwardAlt = 0;
