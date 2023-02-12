@@ -16,7 +16,7 @@
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.6',
-        default_options : ['warning_level=1', 'cpp_std=c++14', 'optimization=3'])
+        default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
 cc = meson.get_compiler('cpp')
@@ -49,51 +49,46 @@ warn_quiet = ['warning_level=0']
 # note that the build version adds support for lzma and bzip2 in CRAM
 if not htslib_dep.found()
   htslib_inc = include_directories(
-    'contrib/htslib',
+    'contrib/vcflib/contrib/tabixpp/htslib/',
     'contrib/htslib_config',
-    'contrib/htslib/cram',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram',
     )
   htslib_src = files(
-    'contrib/htslib/tbx.c',      # used by vcflib
-    'contrib/htslib/bgzf.c',
-    'contrib/htslib/sam.c',
-    'contrib/htslib/hts.c',
-    'contrib/htslib/hfile.c',
-    # 'contrib/htslib/hfile_net.c',
-    # 'contrib/htslib/knetfile.c',
-    'contrib/htslib/textutils.c',
-    'contrib/htslib/thread_pool.c',
-    'contrib/htslib/region.c',
-    'contrib/htslib/hts_os.c',
-    'contrib/htslib/cram/cram_index.c',
-    'contrib/htslib/cram/cram_io.c',
-    # the older 'contrib/htslib/cram/sam_header.c', was renamed to
-    'contrib/htslib/header.c',
-    'contrib/htslib/cram/pooled_alloc.c',
-    'contrib/htslib/cram/string_alloc.c',
-    'contrib/htslib/md5.c',
-    'contrib/htslib/cram/cram_encode.c',
-    'contrib/htslib/cram/cram_stats.c',
-    'contrib/htslib/cram/cram_codecs.c',
-    'contrib/htslib/cram/cram_decode.c',
-    # 'contrib/htslib/cram/cram_samtools.c',
-    'contrib/htslib/kstring.c',
-    'contrib/htslib/cram/cram_external.c',
-    # 'contrib/htslib/cram/files.c',
-    'contrib/htslib/cram/mFILE.c',
-    'contrib/htslib/faidx.c',
-    'contrib/htslib/hts_expr.c',
-    'contrib/htslib/htscodecs/htscodecs/rANS_static.c',
-    'contrib/htslib/htscodecs/htscodecs/arith_dynamic.c',
-    'contrib/htslib/htscodecs/htscodecs/fqzcomp_qual.c',
-    'contrib/htslib/htscodecs/htscodecs/htscodecs.c',
-    'contrib/htslib/htscodecs/htscodecs/rANS_static.c',
-    'contrib/htslib/htscodecs/htscodecs/tokenise_name3.c',
-    'contrib/htslib/cram/open_trace_file.c',
-    'contrib/htslib/multipart.c',
-    'contrib/htslib/htscodecs/htscodecs/rANS_static4x16pr.c',
-    'contrib/htslib/htscodecs/htscodecs/pack.c',
-    'contrib/htslib/htscodecs/htscodecs/rle.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/tbx.c',      # used by vcflib
+    'contrib/vcflib/contrib/tabixpp/htslib/bgzf.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/sam.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/hts.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/hfile.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/textutils.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/thread_pool.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/region.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/hts_os.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_index.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_io.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/header.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/pooled_alloc.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/string_alloc.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/md5.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_encode.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_stats.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_codecs.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_decode.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/kstring.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_external.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/mFILE.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/faidx.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/hts_expr.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/arith_dynamic.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/fqzcomp_qual.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/htscodecs.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/tokenise_name3.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/cram/open_trace_file.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/multipart.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static4x16pr.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/pack.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rle.c',
 )
     htslib_lib = static_library('custom_htslib',
                                 htslib_src,
@@ -107,8 +102,8 @@ endif
 
 
 if not tabixpp_dep.found()
-    tabixpp_inc = include_directories('vcflib/tabixpp')
-    tabixpp_src = files('vcflib/tabixpp/tabix.cpp')
+    tabixpp_inc = include_directories('contrib/vcflib/contrib/tabixpp/')
+    tabixpp_src = files('contrib/vcflib/contrib/tabixpp/tabix.cpp')
     tabixpp_lib = static_library('custom_tabixpp',
                                  tabixpp_src,
                                  include_directories : [tabixpp_inc, htslib_inc],
@@ -121,21 +116,23 @@ endif
 
 if not vcflib_dep.found()
   vcflib_inc = include_directories(
-    'vcflib/src',
-    'vcflib/smithwaterman',
-    'vcflib/multichoose',
-    'vcflib/filevercmp',
-    'vcflib/fastahack',
+    'contrib/vcflib/src',
+    'contrib/vcflib/contrib/smithwaterman',
+    'contrib/vcflib/contrib/multichoose',
+    'contrib/vcflib/contrib/filevercmp',
+    'contrib/vcflib/contrib/fastahack',
     )
   vcflib_src = files(
-    'vcflib/src/Variant.cpp',
-    'vcflib/smithwaterman/SmithWatermanGotoh.cpp',
-    'vcflib/smithwaterman/disorder.cpp',
-    'vcflib/smithwaterman/Repeats.cpp',
-    'vcflib/smithwaterman/LeftAlign.cpp',
-    'vcflib/smithwaterman/IndelAllele.cpp',
-    'vcflib/fastahack/Fasta.cpp',
-    'vcflib/src/split.cpp',
+    'contrib/vcflib/src/Variant.cpp',
+    'contrib/vcflib/src/allele.cpp',
+    'contrib/vcflib/src/cigar.cpp',
+    'contrib/vcflib/src/split.cpp',
+    'contrib/vcflib/contrib/fastahack/Fasta.cpp',
+    'contrib/vcflib/contrib/smithwaterman/SmithWatermanGotoh.cpp',
+    'contrib/vcflib/contrib/smithwaterman/disorder.cpp',
+    'contrib/vcflib/contrib/smithwaterman/Repeats.cpp',
+    'contrib/vcflib/contrib/smithwaterman/LeftAlign.cpp',
+    'contrib/vcflib/contrib/smithwaterman/IndelAllele.cpp',
     )
   vcflib_lib = static_library('custom_vcflib',
                               vcflib_src,
@@ -204,7 +201,7 @@ bamleftalign_src = files('src/bamleftalign.cpp')
 # Include paths
 incdir = include_directories(
     'src',
-    'ttmath',
+    'contrib/ttmath',
     )
 
 extra_cpp_args = cc.get_supported_arguments(

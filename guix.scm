@@ -9,6 +9,11 @@
 ;; For the tests you need /usr/bin/env. Inside the container:
 ;;
 ;;   mkdir -p /usr/bin ; ln -s $GUIX_ENVIRONMENT/bin/env /usr/bin/env
+;;
+;;   meson build/ --buildtype debug
+;;   cd build
+;;   ninja
+;;   ninja test
 
 (use-modules
   ((guix licenses) #:prefix license:)
@@ -53,7 +58,7 @@
        ;; ("vcflib" ,vcflib)      ; for testing freebayes-parallel
        ("which" ,which)        ; for version
        ("htslib" ,htslib)      ; does work, but lacks codecs
-       ("tabixpp" ,tabixpp)    ; for htslib
+       ; ("tabixpp" ,tabixpp)    ; for htslib
        ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
        ("xz-static" ,xz "static")     ; for static builds
        ("zlib-static" ,zlib "static")))

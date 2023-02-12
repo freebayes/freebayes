@@ -4,6 +4,13 @@ see
 and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
+## ChangeLog v1.3.7
+
++ sanitizing git submodules
++ skip bed comment lines (thanks @jodyphelan)
++ tweaks to improve performance on long reads
++ Updated intervaltree module so build passed with gcc-11.
++ Remarks and stub for `HTSCODECS_VERSION_TEXT`
 
 ## ChangeLog v1.3.6 (20220121)
 
