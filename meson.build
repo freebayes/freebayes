@@ -84,9 +84,11 @@ if not htslib_dep.found()
     'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/htscodecs.c',
     'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static.c',
     'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/tokenise_name3.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/utils.c',
     'contrib/vcflib/contrib/tabixpp/htslib/cram/open_trace_file.c',
     'contrib/vcflib/contrib/tabixpp/htslib/multipart.c',
     'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static4x16pr.c',
+    'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static32x16pr.c',
     'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/pack.c',
     'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rle.c',
 )

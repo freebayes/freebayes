@@ -55,9 +55,9 @@
        ("python" ,python)          ; for testing
        ("grep" ,grep)          ; for testing
        ("samtools" ,samtools)  ; for testing
-       ;; ("vcflib" ,vcflib)      ; for testing freebayes-parallel
+       ("vcflib" ,vcflib)      ; for testing freebayes-parallel
        ("which" ,which)        ; for version
-       ("htslib" ,htslib)      ; does work, but lacks codecs
+       ; ("htslib" ,htslib)      ; does work, but lacks codecs
        ; ("tabixpp" ,tabixpp)    ; for htslib
        ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
        ("xz-static" ,xz "static")     ; for static builds
