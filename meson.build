@@ -15,7 +15,7 @@
 #     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
 
 project('freebayes', ['cpp', 'c'],
-        version : '1.3.6',
+        version : '1.3.7-pre1',
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
@@ -25,15 +25,15 @@ zlib_dep = dependency('zlib', static: static_build)
 lzma_dep = dependency('liblzma', static: static_build)
 thread_dep = dependency('threads', static: static_build)
 tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
+vcflib_dep = cc.find_library('libvcflib', required: false)
+smithwaterman_dep = cc.find_library('libsmithwaterman', required: false)
+seqlib_dep = dependency('libseqlib', static: static_build, required: false)
 
 # to compile htslib use
 #   meson build -Dprefer_system_deps=false
 # otherwise it tries to pick up the local system libs
 if get_option('prefer_system_deps')
   htslib_dep = dependency('htslib', static: static_build, required: false)
-  tabixpp_dep = cc.find_library('tabixpp', static: static_build, required: false)
-  vcflib_dep = dependency('libvcflib', static: static_build, required: false)
-  seqlib_dep = dependency('libseqlib', static: static_build, required: false)
 else
   # uses the local git submodules
   htslib_dep = dependency('', required : false)
@@ -115,6 +115,8 @@ if not tabixpp_dep.found()
 else
     tabixpp_inc = []
 endif
+
+vcflib_inc = include_directories()
 
 if not vcflib_dep.found()
   vcflib_inc = include_directories(
@@ -236,7 +238,7 @@ executable('freebayes',
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep, lzma_dep, thread_dep,
-                          htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
+                          htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep, smithwaterman_dep],
            link_with : freebayes_lib,
            install: true
           )

@@ -22,6 +22,7 @@
   (guix git-download)
   (guix build-system meson)
   (gnu packages algebra)
+  (gnu packages assembly)
   (gnu packages base)
   (gnu packages compression)
   (gnu packages bioinformatics)
@@ -52,14 +53,19 @@
     (build-system meson-build-system)
     (propagated-inputs
      `(("perl" ,perl)          ; for testing
-       ("python" ,python)          ; for testing
+       ("python" ,python)      ; for testing
+       ("fastahack" ,fastahack)
        ("grep" ,grep)          ; for testing
+       ("intervaltree" ,intervaltree)
        ("samtools" ,samtools)  ; for testing
        ("vcflib" ,vcflib)      ; for testing freebayes-parallel
        ("which" ,which)        ; for version
-       ; ("htslib" ,htslib)      ; does work, but lacks codecs
-       ; ("tabixpp" ,tabixpp)    ; for htslib
+       ("htslib" ,htslib)      ; does work, but lacks codecs
+       ("tabixpp" ,tabixpp)    ; for htslib
        ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
+       ("simde" ,simde)
+       ("smithwaterman" ,smithwaterman)
+       ("wfa2-lib" ,wfa2-lib) ;; we don't really need this - fix vcflib
        ("xz-static" ,xz "static")     ; for static builds
        ("zlib-static" ,zlib "static")))
     (native-inputs
