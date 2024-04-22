@@ -21,13 +21,15 @@ static_build = get_option('static')
 
 cc = meson.get_compiler('cpp')
 
-zlib_dep = dependency('zlib', static: static_build)
+fastahack_dep = cc.find_library('libfastahack')
 lzma_dep = dependency('liblzma', static: static_build)
-thread_dep = dependency('threads', static: static_build)
-tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
-vcflib_dep = cc.find_library('libvcflib', required: false)
-smithwaterman_dep = cc.find_library('libsmithwaterman', required: false)
 seqlib_dep = dependency('libseqlib', static: static_build, required: false)
+smithwaterman_dep = cc.find_library('libsmithwaterman')
+tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
+thread_dep = dependency('threads', static: static_build)
+vcflib_dep = cc.find_library('libvcflib')
+wfa2lib_dep = cc.find_library('libwfa2')
+zlib_dep = dependency('zlib', static: static_build)
 
 # to compile htslib use
 #   meson build -Dprefer_system_deps=false
@@ -222,7 +224,7 @@ freebayes_lib = static_library(
     include_directories : incdir,
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
-                    vcflib_dep, seqlib_dep],
+                    vcflib_dep, wfa2lib_dep, seqlib_dep],
     install : false,
     )
 
@@ -237,8 +239,16 @@ executable('freebayes',
            include_directories : incdir,
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
-           dependencies: [zlib_dep, lzma_dep, thread_dep,
-                          htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep, smithwaterman_dep],
+           dependencies: [zlib_dep,
+                          lzma_dep,
+                          thread_dep,
+                          htslib_dep,
+                          tabixpp_dep,
+                          vcflib_dep,
+                          seqlib_dep,
+                          fastahack_dep,
+                          smithwaterman_dep,
+                          wfa2lib_dep],
            link_with : freebayes_lib,
            install: true
           )
@@ -248,8 +258,15 @@ executable('bamleftalign',
            include_directories : incdir,
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
-           dependencies: [zlib_dep, lzma_dep, thread_dep,
-                          htslib_dep, vcflib_dep, seqlib_dep],
+           dependencies: [zlib_dep,
+                          lzma_dep,
+                          thread_dep,
+                          htslib_dep,
+                          vcflib_dep,
+                          seqlib_dep,
+                          fastahack_dep,
+                          smithwaterman_dep,
+                          wfa2lib_dep],
            link_with : freebayes_lib,
            install: true
           )

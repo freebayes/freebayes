@@ -52,20 +52,21 @@
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
     (propagated-inputs
-     `(("perl" ,perl)          ; for testing
-       ("python" ,python)      ; for testing
+     `(
+       ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
        ("fastahack" ,fastahack)
        ("grep" ,grep)          ; for testing
-       ("intervaltree" ,intervaltree)
-       ("samtools" ,samtools)  ; for testing
-       ("vcflib" ,vcflib)      ; for testing freebayes-parallel
-       ("which" ,which)        ; for version
        ("htslib" ,htslib)      ; does work, but lacks codecs
-       ("tabixpp" ,tabixpp)    ; for htslib
-       ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
+       ("intervaltree" ,intervaltree)
+       ("perl" ,perl)          ; for testing
+       ("python" ,python)      ; for testing
+       ("samtools" ,samtools)  ; for testing
        ("simde" ,simde)
        ("smithwaterman" ,smithwaterman)
-       ("wfa2-lib" ,wfa2-lib) ;; we don't really need this - fix vcflib
+       ("tabixpp" ,tabixpp)    ; for htslib
+       ("vcflib" ,vcflib)      ; for testing freebayes-parallel
+       ("wfa2-lib" ,wfa2-lib)  ; vcflib dependency
+       ("which" ,which)        ; for version
        ("xz-static" ,xz "static")     ; for static builds
        ("zlib-static" ,zlib "static")))
     (native-inputs
