@@ -54,7 +54,7 @@
     (propagated-inputs
      `(
        ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
-       ("fastahack" ,fastahack)
+       ;; ("fastahack" ,fastahack) ; bundle for Debian
        ("grep" ,grep)          ; for testing
        ("htslib" ,htslib)      ; does work, but lacks codecs
        ("intervaltree" ,intervaltree)
@@ -62,7 +62,7 @@
        ("python" ,python)      ; for testing
        ("samtools" ,samtools)  ; for testing
        ("simde" ,simde)
-       ("smithwaterman" ,smithwaterman)
+       ;; ("smithwaterman" ,smithwaterman) ; bundle for Debian
        ("tabixpp" ,tabixpp)    ; for htslib
        ("vcflib" ,vcflib)      ; for testing freebayes-parallel
        ("wfa2-lib" ,wfa2-lib)  ; vcflib dependency

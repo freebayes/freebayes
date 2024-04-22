@@ -4,6 +4,9 @@ see
 and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
+## ChangeLog v1.3.8 (20240423)
+
+
 ## ChangeLog v1.3.7 (20230212)
 
 + sanitizing git submodules

@@ -21,10 +21,10 @@ static_build = get_option('static')
 
 cc = meson.get_compiler('cpp')
 
-fastahack_dep = cc.find_library('libfastahack')
+# fastahack_dep = cc.find_library('libfastahack')
 lzma_dep = dependency('liblzma', static: static_build)
 seqlib_dep = dependency('libseqlib', static: static_build, required: false)
-smithwaterman_dep = cc.find_library('libsmithwaterman')
+# smithwaterman_dep = cc.find_library('libsmithwaterman')
 tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 thread_dep = dependency('threads', static: static_build)
 vcflib_dep = cc.find_library('libvcflib')
@@ -47,7 +47,23 @@ endif
 # for setting a warning_level on the external code in custom_* targets below
 warn_quiet = ['warning_level=0']
 
-# optionally build from source
+# We pull in the include files because they are currently not packaged in Debian, note that we expect
+# the share libs nevertheless
+fastahack_inc = include_directories('contrib/fastahack')
+fastahack_src = files(
+    'contrib/fastahack/Fasta.cpp',
+    )
+
+smithwaterman_inc = include_directories('contrib/smithwaterman')
+smithwaterman_src = files(
+    'contrib/smithwaterman/SmithWatermanGotoh.cpp',
+    'contrib/smithwaterman/disorder.cpp',
+    'contrib/smithwaterman/Repeats.cpp',
+    'contrib/smithwaterman/LeftAlign.cpp',
+    'contrib/smithwaterman/IndelAllele.cpp',
+    )
+
+# optionally build from source. As we unbundled just check out the vcflib repo in contrib.
 # note that the build version adds support for lzma and bzip2 in CRAM
 if not htslib_dep.found()
   htslib_inc = include_directories(
@@ -120,6 +136,7 @@ endif
 
 vcflib_inc = include_directories()
 
+# optionally build from source. As we unbundled just check out the vcflib repo in contrib.
 if not vcflib_dep.found()
   vcflib_inc = include_directories(
     'contrib/vcflib/src',
@@ -133,12 +150,6 @@ if not vcflib_dep.found()
     'contrib/vcflib/src/allele.cpp',
     'contrib/vcflib/src/cigar.cpp',
     'contrib/vcflib/src/split.cpp',
-    'contrib/vcflib/contrib/fastahack/Fasta.cpp',
-    'contrib/vcflib/contrib/smithwaterman/SmithWatermanGotoh.cpp',
-    'contrib/vcflib/contrib/smithwaterman/disorder.cpp',
-    'contrib/vcflib/contrib/smithwaterman/Repeats.cpp',
-    'contrib/vcflib/contrib/smithwaterman/LeftAlign.cpp',
-    'contrib/vcflib/contrib/smithwaterman/IndelAllele.cpp',
     )
   vcflib_lib = static_library('custom_vcflib',
                               vcflib_src,
@@ -235,8 +246,8 @@ else
 endif
 
 executable('freebayes',
-           freebayes_src,
-           include_directories : incdir,
+           [freebayes_src,fastahack_src,smithwaterman_src],
+           include_directories : [incdir, fastahack_inc, smithwaterman_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -246,16 +257,16 @@ executable('freebayes',
                           tabixpp_dep,
                           vcflib_dep,
                           seqlib_dep,
-                          fastahack_dep,
-                          smithwaterman_dep,
+                          # fastahack_dep,
+                          # smithwaterman_dep,
                           wfa2lib_dep],
            link_with : freebayes_lib,
            install: true
           )
 
 executable('bamleftalign',
-           bamleftalign_src,
-           include_directories : incdir,
+           [bamleftalign_src,fastahack_src,smithwaterman_src],
+           include_directories : [incdir,fastahack_inc,smithwaterman_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -264,8 +275,8 @@ executable('bamleftalign',
                           htslib_dep,
                           vcflib_dep,
                           seqlib_dep,
-                          fastahack_dep,
-                          smithwaterman_dep,
+                          # fastahack_dep,
+                          # smithwaterman_dep,
                           wfa2lib_dep],
            link_with : freebayes_lib,
            install: true
