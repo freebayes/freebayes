@@ -78,29 +78,30 @@ is $(samtools view tiny/NA12878.chr22.tiny.bam | wc -l) $(freebayes -f tiny/q.fa
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam -d 2>&1 | grep ^alignment: | wc -l) $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.cram -d 2>&1 | grep ^alignment: | wc -l) "freebayes processes all alignments in CRAM input"
 
 # Add a regression test
-$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam 2>&1 |egrep -vi "source|filedate|RPPR=7.64277|11126|10515" > regression/NA12878.chr22.tiny.vcf)
+$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam 2>&1 |grep -vEi "source|filedate|RPPR=7.64277|11126|10515" > regression/NA12878.chr22.tiny.vcf)
 
 # ensure targeting works even when there are no reads
 is $(freebayes -f tiny/q.fa -l@ tiny/q.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) 16 "freebayes correctly handles variant input"
 
 # ensure that positions at which no variants exist get put in the out vcf
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes puts required variants in output"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t11000$\|\t1000$' | wc -l) 3 "freebayes puts required variants in output"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes limits calls to input variants correctly"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t11000$\|\t1000$' | wc -l) 3 "freebayes limits calls to input variants correctly"
+
 
 is $(freebayes -f tiny/q.fa -@ tiny/q.vcf.gz -l tiny/1read.bam | grep -v "^#" | wc -l) 16 "freebayes reports all input variants even when there is no input data"
 
 # check variant input with region specified
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 2 "freebayes handles region and variant input"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t11000$\|\t1000$' | wc -l) 2 "freebayes handles region and variant input"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t1000$)" | wc -l) 2 "freebayes limits to variant input correctly when region is given"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 tiny/NA12878.chr22.tiny.bam -l | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t1000$' | wc -l) 2 "freebayes limits to variant input correctly when region is given"
 
 # check variant input when reading from stdin
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes handles variant input and reading from stdin"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t11000$\|\t1000$' | wc -l) 3 "freebayes handles variant input and reading from stdin"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -l --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t11000$|\t1000$)" | wc -l) 3 "freebayes limits to variant input when reading from stdin"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -l --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t11000$\|\t1000$' | wc -l) 3 "freebayes limits to variant input when reading from stdin"
 
-is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep -P "(\t500$|\t1000$)" | wc -l) 2 "freebayes handles region, stdin, and variant input"
+is $(freebayes -f tiny/q.fa -@ tiny/q_spiked.vcf.gz -r q:1-10000 -l --stdin < tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1,2 | grep $'\t500$\|\t1000$' | wc -l) 2 "freebayes handles region, stdin, and variant input"
 
 gzip -c tiny/q.fa >tiny/q.fa.gz
 cp tiny/q.fa.fai tiny/q.fa.gz.fai
