@@ -15,7 +15,7 @@
 #     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
 
 project('freebayes', ['cpp', 'c'],
-        version : '1.3.7-pre1',
+        version : '1.3.8',
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
