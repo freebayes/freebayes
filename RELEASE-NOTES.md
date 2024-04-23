@@ -13,7 +13,8 @@ This is a maintenance release of Freebayes:
 
 Note:
 
-+ quality scores in test/regression/NA12878.chr22.tiny.vcf changed with recent builds. Probably caused by gcc-13 and we should look into that.
++ quality scores in test/regression/NA12878.chr22.tiny.vcf changed with recent builds. Probably caused by gcc-13 and we should look into that
++ github-CI won't build until wfa2lib is included from Debian (WIP)
 
 ## ChangeLog v1.3.7 (20230212)
 
