@@ -81,7 +81,7 @@
      `(
        ;; ("clang" ,clang)      ; add this to test clang builds
        ;; ("lld" ,lld)          ; add this to test clang builds
-       ("gcc" ,gcc-13)
+       ;; ("gcc" ,gcc-13)
        ("bc" ,bc)               ; for tests
        ("coreutils" ,coreutils) ; for echo and env in tests
        ("curl" ,curl)

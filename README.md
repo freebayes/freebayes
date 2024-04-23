@@ -2,7 +2,8 @@
 ## user manual and guide
 
 
-[![Github-CI](https://github.com/freebayes/freebayes/workflows/CI/badge.svg)](https://github.com/freebayes/freebayes/actions) [![Travis-CI](https://travis-ci.com/freebayes/freebayes.svg?branch=master)](https://travis-ci.com/freebayes/freebayes) [![AnacondaBadge](https://anaconda.org/bioconda/freebayes/badges/installer/conda.svg)](https://anaconda.org/bioconda/freebayes) [![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://www.gnu.org/software/guix/packages/F/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://packages.debian.org/testing/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
+[![Github-CI](https://github.com/freebayes/freebayes/workflows/CI/badge.svg)](https://github.com/freebayes/freebayes/actions) [![Travis-CI](https://travis-ci.com/freebayes/freebayes.svg?branch=master)](https://travis-ci.com/freebayes/freebayes)
+[![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://packages.guix.gnu.org/packages/freebayes/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://packages.debian.org/testing/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
 --------
 
 ## Overview
@@ -481,6 +482,10 @@ with `--recursive`.
 Freebayes can target AMD64 and ARM64 (with Neon extensions).
 
 Recently we added the meson build system which can be run with
+
+    meson build/ --buildtype release
+
+For development/debugging use
 
     meson build/ --buildtype debug
 

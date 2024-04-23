@@ -9,7 +9,7 @@
 #include <map>
 #include <iterator>
 #include <algorithm>
-#include "../intervaltree/IntervalTree.h"
+#include <IntervalTree.h>
 #include "split.h"
 
 using namespace std;

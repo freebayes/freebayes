@@ -6,7 +6,12 @@ and
 
 ## ChangeLog v1.3.8 (20240423)
 
++ fixed https://github.com/freebayes/freebayes/issues/786, thanks Hrithik Mangla and Nilesh Patra for reporting
 + unbundled vcflib and vendored back in the much smaller fastahack and smithwaterman modules until Debian provides the include files
+
+Note:
+
++ quality scores in test/regression/NA12878.chr22.tiny.vcf changed with recent builds.
 
 ## ChangeLog v1.3.7 (20230212)
 

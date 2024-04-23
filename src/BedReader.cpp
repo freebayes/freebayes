@@ -11,7 +11,7 @@
 #include "Utility.h"
 #include "BedReader.h"
 #include "Logging.h"
-#include "../intervaltree/IntervalTree.h"
+#include <IntervalTree.h>
 
 using namespace std;
 
