@@ -4,3 +4,9 @@
 [submodule "bash-tap"]
 	path = test/bash-tap
 	url = https://github.com/illusori/bash-tap.git
+[submodule "contrib/smithwaterman"]
+	path = contrib/smithwaterman
+	url = https://github.com/ekg/smithwaterman.git
+[submodule "contrib/fastahack"]
+	path = contrib/fastahack
+	url = https://github.com/ekg/fastahack.git
