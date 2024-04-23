@@ -19,6 +19,7 @@ project('freebayes', ['cpp', 'c'],
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
+add_global_arguments('-D_GLIBCXX_ASSERTIONS=1', language : 'cpp')
 cc = meson.get_compiler('cpp')
 
 # fastahack_dep = cc.find_library('libfastahack')
@@ -52,6 +53,10 @@ warn_quiet = ['warning_level=0']
 fastahack_inc = include_directories('contrib/fastahack')
 fastahack_src = files(
     'contrib/fastahack/Fasta.cpp',
+    )
+
+multichoose_inc = include_directories('contrib/multichoose')
+multichoose_src = files(
     )
 
 smithwaterman_inc = include_directories('contrib/smithwaterman')
@@ -232,7 +237,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     freebayes_common_src,
-    include_directories : incdir,
+    include_directories : [multichoose_inc, fastahack_inc, smithwaterman_inc, incdir],
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     vcflib_dep, wfa2lib_dep, seqlib_dep],
@@ -246,8 +251,8 @@ else
 endif
 
 executable('freebayes',
-           [freebayes_src,fastahack_src,smithwaterman_src],
-           include_directories : [incdir, fastahack_inc, smithwaterman_inc],
+           [freebayes_src,multichoose_src,fastahack_src,smithwaterman_src],
+           include_directories : [multichoose_inc, fastahack_inc, smithwaterman_inc, incdir],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -266,7 +271,7 @@ executable('freebayes',
 
 executable('bamleftalign',
            [bamleftalign_src,fastahack_src,smithwaterman_src],
-           include_directories : [incdir,fastahack_inc,smithwaterman_inc],
+           include_directories : [multichoose_inc, fastahack_inc, smithwaterman_inc, incdir],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,

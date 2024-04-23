@@ -10,7 +10,7 @@
 ;;
 ;;   mkdir -p /usr/bin ; ln -s $GUIX_ENVIRONMENT/bin/env /usr/bin/env
 ;;
-;;   meson build/ --buildtype debug
+;;   meson setup build/ --buildtype debug
 ;;   cd build
 ;;   ninja
 ;;   ninja test
@@ -29,6 +29,7 @@
   (gnu packages build-tools)
   (gnu packages curl)
   (gnu packages gcc)
+  (gnu packages gdb)
   (gnu packages llvm)
   (gnu packages ninja)
   (gnu packages parallel)
@@ -73,13 +74,14 @@
      `(
        ("meson" ,meson)
        ("ninja" ,ninja)
+       ("gdb" ,gdb)
        ("pkg-config" ,pkg-config)
        ))
     (inputs
      `(
        ;; ("clang" ,clang)      ; add this to test clang builds
        ;; ("lld" ,lld)          ; add this to test clang builds
-       ("gcc" ,gcc-11)
+       ("gcc" ,gcc-13)
        ("bc" ,bc)               ; for tests
        ("coreutils" ,coreutils) ; for echo and env in tests
        ("curl" ,curl)

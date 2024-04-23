@@ -6,6 +6,7 @@ and
 
 ## ChangeLog v1.3.8 (20240423)
 
++ unbundled vcflib and vendored back in the much smaller fastahack and smithwaterman modules until Debian provides the include files
 
 ## ChangeLog v1.3.7 (20230212)
 
