@@ -19,7 +19,8 @@ project('freebayes', ['cpp', 'c'],
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
-add_global_arguments('-D_GLIBCXX_ASSERTIONS=1', language : 'cpp')
+# used by Debian: add_global_arguments('-D_GLIBCXX_ASSERTIONS=1', language : 'cpp')
+
 cc = meson.get_compiler('cpp')
 
 # fastahack_dep = cc.find_library('libfastahack')
