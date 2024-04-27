@@ -4,6 +4,10 @@ see
 and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
+## ChangeLog v1.3.9-pre1 (20240427)
+
++ try cleaner meson build on Debian
+
 ## ChangeLog v1.3.8 (20240423)
 
 This is a maintenance release of Freebayes:
