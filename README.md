@@ -3,7 +3,7 @@
 
 
 [![Github-CI](https://github.com/freebayes/freebayes/workflows/CI/badge.svg)](https://github.com/freebayes/freebayes/actions) [![Travis-CI](https://travis-ci.com/freebayes/freebayes.svg?branch=master)](https://travis-ci.com/freebayes/freebayes)
-[![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://packages.guix.gnu.org/packages/freebayes/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://packages.debian.org/testing/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
+[![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://packages.guix.gnu.org/packages/freebayes/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://tracker.debian.org/pkg/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
 --------
 
 ## Overview
@@ -517,4 +517,4 @@ container with all the build tools with
 
     guix shell -C -D -f guix.scm
 
-See also [guix.scm](./guix.scm).
+See also the header of [guix.scm](./guix.scm).
