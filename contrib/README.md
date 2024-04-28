@@ -6,7 +6,11 @@ The goal is to have a clean repository of files that are in (active) use for fre
 
 ## fastahack
 
-libfastahack-dev is in Debian.
+libfastahack-dev is in Debian. This is actually a vcflib dependency that can be removed when vcflib moves fastahack out of its libvcflib.so (Variant.h)
+
+## SmithWaterman
+
+libsmithwaterman-dev is in Debian. This is actually a vcflib dependency that can be removed when vcflib moves SW out of its libvcflib.so (Variant.h)
 
 ## vcflib
 
