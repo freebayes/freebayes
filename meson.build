@@ -18,8 +18,6 @@ project('freebayes', ['cpp', 'c'],
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
-fs = import('fs')
-
 # used by Debian: add_global_arguments('-D_GLIBCXX_ASSERTIONS=1', language : 'cpp')
 
 cc = meson.get_compiler('cpp')
@@ -34,16 +32,9 @@ if get_option('prefer_system_deps') # defaults to true, otherwise use git module
   htslib_dep = dependency('htslib', static: static_build, required: false)
   seqlib_dep = dependency('libseqlib', static: static_build, required: false)
   vcflib_dep = cc.find_library('libvcflib')
-  if fs.is_dir('/usr/include/vcflib')
-    fastahack_inc = include_directories('/usr/include/vcflib') # for Debian
-  endif
   fastahack_dep = cc.find_library('libfastahack', required: true)
-  if fs.is_dir('/usr/include/fastahack')
-    fastahack_inc = include_directories('/usr/include/fastahack') # for Debian
-  endif
   smithwaterman_dep = cc.find_library('libsmithwaterman')
   tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
-  multichoose_inc = files() # part of libvcflib-dev
 else
   # uses the local git submodules or checkout trees in ./contrib/
   # IMPORTANT: this section is untested and broken right now (FIXME)
@@ -234,7 +225,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     freebayes_common_src,
-    include_directories : [multichoose_inc, incdir],
+    include_directories : incdir,
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     vcflib_dep, wfa2lib_dep, seqlib_dep],
@@ -249,7 +240,7 @@ endif
 
 executable('freebayes',
            [freebayes_src],
-           include_directories : [multichoose_inc, incdir],
+           include_directories : incdir,
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -268,7 +259,7 @@ executable('freebayes',
 
 executable('bamleftalign',
            [bamleftalign_src],
-           include_directories : [multichoose_inc, incdir],
+           include_directories : incdir,
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,

@@ -56,7 +56,7 @@
      `(
        ;; for the libs also see contrib/README.md
        ("bzip2-static" ,bzip2 "static")    ; libz2 part of htslib for static builds
-       ("fastahack" ,fastahack) ; used by vcflib; bundle for Debian
+       ("fastahack" ,fastahack) ; shared lib used by vcflib; bundle for Debian
        ("grep" ,grep)          ; for testing
        ("htslib" ,htslib)      ; does work, but lacks codecs
        ("intervaltree" ,intervaltree)
@@ -64,10 +64,10 @@
        ("python" ,python)      ; for testing
        ("samtools" ,samtools)  ; for testing
        ("simde" ,simde)
-       ("smithwaterman" ,smithwaterman) ; used by vcflib ; bundle for Debian
+       ("smithwaterman" ,smithwaterman) ; vcflib shared lib dependency ; bundle for Debian
        ("tabixpp" ,tabixpp)    ; for htslib
        ("vcflib" ,vcflib)      ; for testing freebayes-parallel
-       ("wfa2-lib" ,wfa2-lib)  ; vcflib dependency
+       ("wfa2-lib" ,wfa2-lib)  ; vcflib shared lib dependency
        ("which" ,which)        ; for version
        ("xz-static" ,xz "static")     ; for static builds
        ("zlib-static" ,zlib "static")))
