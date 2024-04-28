@@ -18,6 +18,8 @@ project('freebayes', ['cpp', 'c'],
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
+fs = import('fs')
+
 # used by Debian: add_global_arguments('-D_GLIBCXX_ASSERTIONS=1', language : 'cpp')
 
 cc = meson.get_compiler('cpp')
@@ -28,21 +30,23 @@ thread_dep = dependency('threads', static: static_build)
 wfa2lib_dep = cc.find_library('libwfa2')
 zlib_dep = dependency('zlib', static: static_build)
 
-if get_option('prefer_system_deps') # default true, otherwise use git modules and local sources
+if get_option('prefer_system_deps') # defaults to true, otherwise use git modules and local sources
   htslib_dep = dependency('htslib', static: static_build, required: false)
-  vcflib_dep = cc.find_library('libvcflib')
   seqlib_dep = dependency('libseqlib', static: static_build, required: false)
-  fastahack_dep = cc.find_library('libfastahack')
-  fastahack_inc = files()
-  fastahack_src = files()
+  vcflib_dep = cc.find_library('libvcflib')
+  if fs.is_dir('/usr/include/vcflib')
+    fastahack_inc = include_directories('/usr/include/vcflib') # for Debian
+  endif
+  fastahack_dep = cc.find_library('libfastahack', required: true)
+  if fs.is_dir('/usr/include/fastahack')
+    fastahack_inc = include_directories('/usr/include/fastahack') # for Debian
+  endif
   smithwaterman_dep = cc.find_library('libsmithwaterman')
-  smithwaterman_inc = files()
-  smithwaterman_src = files()
   tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
   multichoose_inc = files() # part of libvcflib-dev
 else
   # uses the local git submodules or checkout trees in ./contrib/
-  # this section is untested right now (FIXME)
+  # IMPORTANT: this section is untested and broken right now (FIXME)
   htslib_dep = dependency('', required : false)
   tabixpp_dep = dependency('', required : false)
   fastahack_dep = dependency('', required : false)
@@ -183,7 +187,6 @@ if not seqlib_dep.found() # Seqlib is not in Guix (yet) but it is in Debian
                                   include_directories : seqlib_inc)
 endif
 
-
 #
 # Sources
 #
@@ -231,7 +234,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     freebayes_common_src,
-    include_directories : [multichoose_inc, fastahack_inc, smithwaterman_inc, incdir],
+    include_directories : [multichoose_inc, incdir],
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     vcflib_dep, wfa2lib_dep, seqlib_dep],
@@ -245,8 +248,8 @@ else
 endif
 
 executable('freebayes',
-           [freebayes_src,fastahack_src,smithwaterman_src],
-           include_directories : [multichoose_inc, fastahack_inc, smithwaterman_inc, incdir],
+           [freebayes_src],
+           include_directories : [multichoose_inc, incdir],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -256,16 +259,16 @@ executable('freebayes',
                           tabixpp_dep,
                           vcflib_dep,
                           seqlib_dep,
-                          fastahack_dep,
-                          smithwaterman_dep,
+                          fastahack_dep, # for vcflib
+                          smithwaterman_dep, # for vcflib
                           wfa2lib_dep],
            link_with : freebayes_lib,
            install: true
           )
 
 executable('bamleftalign',
-           [bamleftalign_src,fastahack_src,smithwaterman_src],
-           include_directories : [multichoose_inc, fastahack_inc, smithwaterman_inc, incdir],
+           [bamleftalign_src],
+           include_directories : [multichoose_inc, incdir],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -274,8 +277,8 @@ executable('bamleftalign',
                           htslib_dep,
                           vcflib_dep,
                           seqlib_dep,
-                          fastahack_dep,
-                          smithwaterman_dep,
+                          fastahack_dep, # for vcflib
+                          smithwaterman_dep, # for vcflib
                           wfa2lib_dep],
            link_with : freebayes_lib,
            install: true
