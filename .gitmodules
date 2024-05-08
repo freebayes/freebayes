@@ -12,4 +12,4 @@
 	url = https://github.com/ekg/fastahack.git
 [submodule "contrib/multichoose"]
 	path = contrib/multichoose
-	url = git@github.com:vcflib/multichoose.git
+	url = https://github.com/vcflib/multichoose.git
