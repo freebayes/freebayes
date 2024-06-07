@@ -1,5 +1,5 @@
 #include "Allele.h"
-#include "multichoose.h"
+#include <vcflib/multichoose.h>
 #include "TryCatch.h"
 
 

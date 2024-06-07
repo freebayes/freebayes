@@ -30,8 +30,7 @@
 #include "Utility.h"
 #include "SegfaultHandler.h"
 
-#include "multichoose.h"
-#include "multipermute.h"
+#include <vcflib/multichoose.h>
 
 #include "Genotype.h"
 #include "DataLikelihood.h"

@@ -1,5 +1,5 @@
 #include "Bias.h"
-#include "convert.h"
+#include <smithwaterman/convert.h>
 
 void Bias::open(string& file) {
 

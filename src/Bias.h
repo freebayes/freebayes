@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
-#include "split.h"
+#include <fastahack/split.h>
 
 using namespace std;
 

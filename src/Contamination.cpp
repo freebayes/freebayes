@@ -1,5 +1,5 @@
 #include "Contamination.h"
-#include "convert.h"
+#include <smithwaterman/convert.h>
 
 void Contamination::open(string& file) {
 

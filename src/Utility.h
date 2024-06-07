@@ -14,7 +14,7 @@
 #include <fstream>
 #include <map>
 #include <time.h>
-#include "convert.h"
+#include <smithwaterman/convert.h>
 #include "ttmath.h"
 
 using namespace std;

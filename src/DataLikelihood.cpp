@@ -1,6 +1,5 @@
 #include "DataLikelihood.h"
-#include "multichoose.h"
-#include "multipermute.h"
+#include <vcflib/multichoose.h>
 #include "Logging.h"
 
 long double

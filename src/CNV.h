@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <tuple>
-#include "split.h"
+#include <fastahack/split.h>
 
 using namespace std;
 
