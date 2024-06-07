@@ -7,7 +7,7 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
-#include "split.h"
+#include <fastahack/split.h>
 #include "Utility.h"
 #include "BedReader.h"
 #include "Logging.h"

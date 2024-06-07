@@ -13,9 +13,9 @@
 #include <assert.h>
 #include <ctype.h>
 #include <cmath>
-#include "split.h"
+#include <fastahack/split.h>
 #include <list> // XXX workaround for a missing include in vcflib's join.h
-#include "join.h"
+#include <vcflib/join.h>
 
 #include "BedReader.h"
 #include "Parameters.h"

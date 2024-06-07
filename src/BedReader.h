@@ -10,7 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <intervaltree/IntervalTree.h>
-#include "split.h"
+#include <fastahack/split.h>
 
 using namespace std;
 

@@ -1,5 +1,5 @@
 #include "Parameters.h"
-#include "convert.h"
+#include <smithwaterman/convert.h>
 
 using namespace std;
 
