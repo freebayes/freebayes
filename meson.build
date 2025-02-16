@@ -41,9 +41,17 @@ else
   vcflib_inc = files()
 endif
 
+
 if get_option('prefer_system_deps') # defaults to true, otherwise use git modules and local sources
   fastahack_dep = cc.find_library('libfastahack', required: true) # also link in for vcflib
   smithwaterman_dep = cc.find_library('libsmithwaterman')
+  if fs.is_dir('/usr/include/fastahack')
+    message('Using /usr/include/fastahack dir')
+    fastahack_inc = include_directories('/usr/include/fastahack')
+  else
+    fastahack_inc = files()
+  endif
+
 else
   # uses the minimal local git submodules or checkout trees in ./contrib/
   # see `git submodule`
@@ -142,7 +150,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     freebayes_common_src,
-    include_directories : [incdir, vcflib_inc],
+    include_directories : [incdir, vcflib_inc, fastahack_inc],
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     vcflib_dep, wfa2lib_dep, seqlib_dep],
@@ -157,7 +165,7 @@ endif
 
 executable('freebayes',
            [freebayes_src],
-           include_directories : [incdir, vcflib_inc],
+           include_directories : [incdir, vcflib_inc, fastahack_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -176,7 +184,7 @@ executable('freebayes',
 
 executable('bamleftalign',
            [bamleftalign_src],
-           include_directories : [incdir, vcflib_inc],
+           include_directories : [incdir, vcflib_inc, fastahack_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
