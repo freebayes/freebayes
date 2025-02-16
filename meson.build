@@ -31,17 +31,15 @@ zlib_dep = dependency('zlib', static: static_build)
 if get_option('prefer_system_deps') # defaults to true, otherwise use git modules and local sources
   htslib_dep = dependency('htslib', static: static_build, required: false)
   seqlib_dep = dependency('libseqlib', static: static_build, required: false)
-  vcflib_dep = cc.find_library('libvcflib')
+  vcflib_dep = cc.find_library('libvcflib', required: false)
   fastahack_dep = cc.find_library('libfastahack', required: true)
   smithwaterman_dep = cc.find_library('libsmithwaterman')
   tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 else
-  # uses the local git submodules or checkout trees in ./contrib/
-  # IMPORTANT: this section is untested and broken right now (FIXME)
-  htslib_dep = dependency('', required : false)
-  tabixpp_dep = dependency('', required : false)
+  # uses the minimal local git submodules or checkout trees in ./contrib/
+  # see `git submodule`
+  # htslib and vcflib have to come from the underlying distro
   fastahack_dep = dependency('', required : false)
-  vcflib_dep = dependency('', required : false)
   seqlib_dep = dependency('', required : false)
 
   fastahack_inc = include_directories('contrib/fastahack')
@@ -61,95 +59,6 @@ else
       'contrib/smithwaterman/LeftAlign.cpp',
       'contrib/smithwaterman/IndelAllele.cpp',
   )
-  if not tabixpp_dep.found() # tabixpp-dev is in Debian
-      tabixpp_inc = include_directories('contrib/vcflib/contrib/tabixpp/')
-      tabixpp_src = files('contrib/vcflib/contrib/tabixpp/tabix.cpp')
-      tabixpp_lib = static_library('custom_tabixpp',
-                                   tabixpp_src,
-                                   include_directories : [tabixpp_inc, htslib_inc],
-                                   override_options : warn_quiet)
-      tabixpp_dep = declare_dependency(link_with : tabixpp_lib,
-                                       include_directories : tabixpp_inc)
-   endif
-   if not htslib_dep.found()
-     htslib_inc = include_directories(
-         'contrib/vcflib/contrib/tabixpp/htslib/',
-         'contrib/htslib_config',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram',
-     )
-     htslib_src = files(
-         'contrib/vcflib/contrib/tabixpp/htslib/tbx.c',      # used by vcflib
-         'contrib/vcflib/contrib/tabixpp/htslib/bgzf.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/sam.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/hts.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/hfile.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/textutils.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/thread_pool.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/region.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/hts_os.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_index.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_io.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/header.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/pooled_alloc.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/string_alloc.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/md5.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_encode.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_stats.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_codecs.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_decode.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/kstring.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/cram_external.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/mFILE.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/faidx.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/hts_expr.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/arith_dynamic.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/fqzcomp_qual.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/htscodecs.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/tokenise_name3.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/utils.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/cram/open_trace_file.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/multipart.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static4x16pr.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rANS_static32x16pr.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/pack.c',
-         'contrib/vcflib/contrib/tabixpp/htslib/htscodecs/htscodecs/rle.c',
-     )
-     htslib_lib = static_library('custom_htslib',
-                                 htslib_src,
-                                 include_directories : htslib_inc,
-                                 override_options : warn_quiet)
-     htslib_dep = declare_dependency(link_with : htslib_lib,
-                                     include_directories : htslib_inc)
-   else
-     htslib_inc = []
-   endif
-
-   vcflib_inc = include_directories()
-
-   if not vcflib_dep.found()
-     vcflib_inc = include_directories(
-         'contrib/vcflib/src',
-         'contrib/vcflib/contrib/smithwaterman',
-         'contrib/vcflib/contrib/multichoose',
-         'contrib/vcflib/contrib/filevercmp',
-         'contrib/vcflib/contrib/fastahack',
-     )
-     vcflib_src = files(
-         'contrib/vcflib/src/Variant.cpp',
-         'contrib/vcflib/src/allele.cpp',
-         'contrib/vcflib/src/cigar.cpp',
-         'contrib/vcflib/src/split.cpp',
-     )
-     vcflib_lib = static_library('custom_vcflib',
-                                 vcflib_src,
-                                 include_directories : [htslib_inc, tabixpp_inc, vcflib_inc],
-                                 override_options : warn_quiet)
-     vcflib_dep = declare_dependency(link_with : vcflib_lib,
-                                     include_directories : vcflib_inc)
-     endif
-
 
 endif # build git modules
 
