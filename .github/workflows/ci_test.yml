@@ -10,7 +10,7 @@ jobs:
         python-version: [3.8]
     steps:
     - name: Install dependencies
-      run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libvcflib-dev fastahack smithwaterman libwfa2-dev
+      run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libvcflib-dev fastahack smithwaterman libwfa2-dev libsimde-dev
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
