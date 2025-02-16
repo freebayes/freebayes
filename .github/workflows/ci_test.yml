@@ -9,8 +9,6 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.8]
     steps:
-    - name: Update ubuntu
-      run: sudo add-apt-repository ppa:c2d4u.team/c2d4u4.0+ && sudo apt-get update
     - name: Install dependencies
       run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libvcflib-dev fastahack smithwaterman libwfa2-dev
     - uses: actions/checkout@v3
@@ -59,4 +57,3 @@ jobs:
           ninja -C build/
           # TEST
           meson test --timeout-multiplier 4 --print-errorlogs -C build/
-          
