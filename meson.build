@@ -25,15 +25,24 @@ cc = meson.get_compiler('cpp')
 # fastahack_dep = cc.find_library('libfastahack')
 lzma_dep = dependency('liblzma', static: static_build)
 thread_dep = dependency('threads', static: static_build)
-wfa2lib_dep = cc.find_library('libwfa2')
+wfa2lib_dep = cc.find_library('libwfa2') # need to link for vcflib code
 zlib_dep = dependency('zlib', static: static_build)
 htslib_dep = dependency('htslib', static: static_build, required: false)
 vcflib_dep = cc.find_library('libvcflib', required: false)
 seqlib_dep = dependency('libseqlib', static: static_build, required: false)
 tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 
+# later versions of vcflib have Variant.hpp in a system subdirectory
+fs = import('fs')
+if fs.is_dir('/usr/include/vcflib')
+  message('Using /usr/include/vcflib dir')
+  vcflib_inc = include_directories('/usr/include/vcflib')
+else
+  vcflib_inc = files()
+endif
+
 if get_option('prefer_system_deps') # defaults to true, otherwise use git modules and local sources
-  fastahack_dep = cc.find_library('libfastahack', required: true)
+  fastahack_dep = cc.find_library('libfastahack', required: true) # also link in for vcflib
   smithwaterman_dep = cc.find_library('libsmithwaterman')
 else
   # uses the minimal local git submodules or checkout trees in ./contrib/
@@ -133,7 +142,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     freebayes_common_src,
-    include_directories : incdir,
+    include_directories : [incdir, vcflib_inc],
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     vcflib_dep, wfa2lib_dep, seqlib_dep],
@@ -148,7 +157,7 @@ endif
 
 executable('freebayes',
            [freebayes_src],
-           include_directories : incdir,
+           include_directories : [incdir, vcflib_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
@@ -167,7 +176,7 @@ executable('freebayes',
 
 executable('bamleftalign',
            [bamleftalign_src],
-           include_directories : incdir,
+           include_directories : [incdir, vcflib_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
