@@ -7,6 +7,7 @@ and
 ## ChangeLog v1.3.9-pre1 (20240427)
 
 + try cleaner meson build on Debian
++ A recent version of vcflib installs include files in include/vcflib. freebayes breaks with older vcflib.
 
 ## ChangeLog v1.3.8 (20240423)
 

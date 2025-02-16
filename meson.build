@@ -14,7 +14,7 @@
 # See also meson_options.txt and contrib/README.md
 
 project('freebayes', ['cpp', 'c'],
-        version : '1.3.8',
+        version : '1.3.9',
         default_options : ['warning_level=1', 'cpp_std=c++17', 'optimization=3'])
 static_build = get_option('static')
 
@@ -27,20 +27,19 @@ lzma_dep = dependency('liblzma', static: static_build)
 thread_dep = dependency('threads', static: static_build)
 wfa2lib_dep = cc.find_library('libwfa2')
 zlib_dep = dependency('zlib', static: static_build)
+htslib_dep = dependency('htslib', static: static_build, required: false)
+vcflib_dep = cc.find_library('libvcflib', required: false)
+seqlib_dep = dependency('libseqlib', static: static_build, required: false)
+tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 
 if get_option('prefer_system_deps') # defaults to true, otherwise use git modules and local sources
-  htslib_dep = dependency('htslib', static: static_build, required: false)
-  seqlib_dep = dependency('libseqlib', static: static_build, required: false)
-  vcflib_dep = cc.find_library('libvcflib', required: false)
   fastahack_dep = cc.find_library('libfastahack', required: true)
   smithwaterman_dep = cc.find_library('libsmithwaterman')
-  tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 else
   # uses the minimal local git submodules or checkout trees in ./contrib/
   # see `git submodule`
   # htslib and vcflib have to come from the underlying distro
   fastahack_dep = dependency('', required : false)
-  seqlib_dep = dependency('', required : false)
 
   fastahack_inc = include_directories('contrib/fastahack')
   fastahack_src = files(
