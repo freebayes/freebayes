@@ -51,12 +51,14 @@ if get_option('prefer_system_deps') # defaults to true, otherwise use git module
   else
     fastahack_inc = files()
   endif
+  multichoose_inc = files()
 
 else
   # uses the minimal local git submodules or checkout trees in ./contrib/
   # see `git submodule`
   # htslib and vcflib have to come from the underlying distro
   fastahack_dep = dependency('', required : false)
+  smithwaterman_dep = dependency('', required : false)
 
   fastahack_inc = include_directories('contrib/fastahack')
   fastahack_src = files(
@@ -150,7 +152,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     freebayes_common_src,
-    include_directories : [incdir, vcflib_inc, fastahack_inc],
+    include_directories : [incdir, vcflib_inc, fastahack_inc, multichoose_inc],
     cpp_args : extra_cpp_args,
     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     vcflib_dep, wfa2lib_dep, seqlib_dep],
@@ -165,7 +167,7 @@ endif
 
 executable('freebayes',
            [freebayes_src],
-           include_directories : [incdir, vcflib_inc, fastahack_inc],
+           include_directories : [incdir, vcflib_inc, fastahack_inc, multichoose_inc],
            cpp_args : extra_cpp_args,
            link_args: link_arguments,
            dependencies: [zlib_dep,
