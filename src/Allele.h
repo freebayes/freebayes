@@ -12,7 +12,7 @@
 #include <sstream>
 #include <assert.h>
 #include "Utility.h"
-#include "convert.h"
+#include <smithwaterman/convert.h>
 
 //#ifdef HAVE_BAMTOOLS
 //#include "api/BamAlignment.h"

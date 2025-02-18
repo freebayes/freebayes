@@ -19,7 +19,7 @@
 #include "LargeFileSupport.h"
 #include "Utility.h"
 #include <sys/stat.h>
-#include "split.h"
+#include <fastahack/split.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
