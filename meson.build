@@ -25,10 +25,10 @@ cc = meson.get_compiler('cpp')
 # fastahack_dep = cc.find_library('libfastahack')
 lzma_dep = dependency('liblzma', static: static_build)
 thread_dep = dependency('threads', static: static_build)
-wfa2lib_dep = cc.find_library('libwfa2') # need to link for vcflib code
+wfa2lib_dep = cc.find_library('wfa2') # need to link for vcflib code
 zlib_dep = dependency('zlib', static: static_build)
 htslib_dep = dependency('htslib', static: static_build, required: false)
-vcflib_dep = cc.find_library('libvcflib', required: false)
+vcflib_dep = cc.find_library('vcflib', required: false)
 seqlib_dep = dependency('libseqlib', static: static_build, required: false)
 tabixpp_dep = cc.find_library('tabixpp', required: false, static: static_build)
 
