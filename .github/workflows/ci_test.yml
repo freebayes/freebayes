@@ -9,10 +9,8 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.8]
     steps:
-    - name: Update ubuntu
-      run: sudo add-apt-repository ppa:c2d4u.team/c2d4u4.0+ && sudo apt-get update
     - name: Install dependencies
-      run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libvcflib-dev fastahack smithwaterman libwfa2-dev
+      run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libseqlib2 libseqlib-dev libvcflib-dev libfastahack-dev fastahack smithwaterman libwfa2-dev libsimde-dev
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
@@ -49,6 +47,7 @@ jobs:
         install: |
           apt-get update -q -y
           apt-get install -q -y gcc g++ python3.8 python3-pip samtools bc parallel libvcflib-tools libvcflib-dev fastahack smithwaterman
+          apt-get -q -y -f install samtools bc parallel libvcflib-tools libseqlib2 libseqlib-dev libvcflib-dev libfastahack-dev fastahack smithwaterman libwfa2-dev libsimde-dev
           pip install meson ninja
         run: |
           set -x
@@ -59,4 +58,3 @@ jobs:
           ninja -C build/
           # TEST
           meson test --timeout-multiplier 4 --print-errorlogs -C build/
-          

@@ -4,9 +4,15 @@ see
 and
 [commits](https://github.com/freebayes/freebayes/commits/master).
 
-## ChangeLog v1.3.9-pre1 (20240427)
+## ChangeLog v1.3.9 (20250215)
 
+This is a maintenance release of Freebayes:
+
++ again fixes for Debian and Ubuntu
++ github actions should clear with newer vcflib
 + try cleaner meson build on Debian
++ A recent version of vcflib installs include files in include/vcflib. freebayes breaks with older vcflib.
++ Removed unused GenotypePriors.cpp, alleles.cpp, dummy.cpp
 
 ## ChangeLog v1.3.8 (20240423)
 

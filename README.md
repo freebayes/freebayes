@@ -469,7 +469,7 @@ On Debian you'll need a gcc compiler and want packages:
 - meson
 - ninja-build
 - libvcflib-tools
-- vcftools
+- vcftools (or vcflib)
 
 Build dependencies are listed in [guix.scm](./guix.scm) and
 [travis](.travis.yml). Builds have been tested with gcc 7 and clang 9.
