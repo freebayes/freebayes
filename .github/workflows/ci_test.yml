@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8]
+        python-version: [3.12]
     steps:
     - name: Install dependencies
       run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libseqlib2 libseqlib-dev libvcflib-dev libfastahack-dev fastahack smithwaterman libwfa2-dev libsimde-dev
@@ -24,7 +24,6 @@ jobs:
       run: ninja -C build/
     - name: Run tests
       run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
-
 
   build-aarch64:
     name: freebayes-CI aarch64
