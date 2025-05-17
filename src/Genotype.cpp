@@ -1,5 +1,5 @@
 #include "Genotype.h"
-#include "multichoose.h"
+#include <vcflib/multichoose.h>
 #include "multipermute.h"
 
 

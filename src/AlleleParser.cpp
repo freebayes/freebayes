@@ -1,9 +1,8 @@
 #include "AlleleParser.h"
-#include "multichoose.h" // includes generic functions, so it must be included here
-                         // otherwise we will get a linker error
-                         // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
-                         // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
-#include "multipermute.h"
+#include <vcflib/multichoose.h> // includes generic functions, so it must be included here
+                                // otherwise we will get a linker error
+                                // see: http://stackoverflow.com/questions/36039/templates-spread-across-multiple-files
+                                // http://www.cplusplus.com/doc/tutorial/templates/ "Templates and Multi-file projects"
 #include "Logging.h"
 
 using namespace std;

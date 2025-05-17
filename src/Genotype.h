@@ -19,8 +19,8 @@
 #include "CNV.h"
 #include "Ewens.h"
 #include "Bias.h"
-#include "join.h"
-#include "convert.h"
+#include <vcflib/join.h>
+#include <smithwaterman/convert.h>
 
 using namespace std;
 

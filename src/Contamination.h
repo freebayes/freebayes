@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
-#include "split.h"
+#include <fastahack/split.h>
 
 using namespace std;
 

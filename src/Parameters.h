@@ -9,7 +9,7 @@
 #include <map>
 #include <getopt.h>
 #include <stdlib.h>
-#include "split.h"
+#include <fastahack/split.h>
 #include "version_git.h"
 #include "Utility.h"
 
