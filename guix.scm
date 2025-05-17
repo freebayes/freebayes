@@ -13,7 +13,7 @@
 ;;   meson setup build/ --buildtype debug
 ;;   cd build
 ;;   ninja
-;;   ninja test
+;;   meson test -t 2
 
 (define-module (guix)
   #:use-module (ice-9 popen)

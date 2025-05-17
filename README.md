@@ -6,6 +6,8 @@
 [![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://packages.guix.gnu.org/packages/freebayes/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://tracker.debian.org/pkg/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
 --------
 
+Note that CI tests fail until vcflib is updated on the main distros to 1.0.13.
+
 ## Overview
 
 [*freebayes*](http://arxiv.org/abs/1207.3907) is a
@@ -497,7 +499,7 @@ Next compile and test in the ~build~ directory
 
     cd build
     ninja
-    ninja test
+    meson test -t 2
 
 The freebayes binary should be in
 
@@ -518,3 +520,20 @@ container with all the build tools with
     guix shell -C -D -f guix.scm
 
 See also the header of [guix.scm](./guix.scm).
+
+### RELEASES
+
+freebayes is released on github. The tarballs are used by Linux distributions to build and release freebayes binaries.
+For a release the following protocol is followed:
+
+- [ ] Build and test using a recent `guix pull` -- see [guix.scm](./guix.scm) header
+- [ ] Update RELEASE_NOTES checking git record since last release
+- [ ] Bump VERSION file
+- [ ] Update documentation to reflect latest (see CMakeLists.txt)
+- [ ] Check issue tracker for information
+- [ ] Create github release after pushing and checking CI
+- [ ] Copy release notes to github release
+- [ ] Add full tarball with git submodules for conda and such
+- [ ] Add static binaries for vcfwave, vcfcreatemulti, etc and provide download link
+
+See also [RELEASE_NOTES.md](./RELEASE_NOTES.md)
