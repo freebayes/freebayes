@@ -10,6 +10,3 @@
 [submodule "contrib/fastahack"]
 	path = contrib/fastahack
 	url = https://github.com/ekg/fastahack.git
-[submodule "contrib/multichoose"]
-	path = contrib/multichoose
-	url = https://github.com/vcflib/multichoose.git
