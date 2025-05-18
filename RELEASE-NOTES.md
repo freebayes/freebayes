@@ -6,12 +6,16 @@ and
 
 ## ChangeLog current
 
+## ChangeLog v1.3.10 (20250518)
+
 + guix.scm: updated to latest vcflib, so paths match
 + Note that CI tests fail until vcflib is updated on the main distros to 1.0.13
 + git module: removed multichoose as it is part of vcflib
 + added multipermute.h because is not installed by vfclib (maybe change that)
 + build fixes by @cho-m (thanks!)
 + build fixes by @mr-c (thanks!)
+
+Note the github CI is broken until mainstream distros package vcflib 1.0.13 or later
 
 ## ChangeLog v1.3.9 (20250215)
 

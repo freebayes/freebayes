@@ -10,7 +10,7 @@
 ;;
 ;;   mkdir -p /usr/bin ; ln -s $GUIX_ENVIRONMENT/bin/env /usr/bin/env
 ;;
-;;   meson setup build/ --buildtype debug
+;;   meson setup build/ --buildtype debug --wipe
 ;;   cd build
 ;;   ninja
 ;;   meson test -t 2
@@ -57,11 +57,11 @@
 
 (define-public vcflib-github ;; should update upstream
   (let ((commit
-         "288cb6eef7a820115c50e7d45ce25d8dc59fbafd"
+         "9e8c0192d677bddd68eb2743ff9ec194995e92b7"
                 ))
     (package
      (name "vcflib-github")
-     (version (string-append "1.0.13-" (string-take commit 7)))
+     (version (string-append "1.0.14-" (string-take commit 7)))
      (source
       (origin
        (method git-fetch)
@@ -72,7 +72,7 @@
        (file-name (string-append name "-" version "-checkout"))
        (sha256
         (base32
-         "1cmxcvw3qkzh5lf2rg212zalsrz7y8gxa3snbi4c22z9j3x9iqah"
+         "0jvy98q4zy7md14c2h40xpd9hng8a2070g8b3lw0rigjnfkwziyl"
         ))))
     (build-system cmake-build-system)
     (arguments
@@ -110,7 +110,7 @@
 (define-public freebayes-git
   (package
     (name "freebayes-git")
-    (version (git-version "1.3.9" "HEAD" %git-commit))
+    (version (git-version "1.3.10" "HEAD" %git-commit))
     (source (local-file %source-dir #:recursive? #t))
     (build-system meson-build-system)
     (propagated-inputs
