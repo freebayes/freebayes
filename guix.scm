@@ -6,9 +6,7 @@
 ;;
 ;;   guix shell -C -D -F -f guix.scm
 ;;
-;; For the tests you need /usr/bin/env. Inside the container:
-;;
-;;   mkdir -p /usr/bin ; ln -s $GUIX_ENVIRONMENT/bin/env /usr/bin/env
+;; Build with
 ;;
 ;;   meson setup build/ --buildtype debug --wipe
 ;;   cd build
@@ -247,7 +245,8 @@ a short-read sequencing alignment.")
      (list
       #:tests? #f
       #:configure-flags
-        #~(list
+      #~(list
+         "-Dprefer_system_deps=false"
          "-Dstatic=true")  ; force static build and do not rewrite RPATH
       #:phases
         #~(modify-phases %standard-phases
@@ -270,13 +269,13 @@ a short-read sequencing alignment.")
 
 (define-public freebayes-debug
   (package
-    (inherit freebayes-git)
+    (inherit freebayes-static-git)
     (name "freebayes-debug")
     (build-system meson-build-system)
-    (native-inputs
-     (modify-inputs (package-inputs freebayes-git)
-                    (prepend
-                     meson)))
+    ;; (inputs
+    ;;  (modify-inputs (package-inputs freebayes-git)
+    ;;                 (prepend
+    ;;                  meson)))
     (arguments
      `(#:tests? #f
        #:phases (modify-phases %standard-phases
@@ -286,4 +285,4 @@ a short-read sequencing alignment.")
                                (delete 'check)
                                (delete 'install))))))
 
-freebayes-git
+freebayes-debug
