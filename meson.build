@@ -12,6 +12,8 @@
 #     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
 #
 # See also meson_options.txt and contrib/README.md
+#
+# We use guix.scm for development -- see the header of the guix.scm file
 
 project('freebayes', ['cpp', 'c'],
         version : '1.3.10',
