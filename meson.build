@@ -62,8 +62,18 @@ else
   # uses the minimal local git submodules or checkout trees in ./contrib/
   # see `git submodule`
   # htslib and vcflib have to come from the underlying distro
+
+  vcflib_dep = dependency('', required : false) # from this tree
   fastahack_dep = dependency('', required : false) # from this tree
   smithwaterman_dep = dependency('', required : false) # from this tree
+
+  vcflib_inc = include_directories('contrib/vcflib-min/include')
+  vcflib_src = files(
+      'contrib/vcflib-min/src/Variant.cpp',
+      'contrib/vcflib-min/src/ssw_cpp.cpp',
+      'contrib/vcflib-min/src/cigar.cpp',
+      'contrib/vcflib-min/src/allele.cpp'
+  )
 
   fastahack_inc = include_directories('contrib/fastahack')
   fastahack_src = files(
@@ -78,6 +88,7 @@ else
       'contrib/smithwaterman/Repeats.cpp',
       'contrib/smithwaterman/LeftAlign.cpp',
       'contrib/smithwaterman/IndelAllele.cpp',
+      # 'contrib/smithwaterman/SWMain.cpp',
   )
 
 endif # build git modules
@@ -134,8 +145,12 @@ freebayes_common_src = files(
     'src/SegfaultHandler.cpp',
     'src/Utility.cpp',
     )
+
 freebayes_src = files('src/freebayes.cpp')
 bamleftalign_src = files('src/bamleftalign.cpp')
+
+freebayes_common_src += vcflib_src
+freebayes_common_src += smithwaterman_src
 
 # Include paths
 incdir = include_directories(
@@ -154,8 +169,8 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     [freebayes_common_src, fastahack_src],
-    # pic: true,
-    include_directories : [incdir, vcflib_inc, fastahack_inc],
+    pic: false,
+    include_directories : [incdir, vcflib_inc, smithwaterman_inc, fastahack_inc],
     cpp_args : extra_cpp_args,
     dependencies : [vcflib_dep, zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
                     wfa2lib_dep, seqlib_dep],

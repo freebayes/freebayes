@@ -191,7 +191,7 @@
        ("simde" ,simde)
        ("smithwaterman" ,smithwaterman) ; vcflib shared lib dependency ; bundle for Debian
        ("tabixpp" ,tabixpp)    ; for htslib
-       ("vcflib-github" ,vcflib-github)  ; for includes and testing freebayes-parallel
+       ;; ("vcflib-github" ,vcflib-github)  ; for includes and testing freebayes-parallel
        ("wfa2-lib" ,wfa2-lib)  ; vcflib shared lib dependency
        ("which" ,which)))        ; for version
     (native-inputs
@@ -250,7 +250,8 @@ a short-read sequencing alignment.")
          "-Dprefer_system_deps=false"
          "-Dstatic=true")  ; force static build and do not rewrite RPATH
       #:phases
-        #~(modify-phases %standard-phases
+      #~(modify-phases %standard-phases
+                  (delete 'shrink-runpath)
                   (add-after 'unpack 'includes
                     (lambda _
                       (substitute* "meson.build"
@@ -258,6 +259,9 @@ a short-read sequencing alignment.")
                                     (string-append "vcflib_inc = include_directories('" #$vcflib-static-github "/include/vcflib')"))))))))
     (inputs
      (modify-inputs (package-inputs freebayes-git)
+                    (delete (list
+                             vcflib
+                             vcflib-github))
                     (prepend
                      `(,bzip2 "static")
                      `(,zlib "static")
@@ -265,7 +269,7 @@ a short-read sequencing alignment.")
                      ;; ("xz-static" ,xz "static")     ; for static builds
                      ;; ("zlib-static" ,zlib "static")))
                      libdeflate-static
-                     vcflib-static-github
+                     ;; vcflib-static-github
                      htslib-static)))))
 
 (define-public freebayes-debug
