@@ -9,7 +9,11 @@
 #
 # to build static binary for release
 #
-#     meson build -Dstatic=true -Dprefer_system_deps=false --buildtype release
+#      meson setup build/ -Dstatic=true -Dprefer_system_deps=false --buildtype release
+#
+# or for debugging
+#
+#      meson setup build/ --buildtype debug --wipe -Dprefer_system_deps=false -Dstatic=true
 #
 # See also meson_options.txt and contrib/README.md
 #
@@ -150,6 +154,7 @@ extra_cpp_args = cc.get_supported_arguments(
 freebayes_lib = static_library(
     'freebayes_common',
     [freebayes_common_src, fastahack_src],
+    # pic: true,
     include_directories : [incdir, vcflib_inc, fastahack_inc],
     cpp_args : extra_cpp_args,
     dependencies : [vcflib_dep, zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,

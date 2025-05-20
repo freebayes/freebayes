@@ -16,6 +16,7 @@
 ;; For a static build use
 ;;
 ;;   guix build -L . freebayes-static-git [--tune=native]
+;;   meson setup build/ --buildtype debug --wipe -Dprefer_system_deps=false -Dstatic=true
 ;;
 ;; and for debugging
 ;;
