@@ -191,7 +191,7 @@
        ("simde" ,simde)
        ("smithwaterman" ,smithwaterman) ; vcflib shared lib dependency ; bundle for Debian
        ("tabixpp" ,tabixpp)    ; for htslib
-       ;; ("vcflib-github" ,vcflib-github)  ; for includes and testing freebayes-parallel
+       ("vcflib-github" ,vcflib-github)  ; for includes and testing freebayes-parallel
        ("wfa2-lib" ,wfa2-lib)  ; vcflib shared lib dependency
        ("which" ,which)))        ; for version
     (native-inputs
@@ -216,7 +216,14 @@
        ("bzip2" ,bzip2)    ; libz2 part of htslib
        ))
     (arguments
-     (list #:phases
+     (list
+      #:configure-flags
+      #~(list
+         ;; "--buildtype debug"
+         ;; "--buildtype release"
+         "-Dprefer_system_deps=true" ; we use local files
+         )
+      #:phases
            #~(modify-phases %standard-phases
                   (add-after 'unpack 'includes
                     (lambda _
@@ -247,7 +254,9 @@ a short-read sequencing alignment.")
       #:tests? #f
       #:configure-flags
       #~(list
-         "-Dprefer_system_deps=false"
+         ;; "--buildtype debug"
+         ;; "--buildtype release"
+         "-Dprefer_system_deps=false" ; we use local files
          "-Dstatic=true")  ; force static build and do not rewrite RPATH
       #:phases
       #~(modify-phases %standard-phases
@@ -260,16 +269,15 @@ a short-read sequencing alignment.")
     (inputs
      (modify-inputs (package-inputs freebayes-git)
                     (delete (list
+                             htslib
                              vcflib
                              vcflib-github))
                     (prepend
                      `(,bzip2 "static")
                      `(,zlib "static")
                      `(,xz "static")
-                     ;; ("xz-static" ,xz "static")     ; for static builds
-                     ;; ("zlib-static" ,zlib "static")))
                      libdeflate-static
-                     ;; vcflib-static-github
+                     ;; vcflib-static-github -- no longer used
                      htslib-static)))))
 
 (define-public freebayes-debug
@@ -290,4 +298,4 @@ a short-read sequencing alignment.")
                                (delete 'check)
                                (delete 'install))))))
 
-freebayes-debug
+freebayes-static-git

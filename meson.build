@@ -48,7 +48,7 @@ else
   vcflib_inc = files()
 endif
 
-if get_option('prefer_system_deps') # defaults to true, otherwise use git modules and local sources
+if get_option('prefer_system_deps')
   fastahack_dep = cc.find_library('libfastahack', required: true) # also link in for vcflib
   fastahack_src = files()
   smithwaterman_dep = cc.find_library('libsmithwaterman')
@@ -58,6 +58,10 @@ if get_option('prefer_system_deps') # defaults to true, otherwise use git module
   else
     fastahack_inc = files()
   endif
+  vcflib_inc = files()
+  vcflib_src = files()
+  smithwaterman_inc = files()
+  smithwaterman_src = files()
 else
   # uses the minimal local git submodules or checkout trees in ./contrib/
   # see `git submodule`
