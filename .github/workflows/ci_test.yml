@@ -19,9 +19,9 @@ jobs:
       run: git submodule update --init --recursive
     - run: pip install meson ninja
     - name: Configure
-      run: meson setup build/
+      run: meson setup build/ -Dprefer_system_deps=false
     - name: Compile
-      run: ninja -C build/
+      run: ninja -C build/ -v
     - name: Run tests
       run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
 
