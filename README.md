@@ -2,8 +2,7 @@
 ## user manual and guide
 
 
-[![Github-CI](https://github.com/freebayes/freebayes/workflows/CI/badge.svg)](https://github.com/freebayes/freebayes/actions) [![Travis-CI](https://travis-ci.com/freebayes/freebayes.svg?branch=master)](https://travis-ci.com/freebayes/freebayes)
-[![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://packages.guix.gnu.org/packages/freebayes/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://tracker.debian.org/pkg/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
+[![Github-CI](https://github.com/freebayes/freebayes/workflows/CI/badge.svg)](https://github.com/freebayes/freebayes/actions) [![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![Guix](https://packages.guix.gnu.org/packages/freebayes/badges/latest-version.svg)](https://packages.guix.gnu.org/packages/freebayes) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://tracker.debian.org/pkg/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
 --------
 
 Note that CI tests may fail until vcflib is updated on the main distros to 1.0.13. This is because of the location of vcflib include files moved to /usr/include/vcflib.
