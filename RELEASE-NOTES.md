@@ -6,7 +6,7 @@ and
 
 ## ChangeLog current
 
-## ChangeLog v1.3.10 (20250518)
+## ChangeLog v1.3.10 (20250531)
 
 + guix.scm: updated to latest vcflib, so paths match
 + Note that CI tests fail until vcflib is updated on the main distros to 1.0.13
@@ -14,8 +14,7 @@ and
 + added multipermute.h because is not installed by vfclib (maybe change that)
 + build fixes by @cho-m (thanks!)
 + build fixes by @mr-c (thanks!)
-
-Note the github CI is broken until mainstream distros package vcflib 1.0.13 or later
++ Disabled ARM64 build on github-CI. Maybe enable some day...
 
 ## ChangeLog v1.3.9 (20250215)
 

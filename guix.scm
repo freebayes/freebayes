@@ -298,4 +298,4 @@ a short-read sequencing alignment.")
                                (delete 'check)
                                (delete 'install))))))
 
-freebayes-static-git
+freebayes-debug

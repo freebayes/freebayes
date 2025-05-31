@@ -6,7 +6,7 @@
 [![DL](https://anaconda.org/bioconda/freebayes/badges/downloads.svg)](https://anaconda.org/bioconda/freebayes) [![BrewBadge](https://img.shields.io/badge/%F0%9F%8D%BAbrew-freebayes-brightgreen.svg)](https://github.com/brewsci/homebrew-bio) [![GuixBadge](https://img.shields.io/badge/gnuguix-freebayes-brightgreen.svg)](https://packages.guix.gnu.org/packages/freebayes/) [![DebianBadge](https://badges.debian.net/badges/debian/testing/freebayes/version.svg)](https://tracker.debian.org/pkg/freebayes) [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#vcflib:matrix.org)
 --------
 
-Note that CI tests fail until vcflib is updated on the main distros to 1.0.13.
+Note that CI tests may fail until vcflib is updated on the main distros to 1.0.13. This is because of the location of vcflib include files moved to /usr/include/vcflib.
 
 ## Overview
 
@@ -528,8 +528,8 @@ For a release the following protocol is followed:
 
 - [ ] Build and test using a recent `guix pull` -- see [guix.scm](./guix.scm) header
 - [ ] Update RELEASE_NOTES checking git record since last release
-- [ ] Bump VERSION file
-- [ ] Update documentation to reflect latest (see CMakeLists.txt)
+- [ ] Bump VERSION file, meson.build and guix.scm
+- [ ] Update documentation to reflect latest
 - [ ] Check issue tracker for information
 - [ ] Create github release after pushing and checking CI
 - [ ] Copy release notes to github release
