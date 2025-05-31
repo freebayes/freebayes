@@ -534,6 +534,7 @@ For a release the following protocol is followed:
 - [ ] Create github release after pushing and checking CI
 - [ ] Copy release notes to github release
 - [ ] Add full tarball with git submodules for conda and such
+- [ ] Run performance tests
 - [ ] Add static binaries and provide download link
 
 See also [RELEASE_NOTES.md](./RELEASE_NOTES.md)

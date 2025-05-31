@@ -10,13 +10,52 @@ And a reference genome. E.g.
 
     wget http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chr20.fa.gz
 
-and unpack. Note you need to change the first 'chr20' tag to '20' for this to work.
+and unpack. Note you need to change the first 'chr20' tag to '20' for this to work. And index with
 
-To speed things up somewhat using a smaller ref
+    samtools faidx chr20.fa
 
-    head -6000 chr20.fa > chr20-6K.fa
+Create BAM index
+
+    samtools index HG00100.chrom20.ILLUMINA.bwa.GBR.low_coverage.20130415.bam
+
+## AMD Ryzen 7 3700X 8-Core Processor
+
+```sh
+time ./freebayes-static-1.3.10-b0d8efd -f chr20.fa HG00100.chrom20.ILLUMINA.bwa.GBR.low_coverage.20130415.bam --region 20:60031-229081 > fb-test-1.3.0-1.vcf
+real    0m30.446s
+user    0m30.274s
+sys     0m0.144s
+```
+
+similar to the fastest
+
+```sh
+time ./freebayes-1.3.6-linux-amd64-static -f chr20.fa HG00100.chrom20.ILLUMINA.bwa.GBR.low_coverage.20130415.bam --region 20:60031-229081 > fb-test-1.3.0-1.vcf
+
+real    0m29.773s
+user    0m29.491s
+sys     0m0.184s
+```
+
+a native compile (znver2) is the same speed, so we ship the generic version:
+
+```
+freebayes 1.3.10
+
+  User defined options
+    buildtype         : debugoptimized
+    prefix            : /gnu/store/7h6d10wbkwzjfc1ili1rvypisbbpbvrl-freebayes-static-git-1.3.10-HEAD.b0d8efd
+    c_link_args       : -Wl,-rpath=/gnu/store/7h6d10wbkwzjfc1ili1rvypisbbpbvrl-freebayes-static-git-1.3.10-HEAD.b0d8efd/lib
+    cpp_link_args     : -Wl,-rpath=/gnu/store/7h6d10wbkwzjfc1ili1rvypisbbpbvrl-freebayes-static-git-1.3.10-HEAD.b0d8efd/lib
+    prefer_system_deps: false
+    static            : true
+```
 
 ## Penguin2 56x Intel(R) Xeon(R) CPU E5-2683 v3 @ 2.00GHz, 256Gb
+
+Note we used in the older runs:
+
+    head -6000 chr20.fa > chr20-6K.fa
 
 First test an older 1.3.0 release:
 
