@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 if [ $# -lt 3 ];
 then
     echo "usage: $0 [regions file] [ncpus] [freebayes arguments]"
