@@ -52,7 +52,9 @@ freebayes was never submitted for review, but has been used in over 1000 publica
 
 Please use this citation format:
 
-Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing. *arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
+Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing. *arXiv preprint arXiv:1207.3907
+        
+         [q-bio.GN]* 2012
 
 If possible, please also refer to the version number provided by freebayes when it is run without arguments or with the `--help` option.
 
@@ -158,8 +160,15 @@ Example freebayes-parallel operation (use 36 cores in this case):
     freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 \
         -f ref.fa aln.bam > var.vcf
 
+**The fasta_generate_regions.py utility also supports explicit chromosome region specification for targeted chunking, enabling easier job recovery from failure points or focused analysis.**
+
+Example using the new region specification feature:
+
+    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000 --chromosomes 1,2:85284353-,3:100000-200000) 36 \
+        -f ref.fa aln.bam > var.vcf
+    
 Note that any of the above examples can be made parallel by using the
-scripts/freebayes-parallel script.  If you find freebayes to be slow, you
+scripts/freebayes-parallel script. If you find freebayes to be slow, you
 should probably be running it in parallel using this script to run on a single
 host, or generating a series of scripts, one per region, and run them on a
 cluster. Be aware that the freebayes-parallel script contains calls to other programs using relative paths from the scripts subdirectory; the easiest way to ensure a successful run is to invoke the freebayes-parallel script from within the scripts subdirectory.
