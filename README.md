@@ -158,8 +158,15 @@ Example freebayes-parallel operation (use 36 cores in this case):
     freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 \
         -f ref.fa aln.bam > var.vcf
 
+**The `fasta_generate_regions.py` utility now supports specifying specific chromosome regions for targeted chunking.**
+
+Example using the new region specification feature:
+
+    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000 --chromosomes 2:85284353- 3:100000-200000) 36 \
+        -f ref.fa aln.bam > var.vcf
+    
 Note that any of the above examples can be made parallel by using the
-scripts/freebayes-parallel script.  If you find freebayes to be slow, you
+scripts/freebayes-parallel script. If you find freebayes to be slow, you
 should probably be running it in parallel using this script to run on a single
 host, or generating a series of scripts, one per region, and run them on a
 cluster. Be aware that the freebayes-parallel script contains calls to other programs using relative paths from the scripts subdirectory; the easiest way to ensure a successful run is to invoke the freebayes-parallel script from within the scripts subdirectory.
