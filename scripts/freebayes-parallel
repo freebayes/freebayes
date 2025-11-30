@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 
-if [ $# -lt 3 ];
-then
+# === 0. Configuration ===
+# Set local tmp dir to avoid exhausting system /tmp
+export TMPDIR=$(pwd)/parallel_tmp
+mkdir -p "$TMPDIR"
+
+if ! command -v bcftools &> /dev/null; then echo "Error: bcftools missing"; exit 1; fi
+
+# === Usage / Help Message ===
+if [ $# -lt 3 ]; then 
     echo "usage: $0 [regions file] [ncpus] [freebayes arguments]"
     echo
     echo "Run freebayes in parallel over regions listed in regions file, using ncpus processors."
@@ -22,19 +29,128 @@ then
     echo "    bamtools coverage -in aln.bam | coverage_to_regions.py ref.fa.fai 500 >ref.fa.500.regions"
     echo "    freebayes-parallel ref.fa.500.regions 36 -f ref.fa aln.bam >out.vcf"
     echo
-    exit
+    echo "--------------------------------------------------------------------------------"
+    echo "Extended Feature: Optional Memory Guard"
+    echo "You can optionally specify a memory limit as the 3rd argument to prevent OOM."
+    echo "usage: $0 [regions file] [ncpus] [mem_limit] [freebayes arguments]"
+    echo "example: $0 regions.txt 80 60G -f ref.fa aln.bam >out.vcf"
+    echo
+    exit 1
 fi
 
-regionsfile=$1
+# === 1. Argument Parsing ===
+regions_input=$1
 shift
 ncpus=$1
 shift
 
-command=("freebayes" "$@")
+# Check if the next argument is a memory limit (e.g., 30G, 50%)
+# If it matches the pattern, use it; otherwise, treat it as a FreeBayes argument.
+if [[ "$1" =~ ^[0-9]+[GgMm%]$ ]]; then
+    MEM_LIMIT=$1
+    shift # Consume the argument
+    echo "[Config] Memory Limit set by user: $MEM_LIMIT"
+else
+    MEM_LIMIT="2G" # Default value
+    echo "[Config] Memory Limit using default: $MEM_LIMIT"
+fi
+
+# Serialize remaining arguments safely for subshells
+ARGS_STR=$(printf " %q" "$@")
+
+# === 2. Workspace Setup ===
+WORK_DIR="./freebayes_temp_data"
+mkdir -p "$WORK_DIR"
+REGIONS_DUMP="${WORK_DIR}/all_regions.txt"
+REGIONS_REST="${WORK_DIR}/regions_for_parallel.txt"
+PART1_VCF="${WORK_DIR}/part1_header_and_data.vcf"
+PART2_VCF="${WORK_DIR}/part2_parallel_data.vcf"
+JOBLOG="${WORK_DIR}/joblog.txt"
+LOG_PART1="${WORK_DIR}/part1_execution.log"
+
+echo "==============================================="
+echo "   FreeBayes Parallel (Async + Flexible RAM)   "
+echo "==============================================="
+
+# === 3. Data Preparation ===
+# Snapshot input regions to disk to ensure consistency
+if [ ! -s "$REGIONS_DUMP" ]; then
+    cat "$regions_input" > "$REGIONS_DUMP"
+    sync
+fi
+total_regions=$(wc -l < "$REGIONS_DUMP")
+
+if [ "$total_regions" -lt 1 ]; then echo "Error: Empty regions!"; exit 1; fi
+
+# Split regions: Line 1 (for Header+Data) vs Remaining lines (for Parallel Data)
+first_region=$(head -n 1 "$REGIONS_DUMP")
+tail -n +2 "$REGIONS_DUMP" > "$REGIONS_REST"
+
+echo "[Info] Total Regions: $total_regions"
+
+# === 4. Track A: Region 1 (Background) ===
+# Runs the first region to generate the VCF Header and data.
+# Executed in background (&) so parallel jobs start immediately.
+echo "--------------------------------------------------------"
+echo "[Track A] Launching Region 1 (Header + Data)..."
+echo "Target: $first_region"
 
 (
-#$command | head -100 | grep "^#" # generate header
-# iterate over regions using gnu parallel to dispatch jobs
-cat "$regionsfile" | parallel -k -j "$ncpus" "${command[@]}" --region {}
-) | vcffirstheader \
-    | vcfstreamsort -w 1000 | vcfuniq # remove duplicates at region edges
+    set -o pipefail
+    eval freebayes $ARGS_STR --region "$first_region" > "$PART1_VCF" 2> "$LOG_PART1"
+) & 
+PID_PART1=$!
+echo "[Track A] PID: $PID_PART1 (Running in background)"
+
+# === 5. Track B: Parallel Execution ===
+# Runs remaining regions. Output excludes headers (grep -v).
+# --memfree pauses new jobs if RAM is low to prevent OOM.
+echo "--------------------------------------------------------"
+echo "[Track B] Launching Parallel..."
+echo "CPUs: $ncpus"
+echo "Mem Guard: Pause if free RAM < $MEM_LIMIT" 
+
+CMD="freebayes $ARGS_STR --region {} | grep -v '^#'"
+
+parallel \
+    --joblog "$JOBLOG" \
+    --resume \
+    --tmpdir "$TMPDIR" \
+    --line-buffer \
+    -j "$ncpus" \
+    --memfree "$MEM_LIMIT" \
+    -a "$REGIONS_REST" \
+    "$CMD" >> "$PART2_VCF"
+
+if [ $? -ne 0 ]; then
+    echo "❌ Error: Parallel jobs failed."
+    kill $PID_PART1 2>/dev/null
+    exit 1
+fi
+echo "[Track B] Finished."
+
+# === 6. Synchronization ===
+# Wait for Track A (Region 1) to finish before merging.
+echo "--------------------------------------------------------"
+echo "[Sync] Waiting for Region 1..."
+wait $PID_PART1
+if [ $? -ne 0 ]; then
+    echo "❌ Error: Region 1 failed. Check $LOG_PART1"
+    exit 1
+fi
+
+if [ ! -s "$PART1_VCF" ] || ! grep -q "^#CHROM" "$PART1_VCF"; then
+    echo "❌ Error: Region 1 header missing/empty."
+    exit 1
+fi
+echo "[Sync] Region 1 OK."
+
+# === 7. Merge & Sort ===
+# Combine Part 1 (Header+Data) and Part 2 (Data only), then sort.
+echo "--------------------------------------------------------"
+echo "[Final] Merging..."
+cat "$PART1_VCF" "$PART2_VCF" \
+    | bcftools sort -m 4G -O v \
+    | vcfuniq
+
+echo "✅ Done."
