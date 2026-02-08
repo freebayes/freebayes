@@ -98,3 +98,34 @@ These priors get updated by the likelihood from the actual read data, so strong 
 - One allele per position
 - Two possible genotypes: A or G
 - Simpler priors: P(A) ≈ 1 - θ and P(G) ≈ θ
+
+## Local realignment
+
+FreeBayes performs realignment "on the fly" for each candidate variant site:
+
+- Identify candidate haplotypes: At each position, FreeBayes examines the reads and generates candidate haplotypes (possible sequences) that could explain the observed data, including different combinations of SNPs, indels, and complex variants.
+- Realign reads to haplotypes: For each read overlapping the region, FreeBayes realigns it against each candidate haplotype using a pair-HMM (Hidden Markov Model) or similar alignment algorithm. This produces an alignment likelihood for each read-haplotype pair.
+- Compute likelihoods: The likelihood P(data | genotype) in the Bayesian framework is computed based on these haplotype-aware alignments, not the original BAM alignments.
+- Call variants: The Bayesian genotype calling uses these realignment-based likelihoods.
+
+This integrated approach means:
+
+- You don't need to run a separate realignment preprocessing step (unlike older GATK workflows that required IndelRealigner)
+- Reads are realigned specifically in the context of the variants being evaluated
+- It naturally handles complex variants where multiple nearby SNPs and indels interact
+- The uncertainty from realignment is properly propagated into the variant calls
+
+How it works:
+
+- Candidate Generation Phase: FreeBayes uses heuristics and initial observations from the reads to generate a set of candidate haplotypes (possible variant combinations). This is influenced by:
+- Read evidence (what variants appear in reads)
+- Prior expectations (minimum allele frequency thresholds)
+- Complexity limits (how many variants to consider jointly)
+- Realignment Phase: Reads are realigned against each candidate haplotype independently. This produces likelihoods P(read | haplotype).
+- Bayesian Calling Phase: The posterior probabilities P(genotype | data) are computed using these likelihoods plus priors.
+
+The Bayesian calling therefore doesn't iterate back to refine the realignments themselves. However, the set of candidate haplotypes that reads are realigned against is influenced by:
+
+- Evidence strength in the reads
+- Prior probability considerations (FreeBayes won't generate wildly implausible haplotypes)
+- Computational tractability (limiting the haplotype space)
