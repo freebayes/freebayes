@@ -52,7 +52,9 @@ freebayes was never submitted for review, but has been used in over 1000 publica
 
 Please use this citation format:
 
-Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing. *arXiv preprint arXiv:1207.3907 [q-bio.GN]* 2012
+Garrison E, Marth G. Haplotype-based variant detection from short-read sequencing. *arXiv preprint arXiv:1207.3907
+        
+         [q-bio.GN]* 2012
 
 If possible, please also refer to the version number provided by freebayes when it is run without arguments or with the `--help` option.
 
@@ -150,21 +152,46 @@ Naive variant calling: simply annotate observation counts of SNPs and indels:
 
 ## Parallelisation
 
-In general, freebayes can be parallelised by running multiple instances of freebayes on separate regions of the genome, and then concatenating the resulting output.
-The wrapper, [freebayes-parallel](https://github.com/ekg/freebayes/blob/master/scripts/freebayes-parallel) will perform this, using [GNU parallel](https://www.gnu.org/software/parallel/).
+## Parallelisation
 
-Example freebayes-parallel operation (use 36 cores in this case):
+In general, freebayes can be parallelised by running multiple instances of freebayes on separate regions of the genome, and then merging the resulting output. The wrapper, [freebayes-parallel](https://github.com/ekg/freebayes/blob/master/scripts/freebayes-parallel), automates this process using [GNU parallel](https://www.gnu.org/software/parallel/).
+
+This wrapper is optimized for High-Performance Computing (HPC) and large-scale datasets. Key features include:
+* **Disk-based Sorting:** Utilizes `bcftools sort` for external sorting, maintaining a low and constant memory footprint even with massive datasets.
+* **Async Execution:** Jobs run asynchronously and stream results immediately upon completion, maximizing CPU utilization.
+* **Memory Guard:** An optional parameter to pause job dispatch if system RAM is low, ensuring stability on shared nodes.
+* **Resumability:** Integrated support for GNU Parallel's `--resume`, allowing interrupted jobs to continue from where they left off.
+
+### Usage
+
+**Standard Example** (using 36 cores):
 
     freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 \
         -f ref.fa aln.bam > var.vcf
 
-Note that any of the above examples can be made parallel by using the
-scripts/freebayes-parallel script.  If you find freebayes to be slow, you
-should probably be running it in parallel using this script to run on a single
-host, or generating a series of scripts, one per region, and run them on a
-cluster. Be aware that the freebayes-parallel script contains calls to other programs using relative paths from the scripts subdirectory; the easiest way to ensure a successful run is to invoke the freebayes-parallel script from within the scripts subdirectory.
+**Targeted Analysis**
+The `fasta_generate_regions.py` utility supports explicit chromosome region specification for targeted chunking:
 
-A current limitation of the freebayes-parallel wrapper, is that due to variance in job memory and runtimes, some cores can go unused for long periods, as they will not move onto the next job unless all cores in use have completed their respective genome chunk. This can be partly avoided by calculating coverage of the input bam file, and splitting the genome into regions of equal coverage using the [coverage_to_regions.py script](https://github.com/freebayes/freebayes/blob/master/scripts/coverage_to_regions.py). An alternative script [split_ref_by_bai_datasize.py](https://github.com/freebayes/freebayes/blob/master/scripts/split_ref_by_bai_datasize.py) will determine target regions based on the data within multiple bam files, with the option of choosing a target data size. This is useful when submitting to Slurm and other cluster job managers, where use of resources needs to be controlled.
+    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000 --chromosomes 1,2:85284353-,3:100000-200000) 36 \
+        -f ref.fa aln.bam > var.vcf
+
+### Memory Protection
+
+For large datasets or memory-constrained environments, you can optionally specify a memory limit (e.g., `30G`) as the 3rd argument. The script will pause dispatching new jobs if free physical RAM drops below this threshold:
+
+    # Run with 36 cores, but pause if free RAM < 30GB
+    freebayes-parallel <(fasta_generate_regions.py ref.fa.fai 100000) 36 30G \
+        -f ref.fa aln.bam > var.vcf
+
+### Optimization Tips
+
+To further optimize performance, it is beneficial to split the genome into regions of equal data coverage rather than equal length. This ensures a balanced load across all cores.
+* **Coverage-based splitting:** Use the [coverage_to_regions.py script](https://github.com/freebayes/freebayes/blob/master/scripts/coverage_to_regions.py).
+* **Index-based splitting:** Use [split_ref_by_bai_datasize.py](https://github.com/freebayes/freebayes/blob/master/scripts/split_ref_by_bai_datasize.py) to determine target regions based on index data size (useful for Slurm job submission).
+
+*Note: Ensure `bcftools` is installed and in your PATH, as it is required for the final merge step.*
+
+Alternatively, users may wish to parallelise freebayes within the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/). An example [.smk file](https://github.com/freebayes/freebayes/blob/master/examples/snakemake-freebayes-parallel.smk), and associated [conda environment recipe](https://github.com/freebayes/freebayes/blob/master/examples/freebayes-env.yaml), can be found in the /examples directory.
 
 Alternatively, users may wish to parallelise freebayes within the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/). As snakemake automatically dispatches jobs when a core becomes available, this avoids the above issue. An example [.smk file](https://github.com/freebayes/freebayes/blob/master/examples/snakemake-freebayes-parallel.smk), and associated [conda environment recipe](https://github.com/freebayes/freebayes/blob/master/examples/freebayes-env.yaml), can be found in the /examples directory.
 
