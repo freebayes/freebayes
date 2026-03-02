@@ -19,22 +19,24 @@ NC='\033[0m' # No Color
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_DATA_DIR="${SCRIPT_DIR}/data"
-BASELINE_DIR="${SCRIPT_DIR}/regression_baseline"
+BASELINE_DIR="${BASELINE_DIR:-${SCRIPT_DIR}/regression_baseline}"
 OUTPUT_DIR="${SCRIPT_DIR}/regression_output"
 
 # Create directories
 mkdir -p "${BASELINE_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
-# Find freebayes executable
-if [ -f "${SCRIPT_DIR}/../build/freebayes" ]; then
-    FREEBAYES="${SCRIPT_DIR}/../build/freebayes"
-elif command -v freebayes &> /dev/null; then
-    FREEBAYES="freebayes"
-else
-    echo -e "${RED}ERROR: freebayes not found${NC}"
-    echo "Build it first: cd build && ninja"
-    exit 1
+# Find freebayes executable (FREEBAYES env var overrides auto-detection)
+if [ -z "${FREEBAYES}" ]; then
+    if [ -f "${SCRIPT_DIR}/../build/freebayes" ]; then
+        FREEBAYES="${SCRIPT_DIR}/../build/freebayes"
+    elif command -v freebayes &> /dev/null; then
+        FREEBAYES="freebayes"
+    else
+        echo -e "${RED}ERROR: freebayes not found${NC}"
+        echo "Build it first: cd build && ninja"
+        exit 1
+    fi
 fi
 
 echo "Using freebayes: ${FREEBAYES}"
@@ -48,6 +50,11 @@ run_test() {
 
     echo ""
     echo "Running test: ${test_name}"
+    echo "  binary:    ${FREEBAYES}"
+    echo "  reference: ${ref}"
+    echo "  bam:       ${bam}"
+    echo "  args:      ${extra_args:-<none>}"
+    echo "  command:   ${FREEBAYES} -f ${ref} ${extra_args} ${bam}"
 
     local baseline="${BASELINE_DIR}/${test_name}.vcf"
     local output="${OUTPUT_DIR}/${test_name}.vcf"
@@ -72,8 +79,9 @@ run_test() {
         return 0
     fi
 
-    # Compare output to baseline
-    if diff -u "${baseline}" "${output}" > "${OUTPUT_DIR}/${test_name}.diff"; then
+    # Compare output to baseline, ignoring volatile headers (date, path, commandline)
+    filter_vcf() { grep -v '^##fileDate\|^##commandline\|^##reference'; }
+    if diff -u <(filter_vcf < "${baseline}") <(filter_vcf < "${output}") > "${OUTPUT_DIR}/${test_name}.diff"; then
         echo -e "${GREEN}PASSED${NC}"
         rm "${OUTPUT_DIR}/${test_name}.diff"
         return 0
