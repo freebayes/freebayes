@@ -140,16 +140,44 @@ else
     FAILED=$((FAILED + 1))
 fi
 
-# If tiny data exists, test with it
-if [ -f "${SCRIPT_DIR}/tiny/q.fa" ] && [ -f "${SCRIPT_DIR}/tiny/NA12878.chr22.tiny.bam" ]; then
-    if run_test "tiny_chr22" \
-        "${SCRIPT_DIR}/tiny/q.fa" \
-        "${SCRIPT_DIR}/tiny/NA12878.chr22.tiny.bam" \
-        "-r q:1-1000"; then
+# NA12878 chr22 tests (require tiny/ data)
+TINY_REF="${SCRIPT_DIR}/tiny/q.fa"
+TINY_BAM="${SCRIPT_DIR}/tiny/NA12878.chr22.tiny.bam"
+
+run_tiny_test() {
+    local name="$1"; shift
+    if run_test "$name" "${TINY_REF}" "${TINY_BAM}" "$*"; then
         PASSED=$((PASSED + 1))
     else
         FAILED=$((FAILED + 1))
     fi
+}
+
+if [ -f "${TINY_REF}" ] && [ -f "${TINY_BAM}" ]; then
+
+    # Regions
+    run_tiny_test "tiny_chr22"              "-r q:1-1000"
+    run_tiny_test "tiny_chr22_region2"      "-r q:1000-5000"
+    run_tiny_test "tiny_chr22_region3"      "-r q:5000-10000"
+    run_tiny_test "tiny_chr22_full"         ""
+
+    # GVCF output (exercises non-variant block logic including cross-chromosome boundary fix)
+    run_tiny_test "tiny_chr22_gvcf"         "-r q:1-1000 --gvcf"
+    run_tiny_test "tiny_chr22_gvcf_nochunk" "-r q:1-1000 --gvcf --gvcf-dont-use-chunk true"
+
+    # Quality filtering
+    run_tiny_test "tiny_chr22_min_mapq"     "-r q:1-1000 --min-mapping-quality 20"
+    run_tiny_test "tiny_chr22_min_baseq"    "-r q:1-1000 --min-base-quality 20"
+
+    # Coverage limit
+    run_tiny_test "tiny_chr22_limit_cov"    "-r q:1-1000 --limit-coverage 20"
+
+    # Ploidy
+    run_tiny_test "tiny_chr22_ploidy1"      "-r q:1-1000 --ploidy 1"
+
+    # Haplotype length
+    run_tiny_test "tiny_chr22_hap_len_0"    "-r q:1-1000 --haplotype-length 0"
+
 fi
 
 # Summary
