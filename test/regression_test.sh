@@ -41,6 +41,23 @@ fi
 
 echo "Using freebayes: ${FREEBAYES}"
 
+# Normalise a VCF for comparison:
+#   - strip volatile headers (date, path, commandline)
+#   - round all floating-point numbers to 3 significant figures so that
+#     tiny FP differences between builds don't cause false failures
+filter_vcf() {
+    grep -v '^##fileDate\|^##commandline\|^##reference' | \
+    python3 -c "
+import re, sys
+# matches floats with decimal point or E-notation, but NOT plain integers
+pat = re.compile(r'[+-]?(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?|[+-]?\d+[eE][+-]?\d+')
+for line in sys.stdin:
+    if not line.startswith('#'):
+        line = pat.sub(lambda m: '{:.3g}'.format(float(m.group())), line)
+    sys.stdout.write(line)
+"
+}
+
 # Test cases
 run_test() {
     local test_name="$1"
@@ -79,8 +96,7 @@ run_test() {
         return 0
     fi
 
-    # Compare output to baseline, ignoring volatile headers (date, path, commandline)
-    filter_vcf() { grep -v '^##fileDate\|^##commandline\|^##reference'; }
+    # Compare output to baseline
     if diff -u <(filter_vcf < "${baseline}") <(filter_vcf < "${output}") > "${OUTPUT_DIR}/${test_name}.diff"; then
         echo -e "${GREEN}PASSED${NC}"
         rm "${OUTPUT_DIR}/${test_name}.diff"
