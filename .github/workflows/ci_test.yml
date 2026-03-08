@@ -27,21 +27,8 @@ jobs:
       run: ninja -C build/ -v
     - name: Run tests
       run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
-    - name: Build master for regression baseline
-      run: |
-        git worktree add /tmp/fb-master origin/master
-        git -C /tmp/fb-master submodule update --init --recursive
-        meson setup /tmp/fb-master/build/ /tmp/fb-master/ -Dprefer_system_deps=false --buildtype debug
-        ninja -C /tmp/fb-master/build/
-    - name: Generate regression baseline from master
-      run: |
-        FREEBAYES=/tmp/fb-master/build/freebayes \
-        BASELINE_DIR=/tmp/fb-baseline \
-        bash test/regression_test.sh --update
-    - name: Run regression tests against master baseline
-      run: |
-        BASELINE_DIR=/tmp/fb-baseline \
-        bash test/regression_test.sh
+    - name: Run regression tests against committed baseline
+      run: bash test/regression_test.sh
 
   build-aarch64:
     name: freebayes-CI aarch64
