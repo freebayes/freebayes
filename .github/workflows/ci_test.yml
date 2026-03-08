@@ -4,31 +4,22 @@ jobs:
   arch:
     name: freebayes-CI
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: [3.12]
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get -y -f install samtools bc parallel libvcflib-tools libseqlib2 libseqlib-dev libvcflib-dev libfastahack-dev fastahack smithwaterman libwfa2-dev libsimde-dev meson ninja-build
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
     - name: Checkout submodules
       run: git submodule update --init --recursive
+    - name: Install Guix
+      uses: guix-hpc/guix-install-action@v1
     - name: Configure
-      run: meson setup build/ -Dprefer_system_deps=false --buildtype debug
+      run: guix shell -D -f guix.scm -- meson setup build/ --buildtype debug --wipe
     - name: Compile
-      run: ninja -C build/ -v
+      run: guix shell -D -f guix.scm -- ninja -C build/ -v
     - name: Run tests
-      run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
+      run: guix shell -D -f guix.scm -- meson test --timeout-multiplier 4 --print-errorlogs -C build/
     - name: Run regression tests against committed baseline
-      run: bash test/regression_test.sh
+      run: guix shell -D -f guix.scm -- bash test/regression_test.sh
 
   build-aarch64:
     name: freebayes-CI aarch64
