@@ -11,7 +11,7 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Guix
-      uses: guix-hpc/guix-install-action@v1
+      uses: PromyLOPh/guix-install-action@v1
     - name: Configure
       run: guix shell -D -f guix.scm -- meson setup build/ --buildtype debug --wipe
     - name: Compile
