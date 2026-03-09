@@ -79,9 +79,8 @@ run_test() {
         return 0
     fi
 
-    # Print baseline file for debugging
+    # Print baseline file path for debugging
     echo "Baseline file: ${baseline}"
-    cat "${baseline}"
 
     # Compare output to baseline, ignoring volatile headers (date, path, commandline)
     filter_vcf() { grep -v '^##fileDate\|^##commandline\|^##reference'; }
