@@ -27,17 +27,17 @@ jobs:
       run: ninja -C build/ -v
     - name: Run tests
       run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
-    - name: Clone and build master for regression baseline
+    - name: Clone and build current branch for regression baseline
       run: |
-        git clone --recurse-submodules --branch master https://github.com/${{ github.repository }} /tmp/fb-master
-        meson setup /tmp/fb-master/build/ /tmp/fb-master/ -Dprefer_system_deps=false --buildtype debug
-        ninja -C /tmp/fb-master/build/
-    - name: Generate regression baseline from master
+        git clone --recurse-submodules --branch ${{ github.head_ref || github.ref_name }} https://github.com/${{ github.repository }} /tmp/fb-branch
+        meson setup /tmp/fb-branch/build/ /tmp/fb-branch/ -Dprefer_system_deps=false --buildtype debug
+        ninja -C /tmp/fb-branch/build/
+    - name: Generate regression baseline from current branch
       run: |
-        FREEBAYES=/tmp/fb-master/build/freebayes \
+        FREEBAYES=/tmp/fb-branch/build/freebayes \
         BASELINE_DIR=/tmp/fb-baseline \
         bash test/regression_test.sh --update
-    - name: Run regression tests against master baseline
+    - name: Run regression tests against current branch baseline
       run: |
         BASELINE_DIR=/tmp/fb-baseline \
         bash test/regression_test.sh
