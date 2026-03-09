@@ -662,11 +662,9 @@ vcflib::Variant& Results::gvcf(
      };
 
     // set up site call
-    // var.ref = uppercase(parser->reference.getSubSequence(startChrom, startPos, 1));
-    var.ref = parser->referenceSubstr(startPos, 1);
+    var.ref = uppercase(parser->reference.getSubSequence(startChrom, startPos, 1));
     var.alt.push_back("<*>");
-    // var.sequenceName = startChrom;
-    var.sequenceName = parser->currentSequenceName;
+    var.sequenceName = startChrom;
     var.position = startPos + 1; // output text field is one-based
     var.id = ".";
     var.filter = ".";
