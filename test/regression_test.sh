@@ -79,6 +79,10 @@ run_test() {
         return 0
     fi
 
+    # Print baseline file for debugging
+    echo "Baseline file: ${baseline}"
+    cat "${baseline}"
+
     # Compare output to baseline, ignoring volatile headers (date, path, commandline)
     filter_vcf() { grep -v '^##fileDate\|^##commandline\|^##reference'; }
     if diff -u <(filter_vcf < "${baseline}") <(filter_vcf < "${output}") > "${OUTPUT_DIR}/${test_name}.diff"; then
