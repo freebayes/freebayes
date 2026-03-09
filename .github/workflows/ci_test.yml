@@ -27,11 +27,19 @@ jobs:
       run: ninja -C build/ -v
     - name: Run tests
       run: meson test --timeout-multiplier 4 --print-errorlogs -C build/
+    - name: Debug checkout state
+      run: |
+        git log --oneline -3
+        git submodule status
     - name: Clone and build current branch for regression baseline
       run: |
         git clone --recurse-submodules --branch ${{ github.head_ref || github.ref_name }} https://github.com/${{ github.repository }} /tmp/fb-branch
         meson setup /tmp/fb-branch/build/ /tmp/fb-branch/ -Dprefer_system_deps=false --buildtype debug
         ninja -C /tmp/fb-branch/build/
+    - name: Debug clone state
+      run: |
+        git -C /tmp/fb-branch log --oneline -3
+        git -C /tmp/fb-branch submodule status
     - name: Generate regression baseline from current branch
       run: |
         FREEBAYES=/tmp/fb-branch/build/freebayes \
