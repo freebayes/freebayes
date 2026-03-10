@@ -1,0 +1,361 @@
+##fileformat=VCFv4.2
+##fileDate=20260310
+##source=freeBayes v1.3.10
+##reference=../test/data/Zea_mays.B73_RefGen_v4.dna.chromosome.1.fa
+##contig=<ID=1,length=307041717>
+##contig=<ID=2,length=244442276>
+##contig=<ID=3,length=235667834>
+##contig=<ID=4,length=246994605>
+##contig=<ID=5,length=223902240>
+##contig=<ID=6,length=174033170>
+##contig=<ID=7,length=182381542>
+##contig=<ID=8,length=181122637>
+##contig=<ID=9,length=159769782>
+##contig=<ID=10,length=150982314>
+##contig=<ID=B73V4_ctg1,length=50531>
+##contig=<ID=B73V4_ctg10,length=992858>
+##contig=<ID=B73V4_ctg100,length=87733>
+##contig=<ID=B73V4_ctg101,length=76596>
+##contig=<ID=B73V4_ctg102,length=101603>
+##contig=<ID=B73V4_ctg103,length=83681>
+##contig=<ID=B73V4_ctg104,length=85134>
+##contig=<ID=B73V4_ctg105,length=61773>
+##contig=<ID=B73V4_ctg106,length=57130>
+##contig=<ID=B73V4_ctg107,length=83503>
+##contig=<ID=B73V4_ctg108,length=57822>
+##contig=<ID=B73V4_ctg109,length=134067>
+##contig=<ID=B73V4_ctg11,length=100537>
+##contig=<ID=B73V4_ctg110,length=57973>
+##contig=<ID=B73V4_ctg111,length=107933>
+##contig=<ID=B73V4_ctg112,length=139473>
+##contig=<ID=B73V4_ctg113,length=62853>
+##contig=<ID=B73V4_ctg114,length=67958>
+##contig=<ID=B73V4_ctg115,length=71809>
+##contig=<ID=B73V4_ctg116,length=9476>
+##contig=<ID=B73V4_ctg117,length=79679>
+##contig=<ID=B73V4_ctg118,length=62538>
+##contig=<ID=B73V4_ctg119,length=43926>
+##contig=<ID=B73V4_ctg12,length=34930>
+##contig=<ID=B73V4_ctg120,length=55817>
+##contig=<ID=B73V4_ctg121,length=63567>
+##contig=<ID=B73V4_ctg122,length=90796>
+##contig=<ID=B73V4_ctg123,length=95420>
+##contig=<ID=B73V4_ctg124,length=44508>
+##contig=<ID=B73V4_ctg125,length=79882>
+##contig=<ID=B73V4_ctg126,length=9160>
+##contig=<ID=B73V4_ctg127,length=46935>
+##contig=<ID=B73V4_ctg128,length=86301>
+##contig=<ID=B73V4_ctg129,length=254428>
+##contig=<ID=B73V4_ctg13,length=70946>
+##contig=<ID=B73V4_ctg130,length=73561>
+##contig=<ID=B73V4_ctg131,length=40576>
+##contig=<ID=B73V4_ctg132,length=83845>
+##contig=<ID=B73V4_ctg133,length=83688>
+##contig=<ID=B73V4_ctg134,length=86441>
+##contig=<ID=B73V4_ctg135,length=57064>
+##contig=<ID=B73V4_ctg136,length=60070>
+##contig=<ID=B73V4_ctg137,length=78370>
+##contig=<ID=B73V4_ctg138,length=40594>
+##contig=<ID=B73V4_ctg139,length=56161>
+##contig=<ID=B73V4_ctg14,length=84781>
+##contig=<ID=B73V4_ctg140,length=344981>
+##contig=<ID=B73V4_ctg141,length=63556>
+##contig=<ID=B73V4_ctg142,length=739442>
+##contig=<ID=B73V4_ctg143,length=51967>
+##contig=<ID=B73V4_ctg144,length=53538>
+##contig=<ID=B73V4_ctg145,length=66893>
+##contig=<ID=B73V4_ctg146,length=69976>
+##contig=<ID=B73V4_ctg147,length=70601>
+##contig=<ID=B73V4_ctg148,length=73006>
+##contig=<ID=B73V4_ctg149,length=58809>
+##contig=<ID=B73V4_ctg15,length=55297>
+##contig=<ID=B73V4_ctg150,length=1738914>
+##contig=<ID=B73V4_ctg151,length=63917>
+##contig=<ID=B73V4_ctg152,length=69060>
+##contig=<ID=B73V4_ctg153,length=65477>
+##contig=<ID=B73V4_ctg154,length=58645>
+##contig=<ID=B73V4_ctg155,length=128268>
+##contig=<ID=B73V4_ctg156,length=60365>
+##contig=<ID=B73V4_ctg157,length=55665>
+##contig=<ID=B73V4_ctg158,length=48311>
+##contig=<ID=B73V4_ctg159,length=77382>
+##contig=<ID=B73V4_ctg16,length=94873>
+##contig=<ID=B73V4_ctg160,length=31799>
+##contig=<ID=B73V4_ctg161,length=50526>
+##contig=<ID=B73V4_ctg162,length=40634>
+##contig=<ID=B73V4_ctg163,length=50620>
+##contig=<ID=B73V4_ctg164,length=66428>
+##contig=<ID=B73V4_ctg165,length=67904>
+##contig=<ID=B73V4_ctg166,length=59352>
+##contig=<ID=B73V4_ctg167,length=53643>
+##contig=<ID=B73V4_ctg168,length=54946>
+##contig=<ID=B73V4_ctg169,length=47089>
+##contig=<ID=B73V4_ctg17,length=70750>
+##contig=<ID=B73V4_ctg170,length=105189>
+##contig=<ID=B73V4_ctg171,length=72536>
+##contig=<ID=B73V4_ctg172,length=43047>
+##contig=<ID=B73V4_ctg173,length=66538>
+##contig=<ID=B73V4_ctg174,length=66228>
+##contig=<ID=B73V4_ctg175,length=69465>
+##contig=<ID=B73V4_ctg176,length=59418>
+##contig=<ID=B73V4_ctg177,length=41679>
+##contig=<ID=B73V4_ctg178,length=340736>
+##contig=<ID=B73V4_ctg179,length=85784>
+##contig=<ID=B73V4_ctg18,length=70926>
+##contig=<ID=B73V4_ctg180,length=80324>
+##contig=<ID=B73V4_ctg181,length=351693>
+##contig=<ID=B73V4_ctg182,length=1278389>
+##contig=<ID=B73V4_ctg183,length=96695>
+##contig=<ID=B73V4_ctg184,length=52129>
+##contig=<ID=B73V4_ctg185,length=56966>
+##contig=<ID=B73V4_ctg186,length=64245>
+##contig=<ID=B73V4_ctg187,length=6454>
+##contig=<ID=B73V4_ctg188,length=82080>
+##contig=<ID=B73V4_ctg189,length=71282>
+##contig=<ID=B73V4_ctg19,length=76840>
+##contig=<ID=B73V4_ctg190,length=59524>
+##contig=<ID=B73V4_ctg191,length=72401>
+##contig=<ID=B73V4_ctg192,length=66116>
+##contig=<ID=B73V4_ctg193,length=526805>
+##contig=<ID=B73V4_ctg194,length=41461>
+##contig=<ID=B73V4_ctg195,length=58299>
+##contig=<ID=B73V4_ctg196,length=138544>
+##contig=<ID=B73V4_ctg197,length=45447>
+##contig=<ID=B73V4_ctg198,length=46041>
+##contig=<ID=B73V4_ctg199,length=60303>
+##contig=<ID=B73V4_ctg2,length=60109>
+##contig=<ID=B73V4_ctg20,length=89036>
+##contig=<ID=B73V4_ctg200,length=54466>
+##contig=<ID=B73V4_ctg201,length=73251>
+##contig=<ID=B73V4_ctg202,length=53313>
+##contig=<ID=B73V4_ctg203,length=82450>
+##contig=<ID=B73V4_ctg204,length=28410>
+##contig=<ID=B73V4_ctg205,length=55164>
+##contig=<ID=B73V4_ctg206,length=73968>
+##contig=<ID=B73V4_ctg207,length=46344>
+##contig=<ID=B73V4_ctg208,length=67134>
+##contig=<ID=B73V4_ctg209,length=58608>
+##contig=<ID=B73V4_ctg21,length=65749>
+##contig=<ID=B73V4_ctg210,length=60995>
+##contig=<ID=B73V4_ctg211,length=55641>
+##contig=<ID=B73V4_ctg212,length=43787>
+##contig=<ID=B73V4_ctg213,length=74799>
+##contig=<ID=B73V4_ctg214,length=74080>
+##contig=<ID=B73V4_ctg215,length=55962>
+##contig=<ID=B73V4_ctg216,length=61539>
+##contig=<ID=B73V4_ctg217,length=58830>
+##contig=<ID=B73V4_ctg218,length=53522>
+##contig=<ID=B73V4_ctg219,length=61449>
+##contig=<ID=B73V4_ctg22,length=24080>
+##contig=<ID=B73V4_ctg220,length=62284>
+##contig=<ID=B73V4_ctg221,length=44889>
+##contig=<ID=B73V4_ctg222,length=80070>
+##contig=<ID=B73V4_ctg223,length=63290>
+##contig=<ID=B73V4_ctg224,length=55301>
+##contig=<ID=B73V4_ctg225,length=64997>
+##contig=<ID=B73V4_ctg226,length=53614>
+##contig=<ID=B73V4_ctg227,length=41417>
+##contig=<ID=B73V4_ctg228,length=17651>
+##contig=<ID=B73V4_ctg229,length=85258>
+##contig=<ID=B73V4_ctg23,length=77423>
+##contig=<ID=B73V4_ctg230,length=65674>
+##contig=<ID=B73V4_ctg231,length=73141>
+##contig=<ID=B73V4_ctg232,length=52477>
+##contig=<ID=B73V4_ctg233,length=94458>
+##contig=<ID=B73V4_ctg234,length=36081>
+##contig=<ID=B73V4_ctg235,length=70135>
+##contig=<ID=B73V4_ctg236,length=54117>
+##contig=<ID=B73V4_ctg237,length=7104>
+##contig=<ID=B73V4_ctg238,length=61153>
+##contig=<ID=B73V4_ctg239,length=95256>
+##contig=<ID=B73V4_ctg24,length=70597>
+##contig=<ID=B73V4_ctg240,length=45166>
+##contig=<ID=B73V4_ctg241,length=52360>
+##contig=<ID=B73V4_ctg242,length=56713>
+##contig=<ID=B73V4_ctg243,length=51365>
+##contig=<ID=B73V4_ctg244,length=48860>
+##contig=<ID=B73V4_ctg245,length=76559>
+##contig=<ID=B73V4_ctg246,length=47028>
+##contig=<ID=B73V4_ctg247,length=81363>
+##contig=<ID=B73V4_ctg248,length=66018>
+##contig=<ID=B73V4_ctg249,length=30460>
+##contig=<ID=B73V4_ctg25,length=41524>
+##contig=<ID=B73V4_ctg250,length=63031>
+##contig=<ID=B73V4_ctg251,length=51883>
+##contig=<ID=B73V4_ctg252,length=52549>
+##contig=<ID=B73V4_ctg253,length=82972>
+##contig=<ID=B73V4_ctg254,length=69595>
+##contig=<ID=B73V4_ctg255,length=46945>
+##contig=<ID=B73V4_ctg26,length=215635>
+##contig=<ID=B73V4_ctg27,length=11339>
+##contig=<ID=B73V4_ctg2729,length=124116>
+##contig=<ID=B73V4_ctg28,length=65819>
+##contig=<ID=B73V4_ctg29,length=66393>
+##contig=<ID=B73V4_ctg3,length=59657>
+##contig=<ID=B73V4_ctg30,length=110255>
+##contig=<ID=B73V4_ctg31,length=846561>
+##contig=<ID=B73V4_ctg32,length=54684>
+##contig=<ID=B73V4_ctg33,length=108212>
+##contig=<ID=B73V4_ctg34,length=39815>
+##contig=<ID=B73V4_ctg35,length=74491>
+##contig=<ID=B73V4_ctg36,length=70486>
+##contig=<ID=B73V4_ctg37,length=48545>
+##contig=<ID=B73V4_ctg38,length=91381>
+##contig=<ID=B73V4_ctg39,length=29460>
+##contig=<ID=B73V4_ctg4,length=66261>
+##contig=<ID=B73V4_ctg40,length=84148>
+##contig=<ID=B73V4_ctg41,length=66656>
+##contig=<ID=B73V4_ctg42,length=67687>
+##contig=<ID=B73V4_ctg43,length=45711>
+##contig=<ID=B73V4_ctg44,length=101180>
+##contig=<ID=B73V4_ctg45,length=57348>
+##contig=<ID=B73V4_ctg46,length=65659>
+##contig=<ID=B73V4_ctg47,length=33120>
+##contig=<ID=B73V4_ctg48,length=72581>
+##contig=<ID=B73V4_ctg49,length=100579>
+##contig=<ID=B73V4_ctg5,length=83265>
+##contig=<ID=B73V4_ctg50,length=381258>
+##contig=<ID=B73V4_ctg51,length=83120>
+##contig=<ID=B73V4_ctg52,length=756422>
+##contig=<ID=B73V4_ctg53,length=458256>
+##contig=<ID=B73V4_ctg54,length=82446>
+##contig=<ID=B73V4_ctg56,length=695048>
+##contig=<ID=B73V4_ctg57,length=62662>
+##contig=<ID=B73V4_ctg58,length=65407>
+##contig=<ID=B73V4_ctg59,length=53907>
+##contig=<ID=B73V4_ctg6,length=255484>
+##contig=<ID=B73V4_ctg60,length=117437>
+##contig=<ID=B73V4_ctg61,length=76354>
+##contig=<ID=B73V4_ctg62,length=92234>
+##contig=<ID=B73V4_ctg63,length=63530>
+##contig=<ID=B73V4_ctg64,length=51910>
+##contig=<ID=B73V4_ctg65,length=666287>
+##contig=<ID=B73V4_ctg66,length=69959>
+##contig=<ID=B73V4_ctg67,length=60926>
+##contig=<ID=B73V4_ctg68,length=60205>
+##contig=<ID=B73V4_ctg69,length=65268>
+##contig=<ID=B73V4_ctg7,length=71433>
+##contig=<ID=B73V4_ctg70,length=54868>
+##contig=<ID=B73V4_ctg71,length=77242>
+##contig=<ID=B73V4_ctg72,length=342161>
+##contig=<ID=B73V4_ctg73,length=83778>
+##contig=<ID=B73V4_ctg74,length=81536>
+##contig=<ID=B73V4_ctg75,length=516616>
+##contig=<ID=B73V4_ctg76,length=5568>
+##contig=<ID=B73V4_ctg77,length=87707>
+##contig=<ID=B73V4_ctg78,length=93364>
+##contig=<ID=B73V4_ctg79,length=73283>
+##contig=<ID=B73V4_ctg8,length=64470>
+##contig=<ID=B73V4_ctg80,length=65470>
+##contig=<ID=B73V4_ctg81,length=80451>
+##contig=<ID=B73V4_ctg82,length=83476>
+##contig=<ID=B73V4_ctg83,length=67579>
+##contig=<ID=B73V4_ctg84,length=98601>
+##contig=<ID=B73V4_ctg85,length=109991>
+##contig=<ID=B73V4_ctg86,length=47381>
+##contig=<ID=B73V4_ctg87,length=57632>
+##contig=<ID=B73V4_ctg88,length=58721>
+##contig=<ID=B73V4_ctg89,length=82793>
+##contig=<ID=B73V4_ctg9,length=110418>
+##contig=<ID=B73V4_ctg90,length=52427>
+##contig=<ID=B73V4_ctg91,length=795190>
+##contig=<ID=B73V4_ctg92,length=94431>
+##contig=<ID=B73V4_ctg93,length=58809>
+##contig=<ID=B73V4_ctg94,length=55397>
+##contig=<ID=B73V4_ctg95,length=76262>
+##contig=<ID=B73V4_ctg96,length=44176>
+##contig=<ID=B73V4_ctg97,length=90109>
+##contig=<ID=B73V4_ctg98,length=103641>
+##contig=<ID=B73V4_ctg99,length=36676>
+##contig=<ID=Mt,length=569630>
+##contig=<ID=Pt,length=140384>
+##phasing=none
+##commandline="./freebayes -d -f ../test/data/Zea_mays.B73_RefGen_v4.dna.chromosome.1.fa ../test/data/freebayes-test.bam"
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of samples with data">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total read depth at the locus">
+##INFO=<ID=DPB,Number=1,Type=Float,Description="Total read depth per bp at the locus; bases in reads overlapping / bases in haplotype">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Total number of alternate alleles in called genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Estimated allele frequency in the range (0,1]">
+##INFO=<ID=RO,Number=1,Type=Integer,Description="Count of full observations of the reference haplotype.">
+##INFO=<ID=AO,Number=A,Type=Integer,Description="Count of full observations of this alternate haplotype.">
+##INFO=<ID=PRO,Number=1,Type=Float,Description="Reference allele observation count, with partial observations recorded fractionally">
+##INFO=<ID=PAO,Number=A,Type=Float,Description="Alternate allele observations, with partial observations recorded fractionally">
+##INFO=<ID=QR,Number=1,Type=Integer,Description="Reference allele quality sum in phred">
+##INFO=<ID=QA,Number=A,Type=Integer,Description="Alternate allele quality sum in phred">
+##INFO=<ID=PQR,Number=1,Type=Float,Description="Reference allele quality sum in phred for partial observations">
+##INFO=<ID=PQA,Number=A,Type=Float,Description="Alternate allele quality sum in phred for partial observations">
+##INFO=<ID=SRF,Number=1,Type=Integer,Description="Number of reference observations on the forward strand">
+##INFO=<ID=SRR,Number=1,Type=Integer,Description="Number of reference observations on the reverse strand">
+##INFO=<ID=SAF,Number=A,Type=Integer,Description="Number of alternate observations on the forward strand">
+##INFO=<ID=SAR,Number=A,Type=Integer,Description="Number of alternate observations on the reverse strand">
+##INFO=<ID=SRP,Number=1,Type=Float,Description="Strand balance probability for the reference allele: Phred-scaled upper-bounds estimate of the probability of observing the deviation between SRF and SRR given E(SRF/SRR) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=SAP,Number=A,Type=Float,Description="Strand balance probability for the alternate allele: Phred-scaled upper-bounds estimate of the probability of observing the deviation between SAF and SAR given E(SAF/SAR) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=AB,Number=A,Type=Float,Description="Allele balance at heterozygous sites: a number between 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous">
+##INFO=<ID=ABP,Number=A,Type=Float,Description="Allele balance probability at heterozygous sites: Phred-scaled upper-bounds estimate of the probability of observing the deviation between ABR and ABA given E(ABR/ABA) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=RUN,Number=A,Type=Integer,Description="Run length: the number of consecutive repeats of the alternate allele in the reference genome">
+##INFO=<ID=RPP,Number=A,Type=Float,Description="Read Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=RPPR,Number=1,Type=Float,Description="Read Placement Probability for reference observations: Phred-scaled upper-bounds estimate of the probability of observing the deviation between RPL and RPR given E(RPL/RPR) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=RPL,Number=A,Type=Float,Description="Reads Placed Left: number of reads supporting the alternate balanced to the left (5') of the alternate allele">
+##INFO=<ID=RPR,Number=A,Type=Float,Description="Reads Placed Right: number of reads supporting the alternate balanced to the right (3') of the alternate allele">
+##INFO=<ID=EPP,Number=A,Type=Float,Description="End Placement Probability: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=EPPR,Number=1,Type=Float,Description="End Placement Probability for reference observations: Phred-scaled upper-bounds estimate of the probability of observing the deviation between EL and ER given E(EL/ER) ~ 0.5, derived using Hoeffding's inequality">
+##INFO=<ID=DPRA,Number=A,Type=Float,Description="Alternate allele depth ratio.  Ratio between depth in samples with each called alternate allele and those without.">
+##INFO=<ID=ODDS,Number=1,Type=Float,Description="The log odds ratio of the best genotype combination to the second-best.">
+##INFO=<ID=GTI,Number=1,Type=Integer,Description="Number of genotyping iterations required to reach convergence or bailout.">
+##INFO=<ID=TYPE,Number=A,Type=String,Description="The type of allele, either snp, mnp, ins, del, or complex.">
+##INFO=<ID=CIGAR,Number=A,Type=String,Description="The extended CIGAR representation of each alternate allele, with the exception that '=' is replaced by 'M' to ease VCF parsing.  Note that INDEL alleles do not have the first matched base (which is provided by default, per the spec) referred to by the CIGAR.">
+##INFO=<ID=NUMALT,Number=1,Type=Integer,Description="Number of unique non-reference alleles in called genotypes at this position.">
+##INFO=<ID=MEANALT,Number=A,Type=Float,Description="Mean number of unique non-reference allele observations per sample with the corresponding alternate alleles.">
+##INFO=<ID=LEN,Number=A,Type=Integer,Description="allele length">
+##INFO=<ID=MQM,Number=A,Type=Float,Description="Mean mapping quality of observed alternate alleles">
+##INFO=<ID=MQMR,Number=1,Type=Float,Description="Mean mapping quality of observed reference alleles">
+##INFO=<ID=PAIRED,Number=A,Type=Float,Description="Proportion of observed alternate alleles which are supported by properly paired read fragments">
+##INFO=<ID=PAIREDR,Number=1,Type=Float,Description="Proportion of observed reference alleles which are supported by properly paired read fragments">
+##INFO=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum depth in gVCF output block.">
+##INFO=<ID=END,Number=1,Type=Integer,Description="Last position (inclusive) in gVCF output record.">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Float,Description="Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">
+##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Number of observation for each allele">
+##FORMAT=<ID=RO,Number=1,Type=Integer,Description="Reference allele observation count">
+##FORMAT=<ID=QR,Number=1,Type=Integer,Description="Sum of quality of the reference observations">
+##FORMAT=<ID=AO,Number=A,Type=Integer,Description="Alternate allele observation count">
+##FORMAT=<ID=QA,Number=A,Type=Integer,Description="Sum of quality of the alternate observations">
+##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum depth in gVCF output block.">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	unknown
+1	3659909	.	G	A	64.6324	.	AB=0.2;ABP=61.6401;AC=1;AF=0.5;AN=2;AO=15;CIGAR=1X;DP=75;DPB=75;DPRA=0;EPP=3.15506;EPPR=3.58936;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=14.8822;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=525;QR=2196;RO=60;RPL=0;RPP=35.5824;RPPR=133.299;RPR=15;RUN=1;SAF=8;SAP=3.15506;SAR=7;SRF=28;SRP=3.58936;SRR=32;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:75:60,15:60:2196:15:525:-21.6118,0,-159.64
+1	3660106	.	A	G	726.462	.	AB=0.264865;ABP=91.8529;AC=1;AF=0.5;AN=2;AO=49;CIGAR=1X;DP=185;DPB=185;DPRA=0;EPP=10.4997;EPPR=7.09778;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=167.274;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1731;QR=4994;RO=136;RPL=25;RPP=3.05462;RPPR=3.07417;RPR=24;RUN=1;SAF=25;SAP=3.05462;SAR=24;SRF=65;SRP=3.5851;SRR=71;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:185:136,49:136:4994:49:1731:-88.6563,0,-357.783
+1	3660175	.	A	T	773.069	.	AB=0.290323;ABP=62.2004;AC=1;AF=0.5;AN=2;AO=45;CIGAR=1X;DP=155;DPB=155;DPRA=0;EPP=4.21667;EPPR=4.98437;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=178.006;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1653;QR=3944;RO=110;RPL=26;RPP=5.37479;RPPR=9.40627;RPR=19;RUN=1;SAF=16;SAP=11.1654;SAR=29;SRF=60;SRP=4.98437;SRR=50;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:155:110,45:110:3944:45:1653:-90.5053,0,-280.631
+1	3660199	.	AAC	TAA	506.868	.	AB=0.248322;ABP=84.987;AC=1;AF=0.5;AN=2;AO=37;CIGAR=1X1M1X;DP=149;DPB=149;DPRA=0;EPP=7.76406;EPPR=6.81038;GTI=0;LEN=3;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=116.711;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1347;QR=4075;RO=112;RPL=17;RPP=3.5385;RPPR=4.94911;RPR=20;RUN=1;SAF=10;SAP=19.9713;SAR=27;SRF=60;SRP=4.25114;SRR=52;TYPE=complex	GT:DP:AD:RO:QR:AO:QA:GL	0/1:149:112,37:112:4075:37:1347:-67.2786,0,-293.856
+1	3660237	.	G	A	490.055	.	AB=0.24;ABP=91.0852;AC=1;AF=0.5;AN=2;AO=36;CIGAR=1X;DP=150;DPB=150;DPRA=0;EPP=3.25157;EPPR=3.69603;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=112.839;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1332;QR=4048;RO=114;RPL=16;RPP=3.9754;RPPR=4.9151;RPR=20;RUN=1;SAF=11;SAP=14.8328;SAR=25;SRF=58;SRP=3.08649;SRR=56;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:150:114,36:114:4048:36:1332:-65.3134,0,-291.847
+1	3660247	.	G	A	489.026	.	AB=0.248276;ABP=82.8157;AC=1;AF=0.5;AN=2;AO=36;CIGAR=1X;DP=145;DPB=145;DPRA=0;EPP=3.9754;EPPR=3.98647;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=112.602;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1299;QR=3841;RO=109;RPL=19;RPP=3.25157;RPPR=17.5333;RPR=17;RUN=1;SAF=11;SAP=14.8328;SAR=25;SRF=54;SRP=3.03022;SRR=55;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:145:109,36:109:3841:36:1299:-64.3107,0,-275.2
+1	3660343	.	T	C	469.685	.	AB=0.22619;ABP=112.411;AC=1;AF=0.5;AN=2;AO=38;CIGAR=1X;DP=168;DPB=168;DPRA=0;EPP=11.239;EPPR=3.27756;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=108.149;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1394;QR=4786;RO=130;RPL=19;RPP=3.0103;RPPR=5.41562;RPR=19;RUN=1;SAF=18;SAP=3.23888;SAR=20;SRF=64;SRP=3.07711;SRR=66;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:168:130,38:130:4786:38:1394:-65.1777,0,-345.784
+1	3660369	.	CTTATTG	CTATTG	384.029	.	AB=0.220238;ABP=117.219;AC=1;AF=0.5;AN=2;AO=37;CIGAR=1M1D5M;DP=168;DPB=162.714;DPRA=0;EPP=5.88603;EPPR=4.70676;GTI=0;LEN=1;MEANALT=3;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=88.4259;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1269;QR=4596;RO=128;RPL=21;RPP=4.47751;RPPR=4.70676;RPR=16;RUN=1;SAF=20;SAP=3.5385;SAR=17;SRF=68;SRP=4.09604;SRR=60;TYPE=del	GT:DP:AD:RO:QR:AO:QA:GL	0/1:168:128,37:128:4596:37:1269:-56.195,0,-334.095
+1	3660408	.	A	G	492.445	.	AB=0.234568;ABP=102.147;AC=1;AF=0.5;AN=2;AO=38;CIGAR=1X;DP=162;DPB=162;DPRA=0;EPP=3.0103;EPPR=15.8802;GTI=0;LEN=1;MEANALT=2;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=113.39;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1381;QR=4451;RO=123;RPL=25;RPP=11.239;RPPR=3.87536;RPR=13;RUN=1;SAF=20;SAP=3.23888;SAR=18;SRF=62;SRP=3.02795;SRR=61;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:162:123,38:123:4451:38:1381:-66.1425,0,-320.447
+1	3660501	.	T	C	826.551	.	AB=0.300613;ABP=59.2954;AC=1;AF=0.5;AN=2;AO=49;CIGAR=1X;DP=163;DPB=163;DPRA=0;EPP=4.11819;EPPR=5.3355;GTI=0;LEN=1;MEANALT=2;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=190.32;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1749;QR=3957;RO=113;RPL=15;RPP=19.0083;RPPR=6.2579;RPR=34;RUN=1;SAF=29;SAP=6.59988;SAR=20;SRF=60;SRP=3.95191;SRR=53;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:163:113,49:113:3957:49:1749:-96.371,0,-280.515
+1	3660538	.	G	A	930.098	.	AB=0.30814;ABP=58.0041;AC=1;AF=0.5;AN=2;AO=53;CIGAR=1X;DP=172;DPB=172;DPRA=0;EPP=6.32897;EPPR=3.02855;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=214.163;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1887;QR=4329;RO=119;RPL=30;RPP=5.01789;RPPR=7.11603;RPR=23;RUN=1;SAF=28;SAP=3.37904;SAR=25;SRF=64;SRP=4.48836;SRR=55;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:172:119,53:119:4329:53:1887:-105.283,0,-307.19
+1	3660579	.	C	T	799.982	.	AB=0.28655;ABP=70.6815;AC=1;AF=0.5;AN=2;AO=49;CIGAR=1X;DP=171;DPB=171;DPRA=0;EPP=6.59988;EPPR=10.1299;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=184.203;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1750;QR=4424;RO=122;RPL=31;RPP=10.4997;RPPR=4.14943;RPR=18;RUN=1;SAF=25;SAP=3.05462;SAR=24;SRF=66;SRP=4.7902;SRR=56;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:171:122,49:122:4424:49:1750:-94.0956,0,-315.026
+1	3661003	.	G	A	706.604	.	AB=0.301282;ABP=56.5176;AC=1;AF=0.5;AN=2;AO=47;CIGAR=1X;DP=156;DPB=156;DPRA=0;EPP=6.75262;EPPR=3.332;GTI=0;LEN=1;MEANALT=2;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=162.702;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1563;QR=3884;RO=108;RPL=23;RPP=3.0565;RPPR=9.52472;RPR=24;RUN=1;SAF=14;SAP=19.6891;SAR=33;SRF=39;SRP=21.1059;SRR=69;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:156:108,47:108:3884:47:1563:-84.0353,0,-275.639
+1	3661054	.	C	G	741.266	.	AB=0.286585;ABP=67.8897;AC=1;AF=0.5;AN=2;AO=47;CIGAR=1X;DP=164;DPB=164;DPRA=0;EPP=36.6912;EPPR=7.18621;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=170.683;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1705;QR=4101;RO=117;RPL=32;RPP=16.3625;RPPR=8.37402;RPR=15;RUN=1;SAF=17;SAP=10.8184;SAR=30;SRF=34;SRP=47.5719;SRR=83;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:164:117,47:117:4101:47:1705:-92.4072,0,-291.453
+1	3661117	.	G	T	532.223	.	AB=0.255952;ABP=89.9209;AC=1;AF=0.5;AN=2;AO=43;CIGAR=1X;DP=168;DPB=168;DPRA=0;EPP=3.0608;EPPR=4.41741;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=122.549;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1441;QR=4563;RO=125;RPL=13;RPP=17.6046;RPPR=3.16665;RPR=30;RUN=1;SAF=26;SAP=7.10075;SAR=17;SRF=45;SRP=24.2907;SRR=80;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:168:125,43:125:4563:43:1441:-70.072,0,-327.583
+1	3661145	.	A	G	413.281	.	AB=0.228571;ABP=114.996;AC=1;AF=0.5;AN=2;AO=40;CIGAR=1X;DP=175;DPB=175;DPRA=0;EPP=3.22745;EPPR=7.65886;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=95.1615;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1346;QR=4875;RO=135;RPL=14;RPP=10.8276;RPPR=3.02638;RPR=26;RUN=1;SAF=23;SAP=4.96463;SAR=17;SRF=55;SRP=13.0634;SRR=80;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:175:135,40:135:4875:40:1346:-59.9906,0,-352.303
+1	3661150	.	A	G	501.586	.	AB=0.237288;ABP=109.118;AC=1;AF=0.5;AN=2;AO=42;CIGAR=1X;DP=177;DPB=177;DPRA=0;EPP=3.21711;EPPR=8.81698;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=115.494;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1454;QR=4783;RO=135;RPL=15;RPP=10.4553;RPPR=3.41242;RPR=27;RUN=1;SAF=23;SAP=3.83753;SAR=19;SRF=52;SRP=18.468;SRR=83;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:177:135,42:135:4783:42:1454:-68.0487,0,-344.248
+1	3661262	.	C	A	325.431	.	AB=0.254386;ABP=62.7448;AC=1;AF=0.5;AN=2;AO=29;CIGAR=1X;DP=114;DPB=114;DPRA=0;EPP=3.08518;EPPR=5.07959;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=74.9334;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=962;QR=3121;RO=85;RPL=12;RPP=4.88226;RPPR=12.2327;RPR=17;RUN=1;SAF=7;SAP=19.8579;SAR=22;SRF=52;SRP=12.2327;SRR=33;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:114:85,29:85:3121:29:962:-46.243,0,-224.379
+1	3661314	.	G	A	408.166	.	AB=0.244094;ABP=75.2502;AC=1;AF=0.5;AN=2;AO=31;CIGAR=1X;DP=127;DPB=127;DPRA=0;EPP=3.64073;EPPR=16.0391;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=93.9837;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1123;QR=3488;RO=96;RPL=16;RPP=3.08035;RPPR=13.9581;RPR=15;RUN=1;SAF=9;SAP=14.8483;SAR=22;SRF=53;SRP=5.27225;SRR=43;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:127:96,31:96:3488:31:1123:-55.2697,0,-250.805
+1	3661328	.	C	T	280.241	.	AB=0.215385;ABP=94.4794;AC=1;AF=0.5;AN=2;AO=28;CIGAR=1X;DP=130;DPB=130;DPRA=0;EPP=5.80219;EPPR=15.2727;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=64.5278;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1015;QR=3762;RO=102;RPL=19;RPP=10.7656;RPPR=30.6008;RPR=9;RUN=1;SAF=8;SAP=14.1779;SAR=20;SRF=52;SRP=3.09546;SRR=50;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:130:102,28:102:3762:28:1015:-45.4372,0,-272.402
+1	3661378	.	CGTGG	ACTC	0	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=10;CIGAR=2X1M1D1X;DP=131;DPB=129;DPRA=0;EPP=3.87889;EPPR=4.46393;GTI=0;LEN=5;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=91.7932;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=370;QR=4411;RO=121;RPL=10;RPP=24.725;RPPR=6.04318;RPR=0;RUN=1;SAF=4;SAP=3.87889;SAR=6;SRF=57;SRP=3.88966;SRR=64;TYPE=complex	GT:DP:AD:RO:QR:AO:QA:GL	0/0:131:121,10:121:4411:10:370:0,-8.50391,-335.85
+1	3661393	.	C	T	1.53425e-12	.	AB=0.133333;ABP=178.176;AC=1;AF=0.5;AN=2;AO=20;CIGAR=1X;DP=150;DPB=150;DPRA=0;EPP=6.91895;EPPR=3.61163;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=28.7931;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=702;QR=4698;RO=130;RPL=9;RPP=3.44459;RPPR=6.28421;RPR=11;RUN=1;SAF=6;SAP=9.95901;SAR=14;SRF=60;SRP=4.68066;SRR=70;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:150:130,20:130:4698:20:702:-13.4485,0,-344.558
+1	3661734	.	A	G	5.18929e-14	.	AB=0.107784;ABP=226.152;AC=1;AF=0.5;AN=2;AO=18;CIGAR=1X;DP=167;DPB=167;DPRA=0;EPP=4.9405;EPPR=6.28937;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=36.3154;NS=1;NUMALT=1;ODDS=66.5107;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=623;QR=5291;RO=149;RPL=8;RPP=3.49285;RPPR=18.881;RPR=10;RUN=1;SAF=9;SAP=3.0103;SAR=9;SRF=78;SRP=3.72441;SRR=71;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:167:149,18:149:5291:18:623:-2.02178,0,-381.284
+1	3661750	.	G	A	0	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=9;CIGAR=1X;DP=169;DPB=169;DPRA=0;EPP=3.25157;EPPR=4.11652;GTI=0;LEN=1;MEANALT=2;MQM=37;MQMR=36.3585;NS=1;NUMALT=1;ODDS=151.994;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=321;QR=5807;RO=159;RPL=5;RPP=3.25157;RPPR=3.35173;RPR=4;RUN=1;SAF=9;SAP=22.5536;SAR=0;SRF=79;SRP=3.02396;SRR=80;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/0:169:159,9:159:5807:9:321:0,-23.8832,-445.526
+1	3661768	.	T	C	243.214	.	AB=0.205882;ABP=130.744;AC=1;AF=0.5;AN=2;AO=35;CIGAR=1X;DP=170;DPB=170;DPRA=0;EPP=8.03571;EPPR=5.34382;GTI=0;LEN=1;MEANALT=2;MQM=33.1143;MQMR=37;NS=1;NUMALT=1;ODDS=56.0022;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1295;QR=4896;RO=134;RPL=12;RPP=10.5174;RPPR=3.59368;RPR=23;RUN=1;SAF=22;SAP=8.03571;SAR=13;SRF=63;SRP=4.04742;SRR=71;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:170:134,35:134:4896:35:1295:-45.2273,0,-354.703
+1	3661835	.	C	T	2.10947e-16	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=10;CIGAR=1X;DP=176;DPB=176;DPRA=0;EPP=10.8276;EPPR=11.8532;GTI=0;LEN=1;MEANALT=1;MQM=33.7;MQMR=36.7952;NS=1;NUMALT=1;ODDS=158.273;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=344;QR=6044;RO=166;RPL=5;RPP=3.0103;RPPR=3.84749;RPR=5;RUN=1;SAF=5;SAP=3.0103;SAR=5;SRF=87;SRP=3.84749;SRR=79;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/0:176:166,10:166:6044:10:344:0,-26.9633,-472.271
+1	3661846	.	C	A	0	.	AB=0.110465;ABP=229.702;AC=1;AF=0.5;AN=2;AO=19;CIGAR=1X;DP=172;DPB=172;DPRA=0;EPP=12.2676;EPPR=14.9463;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=36.5621;NS=1;NUMALT=1;ODDS=73.1439;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=694;QR=5525;RO=153;RPL=5;RPP=12.2676;RPPR=8.13384;RPR=14;RUN=1;SAF=19;SAP=44.2683;SAR=0;SRF=70;SRP=5.40885;SRR=83;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:172:153,19:153:5525:19:694:-6.09706,0,-401.051
+1	3661905	.	A	C	365.834	.	AB=0.22293;ABP=107.697;AC=1;AF=0.5;AN=2;AO=35;CIGAR=1X;DP=157;DPB=157;DPRA=0;EPP=3.56868;EPPR=31.4886;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37.0082;NS=1;NUMALT=1;ODDS=84.2364;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1283;QR=4242;RO=122;RPL=18;RPP=3.07234;RPPR=15.0424;RPR=17;RUN=1;SAF=32;SAP=55.1877;SAR=3;SRF=51;SRP=10.1299;SRR=71;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:157:122,35:122:4242:35:1283:-59.3115,0,-306.33
+1	3661922	.	G	A	0	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=12;CIGAR=1X;DP=162;DPB=162;DPRA=0;EPP=3.73412;EPPR=23.9143;GTI=0;LEN=1;MEANALT=1;MQM=37;MQMR=37;NS=1;NUMALT=1;ODDS=114.72;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=418;QR=5402;RO=150;RPL=3;RPP=9.52472;RPPR=3.0103;RPR=9;RUN=1;SAF=8;SAP=5.9056;SAR=4;SRF=87;SRP=11.3488;SRR=63;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/0:162:150,12:150:5402:12:418:0,-13.8068,-413.435
+1	3661993	.	G	A	0	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=15;CIGAR=1X;DP=189;DPB=189;DPRA=0;EPP=6.62942;EPPR=30.7374;GTI=0;LEN=1;MEANALT=2;MQM=34.7333;MQMR=36.6069;NS=1;NUMALT=1;ODDS=129.585;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=506;QR=6211;RO=173;RPL=7;RPP=3.15506;RPPR=18.3863;RPR=8;RUN=1;SAF=8;SAP=3.15506;SAR=7;SRF=94;SRP=5.83447;SRR=79;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/0:189:173,15:173:6211:15:506:0,-16.9797,-469.735
+1	3662062	.	C	T	0	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=13;CIGAR=1X;DP=206;DPB=206;DPRA=0;EPP=11.1951;EPPR=4.97275;GTI=0;LEN=1;MEANALT=2;MQM=34.4615;MQMR=36.4545;NS=1;NUMALT=1;ODDS=159.557;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=473;QR=6771;RO=187;RPL=4;RPP=7.18621;RPPR=15.6559;RPR=9;RUN=1;SAF=8;SAP=4.51363;SAR=5;SRF=77;SRP=15.6559;SRR=110;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/0:206:187,13:187:6771:13:473:0,-23.7151,-516.418
+1	3662064	.	CCA	CCG	2.85684e-14	.	AB=0;ABP=0;AC=0;AF=0;AN=2;AO=13;CIGAR=2M1X;DP=197;DPB=198.333;DPRA=0;EPP=11.1951;EPPR=3.97144;GTI=0;LEN=1;MEANALT=2;MQM=34.4615;MQMR=36.4426;NS=1;NUMALT=1;ODDS=153.419;PAIRED=1;PAIREDR=1;PAO=1;PQA=37;PQR=37;PRO=1;QA=473;QR=6649;RO=183;RPL=5;RPP=4.51363;RPPR=10.4265;RPR=8;RUN=1;SAF=7;SAP=3.17734;SAR=6;SRF=77;SRP=12.9896;SRR=106;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/0:197:183,13:183:6649:13:473:0,-22.516,-507.665
+1	3662170	.	A	G	1037.64	.	AB=0.333333;ABP=48.6112;AC=1;AF=0.5;AN=2;AO=63;CIGAR=1X;DP=189;DPB=189;DPRA=0;EPP=4.69922;EPPR=10.6295;GTI=0;LEN=1;MEANALT=3;MQM=35.9206;MQMR=34.5614;NS=1;NUMALT=1;ODDS=238.926;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=2132;QR=3220;RO=114;RPL=37;RPP=7.18091;RPPR=3.08649;RPR=26;RUN=1;SAF=13;SAP=50.1967;SAR=50;SRF=45;SRP=13.982;SRR=69;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:189:114,63:114:3220:63:2132:-118.728,0,-200.99
+1	3662246	.	A	G	198.143	.	AB=0.212644;ABP=127.808;AC=1;AF=0.5;AN=2;AO=37;CIGAR=1X;DP=174;DPB=174;DPRA=0;EPP=16.2152;EPPR=86.137;GTI=0;LEN=1;MEANALT=3;MQM=34.2162;MQMR=27.1719;NS=1;NUMALT=1;ODDS=45.624;PAIRED=1;PAIREDR=1;PAO=0;PQA=0;PQR=0;PRO=0;QA=1143;QR=3944;RO=128;RPL=24;RPP=10.1116;RPPR=9.79615;RPR=13;RUN=1;SAF=18;SAP=3.06899;SAR=19;SRF=83;SRP=27.5072;SRR=45;TYPE=snp	GT:DP:AD:RO:QR:AO:QA:GL	0/1:174:128,37:128:3944:37:1143:-39.1581,0,-193.661
