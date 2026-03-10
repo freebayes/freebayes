@@ -159,6 +159,7 @@ bool leftAlign(BAMALIGN& alignment, string& referenceSequence, bool debug) {
         steppos = indel.position - 1;
         readsteppos = indel.readPosition - 1;
         while (steppos >= 0 && readsteppos >= 0
+               && !indel.sequence.empty()
                //&& alignment.QueryBases.at(readsteppos) == referenceSequence.at(steppos)
                //&& alignment.QueryBases.at(readsteppos) == indel.sequence.at(indel.sequence.size() - 1)
                && alignmentSequence.at(readsteppos) == referenceSequence.at(steppos)
