@@ -175,7 +175,7 @@ void Parameters::usage(char** argv) {
         << "   -T --theta N    The expected mutation rate or pairwise nucleotide diversity" << endl
         << "                   among the population under analysis.  This serves as the" << endl
         << "                   single parameter to the Ewens Sampling Formula prior model" << endl
-        << "                   default: 0.001" << endl
+        << "                   default: 0.01"  endl
         << "   -p --ploidy N   Sets the default ploidy for the analysis to N.  default: 2" << endl
         << "   -J --pooled-discrete" << endl
         << "                   Assume that samples result from pooled sequencing." << endl
@@ -349,7 +349,7 @@ void Parameters::usage(char** argv) {
         << "                   Iterate no more than N times during genotyping step. default: 1000." << endl
         << "   --genotyping-max-banddepth N" << endl
         << "                   Integrate no deeper than the Nth best genotype by likelihood when" << endl
-        << "                   genotyping. default: 6." << endl
+        << "                   genotyping. default: 7." << endl
         << "   -W --posterior-integration-limits N,M" << endl
         << "                   Integrate all genotype combinations in our posterior space" << endl
         << "                   which include no more than N samples with their Mth best" << endl
