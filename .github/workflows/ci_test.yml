@@ -10,8 +10,12 @@ jobs:
         python-version: [3.12]
     steps:
     - name: Install dependencies
-      run: sudo apt-get -y -f install samtools bc parallel libvcflib-tools libseqlib2 libseqlib-dev libvcflib-dev libfastahack-dev fastahack smithwaterman libwfa2-dev libsimde-dev meson ninja-build
+      run: |
+        sudo apt-get update
+        sudo apt-get -y -f install samtools bc parallel libvcflib-tools libseqlib2 libseqlib-dev libvcflib-dev libfastahack-dev fastahack smithwaterman libwfa2-dev libsimde-dev meson ninja-build
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
