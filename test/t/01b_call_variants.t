@@ -10,10 +10,14 @@ root=$(dirname $0)/../..
 PATH=../build:$root/build:$root/../build:$root/bin:$PATH
 PATH=../scripts:$PATH # for freebayes-parallel
 
-plan tests 10
+plan tests 11
 
 
 is $(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel tiny/q.regions 2 -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "running in parallel makes no difference"
+
+# q.seam.regions has region boundaries inside two variant clusters (1817-1820 and 2348-2355):
+# without the region overlap the first cluster is reported twice and the tail of the second is lost
+is "$(freebayes -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1-5)" "$(freebayes-parallel tiny/q.seam.regions 2 -f tiny/q.fa tiny/NA12878.chr22.tiny.bam | grep -v "^#" | cut -f1-5)" "region boundaries inside variant clusters make no difference"
 
 is $(freebayes -f 'tiny/q with spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) $(freebayes-parallel 'tiny/q with spaces.regions' 2 -f 'tiny/q\ with\ spaces.fa' tiny/NA12878.chr22.tiny.bam | grep -v "^#" | wc -l) "freebayes handles spaces in file names"
 

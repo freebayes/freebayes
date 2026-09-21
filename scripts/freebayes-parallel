@@ -24,6 +24,10 @@ then
     echo "    bamtools coverage -in aln.bam | coverage_to_regions.py ref.fa.fai 500 >ref.fa.500.regions"
     echo "    freebayes-parallel ref.fa.500.regions 36 -f ref.fa aln.bam >out.vcf"
     echo
+    echo "Regions are processed with an upstream overlap so that variants at region boundaries are"
+    echo "called as in a single run. The overlap defaults to 1000 bp and must be at least the read"
+    echo "length; set FREEBAYES_PARALLEL_OVERLAP to change it, e.g. for long reads."
+    echo
     exit
 fi
 
@@ -32,11 +36,36 @@ shift
 ncpus=$1
 shift
 
+# Each region is run with an upstream overlap: freebayes is started this many bases before the
+# region's nominal start, and only the records at or after the nominal start are kept. Reads
+# that overlap a region boundary are otherwise invisible to the downstream region for the part
+# already parsed before the boundary, so a variant cluster straddling a boundary comes out
+# duplicated (the upstream region reports the whole cluster, the downstream one reports its
+# tail again) or, when only such reads support it, not at all. With an overlap of at least the
+# read length the downstream region sees the same reads at its nominal start as a single run.
+overlap=${FREEBAYES_PARALLEL_OVERLAP:-1000}
+
+# Turn chrom:start-end regions (0-based, half-open; contig names may contain colons) into
+# "padded-region <tab> nominal-start" lines. A bare contig name is passed through unchanged.
+padded=$(mktemp)
+trap 'rm -f "$padded"' EXIT
+while IFS= read -r region || [ -n "$region" ]; do
+    region=${region%$'\r'}
+    [ -z "$region" ] && continue
+    range=${region##*:}
+    case $range in
+        *-*) chrom=${region%:*}; start=${range%-*}; end=${range#*-}
+             from=$(( start - overlap )); [ "$from" -lt 0 ] && from=0
+             printf '%s:%s-%s\t%s\n' "$chrom" "$from" "$end" "$start" ;;
+        *)   printf '%s\t0\n' "$region" ;;
+    esac
+done < "$regionsfile" > "$padded"
+
 command=("freebayes" "$@")
 
 (
-#$command | head -100 | grep "^#" # generate header
-# iterate over regions using gnu parallel to dispatch jobs
-cat "$regionsfile" | parallel -k -j "$ncpus" "${command[@]}" --region {}
+# iterate over regions using gnu parallel to dispatch jobs, dropping the records that fall in
+# the overlap (they belong to the upstream region)
+parallel -k -j "$ncpus" --colsep '\t' "${command[@]}" --region {1} '|' awk -v start={2} "'/^#/ || \$2 > start'" < "$padded"
 ) | vcffirstheader \
     | vcfstreamsort -w 1000 | vcfuniq # remove duplicates at region edges
