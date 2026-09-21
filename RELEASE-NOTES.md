@@ -6,6 +6,10 @@ and
 
 ## ChangeLog current
 
++ freebayes-parallel: run each region with an upstream overlap (FREEBAYES_PARALLEL_OVERLAP,
+  default 1000 bp) so that variant clusters straddling a region boundary are neither reported
+  twice nor lost
+
 ## ChangeLog v1.3.10 (20250531)
 
 + guix.scm: updated to latest vcflib, so paths match
